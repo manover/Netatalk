@@ -11,8 +11,8 @@ endif
 afppasswd_SOURCES = afppasswd.c
 afppasswd_LDADD = $(top_builddir)/libatalk/libatalk.la @SSL_LIBS@
 
-INCLUDES = @SSL_CFLAGS@ -I$(top_srcdir)/sys \
-    -D_PATH_AFPDPWFILE=\"$(pkgconfdir)/afppasswd\"
+INCLUDES = -I$(top_srcdir)/include -I$(top_srcdir)/sys @SSL_CFLAGS@ \
+	-D_PATH_AFPDPWFILE=\"$(pkgconfdir)/afppasswd\"
 
 install-exec-hook:
 if USE_DHX
