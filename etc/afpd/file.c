@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.29.2.1 2001-12-03 05:01:04 jmarcus Exp $
+ * $Id: file.c,v 1.29.2.2 2002-01-02 17:23:56 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1680,6 +1680,7 @@ int		ibuflen, *rbuflen;
         case EPERM:
         case EACCES:
             err = AFPERR_ACCESS;
+			break;
         default:
             err = AFPERR_PARAM;
         }
@@ -1692,6 +1693,7 @@ int		ibuflen, *rbuflen;
         case EPERM:
         case EACCES:
             err = AFPERR_ACCESS;
+			break;
         default:
             err = AFPERR_PARAM;
         }
