@@ -1,5 +1,5 @@
 /*
- * $Id: adv1tov2.c,v 1.3.14.2 2004-05-08 14:12:00 didg Exp $
+ * $Id: adv1tov2.c,v 1.3.14.3 2004-08-23 22:20:07 bfernhomberg Exp $
  * v1tov2: given a root directory, run down and convert all the
  * files/directories into appledouble v2.
  */
@@ -8,6 +8,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#include <atalk/adouble.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
@@ -21,10 +22,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/param.h>
+#include <errno.h>
+#include <string.h>
 
-#include <atalk/adouble.h>
+#include <atalk/util.h>
 
 #if AD_VERSION == AD_VERSION2
+#if 0
 /* translate characters */
 static void xlate(char *name, int flags) {
   static const char hexdig[] = "0123456789abcdef";
@@ -52,7 +56,22 @@ static void xlate(char *name, int flags) {
       rename(ad_path(name, flags), ad_path(upath, flags)); /* rename rfork */
   }
 }
+#endif
 
+/* ----------------------------- */
+char *fullpathname(const char *name)
+{
+    static char wd[ MAXPATHLEN + 1];
+
+    if ( getcwd( wd , MAXPATHLEN) ) {
+        strlcat(wd, "/", MAXPATHLEN);
+        strlcat(wd, name, MAXPATHLEN);
+    }
+    else {
+        strlcpy(wd, name, MAXPATHLEN);
+    }
+    return wd;
+}
 
 #define MAXDESCEND 0xFFFF
 /* recursively descend subdirectories. 
@@ -93,11 +112,11 @@ void descend(DIR *dp)
     }
 
     if (ad_open(de->d_name, flags, O_RDWR, 0, &ad) < 0) {
-      fprintf(stderr, "FAILURE: can't convert %s\n", de->d_name);
+      if (errno != ENOENT)
+          fprintf(stderr, "\nFAILURE: can't convert %s, %s\n", fullpathname(de->d_name), strerror(errno));
       continue;
     }
     ad_close(&ad, ADFLAGS_HF);
-    xlate(de->d_name, flags);
     fputc('.', stderr);
   }
   putc(')', stderr);
@@ -133,7 +152,6 @@ int main(int argc, char **argv)
   closedir(dp);
   chdir("..");
 
-  xlate(argv[1], ADFLAGS_HF | ADFLAGS_DIR);
   putc('\n', stderr);
   return 0;
 }
