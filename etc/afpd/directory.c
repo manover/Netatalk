@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.19.2.4 2002-02-07 23:54:27 srittau Exp $
+ * $Id: directory.c,v 1.19.2.5 2002-03-12 15:05:50 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -12,7 +12,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include <sys/syslog.h>
+#include <syslog.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>

@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.15.2.2 2002-01-14 02:50:34 srittau Exp $
+ * $Id: filedir.c,v 1.15.2.3 2002-03-12 15:09:20 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -10,7 +10,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include <errno.h>
-#include <sys/syslog.h>
+#include <syslog.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/param.h>

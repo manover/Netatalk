@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.29.2.7 2002-03-08 05:47:25 jmarcus Exp $
+ * $Id: file.c,v 1.29.2.8 2002-03-12 15:09:20 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -37,8 +37,8 @@ char *strchr (), *strrchr ();
 #include <dirent.h>
 #include <sys/mman.h>
 #include <errno.h>
+#include <syslog.h>
 
-#include <sys/syslog.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/param.h>
