@@ -1,5 +1,5 @@
 /*
- * $Id: usockfd.c,v 1.1.4.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: usockfd.c,v 1.1.4.2 2003-10-01 11:07:50 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -20,6 +20,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -78,11 +79,25 @@ int usockfd_create(char *usock_fn, mode_t mode, int backlog)
 /* ---------------
    create a tcp socket (should share dsi stuff)
 */
-int tsockfd_create(char *address, int ipport, int backlog)
+int tsockfd_create(char *host, int ipport, int backlog)
 {
     int sockfd;
-    struct sockaddr_in addr;
+    struct sockaddr_in server;
+    struct hostent     *hp;  
     int                port;
+    
+    hp=gethostbyname(host);
+    if (!hp) {
+        unsigned long int addr=inet_addr(host);
+        if (addr!= (unsigned)-1)
+            hp=gethostbyaddr((char*)addr,sizeof(addr),AF_INET);
+ 
+        if (!hp) {
+            LOG(log_error, logtype_cnid, "gethostbyaddr %s: %s", host, strerror(errno));
+            return -1;
+        }
+    }
+    memcpy((char*)&server.sin_addr,(char*)hp->h_addr,sizeof(server.sin_addr));    
 
     if ((sockfd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
         LOG(log_error, logtype_cnid, "error in socket call: %s", strerror(errno));
@@ -90,15 +105,9 @@ int tsockfd_create(char *address, int ipport, int backlog)
     }
      
     port = htons(ipport);
-    memset((char *) &addr, 0, sizeof(struct sockaddr_in));
-
-    if (inet_aton(address, &addr.sin_addr) == 0) {
-        LOG(log_info, logtype_cnid, "invalid address (%s)", address);
-        return 0;
-    }
     
-    addr.sin_family = AF_INET;
-    addr.sin_port = port;
+    server.sin_family = AF_INET;
+    server.sin_port = port;
 
 #ifdef SO_REUSEADDR
     port = 1;
@@ -113,15 +122,15 @@ int tsockfd_create(char *address, int ipport, int backlog)
     setsockopt(sockfd, SOL_TCP, TCP_NODELAY, &port, sizeof(port));
 #endif /* USE_TCP_NODELAY */
 
-    if (bind(sockfd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+    if (bind(sockfd, (struct sockaddr *)&server, sizeof(server)) < 0) {
         LOG(log_error, logtype_cnid, "error binding to socket for %s: %s",
-            address, strerror(errno));
+            host, strerror(errno));
         return -1;
     }
 
     if (listen(sockfd, backlog) < 0) {
         LOG(log_error, logtype_cnid, "error in listen for %s: %s",
-            address, strerror(errno));
+            host, strerror(errno));
         return -1;
     }
 
