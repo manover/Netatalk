@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92 2003-04-26 16:53:44 didg Exp $
+ * $Id: file.c,v 1.92.2.1 2003-06-05 08:48:18 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -142,7 +142,7 @@ char *set_name(const struct vol *vol, char *data, char *name, u_int32_t utf8)
         if (aint > 255)  /* FIXME safeguard, anyway if no ascii char it's game over*/
            aint = 255;
 
-        utf8 = htonl(utf8);
+        utf8 = 0;    /* mac roman hint */
         memcpy(data, &utf8, sizeof(utf8));
         data += sizeof(utf8);
         
