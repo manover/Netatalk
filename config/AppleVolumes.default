@@ -52,13 +52,18 @@
 # root_postexec        -> command to be run as root when the volume is closed,
 #                        ignore for user defined volumes
 #
+# codepage options [syntax: options:charsetname]
+# volcharset           -> specifies the charset to be used as the volume codepage
+#                         e.g. "UTF8", "UTF8-MAC", "ISO-8859-15"
+# maccharset           -> specifies the charset to be used as the mac client codepage
+#                         e.g. "MAC_ROMAN", "MAC_CYRILLIC"
+#
 # miscellaneous options [syntax: options:option1,option2]:
 # prodos              -> make compatible with appleII clients.
 # crlf                -> enable crlf translation for TEXT files.
 # noadouble           -> don't create .AppleDouble unless a resource
 #                        fork needs to be created.
 # ro                  -> mount the volume as read-only.
-# utf8                -> use precomposed utf8 filenames
 # mswindows           -> enforce filename restrictions imposed by MS
 #                        Windows. this will also invoke a default
 #			 codepage (iso8859-1) if one isn't already 

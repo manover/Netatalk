@@ -173,6 +173,18 @@
 #     -k5service <service>
 #     -k5realm <realm>
 #		 These are required if the server supports Kerberos 5 authentication
+#
+#   Codepage Options:
+#      -unixcodepage <CODEPAGE>     Specifies the servers unix codepage, e.g. "ISO-8859-15" or "UTF8".
+#			            This is used to convert strings to/from the systems locale, e.g.
+#                                   for authenthication. Defaults to LOCALE if your system supports it, 
+#                                   otherwise ASCII will be used.
+#
+#      -maccodepage <CODEPAGE>      Specifies the mac clients codepage, e.g. "MAC_ROMAN".
+#			            This is used to convert strings to the systems locale, e.g. 
+#                                   for authenthication and SIGUSR2 messaging. This will also be
+#                                   the default for volumes maccharset.
+#
  
 #		
 # Some examples:
