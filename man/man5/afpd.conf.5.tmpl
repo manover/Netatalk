@@ -1,4 +1,4 @@
-.TH afpd.conf 5 "05 Jan 2004" 2.0-rc2 Netatalk 
+.TH afpd.conf 5 "24 September 2004" 2.0.0 Netatalk 
 .SH NAME
 afpd.conf \- Configuration file used by afpd(8) to determine the setup of its file sharing services
 .SH DESCRIPTION
@@ -175,13 +175,17 @@ Specifies a fully\-qualified domain name, with an optional
 port. This is discarded if the server cannot resolve it. This option
 is not honored by AppleShare clients <= 3.8.3. This option is
 disabled by default. Use with caution as this will involve a second
-name resolution step.
+name resolution step on the client side. Also note that afpd will
+advertise this name:port combination but not automatically listen to
+it.
 .TP 
 \-ipaddr \fI[ip address]\fR
-Specifies the IP address that the server should advertise (the
-default is the first IP address of the system). This option also
-allows to use one machine to advertise the AFP\-over\-TCP/IP settings
-of another machine via NBP.
+Specifies the IP address that the server should advertise
+\fBand\fR listens to (the default is the
+first IP address of the system). This option also allows to use one
+machine to advertise the AFP\-over\-TCP/IP settings of another machine
+via NBP when used together with the \fB\-proxy\fR
+option.
 .TP 
 \-port \fI[port number]\fR
 Allows a different TCP port to be used for AFP\-over\-TCP. The
@@ -291,6 +295,17 @@ Traditional method of signature generation causes two independent
 afpd instances to have the same signature and thus cause clients to
 be redirected automatically to server (s)he logged in first.
 .SH "LOGGING OPTIONS"
+.RS 
+\fBNote\fR
+.PP
+Extended logging capabilities are only available if Netatalk was
+built using \-\-with\-logfile. As of Netatalk 2.0, the
+default is \-\-without\-logfile since the logger code is
+partially broken and needs a complete rewrite (the
+\fB\-setuplog\fR option might not work as expected). If
+Netatalk was built without logger support then the daemons log to
+syslog.
+.RE
 .TP 
 \-[un]setuplog "<logtype> <loglevel> [<filename>]"
 Specify that the given loglevel should be applied to log
