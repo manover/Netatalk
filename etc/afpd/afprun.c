@@ -82,7 +82,7 @@ static int setup_out_fd(void)
 	fd = mkstemp(path);
 
 	if (fd == -1) {
-		LOG(log_error, logtype_afpd, "setup_out_fd: Failed to create file %s. (%s)\n",path, strerror(errno) );
+		LOG(log_error, logtype_afpd, "setup_out_fd: Failed to create file %s. (%s)",path, strerror(errno) );
 		return -1;
 	}
 
@@ -175,7 +175,7 @@ int afprun(int root, char *cmd, int *outfd)
        arguments, after first setting stdout to point at the file */
 
     if ((pid=fork()) < 0) {
-        LOG(log_error, logtype_afpd, "afprun: fork failed with error %s\n", strerror(errno) );
+        LOG(log_error, logtype_afpd, "afprun: fork failed with error %s", strerror(errno) );
 	if (outfd) {
 	    close(*outfd);
 	    *outfd = -1;
@@ -199,7 +199,7 @@ int afprun(int root, char *cmd, int *outfd)
 	    break;
 	}
 	if (wpid != pid) {
-	    LOG(log_error, logtype_afpd, "waitpid(%d) : %s\n",(int)pid, strerror(errno) );
+	    LOG(log_error, logtype_afpd, "waitpid(%d) : %s",(int)pid, strerror(errno) );
 	    if (outfd) {
 	        close(*outfd);
 	        *outfd = -1;
@@ -227,11 +227,17 @@ int afprun(int root, char *cmd, int *outfd)
     if (outfd) {
         close(1);
 	if (dup2(*outfd,1) != 1) {
-	    LOG(log_error, logtype_afpd, "Failed to create stdout file descriptor\n");
+	    LOG(log_error, logtype_afpd, "Failed to create stdout file descriptor");
 	    close(*outfd);
 	    exit(80);
 	}
     }
+    
+    if (chdir("/") < 0) {
+        LOG(log_error, logtype_afpd, "afprun: can't change directory to \"/\" %s", strerror(errno) );
+        exit(83);
+    }
+
     /* now completely lose our privileges. This is a fairly paranoid
        way of doing it, but it does work on all systems that I know of */
     if (root) {
