@@ -2,6 +2,7 @@ Changes in 1.6.3
 ================
 
 * FIX: afpd: Files could be opened for writing on read-only filesystems.
+* FIX: afpd: Debugging using SIGUSR1 was broken. [Stefan Muenkner]
 * FIX: shell_utils: Don't distribute generated files.
 * FIX: aecho: -A option didn't work. [Chris Shiels]
 * FIX: Automake build fixes.

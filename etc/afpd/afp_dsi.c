@@ -1,5 +1,5 @@
 /*
- * $Id: afp_dsi.c,v 1.25 2002-10-11 14:18:23 didg Exp $
+ * $Id: afp_dsi.c,v 1.24.2.1 2003-06-06 19:43:12 srittau Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -102,11 +102,11 @@ static void afp_dsi_timedown()
     it.it_interval.tv_usec = 0;
     it.it_value.tv_sec = 300;
     it.it_value.tv_usec = 0;
-
     if ( setitimer( ITIMER_REAL, &it, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_timedown: setitimer: %s", strerror(errno) );
         afp_dsi_die(1);
     }
+
     memset(&sv, 0, sizeof(sv));
     sv.sa_handler = afp_dsi_die;
     sigemptyset( &sv.sa_mask );
@@ -132,8 +132,7 @@ static void alarm_handler()
     /* if we're in the midst of processing something,
        don't die. */
     if ((child.flags & CHILD_RUNNING) || (child.tickle++ < child.obj->options.timeout)) {
-        if (!pollvoltime(child.obj))
-            dsi_tickle(child.obj->handle);
+        dsi_tickle(child.obj->handle);
     } else { /* didn't receive a tickle. close connection */
         LOG(log_error, logtype_afpd, "afp_alarm: child timed out");
         afp_dsi_die(1);
@@ -149,7 +148,7 @@ void afp_set_debug (int sig)
 {
     char	fname[MAXPATHLEN];
 
-    snprintf(fname, MAXPATHLEN-1, "%safpd-debug-%d", P_tmpdir, getpid());
+    snprintf(fname, MAXPATHLEN-1, "%s/afpd-debug-%d", P_tmpdir, getpid());
     freopen(fname, "w", stdout);
     child.obj->options.flags |= OPTION_DEBUG;
 
@@ -236,9 +235,9 @@ void afp_over_dsi(AFPObj *obj)
             if (child.flags & CHILD_DIE)
                 dsi_tickle(dsi);
             continue;
-        } else if (!(child.flags & CHILD_DIE)) { /* reset tickle timer */
+        } else if (!(child.flags & CHILD_DIE)) /* reset tickle timer */
             setitimer(ITIMER_REAL, &dsi->timer, NULL);
-        }
+
         switch(cmd) {
         case DSIFUNC_CLOSE:
             afp_dsi_close(obj);
