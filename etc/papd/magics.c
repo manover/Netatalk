@@ -1,5 +1,5 @@
 /*
- * $Id: magics.c,v 1.11.6.1 2004-06-09 01:25:53 bfernhomberg Exp $
+ * $Id: magics.c,v 1.11.6.2 2004-08-23 22:31:58 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -69,6 +69,7 @@ int ps( infile, outfile, sat )
 		    compush( comment );
 		    continue;	/* top of for (;;) */
 		}
+#if 0
 		infile->pf_state &= ~PF_BOT;
 
 		/* set up spool file */
@@ -76,6 +77,7 @@ int ps( infile, outfile, sat )
 		    LOG(log_error, logtype_papd, "lp_open failed" );
 		    spoolerror( outfile, "Ignoring job." );
 		}
+#endif
 	    }
 
 	    /* write to file */
