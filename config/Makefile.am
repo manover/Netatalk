@@ -2,9 +2,9 @@
 
 SUFFIXES = .tmpl .
 
-GENFILES = afpd.conf
+GENFILES = afpd.conf AppleVolumes.default
 TMPLFILES = $(foreach file,$(GENFILES),$(file).tmpl)
-CONFFILES = AppleVolumes.default AppleVolumes.system \
+CONFFILES = AppleVolumes.system \
 	atalkd.conf netatalk.conf papd.conf
 PAMFILES = netatalk.pamd
 OVERWRITE_CONFIG = @OVERWRITE_CONFIG@
@@ -22,6 +22,8 @@ pkgconfdir = @PKGCONFDIR@
 .tmpl:
 	sed -e s@:UAMS_PATH:@${UAMS_PATH}@ \
 	    -e s@:ETCDIR:@${pkgconfdir}@ \
+	    -e s@:COMPILED_BACKENDS:@"$(compiled_backends)"@ \
+	    -e s@:DEFAULT_CNID_SCHEME:@$(DEFAULT_CNID_SCHEME)@ \
 	    <$< >$@
 
 #
