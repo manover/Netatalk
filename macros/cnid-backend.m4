@@ -86,7 +86,7 @@ AC_DEFUN([AC_NETATALK_CNID], [
             use_db3_backend=no
         else
             use_db3_backend=yes
-            $compiled_backends="$compile_backends db3"
+            compiled_backends="$compiled_backends db3"
         fi
     ],[
         use_db3_backend=no
