@@ -1,5 +1,5 @@
 /*
- * $Id: enumerate.c,v 1.9.2.2 2002-01-02 17:27:50 srittau Exp $
+ * $Id: enumerate.c,v 1.9.2.3 2002-02-07 23:56:04 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -38,6 +38,8 @@
 #ifdef DID_MTAB
 #include "parse_mtab.h"
 #endif /* DID_MTAB */
+
+#define min(a,b)	((a)<(b)?(a):(b))
 
 struct dir *
             adddir( vol, dir, name, namlen, upath, upathlen, st )
@@ -204,6 +206,8 @@ int		ibuflen, *rbuflen;
     memcpy( &maxsz, ibuf, sizeof( maxsz ));
     maxsz = ntohs( maxsz );
     ibuf += sizeof( maxsz );
+
+    maxsz = min(maxsz, *rbuflen);
 
     if (( path = cname( vol, dir, &ibuf )) == NULL ) {
         *rbuflen = 0;
