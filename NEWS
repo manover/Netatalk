@@ -1,6 +1,9 @@
 Changes from 1.5.2
 ==================
 
+* FIX: afp_deleteid() now deletes the specified file and not the parent
+       directory.
+* FIX: Clean up some syslog messages.
 
 Changes from 1.5.1
 ==================
