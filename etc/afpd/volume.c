@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.5 2003-09-27 03:05:41 bfernhomberg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.6 2003-09-30 12:24:49 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1110,6 +1110,28 @@ getvolspace_done:
     return( AFP_OK );
 }
 
+/* ----------------------- 
+ * set volume creation date
+ * avoid duplicate, well at least it tries
+*/
+static void vol_setdate(u_int16_t id, struct adouble *adp, time_t date)
+{
+    struct vol	*volume;
+    struct vol	*vol = Volumes;
+
+    for ( volume = Volumes; volume; volume = volume->v_next ) {
+        if (volume->v_vid == id) {
+            vol = volume;
+        }
+        else if (AD_DATE_FROM_UNIX(date) == volume->v_ctime) {
+            date = date+1;
+            volume = Volumes; /* restart */
+        }
+    }
+    vol->v_ctime = AD_DATE_FROM_UNIX(date);
+    ad_setdate(adp, AD_DATE_CREATE | AD_DATE_UNIX, date);
+}
+
 /* ----------------------- */
 static int getvolparams( bitmap, vol, st, buf, buflen )
 u_int16_t	bitmap;
@@ -1136,6 +1158,7 @@ int		*buflen;
                   ADFLAGS_HF|ADFLAGS_DIR, O_RDWR | O_CREAT,
                   0666, &ad) < 0 ) {
         isad = 0;
+        vol->v_ctime = AD_DATE_FROM_UNIX(st->st_mtime);
 
     } else if (ad_get_HF_flags( &ad ) & O_CREAT) {
         slash = strrchr( vol->v_path, '/' );
@@ -1147,8 +1170,14 @@ int		*buflen;
         ad_setentrylen( &ad, ADEID_NAME, strlen( slash ));
         memcpy(ad_entry( &ad, ADEID_NAME ), slash,
                ad_getentrylen( &ad, ADEID_NAME ));
-	ad_setdate(&ad, AD_DATE_CREATE | AD_DATE_UNIX, st->st_mtime);
+        vol_setdate(vol->v_vid, &ad, st->st_mtime);
         ad_flush(&ad, ADFLAGS_HF);
+    }
+    else {
+        if (ad_getdate(&ad, AD_DATE_CREATE, &aint) < 0)
+            vol->v_ctime = AD_DATE_FROM_UNIX(st->st_mtime);
+        else 
+            vol->v_ctime = aint;
     }
 
     if (( bitmap & ( (1<<VOLPBIT_BFREE)|(1<<VOLPBIT_BTOTAL) |
@@ -1203,19 +1232,16 @@ int		*buflen;
             break;
 
         case VOLPBIT_CDATE :
-            if (!isad || (ad_getdate(&ad, AD_DATE_CREATE, &aint) < 0))
-                aint = AD_DATE_FROM_UNIX(st->st_mtime);
+            aint = vol->v_ctime;
             memcpy(data, &aint, sizeof( aint ));
             data += sizeof( aint );
             break;
 
         case VOLPBIT_MDATE :
-            if ( st->st_mtime > vol->v_time ) {
-                vol->v_time = st->st_mtime;
-                aint = AD_DATE_FROM_UNIX(st->st_mtime);
-            } else {
-                aint = AD_DATE_FROM_UNIX(vol->v_time);
+            if ( st->st_mtime > vol->v_mtime ) {
+                vol->v_mtime = st->st_mtime;
             }
+            aint = AD_DATE_FROM_UNIX(vol->v_mtime);
             memcpy(data, &aint, sizeof( aint ));
             data += sizeof( aint );
             break;
@@ -1394,19 +1420,20 @@ int 	ibuflen, *rbuflen;
 
     data = rbuf + 5;
     for ( vcnt = 0, volume = Volumes; volume; volume = volume->v_next ) {
-        if (!(volume->v_flags & AFPVOL_NOSTAT)) {
-            if ( stat( volume->v_path, &st ) < 0 ) {
-                LOG(log_info, logtype_afpd, "afp_getsrvrparms: stat %s: %s",
+        if ( stat( volume->v_path, &st ) < 0 ) {
+            if ((volume->v_flags & AFPVOL_NOSTAT)) {
+                continue;
+            }
+            LOG(log_info, logtype_afpd, "afp_getsrvrparms: stat %s: %s",
                     volume->v_path, strerror(errno) );
-                continue;		/* can't access directory */
-            }
-            if (!S_ISDIR(st.st_mode)) {
-                continue;		/* not a dir */
-            }
+            continue;		/* can't access directory */
         }
+        if (!S_ISDIR(st.st_mode)) {
+            continue;		/* not a dir */
+        }
+
         if (volume->v_hide) {
             continue;		/* config file changed but the volume was mounted */
-        
         }
         /* set password bit if there's a volume password */
         *data = (volume->v_password) ? AFPSRVR_PASSWD : 0;
@@ -1786,9 +1813,9 @@ AFPObj *obj;
          return 0;
 
     for ( vol = Volumes; vol; vol = vol->v_next ) {
-        if ( (vol->v_flags & AFPVOL_OPEN)  && vol->v_time + 30 < tv.tv_sec) {
-            if ( !stat( vol->v_path, &st ) && vol->v_time != st.st_mtime ) {
-                vol->v_time = st.st_mtime;
+        if ( (vol->v_flags & AFPVOL_OPEN)  && vol->v_mtime + 30 < tv.tv_sec) {
+            if ( !stat( vol->v_path, &st ) && vol->v_mtime != st.st_mtime ) {
+                vol->v_mtime = st.st_mtime;
                 if (!obj->attention(obj->handle, AFPATTN_NOTIFY | AFPATTN_VOLCHANGED))
                     return -1;
                 return 1;
@@ -1805,7 +1832,7 @@ struct vol	*vol;
 {
     struct timeval	tv;
 
-    /* just looking at vol->v_time is broken seriously since updates
+    /* just looking at vol->v_mtime is broken seriously since updates
      * from other users afpd processes never are seen.
      * This is not the most elegant solution (a shared memory between
      * the afpd processes would come closer)
@@ -1822,8 +1849,8 @@ struct vol	*vol;
     }
 
     /* a little granularity */
-    if (vol->v_time < tv.tv_sec) {
-        vol->v_time = tv.tv_sec;
+    if (vol->v_mtime < tv.tv_sec) {
+        vol->v_mtime = tv.tv_sec;
         if (afp_version > 21 && obj->options.server_notif) {
             obj->attention(obj->handle, AFPATTN_NOTIFY | AFPATTN_VOLCHANGED);
         }

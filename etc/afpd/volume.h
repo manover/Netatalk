@@ -1,5 +1,5 @@
 /*
- * $Id: volume.h,v 1.19.2.5.2.2 2003-09-13 02:46:28 bfernhomberg Exp $
+ * $Id: volume.h,v 1.19.2.5.2.3 2003-09-30 12:24:49 didg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -33,7 +33,9 @@ struct vol {
     int			v_qfd;
 #endif /*__svr4__*/
     char		*v_gvs;
-    time_t		v_time;
+    time_t		v_mtime;
+    time_t		v_ctime;  /* volume creation date, not unix ctime */
+
     u_int16_t		v_vid;
     void                *v_nfsclient;
     int                 v_nfs;
