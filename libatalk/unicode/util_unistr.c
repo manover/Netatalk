@@ -17,10 +17,6 @@
 #include "precompose.h"
 
 
-
-#define ucs2_t	u_int16_t
-
-
 ucs2_t toupper_w(ucs2_t val)
 {
 	if ( val >= 0x0040 && val <= 0x007F)
@@ -386,7 +382,6 @@ size_t precompose_w (ucs2_t *name, size_t inplen, ucs2_t *comp, size_t *outlen)
 	ucs2_t result;
 	size_t o_len = *outlen;
 
-//    	if (!inplen || (inplen & 1) || inplen > sizeof(comp)/sizeof(u_int16_t))
     	if (!inplen || (inplen & 1) || inplen > o_len)
         	return (size_t)-1;
     	i = 0;
@@ -431,7 +426,6 @@ size_t precompose_w (ucs2_t *name, size_t inplen, ucs2_t *comp, size_t *outlen)
 
 /* --------------- */
 
-//char *decompose_w (ucs2_t *name, size_t inplen, size_t *outlen)
 size_t decompose_w (ucs2_t *name, size_t inplen, ucs2_t *comp, size_t *outlen)
 {
 	size_t i;
