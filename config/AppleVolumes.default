@@ -79,9 +79,9 @@
 # nofileid            -> don't advertise createfileid, resolveid, deleteid 
 #                        calls
 # root_preexec_close  -> a non-zero return code from root_preexec close the 
-                         volume being mounted.
+#                        volume being mounted.
 # preexec_close       -> a non-zero return code from preexec close the 
-                         volume being mounted.
+#                        volume being mounted.
 # nostat              -> don't stat volume path when enumerating volumes list
 #
 #
