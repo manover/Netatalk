@@ -1,5 +1,5 @@
 /*
- * $Id: uams_dhx_pam.c,v 1.24.6.4 2003-11-01 02:38:09 bfernhomberg Exp $
+ * $Id: uams_dhx_pam.c,v 1.24.6.5 2004-06-24 01:20:12 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -34,6 +34,9 @@
 #include <openssl/bn.h>
 #include <openssl/dh.h>
 #include <openssl/cast.h>
+#ifdef sun
+#include <openssl/rand.h>
+#endif
 #else /* OPENSSL_DHX */
 #include <bn.h>
 #include <dh.h>
