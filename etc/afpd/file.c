@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.26 2004-05-11 08:31:17 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.27 2004-06-01 06:33:09 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -820,8 +820,6 @@ int setfilparams(struct vol *vol,
         case FILPBIT_ATTR :
             change_mdate = 1;
             memcpy(&ashort, buf, sizeof( ashort ));
-            if ((ashort & htons(ATTRBIT_INVISIBLE)))
-                change_parent_mdate = 1;
             buf += sizeof( ashort );
             break;
         case FILPBIT_CDATE :
@@ -925,6 +923,9 @@ int setfilparams(struct vol *vol,
         switch(  bit ) {
         case FILPBIT_ATTR :
             ad_getattr(adp, &bshort);
+            if ((bshort & htons(ATTRBIT_INVISIBLE)) !=
+                (ashort & htons(ATTRBIT_INVISIBLE) & htons(ATTRBIT_SETCLR)) )
+                change_parent_mdate = 1;
             if ( ntohs( ashort ) & ATTRBIT_SETCLR ) {
                 bshort |= htons( ntohs( ashort ) & ~ATTRBIT_SETCLR );
             } else {

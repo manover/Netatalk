@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.14 2004-05-10 18:40:32 didg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.15 2004-06-01 06:33:10 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1650,8 +1650,6 @@ int setdirparams(const struct vol *vol,
         case DIRPBIT_ATTR :
             change_mdate = 1;
             memcpy( &ashort, buf, sizeof( ashort ));
-            if ((ashort & htons(ATTRBIT_INVISIBLE)))
-		change_parent_mdate = 1;
             buf += sizeof( ashort );
             break;
         case DIRPBIT_CDATE :
@@ -1784,6 +1782,9 @@ int setdirparams(const struct vol *vol,
         case DIRPBIT_ATTR :
             if (isad) {
                 ad_getattr(&ad, &bshort);
+		if ((bshort & htons(ATTRBIT_INVISIBLE)) != 
+                    (ashort & htons(ATTRBIT_INVISIBLE) & htons(ATTRBIT_SETCLR)) )
+		    change_parent_mdate = 1;
                 if ( ntohs( ashort ) & ATTRBIT_SETCLR ) {
                     bshort |= htons( ntohs( ashort ) & ~ATTRBIT_SETCLR );
                 } else {
