@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.33 2004-07-12 00:15:18 didg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.34 2004-07-16 14:35:33 bfernhomberg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(etc/afpd/main.c)
@@ -389,9 +389,10 @@ if test "x$bdb_required" = "xyes"; then
 	AC_PATH_BDB(, [
 		AC_MSG_RESULT([])
 		AC_MSG_RESULT([Make sure you have the required Berkeley DB libraries AND headers installed.])
-		AC_MSG_RESULT([You can download the latest version from http://www.sleepcat.com.])
+		AC_MSG_RESULT([You can download the latest version from http://www.sleepycat.com.])
 		AC_MSG_RESULT([If you have installed BDB in a non standard location use the])
-		AC_MSG_RESULT([--with-bdb=/path/to/bdb configure option.])
+		AC_MSG_RESULT([--with-bdb=/path/to/bdb configure option and make sure])
+		AC_MSG_RESULT([your linker is configured to check for libraries there.])
 		AC_MSG_ERROR([Berkeley DB library required but not found!])
 	])
 fi
