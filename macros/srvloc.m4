@@ -1,6 +1,6 @@
 dnl Check for optional server location protocol support (used by MacOS X)
 
-dnl $Id: srvloc.m4,v 1.2.2.3 2002-02-08 16:43:26 jmarcus Exp $
+dnl $Id: srvloc.m4,v 1.2.2.4 2002-03-12 16:24:03 srittau Exp $
 
 AC_DEFUN([NETATALK_SRVLOC], [
 
@@ -17,10 +17,12 @@ AC_DEFUN([NETATALK_SRVLOC], [
 
 		savedcppflags="$CPPFLAGS"
 		savedldflags="$LDFLAGS"
-		if test "x$srvloc" != "xyes"; then
-			CPPFLAGS="$CPPFLAGS -I$srvloc/include"
-			LDFLAGS="$LDFLAGS -L$srvloc/lib"
+		if test "x$srvloc" = "xyes"; then
+			srvloc="/usr"
 		fi
+		CPPFLAGS="$CPPFLAGS -I$srvloc/include"
+		LDFLAGS="$LDFLAGS -L$srvloc/lib"
+
 		AC_MSG_CHECKING([for slp.h])
 		AC_TRY_CPP([#include <slp.h>],
 			[AC_MSG_RESULT([yes])],
