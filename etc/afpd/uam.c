@@ -1,5 +1,5 @@
 /*
- * $Id: uam.c,v 1.24.6.7.2.1 2004-12-07 18:34:15 bfernhomberg Exp $
+ * $Id: uam.c,v 1.24.6.7.2.2 2004-12-07 18:41:08 bfernhomberg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -496,6 +496,16 @@ AFPObj *obj = private;
         break;
     case UAM_OPTION_KRB5SERVICE:
 	*buf = obj->options.k5service;
+        if (len)
+            *len = (*buf)?strlen(*buf):0;
+	break;
+    case UAM_OPTION_KRB5REALM:
+	*buf = obj->options.k5realm;
+        if (len)
+            *len = (*buf)?strlen(*buf):0;
+	break;
+    case UAM_OPTION_FQDN:
+	*buf = obj->options.fqdn;
         if (len)
             *len = (*buf)?strlen(*buf):0;
 	break;

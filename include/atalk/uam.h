@@ -44,6 +44,8 @@
 #define UAM_OPTION_MACCHARSET   (1 << 10) /* mac charset handle */
 #define UAM_OPTION_UNIXCHARSET  (1 << 11) /* unix charset handle */
 #define UAM_OPTION_SESSIONINFO  (1 << 12) /* unix charset handle */
+#define UAM_OPTION_KRB5REALM    (1 << 13) /* krb realm */
+#define UAM_OPTION_FQDN         (1 << 14) /* fully qualified name */
 
 /* some password options. you pass these in the length parameter and
  * get back the corresponding option. not all of these are implemented. */
