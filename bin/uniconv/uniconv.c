@@ -143,7 +143,6 @@ static int do_rename( char* src, char *dst, struct stat *st)
 static char *convert_name(char *name, struct stat *st, cnid_t cur_did)
 {
 	static char   buffer[MAXPATHLEN];
-	size_t len = 0;
 	size_t outlen = 0;
 	unsigned char *p,*q;
 	int require_conversion = 0;
@@ -456,6 +455,10 @@ int main(int argc, char *argv[])
 
 	path[0]= 0;
         conv_flags = CONV_UNESCAPEHEX | CONV_ESCAPEHEX | CONV_ESCAPEDOTS;
+
+#ifdef HAVE_SETLINEBUF
+        setlinebuf(stdout); 
+#endif        
 
         while ((c = getopt (argc, argv, "f:m:t:c:nvVh")) != -1)
         switch (c)
