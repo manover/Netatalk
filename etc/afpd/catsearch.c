@@ -316,7 +316,7 @@ static int crit_check(struct vol *vol, struct path *path, int cidx) {
 #ifdef DEBUG
 		LOG(log_debug, logtype_afpd, "Crit check: comparing %s to %s", path->m_name, c1.utf8name);
 #endif
-		if ( (size_t)(-1) == (len = convert_charset( CH_UTF8_MAC, CH_UCS2, path->m_name, strlen(path->m_name), convbuf, 512, &flags)) )
+		if ( (size_t)(-1) == (len = convert_charset( CH_UTF8_MAC, CH_UCS2, CH_UTF8, path->m_name, strlen(path->m_name), convbuf, 512, &flags)) )
 			goto crit_check_ret;
 		convbuf[len] = 0; 
 		if (c1.rbitmap & (1<<CATPBIT_PARTIAL)) {
@@ -884,7 +884,7 @@ int catsearch_afp(AFPObj *obj, char *ibuf, int ibuflen,
 
  	/* convert charset */
 	flags = CONV_PRECOMPOSE;
- 	len = convert_charset(CH_UTF8_MAC, CH_UCS2, c1.utf8name, namelen, c1.utf8name, 512, &flags);
+ 	len = convert_charset(CH_UTF8_MAC, CH_UCS2, CH_UTF8, c1.utf8name, namelen, c1.utf8name, 512, &flags);
         if (len == (size_t)(-1))
             return AFPERR_PARAM;
  	c1.utf8name[len]=0;

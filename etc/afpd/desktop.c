@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.1 2003-09-09 16:42:19 didg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.2 2003-09-11 23:36:44 bfernhomberg Exp $
  *
  * See COPYRIGHT.
  *
@@ -631,6 +631,17 @@ char *mtoupath(const struct vol *vol, char *mpath, int utf8)
         return( "." );
     }
 
+    /* set conversion flags */
+    if (!(vol->v_flags & AFPVOL_NOHEX))
+        flags |= CONV_ESCAPEHEX;
+    if (!(vol->v_flags & AFPVOL_USEDOTS))
+        flags |= CONV_ESCAPEDOTS;
+
+    if ((vol->v_casefold & AFPVOL_MTOUUPPER))
+        flags |= CONV_TOUPPER;
+    else if ((vol->v_casefold & AFPVOL_MTOULOWER))
+        flags |= CONV_TOLOWER;
+
     m = demangle(vol, mpath);
     if (m != mpath) {
         return m;
@@ -642,35 +653,16 @@ char *mtoupath(const struct vol *vol, char *mpath, int utf8)
     inplen = strlen(m);
     outlen = MAXPATHLEN;
 
-    /* set conversion flags */
-    if (!(vol->v_flags & AFPVOL_NOHEX))
-        flags |= CONV_ESCAPEHEX;
-    if (!(vol->v_flags & AFPVOL_USEDOTS))
-        flags |= CONV_ESCAPEDOTS;
-
-    if ((vol->v_casefold & AFPVOL_MTOUUPPER))
-        flags |= CONV_TOUPPER;
-    else if ((vol->v_casefold & AFPVOL_MTOULOWER))
-        flags |= CONV_TOLOWER;
-	
-    if ((size_t)-1 == (outlen = convert_charset ( (utf8)?CH_UTF8_MAC:vol->v_maccharset, vol->v_volcharset, m, inplen, u, outlen, &flags)) ) {
+    if ((size_t)-1 == (outlen = convert_charset ( (utf8)?CH_UTF8_MAC:vol->v_maccharset, vol->v_volcharset, vol->v_maccharset, m, inplen, u, outlen, &flags)) ) {
         LOG(log_error, logtype_afpd, "conversion from %s to %s for %s failed.", (utf8)?"UTF8-MAC":vol->v_maccodepage, vol->v_volcodepage, mpath);
 	    return NULL;
     }
     upath[outlen] = 0;
 
-    /* convert to old cap format */
-    u=ucs2;
-    if ((size_t)-1 == (outlen = encode_cap ( vol->v_maccharset, upath, outlen, u, MAXPATHLEN)) ) {
-        LOG(log_error, logtype_afpd, "cap encode '%s' failed.", upath);
-        return NULL;
-    }
-    u[outlen] = 0;
-
 #ifdef DEBUG
-    LOG(log_debug, logtype_afpd, "mtoupath: '%s':'%s'", mpath, u);
+    LOG(log_debug, logtype_afpd, "mtoupath: '%s':'%s'", mpath, upath);
 #endif /* DEBUG */
-    return( u );
+    return( upath );
 }
 
 /* --------------- */
@@ -683,20 +675,15 @@ char *utompath(const struct vol *vol, char *upath, cnid_t id, int utf8)
     m = mpath;
     outlen = strlen(upath);
 
-    u=ucs2;
-    if ((size_t)-1 == (outlen = decode_cap(vol->v_maccharset, upath, outlen, u, MAXPATHLEN, &flags)) ) {
-        LOG(log_error, logtype_afpd, "cap_decode failed for '%s'", upath);
-	goto utompath_error;
-    }
-    u[outlen] = 0;
-
     if (vol->v_casefold & AFPVOL_UTOMUPPER)
         flags |= CONV_TOUPPER;
     else if (vol->v_casefold & AFPVOL_UTOMLOWER)
         flags |= CONV_TOLOWER;
 
+    u = upath;
+
     /* convert charsets */
-    if ((size_t)-1 == ( outlen = convert_charset ( vol->v_volcharset, (utf8)?CH_UTF8_MAC:vol->v_maccharset,  u, outlen, mpath, MAXPATHLEN, &flags)) ) { 
+    if ((size_t)-1 == ( outlen = convert_charset ( vol->v_volcharset, (utf8)?CH_UTF8_MAC:vol->v_maccharset, vol->v_maccharset, u, outlen, mpath, MAXPATHLEN, &flags)) ) { 
         LOG(log_error, logtype_afpd, "Conversion from %s to %s for %s (%u) failed.", vol->v_volcodepage, vol->v_maccodepage, u, ntohl(id));
 	goto utompath_error;
     }
