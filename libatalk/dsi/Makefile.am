@@ -2,7 +2,7 @@
 
 INCLUDES = -I$(top_srcdir)/include -I$(top_srcdir)/sys
 
-LIBS = @LIBS@ @WRAP_LIBS@
+LIBS = @LIBS@
 
 noinst_LTLIBRARIES = libdsi.la
 
