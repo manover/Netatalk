@@ -1,5 +1,5 @@
 /* 
- * $Id: mangle.c,v 1.16.2.1.2.11 2004-07-05 01:15:34 bfernhomberg Exp $ 
+ * $Id: mangle.c,v 1.16.2.1.2.12 2004-09-02 20:48:52 didg Exp $ 
  *
  * Copyright (c) 2002. Joe Marcus Clarke (marcus@marcuscom.com)
  * All Rights Reserved.  See COPYRIGHT.
@@ -237,10 +237,12 @@ mangle(const struct vol *vol, char *filename, size_t filenamelen, char *uname, c
     static char mfilename[MAXPATHLEN + 1];
     char mangle_suffix[MANGLE_LENGTH + 1];
     size_t ext_len = 0;
+    size_t maxlen;
     int k;
-
+    
+    maxlen = (flags & 2)?255:MACFILELEN; /* was vol->max_filename */
     /* Do we really need to mangle this filename? */
-    if (!(flags & 1) && filenamelen <= vol->max_filename) {
+    if (!(flags & 1) && filenamelen <= maxlen) {
 	return filename;
     }
     /* First, attempt to locate a file extension. */
@@ -254,9 +256,9 @@ mangle(const struct vol *vol, char *filename, size_t filenamelen, char *uname, c
     m = mfilename;
     k = sprintf(mangle_suffix, "%c%X", MANGLE_CHAR, ntohl(id));
 
-    strlcpy(m, filename, vol->max_filename - k - ext_len +1);
+    strlcpy(m, filename, maxlen  - k - ext_len +1);
     if (flags & 2)
-        m = utf8_mangle_validate(m, vol->max_filename - k - ext_len +1);
+        m = utf8_mangle_validate(m, maxlen - k - ext_len +1);
     if (*m == 0) {
         strcat(m, "???");
     }
