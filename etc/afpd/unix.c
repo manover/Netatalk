@@ -1,5 +1,5 @@
 /*
- * $Id: unix.c,v 1.24.2.3 2002-03-05 02:08:12 jmarcus Exp $
+ * $Id: unix.c,v 1.24.2.4 2002-03-05 15:55:34 jmarcus Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -235,7 +235,7 @@ const int dropbox;
                     syslog( LOG_ERR, "stickydirmode: unable to seteuid root: %s", strerror(errno));
                 }
                 if ( retval=chmod( name, ( (DIRBITS | mode | S_ISVTX) & 0777 & ~default_options.umask) ) < 0) {
-                    syslog( LOG_ERR, "stickydirmode: chmod \"%s\": %s", name, strerror(retval) );
+                    syslog( LOG_ERR, "stickydirmode: chmod \"%s\": %s", name, strerror(errno) );
                     return(AFPERR_ACCESS);
                 } else {
 #ifdef DEBUG
