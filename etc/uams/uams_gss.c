@@ -1,5 +1,5 @@
 /*
- * $Id: uams_gss.c,v 1.2.2.3 2004-06-15 00:35:06 bfernhomberg Exp $
+ * $Id: uams_gss.c,v 1.2.2.4 2004-06-20 15:51:46 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -176,7 +176,7 @@ static int do_gss_auth( char *service, char *ibuf, int ticket_len,
     ticket_buffer.value = ibuf;
     authenticator_buff.length = 0;
     authenticator_buff.value = NULL;
-    LOG(log_debug, logtype_uams, "uams_gss.c :do_gss_auth: accepting context (ticketlen: %u, value: %X)", ticket_buffer.length, ticket_buffer.value );
+    LOG(log_debug, logtype_uams, "uams_gss.c :do_gss_auth: accepting context (ticketlen: %u)", ticket_buffer.length);
     major_status = gss_accept_sec_context( &minor_status, &context_handle,
 		    	server_creds, &ticket_buffer, GSS_C_NO_CHANNEL_BINDINGS,
 			&client_name, NULL, &authenticator_buff,
@@ -318,6 +318,10 @@ static int gss_logincont(void *obj, struct passwd **uam_pwd,
 
     rblen = *rbuflen = 0;
 
+    if (ibuflen < 3) {
+        LOG(log_info, logtype_uams, "uams_gss.c :LoginCont: received incomplete packet", p);
+	return AFPERR_PARAM;
+    }
     ibuf++, ibuflen--; /* ?? */
 
     /* 2 byte ID from LoginExt -- always '00 01' in this implementation */
@@ -361,7 +365,7 @@ static int gss_logincont(void *obj, struct passwd **uam_pwd,
     ticket_len = ntohs( ticket_len );
 
     if (ticket_len > ibuflen) {
-        LOG(log_info, logtype_uams, "uams_gss.c :LoginCont: invalid ticket length");
+        LOG(log_info, logtype_uams, "uams_gss.c :LoginCont: invalid ticket length (%u > %u)", ticket_len, ibuflen);
 	return AFPERR_PARAM;
     }
 
