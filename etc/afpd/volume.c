@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.17 2004-01-14 23:15:19 lenneis Exp $
+ * $Id: volume.c,v 1.51.2.7.2.18 2004-01-21 13:02:04 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -185,14 +185,16 @@ static __inline__ void volfree(struct vol_option *options,
  * $i   -> client ip/appletalk address without port
  * $s   -> server name (hostname if it doesn't exist)
  * $u   -> username (guest is usually nobody)
- * $v   -> volume name (ADEID_NAME or basename if ADEID_NAME is empty)
+ * $v   -> volume name or basename if null
  * $z   -> zone (may not exist)
  * $$   -> $
+ *
+ *
  */
 #define is_var(a, b) (strncmp((a), (b), 2) == 0)
 
 static char *volxlate(AFPObj *obj, char *dest, size_t destlen,
-                     char *src, struct passwd *pwd, char *path)
+                     char *src, struct passwd *pwd, char *path, char *volname)
 {
     char *p, *q;
     int len;
@@ -281,26 +283,14 @@ static char *volxlate(AFPObj *obj, char *dest, size_t destlen,
         } else if (is_var(p, "$u")) {
             q = obj->username;
         } else if (is_var(p, "$v")) {
-            if (path) {
-                struct adouble ad;
-
-		ad_init(&ad, 0);
-                if (ad_open(path, ADFLAGS_HF, O_RDONLY, 0, &ad) < 0)
-                    goto no_volname;
-
-                if ((len = MIN(ad_getentrylen(&ad, ADEID_NAME), destlen)) > 0) {
-                    memcpy(dest, ad_entry(&ad, ADEID_NAME), len);
-                    ad_close(&ad, ADFLAGS_HF);
-                    dest += len;
-                    destlen -= len;
-                } else {
-                    ad_close(&ad, ADFLAGS_HF);
-no_volname: /* simple basename */
-                    if ((q = strrchr(path, '/')) == NULL)
-                        q = path;
-                    else if (*(q + 1) != '\0')
-                        q++;
-                }
+            if (volname) {
+                q = volname;
+            }
+            else if (path) {
+                if ((q = strrchr(path, '/')) == NULL)
+                    q = path;
+                else if (*(q + 1) != '\0')
+                    q++;
             }
         } else if (is_var(p, "$z")) {
             q = obj->Zone;
@@ -594,7 +584,7 @@ static int creatvol(AFPObj *obj, struct passwd *pwd,
             volume->v_maccodepage = strdup(options[VOLOPT_MACCHARSET].c_value);
 
         if (options[VOLOPT_DBPATH].c_value)
-            volume->v_dbpath = volxlate(obj, NULL, MAXPATHLEN, options[VOLOPT_DBPATH].c_value, pwd, path);
+            volume->v_dbpath = volxlate(obj, NULL, MAXPATHLEN, options[VOLOPT_DBPATH].c_value, pwd, path, name);
 
        if (options[VOLOPT_CNIDSCHEME].c_value)
            volume->v_cnidscheme = strdup(options[VOLOPT_CNIDSCHEME].c_value);
@@ -621,18 +611,18 @@ static int creatvol(AFPObj *obj, struct passwd *pwd,
 #endif
         if (!user) {
             if (options[VOLOPT_PREEXEC].c_value)
-                volume->v_preexec = volxlate(obj, NULL, MAXPATHLEN, options[VOLOPT_PREEXEC].c_value, pwd, path);
+                volume->v_preexec = volxlate(obj, NULL, MAXPATHLEN, options[VOLOPT_PREEXEC].c_value, pwd, path, name);
             volume->v_preexec_close = options[VOLOPT_PREEXEC].i_value;
 
             if (options[VOLOPT_POSTEXEC].c_value)
-                volume->v_postexec = volxlate(obj, NULL, MAXPATHLEN, options[VOLOPT_POSTEXEC].c_value, pwd, path);
+                volume->v_postexec = volxlate(obj, NULL, MAXPATHLEN, options[VOLOPT_POSTEXEC].c_value, pwd, path, name);
 
             if (options[VOLOPT_ROOTPREEXEC].c_value)
-                volume->v_root_preexec = volxlate(obj, NULL, MAXPATHLEN, options[VOLOPT_ROOTPREEXEC].c_value, pwd, path);
+                volume->v_root_preexec = volxlate(obj, NULL, MAXPATHLEN, options[VOLOPT_ROOTPREEXEC].c_value, pwd, path,  name);
             volume->v_root_preexec_close = options[VOLOPT_ROOTPREEXEC].i_value;
 
             if (options[VOLOPT_ROOTPOSTEXEC].c_value)
-                volume->v_root_postexec = volxlate(obj, NULL, MAXPATHLEN, options[VOLOPT_ROOTPOSTEXEC].c_value, pwd, path);
+                volume->v_root_postexec = volxlate(obj, NULL, MAXPATHLEN, options[VOLOPT_ROOTPOSTEXEC].c_value, pwd, path,  name);
         }
     }
 
@@ -932,7 +922,7 @@ struct passwd *pwent;
                 strcpy(tmp, path);
             if (!pwent)
                 pwent = getpwnam(obj->username);
-            volxlate(obj, path, sizeof(path) - 1, tmp, pwent, NULL);
+            volxlate(obj, path, sizeof(path) - 1, tmp, pwent, NULL, NULL);
 
             /* this is sort of braindead. basically, i want to be
              * able to specify things in any order, but i don't want to 
@@ -982,7 +972,7 @@ struct passwd *pwent;
                     options[VOLOPT_FLAGS].i_value |= AFPVOL_RO;
 
                 /* do variable substitution for volname */
-                volxlate(obj, tmp, sizeof(tmp) - 1, volname, pwent, path);
+                volxlate(obj, tmp, sizeof(tmp) - 1, volname, pwent, path, NULL);
                 creatvol(obj, pwent, path, tmp, options, p2 != NULL);
             }
             volfree(options, save_options);
