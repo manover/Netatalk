@@ -20,7 +20,7 @@ struct list_head {
 #define ATALK_LIST_HEAD_INIT(name) { &(name), &(name) }
 
 #define ATALK_LIST_HEAD(name) \
-    struct list_head name = LIST_HEAD_INIT(name)
+    struct list_head name = ATALK_LIST_HEAD_INIT(name)
 
 #define ATALK_INIT_LIST_HEAD(ptr) do { \
     (ptr)->next = (ptr); (ptr)->prev = (ptr); \
@@ -100,7 +100,7 @@ static __inline__ void list_del(struct list_head *entry)
 static __inline__ void list_del_init(struct list_head *entry)
 {
     __list_del(entry->prev, entry->next);
-    INIT_LIST_HEAD(entry);
+    ATALK_INIT_LIST_HEAD(entry);
 }
 
 /**
