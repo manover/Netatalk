@@ -1,4 +1,4 @@
-dnl $Id: db3-check.m4,v 1.11.6.1 2003-10-29 23:53:24 bfernhomberg Exp $
+dnl $Id: db3-check.m4,v 1.11.6.2 2003-11-24 17:16:51 bfernhomberg Exp $
 dnl Autoconf macro to check for the Berkeley DB library
 
 AC_DEFUN([AC_PATH_BDB], [
@@ -32,18 +32,19 @@ AC_DEFUN([AC_PATH_BDB], [
 			savedcflags="$CFLAGS"
 			savedldflags="$LDFLAGS"
 			savedcppflags="$CPPFLAGS"
-			CFLAGS="$CFLAGS -I$bdbdir"
+			savedlibs="$LIBS"
 			CPPFLAGS="$CFLAGS -I$bdbdir"
+			CFLAGS=""
 			LDFLAGS="-L$bdblibdir $LDFLAGS"
 
 			dnl db_create is BDB >3 specific 
 			AC_CHECK_LIB(db, db_create, [
 				bdbfound=yes
-				LDFLAGS="$LDFLAGS -ldb"
+				LIBS="$LIBS -ldb"
 				BDB_LIBS="-ldb"], [
 			    AC_CHECK_LIB(db4, db_create, [
 					bdbfound=yes
-					LDFLAGS="$LDFLAGS -ldb4"
+					LIBS="$LIBS -ldb4"
 					BDB_LIBS="-ldb4"])
                         ])
 
@@ -117,6 +118,7 @@ int main(void) {
 			CFLAGS="$savedcflags"
 			LDFLAGS="$savedldflags"
 			CPPFLAGS="$savedcppflags"
+			LIBS="$savedlibs"
 			break;
 		else
 			AC_MSG_RESULT([no])
