@@ -5,6 +5,7 @@ Changes in 1.6.2
 * FIX: afpd: CNID id allocation in a multiuser environment.
 * FIX: macusers: Can now cope with IP addresses as well as host names.
 * FIX: etc2ps.sh: Install correctly.
+* FIX: papd: Fix PSSP support when PAM is enabled.
 
 Changes in 1.6.1
 ================
