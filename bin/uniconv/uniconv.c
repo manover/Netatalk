@@ -142,7 +142,7 @@ static int do_rename( char* src, char *dst, struct stat *st)
 
 static char *convert_name(char *name, struct stat *st, cnid_t cur_did)
 {
-	static char buffer[MAXPATHLEN];
+	static char   buffer[MAXPATHLEN];
 	size_t len = 0;
 	size_t outlen = 0;
 	unsigned char *p,*q;
@@ -172,13 +172,31 @@ static char *convert_name(char *name, struct stat *st, cnid_t cur_did)
 	q=buffer;
 	p=name;
 
-	outlen = convert_charset(ch_from, ch_to, ch_mac, p, strlen(p), q, sizeof(buffer)-len, &flags);
+	outlen = convert_charset(ch_from, ch_to, ch_mac, p, strlen(p), q, sizeof(buffer), &flags);
 	if ((size_t)-1 == outlen) {
-        	fprintf(stderr, "conversion from '%s' to '%s' for '%s' in DID %u failed, ignoring\n", 
-                        from_charset, to_charset, name, ntohl(cur_did));
-		return name;
+  	   if ( ch_to == CH_UTF8) {
+		/* maybe name is already in UTF8? */
+		flags = conv_flags;
+		q = (char*) buffer;
+		p = name;
+		outlen = convert_charset(ch_to, ch_to, ch_mac, p, strlen(p), q, sizeof(buffer), &flags);
+		if ((size_t)-1 == outlen) {
+			/* it's not UTF8... */
+        		fprintf(stderr, "ERROR: conversion from '%s' to '%s' for '%s' in DID %u failed!!!\n", 
+                  		from_charset, to_charset, name, ntohl(cur_did));
+			return name;
+		}
+		buffer[outlen] = 0;
+
+		if (!strcmp(buffer, name)) {
+	   		return name;
+		}
+           }
+ 	   fprintf(stderr, "ERROR: conversion from '%s' to '%s' for '%s' in DID %u failed. Please check this!\n", 
+                  	from_charset, to_charset, name, ntohl(cur_did));
+	   return name;
 	}
-	buffer[len+outlen] = 0;
+	buffer[outlen] = 0;
 	if (strcmp (name, buffer)) {
 	    if (dry_run) {
     		fprintf(stdout, "dry_run: would rename %s to %s.\n", name, buffer);
@@ -269,7 +287,6 @@ static cnid_t add_dir_db(char *name, cnid_t cur_did)
 	    return id;
 
 	if (dry_run) {
-        	fprintf( stderr, "dry_run: dir '%s' not in db and cannot add (dry run), skipping\n", name);
 		return 0;
 	}
 
@@ -317,7 +334,7 @@ static int checkdir(DIR *curdir, char *path, cnid_t cur_did)
 	DIR* cdir;
 	int ret = 0;
 	cnid_t id;
-	char *name;
+	char *name, *tmp;
         int n;
 	size_t len=strlen(curpath);
 
@@ -335,14 +352,21 @@ static int checkdir(DIR *curdir, char *path, cnid_t cur_did)
 
 	while (n--) {
 		name = names[n];
+		tmp = strdup(name);
                 ret = check_dirent(&name, cur_did);
-                if (ret==1) {
+		if (ret==1) {
                     id = add_dir_db(name, cur_did);
-                    if ( id == 0)
-                        continue;  /* skip, no ID */
+		    if ( id == 0 && !dry_run ) 
+			continue;  /* skip, no ID */ 
+		    if ( dry_run )
+			name = tmp;
                     strlcat(curpath, "/", sizeof(curpath));
                     strlcat(curpath, name, sizeof(curpath));
                     cdir = opendir(curpath);
+		    if (cdir == NULL) {
+	    	 	fprintf( stderr, "ERROR: cannot open DIR '%s' with ID %u\n", curpath, ntohl(cur_did));
+			continue;
+		    }
                     checkdir(cdir, curpath, id);
                     closedir(cdir);
                     curpath[len] = 0;
@@ -351,10 +375,11 @@ static int checkdir(DIR *curdir, char *path, cnid_t cur_did)
 	    	 	fprintf( stdout, "returned to DIR '%s' with ID %u\n", path, ntohl(cur_did));
                 }
                 free(names[n]);
+		free(tmp);
         }
 	free(names);
 	if (verbose)
-	    fprintf( stderr, "leaving DIR '%s' with ID %u\n\n", path, ntohl(cur_did));
+	    fprintf( stdout, "leaving DIR '%s' with ID %u\n\n", path, ntohl(cur_did));
 
 	return 0;
 }
