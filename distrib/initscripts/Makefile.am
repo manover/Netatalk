@@ -24,7 +24,8 @@ GENERATED_FILES = \
 	rc.cnid_metad.netbsd	\
 	rc.papd.netbsd		\
 	rc.timelord.netbsd	\
-	rc.atalk.sysv
+	rc.atalk.sysv		\
+	rc.atalk.gentoo
 
 TEMPLATES = \
 	rc.afpd.netbsd.tmpl		\
@@ -36,7 +37,8 @@ TEMPLATES = \
 	rc.cnid_metad.netbsd.tmpl	\
 	rc.papd.netbsd.tmpl		\
 	rc.timelord.netbsd.tmpl		\
-	rc.atalk.sysv.tmpl
+	rc.atalk.sysv.tmpl		\
+	rc.atalk.gentoo.tmpl
 
 CLEANFILES = $(GENERATED_FILES) atalk afpd atalkd papd timelord
 EXTRA_DIST = $(TEMPLATES) rc.atalk.cobalt
@@ -100,6 +102,10 @@ atalk: rc.atalk.cobalt
 	cp -f rc.atalk.cobalt atalk
 	chmod a+x atalk
 
+install-data-hook:
+
+uninstall-hook:
+
 endif
 
 #
@@ -114,6 +120,10 @@ sysv_SCRIPTS = atalk
 atalk: rc.atalk.tru64
 	cp -f rc.atalk.tru64 atalk
 	chmod a+x atalk
+
+install-data-hook:
+
+uninstall-hook:
 
 endif
 
@@ -141,6 +151,10 @@ timelord: rc.timelord.netbsd
 	cp -f $< $@
 	chmod a+x $@
 
+install-data-hook:
+
+uninstall-hook:
+
 endif
 
 #
@@ -167,10 +181,26 @@ uninstall-hook:
 
 endif
 
+if USE_GENTOO
+
+sysvdir = /etc/init.d
+sysv_SCRIPTS = atalk
+
+atalk: rc.atalk.gentoo
+	cp -f rc.atalk.gentoo atalk
+	chmod a+x atalk
+
+install-data-hook:
+
+uninstall-hook:
+
+endif
+
+
 if USE_UNDEF
 
 install-data-hook:
 
-unistall-hook:
+uninstall-hook:
 
 endif
