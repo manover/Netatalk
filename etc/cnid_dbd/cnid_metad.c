@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_metad.c,v 1.1.4.4 2003-10-30 10:03:19 bfernhomberg Exp $
+ * $Id: cnid_metad.c,v 1.1.4.5 2003-11-18 12:32:46 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -78,7 +78,7 @@
 static int srvfd;
 static int rqstfd;
 
-#define MAXSRV 20
+#define MAXSRV 128
 
 #define MAXSPAWN   3                   /* Max times respawned in.. */
 #define TESTTIME   20                  /* this much seconds */
