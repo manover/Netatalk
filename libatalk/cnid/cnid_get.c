@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_get.c,v 1.9.2.3 2001-12-15 06:35:28 jmarcus Exp $
+ * $Id: cnid_get.c,v 1.9.2.4 2002-02-09 20:29:02 jmarcus Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -53,7 +53,7 @@ cnid_t cnid_get(void *CNID, const cnid_t did, const char *name,
 
         if (rc != DB_NOTFOUND) {
             syslog(LOG_ERR, "cnid_get: Unable to get CNID %u, name %s: %s",
-                   ntohl(did), name, db_strerror(rc));
+                ntohl(did), name, db_strerror(rc));
         }
 
         return 0;
@@ -62,7 +62,7 @@ cnid_t cnid_get(void *CNID, const cnid_t did, const char *name,
     memcpy(&id, data.data, sizeof(id));
 #ifdef DEBUG
     syslog(LOG_INFO, "cnid_get: Returning CNID for %u, name %s as %u",
-           ntohl(did), name, ntohl(id));
+        ntohl(did), name, ntohl(id));
 #endif
     return id;
 }

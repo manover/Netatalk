@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_resolve.c,v 1.8.2.3 2001-12-15 06:35:28 jmarcus Exp $
+ * $Id: cnid_resolve.c,v 1.8.2.4 2002-02-09 20:29:02 jmarcus Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -43,7 +43,7 @@ char *cnid_resolve(void *CNID, cnid_t *id) {
 
         if (rc != DB_NOTFOUND) {
             syslog(LOG_ERR, "cnid_resolve: Unable to get did/name: %s",
-                   db_strerror(rc));
+                db_strerror(rc));
         }
 
         *id = 0;
@@ -53,7 +53,7 @@ char *cnid_resolve(void *CNID, cnid_t *id) {
     memcpy(id, (char *)data.data + CNID_DEVINO_LEN, sizeof(cnid_t));
 #ifdef DEBUG
     syslog(LOG_INFO, "cnid_resolve: Returning id = %u, did/name = %s",
-           ntohl(*id), (char *)data.data + CNID_HEADER_LEN);
+        ntohl(*id), (char *)data.data + CNID_HEADER_LEN);
 #endif
     return (char *)data.data + CNID_HEADER_LEN;
 }

@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_close.c,v 1.12.2.3 2001-12-15 06:35:28 jmarcus Exp $
+ * $Id: cnid_close.c,v 1.12.2.4 2002-02-09 20:29:02 jmarcus Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -42,42 +42,34 @@ void cnid_close(void *CNID) {
             char **list, **first;
             int cfd = -1;
 
-            if ((cfd = open(db->close_file, O_RDWR | O_CREAT, 0666)) > -1) {
 
-                /* Checkpoint the databases until we can checkpoint no
-                 * more. */
+            /* Checkpoint the databases until we can checkpoint no
+             * more. */
+            rc = txn_checkpoint(db->dbenv, 0, 0, 0);
+            while (rc == DB_INCOMPLETE) {
                 rc = txn_checkpoint(db->dbenv, 0, 0, 0);
-                while (rc == DB_INCOMPLETE) {
-                    rc = txn_checkpoint(db->dbenv, 0, 0, 0);
-                }
+            }
 
 #if DB_VERSION_MINOR > 2
-                if ((rc = log_archive(db->dbenv, &list, DB_ARCH_LOG | DB_ARCH_ABS)) != 0) {
+            if ((rc = log_archive(db->dbenv, &list, DB_ARCH_ABS)) != 0) {
 #else /* DB_VERSION_MINOR < 2 */
-                if ((rc = log_archive(db->dbenv, &list, DB_ARCH_LOG | DB_ARCH_ABS, NULL)) != 0) {
+            if ((rc = log_archive(db->dbenv, &list, DB_ARCH_ABS, NULL)) != 0) {
 #endif /* DB_VERSION_MINOR */
-                    syslog(LOG_ERR, "cnid_close: Unable to archive logfiles: %s",
-                           db_strerror(rc));
-                }
-
-                if (list != NULL) {
-                    for (first = list; *list != NULL; ++list) {
-                        if ((rc = remove(*list)) != 0) {
-#ifdef DEBUG
-                            syslog(LOG_INFO, "cnid_close: failed to remove %s: %s",
-                                   *list, strerror(rc));
-#endif
-                        }
-                    }
-                    free(first);
-                }
-                (void)remove(db->close_file);
-                close(cfd);
+                syslog(LOG_ERR, "cnid_close: Unable to archive logfiles: %s", db_strerror(rc));
             }
-            else {
-                syslog(LOG_ERR, "cnid_close: Failed to open database closing lock file: %s", strerror(errno));
+
+            if (list != NULL) {
+                for (first = list; *list != NULL; ++list) {
+                    if ((rc = remove(*list)) != 0) {
+#ifdef DEBUG
+                        syslog(LOG_INFO, "cnid_close: failed to remove %s: %s", *list, strerror(rc));
+#endif
+                    }
+                }
+                free(first);
             }
         }
+        (void)remove(db->lock_file);
     }
 
     db->db_didname->close(db->db_didname, 0);

@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_open.c,v 1.19.2.3 2001-12-15 06:35:28 jmarcus Exp $
+ * $Id: cnid_open.c,v 1.19.2.4 2002-02-09 20:29:02 jmarcus Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -30,7 +30,8 @@
  * 1 -- parent of root directory (handled by afpd) 
  * 2 -- root directory (handled by afpd)
  *
- * so, CNID_START begins at 3.
+ * CNIDs 4-16 are reserved according to page 31 of the AFP 3.0 spec so, 
+ * CNID_START begins at 17.
  */
 
 #ifdef HAVE_CONFIG_H
@@ -92,23 +93,19 @@
 #define DBOPTIONS    (DB_CREATE | DB_INIT_MPOOL | DB_INIT_LOCK | \
 DB_INIT_LOG | DB_INIT_TXN)
 #else /* DB_VERSION_MINOR < 1 */
-#define DBOPTIONS    (DB_CREATE | DB_INIT_MPOOL | DB_INIT_LOCK | \
-DB_INIT_LOG | DB_INIT_TXN | DB_TXN_NOSYNC)
 /*#define DBOPTIONS    (DB_CREATE | DB_INIT_MPOOL | DB_INIT_LOCK | \
-DB_INIT_LOG | DB_INIT_TXN)*/
+DB_INIT_LOG | DB_INIT_TXN | DB_TXN_NOSYNC)*/
+#define DBOPTIONS    (DB_CREATE | DB_INIT_MPOOL | DB_INIT_LOCK | \
+DB_INIT_LOG | DB_INIT_TXN)
 #endif /* DB_VERSION_MINOR */
 
-/* Let's try and use the random deadlock decider if available.  This adds
- * a bit of entropy to the mix that might be beneficial.  If random isn't
- * available, we'll decide deadlocks by kicking off the youngest process.
+/* Let's try and use the youngest lock detector if present.
  * If we can't do that, then let DB3 use its default deadlock detector. */
-#ifdef DB_LOCK_RANDOM
-#define DEAD_LOCK_DETECT DB_LOCK_RANDOM
-#elif defined DB_LOCK_YOUNGEST
+#if defined DB_LOCK_YOUNGEST
 #define DEAD_LOCK_DETECT DB_LOCK_YOUNGEST
-#else /* DB_LOCK_RANDOM */
+#else /* DB_LOCK_YOUNGEST */
 #define DEAD_LOCK_DETECT DB_LOCK_DEFAULT
-#endif /* DB_LOCK_RANDOM */
+#endif /* DB_LOCK_YOUNGEST */
 
 #define MAXITER     0xFFFF /* maximum number of simultaneously open CNID
 * databases. */
@@ -188,19 +185,15 @@ static int compare_unicode(const DBT *a, const DBT *b)
 #endif /* DB_VERSION_MINOR */
 }
 
-static int have_lock = 0;
-
 void *cnid_open(const char *dir) {
-    struct stat st, rsb, csb;
+    struct stat st, rsb, lsb, csb;
     struct flock lock;
     char path[MAXPATHLEN + 1];
-    char recover_file[MAXPATHLEN + 1];
     CNID_private *db;
     DBT key, data;
     DB_TXN *tid;
-    u_int32_t DBEXTRAS = 0;
     int open_flag, len;
-    int rc, rfd = -1;
+    int rc;
 
     if (!dir) {
         return NULL;
@@ -238,27 +231,13 @@ void *cnid_open(const char *dir) {
     strcat(path, "/");
     len++;
 
-    strcpy(db->close_file, path);
-    strcat(db->close_file, DBCLOSEFILE);
-
-    /* Check to make sure that a client isn't in the process of closing
-     * the database environment.  To do this, select on the close file. */
-    while(stat(db->close_file, &csb) == 0) {
-        struct timeval ct;
-        ct.tv_sec = 1;
-        ct.tv_usec = 0;
-        (void)select(0, NULL, NULL, NULL, &ct);
-    }
-
-    strcpy(recover_file, path);
-    strcat(recover_file, DBRECOVERFILE);
-
     /* Search for a byte lock.  This allows us to cleanup the log files
      * at cnid_close() in a clean fashion.
      *
      * NOTE: This won't work if multiple volumes for the same user refer
      * to the sahe directory. */
     strcat(path, DBLOCKFILE);
+    strcpy(db->lock_file, path);
     if ((db->lockfd = open(path, O_RDWR | O_CREAT, 0666)) > -1) {
         lock.l_start = 0;
         lock.l_len = 1;
@@ -273,27 +252,6 @@ void *cnid_open(const char *dir) {
     }
     else {
         syslog(LOG_ERR, "cnid_open: Cannot establish logfile cleanup lock for database environment %s (open() failed)", path);
-    }
-
-    /* Create a file to represent database recovery.  While this file
-     * exists, the database is being recovered, and all other clients will
-     * select until recovery is complete, and this file goes away. */
-    if (!have_lock && db->lockfd > -1 && lock.l_start == 0) {
-        if (stat(recover_file, &rsb) == 0) {
-            (void)remove(recover_file);
-        }
-        if ((rfd = open(recover_file, O_RDWR | O_CREAT, 0666)) > -1) {
-            DBEXTRAS |= DB_RECOVER;
-            have_lock = 1;
-        }
-    }
-    else if (!have_lock) {
-        while (stat(recover_file, &rsb) == 0) {
-            struct timeval rt;
-            rt.tv_sec = 1;
-            rt.tv_usec = 0;
-            (void)select(0, NULL, NULL, NULL, &rt);
-        }
     }
 
     path[len + DBHOMELEN] = '\0';
@@ -314,15 +272,17 @@ void *cnid_open(const char *dir) {
     }
 
 #if DB_VERSION_MINOR > 1
+#if 0
     /* Take care of setting the DB_TXN_NOSYNC flag in db3 > 3.1.x. */
     if ((rc = db->dbenv->set_flags(db->dbenv, DB_TXN_NOSYNC, 1)) != 0) {
         syslog(LOG_ERR, "cnid_open: set_flags: %s", db_strerror(rc));
         goto fail_lock;
     }
+#endif
 #endif /* DB_VERSION_MINOR > 1 */
 
     /* Open the database environment. */
-    if ((rc = db->dbenv->open(db->dbenv, path, DBOPTIONS | DBEXTRAS, 0666)) != 0) {
+    if ((rc = db->dbenv->open(db->dbenv, path, DBOPTIONS, 0666)) != 0) {
         if (rc == DB_RUNRECOVERY) {
             /* This is the mother of all errors.  We _must_ fail here. */
             syslog(LOG_ERR, "cnid_open: CATASTROPHIC ERROR opening database environment %s.  Run db_recovery -c immediately", path);
@@ -337,7 +297,7 @@ void *cnid_open(const char *dir) {
              * open the environment with no flags. */
             if ((rc = db->dbenv->open(db->dbenv, path, 0, 0666)) != 0) {
                 syslog(LOG_ERR, "cnid_open: dbenv->open of %s failed: %s",
-                       path, db_strerror(rc));
+                    path, db_strerror(rc));
                 goto fail_lock;
             }
         }
@@ -346,34 +306,18 @@ void *cnid_open(const char *dir) {
         syslog(LOG_INFO, "cnid_open: Obtained read-only database environment %s", path);
     }
 
-    /* If we have the recovery lock, close the file, remove it, so other
-     * clients can proceed opening the DB environment. */
-    if (rfd > -1) {
-        (void)remove(recover_file);
-        switch(errno) {
-        case 0:
-        case ENOENT:
-            break;
-        default:
-            syslog(LOG_ERR, "cnid_open: Unable to remove %s: %s",
-                   recover_file, strerror(errno));
-        }
-        close(rfd);
-        rfd = -1;
-    }
-
     /* did/name reverse mapping.  We use a BTree for this one. */
     if ((rc = db_create(&db->db_didname, db->dbenv, 0)) != 0) {
         syslog(LOG_ERR, "cnid_open: Failed to create did/name database: %s",
-               db_strerror(rc));
+            db_strerror(rc));
         goto fail_appinit;
     }
 
-    db->db_didname->set_bt_compare(db->db_didname, &compare_unix);
+    /*db->db_didname->set_bt_compare(db->db_didname, &compare_unix);*/
     if ((rc = db->db_didname->open(db->db_didname, DBDIDNAME, NULL,
-                                   DB_BTREE, open_flag, 0666))) {
+                                   DB_HASH, open_flag, 0666))) {
         syslog(LOG_ERR, "cnid_open: Failed to open did/name database: %s",
-               db_strerror(rc));
+            db_strerror(rc));
         goto fail_appinit;
     }
 
@@ -387,7 +331,7 @@ void *cnid_open(const char *dir) {
 dbversion_retry:
     if ((rc = txn_begin(db->dbenv, NULL, &tid, 0)) != 0) {
         syslog(LOG_ERR, "cnid_open: txn_begin: failed to check db version: %s",
-               db_strerror(rc));
+            db_strerror(rc));
         db->db_didname->close(db->db_didname, 0);
         goto fail_appinit;
     }
@@ -415,7 +359,7 @@ dbversion_retry:
                 if (ret == DB_LOCK_DEADLOCK) {
                     if ((ret = txn_abort(tid)) != 0) {
                         syslog(LOG_ERR, "cnid_open: txn_abort: %s",
-                               db_strerror(ret));
+                            db_strerror(ret));
                         db->db_didname->close(db->db_didname, 0);
                         goto fail_appinit;
                     }
@@ -426,7 +370,7 @@ dbversion_retry:
                      * successfully or not. */
                     txn_abort(tid);
                     syslog(LOG_ERR, "cnid_open: Error putting new version: %s",
-                           db_strerror(ret));
+                        db_strerror(ret));
                     db->db_didname->close(db->db_didname, 0);
                     goto fail_appinit;
                 }
@@ -435,7 +379,7 @@ dbversion_retry:
         default:
             txn_abort(tid);
             syslog(LOG_ERR, "cnid_open: Failed to check db version: %s",
-                   db_strerror(rc));
+                db_strerror(rc));
             db->db_didname->close(db->db_didname, 0);
             goto fail_appinit;
         }
@@ -443,7 +387,7 @@ dbversion_retry:
 
     if ((rc = txn_commit(tid, 0)) != 0) {
         syslog(LOG_ERR, "cnid_open: Failed to commit db version: %s",
-               db_strerror(rc));
+            db_strerror(rc));
         db->db_didname->close(db->db_didname, 0);
         goto fail_appinit;
     }
@@ -460,7 +404,7 @@ dbversion_retry:
     /* did/macname (31 character) mapping.  Use a BTree for this one. */
     if ((rc = db_create(&db->db_macname, db->dbenv, 0)) != 0) {
         syslog(LOG_ERR, "cnid_open: Failed to create did/macname database: %s",
-               db_strerror(rc));
+            db_strerror(rc));
         db->db_didname->close(db->db_didname, 0);
         goto fail_appinit;
     }
@@ -468,7 +412,7 @@ dbversion_retry:
     db->db_macname->set_bt_compare(db->db_macname, &compare_mac);
     if ((rc = db->db_macname->open(db->db_macname, DBMACNAME, NULL, DB_BTREE, open_flag, 0666)) != 0) {
         syslog(LOG_ERR, "cnid_open: Failed to open did/macname database: %s",
-               db_strerror(rc));
+            db_strerror(rc));
         db->db_didname->close(db->db_didname, 0);
         goto fail_appinit;
     }
@@ -476,7 +420,7 @@ dbversion_retry:
     /* did/shortname (DOS 8.3) mapping.  Use a BTree for this one. */
     if ((rc = db_create(&db->db_shortname, db->dbenv, 0)) != 0) {
         syslog(LOG_ERR, "cnid_open: Failed to create did/shortname database: %s",
-               db_strerror(rc));
+            db_strerror(rc));
         db->db_didname->close(db->db_didname, 0);
         db->db_macname->close(db->db_macname, 0);
         goto fail_appinit;
@@ -485,7 +429,7 @@ dbversion_retry:
     db->db_shortname->set_bt_compare(db->db_shortname, &compare_mac);
     if ((rc = db->db_shortname->open(db->db_shortname, DBSHORTNAME, NULL, DB_BTREE, open_flag, 0666)) != 0) {
         syslog(LOG_ERR, "cnid_open: Failed to open did/shortname database: %s",
-               db_strerror(rc));
+            db_strerror(rc));
         db->db_didname->close(db->db_didname, 0);
         db->db_macname->close(db->db_macname, 0);
         goto fail_appinit;
@@ -494,7 +438,7 @@ dbversion_retry:
     /* did/longname (Unicode) mapping.  Use a BTree for this one. */
     if ((rc = db_create(&db->db_longname, db->dbenv, 0)) != 0) {
         syslog(LOG_ERR, "cnid_open: Failed to create did/longname database: %s",
-               db_strerror(rc));
+            db_strerror(rc));
         db->db_didname->close(db->db_didname, 0);
         db->db_macname->close(db->db_macname, 0);
         db->db_shortname->close(db->db_shortname, 0);
@@ -504,7 +448,7 @@ dbversion_retry:
     db->db_longname->set_bt_compare(db->db_longname, &compare_unicode);
     if ((rc = db->db_longname->open(db->db_longname, DBLONGNAME, NULL, DB_BTREE, open_flag, 0666)) != 0) {
         syslog(LOG_ERR, "cnid_open: Failed to open did/longname database: %s",
-               db_strerror(rc));
+            db_strerror(rc));
         db->db_didname->close(db->db_didname, 0);
         db->db_macname->close(db->db_macname, 0);
         db->db_shortname->close(db->db_shortname, 0);
@@ -515,7 +459,7 @@ dbversion_retry:
     /* dev/ino reverse mapping.  Use a hash for this one. */
     if ((rc = db_create(&db->db_devino, db->dbenv, 0)) != 0) {
         syslog(LOG_ERR, "cnid_open: Failed to create dev/ino database: %s",
-               db_strerror(rc));
+            db_strerror(rc));
         db->db_didname->close(db->db_didname, 0);
 #ifdef EXTENDED_DB
         db->db_macname->close(db->db_macname, 0);
@@ -527,7 +471,7 @@ dbversion_retry:
 
     if ((rc = db->db_devino->open(db->db_devino, DBDEVINO, NULL, DB_HASH, open_flag, 0666)) != 0) {
         syslog(LOG_ERR, "cnid_open: Failed to open devino database: %s",
-               db_strerror(rc));
+            db_strerror(rc));
         db->db_didname->close(db->db_didname, 0);
 #ifdef EXTENDED_DB
         db->db_macname->close(db->db_macname, 0);
@@ -540,7 +484,7 @@ dbversion_retry:
     /* Main CNID database.  Use a hash for this one. */
     if ((rc = db_create(&db->db_cnid, db->dbenv, 0)) != 0) {
         syslog(LOG_ERR, "cnid_open: Failed to create cnid database: %s",
-               db_strerror(rc));
+            db_strerror(rc));
         db->db_didname->close(db->db_didname, 0);
 #ifdef EXTENDED_DB
         db->db_macname->close(db->db_macname, 0);
@@ -554,7 +498,7 @@ dbversion_retry:
 
     if ((rc = db->db_cnid->open(db->db_cnid, DBCNID, NULL, DB_HASH, open_flag, 0666)) != 0) {
         syslog(LOG_ERR, "cnid_open: Failed to open dev/ino database: %s",
-               db_strerror(rc));
+            db_strerror(rc));
         db->db_didname->close(db->db_didname, 0);
 #ifdef EXTENDED_DB
         db->db_macname->close(db->db_macname, 0);
@@ -563,6 +507,10 @@ dbversion_retry:
 #endif /* EXTENDED_DB */
         goto fail_appinit;
     }
+
+    /* Print out the version of DB3 we're linked against. */
+    syslog(LOG_INFO, "CNID DB initialized using %s",
+        db_version(NULL, NULL, NULL));
 
     return db;
 
@@ -573,10 +521,7 @@ fail_appinit:
 fail_lock:
     if (db->lockfd > -1) {
         close(db->lockfd);
-    }
-    if (rfd > -1) {
-        (void)remove(recover_file);
-        close(rfd);
+        (void)remove(db->lock_file);
     }
 
 fail_adouble:

@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_nextid.c,v 1.6.2.3 2001-12-15 06:35:28 jmarcus Exp $
+ * $Id: cnid_nextid.c,v 1.6.2.4 2002-02-09 20:29:02 jmarcus Exp $
  */
 #ifdef unused
 
