@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.20.4.2.2.7 2004-04-27 22:47:32 didg Exp $
+ * $Id: main.c,v 1.20.4.2.2.8 2004-05-04 15:38:25 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -122,7 +122,7 @@ static void afp_goaway(int sig)
             configfree(configs, NULL);
             if (!(configs = configinit(&default_options))) {
                 LOG(log_error, logtype_afpd, "config re-read: no servers configured");
-                afp_exit(1);
+                afp_exit(EXITERR_CONF);
             }
             set_fd(Ipc_fd);
         } else {
@@ -174,7 +174,7 @@ char	**av;
 #endif
     afp_options_init(&default_options);
     if (!afp_options_parse(ac, av, &default_options))
-        exit(1);
+        exit(EXITERR_CONF);
 
     /* Save the user's current umask for use with CNID (and maybe some 
      * other things, too). */
@@ -183,7 +183,7 @@ char	**av;
     switch(server_lock("afpd", default_options.pidfile,
                        default_options.flags & OPTION_DEBUG)) {
     case -1: /* error */
-        exit(1);
+        exit(EXITERR_SYS);
     case 0: /* child */
         break;
     default: /* server */
@@ -199,7 +199,7 @@ char	**av;
     if (!(server_children = server_child_alloc(default_options.connections,
                             CHILD_NFORKS))) {
         LOG(log_error, logtype_afpd, "main: server_child alloc: %s", strerror(errno) );
-        afp_exit(1);
+        afp_exit(EXITERR_SYS);
     }
     
 #ifdef AFP3x
@@ -221,7 +221,7 @@ char	**av;
     sv.sa_flags = SA_RESTART;
     if ( sigaction( SIGCHLD, &sv, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "main: sigaction: %s", strerror(errno) );
-        afp_exit(1);
+        afp_exit(EXITERR_SYS);
     }
 
     sv.sa_handler = afp_goaway;
@@ -233,7 +233,7 @@ char	**av;
     sv.sa_flags = SA_RESTART;
     if ( sigaction( SIGUSR1, &sv, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "main: sigaction: %s", strerror(errno) );
-        afp_exit(1);
+        afp_exit(EXITERR_SYS);
     }
 
     sigemptyset( &sv.sa_mask );
@@ -244,7 +244,7 @@ char	**av;
     sv.sa_flags = SA_RESTART;
     if ( sigaction( SIGHUP, &sv, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "main: sigaction: %s", strerror(errno) );
-        afp_exit(1);
+        afp_exit(EXITERR_SYS);
     }
 
 
@@ -256,7 +256,7 @@ char	**av;
     sv.sa_flags = SA_RESTART;
     if ( sigaction( SIGTERM, &sv, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "main: sigaction: %s", strerror(errno) );
-        afp_exit(1);
+        afp_exit(EXITERR_SYS);
     }
 
     /* afpd.conf: not in config file: lockfile, connections, configfile
@@ -280,7 +280,7 @@ char	**av;
     sigprocmask(SIG_BLOCK, &sigs, NULL);
     if (!(configs = configinit(&default_options))) {
         LOG(log_error, logtype_afpd, "main: no servers configured: %s\n", strerror(errno));
-        afp_exit(1);
+        afp_exit(EXITERR_CONF);
     }
     sigprocmask(SIG_UNBLOCK, &sigs, NULL);
 

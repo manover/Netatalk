@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.28 2004-04-06 23:29:37 bfernhomberg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.29 2004-05-04 15:38:25 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -367,7 +367,7 @@ static void volset(struct vol_option *options, struct vol_option *save,
     } else if (optionok(tmp, "codepage:", val)) {
 	LOG (log_error, logtype_afpd, "The old codepage system has been removed. Please make sure to read the documentation !!!!");
 	/* Make sure we don't screw anything */
-	exit (-1);
+	exit (EXITERR_CONF);
     } else if (optionok(tmp, "volcharset:", val)) {
         setoption(options, save, VOLOPT_ENCODING, val);
     } else if (optionok(tmp, "maccharset:", val)) {
@@ -1469,7 +1469,7 @@ int 	ibuflen, *rbuflen;
     for ( vcnt = 0, volume = Volumes; volume; volume = volume->v_next ) {
         if (!(volume->v_flags & AFPVOL_NOSTAT)) {
             if ( stat( volume->v_path, &st ) < 0 ) {
-                LOG(log_info, logtype_afpd, "afp_getsrvrparms: stat %s: %s",
+                LOG(log_info, logtype_afpd, "afp_getsrvrparms(%s): stat: %s",
                         volume->v_path, strerror(errno) );
                 continue;		/* can't access directory */
             }
@@ -1506,7 +1506,7 @@ int 	ibuflen, *rbuflen;
     *rbuflen = data - rbuf;
     data = rbuf;
     if ( gettimeofday( &tv, 0 ) < 0 ) {
-        LOG(log_error, logtype_afpd, "afp_getsrvrparms: gettimeofday: %s", strerror(errno) );
+        LOG(log_error, logtype_afpd, "afp_getsrvrparms(%s): gettimeofday: %s", volume->v_path, strerror(errno) );
         *rbuflen = 0;
         return AFPERR_PARAM;
     }
@@ -1603,7 +1603,7 @@ int		ibuflen, *rbuflen;
 
     if (volume->v_root_preexec) {
 	if ((ret = afprun(1, volume->v_root_preexec, NULL)) && volume->v_root_preexec_close) {
-            LOG(log_error, logtype_afpd, "afp_openvol: root preexec : %d", ret );
+            LOG(log_error, logtype_afpd, "afp_openvol(%s): root preexec : %d", volume->v_path, ret );
             ret = AFPERR_MISC;
             goto openvol_err;
 	}
@@ -1615,7 +1615,7 @@ int		ibuflen, *rbuflen;
 
     if (volume->v_preexec) {
 	if ((ret = afprun(0, volume->v_preexec, NULL)) && volume->v_preexec_close) {
-            LOG(log_error, logtype_afpd, "afp_openvol: preexec : %d", ret );
+            LOG(log_error, logtype_afpd, "afp_openvol(%s): preexec : %d", volume->v_path, ret );
             ret = AFPERR_MISC;
             goto openvol_err;
 	}
@@ -1640,7 +1640,7 @@ int		ibuflen, *rbuflen;
     
     if ( NULL == getcwd(path, MAXPATHLEN)) {
         /* shouldn't be fatal but it will fail later */
-        LOG(log_error, logtype_afpd, "afp_openvol: volume pathlen too long" );
+        LOG(log_error, logtype_afpd, "afp_openvol(%s): volume pathlen too long", volume->v_path);
         ret = AFPERR_MISC;
         goto openvol_err;
     }        
@@ -1652,7 +1652,7 @@ int		ibuflen, *rbuflen;
 	
     if ((dir = dirnew(vol_mname, vol_uname) ) == NULL) {
 	free(vol_mname);
-        LOG(log_error, logtype_afpd, "afp_openvol: malloc: %s", strerror(errno) );
+        LOG(log_error, logtype_afpd, "afp_openvol(%s): malloc: %s", volume->v_path, strerror(errno) );
         ret = AFPERR_MISC;
         goto openvol_err;
     }
@@ -1726,7 +1726,9 @@ int		ibuflen, *rbuflen;
 
             /* FIXME find db time stamp */
             if (cnid_getstamp(volume->v_cdb, volume->v_stamp, sizeof(volume->v_stamp)) < 0) {
-		LOG (log_error, logtype_afpd, "Fatal error: Unable to get stamp value from CNID backend");
+		LOG (log_error, logtype_afpd, 
+		      "afp_openvol(%s): Fatal error: Unable to get stamp value from CNID backend",
+		      volume->v_path);
 		goto openvol_err;
 	    }
 	}
@@ -1922,7 +1924,7 @@ struct vol	*vol;
      * [RS] */
 
     if ( gettimeofday( &tv, 0 ) < 0 ) {
-        LOG(log_error, logtype_afpd, "setvoltime: gettimeofday: %s", strerror(errno) );
+        LOG(log_error, logtype_afpd, "setvoltime(%s): gettimeofday: %s", vol->v_path, strerror(errno) );
         return;
     }
     if( utime( vol->v_path, NULL ) < 0 ) {
@@ -2055,13 +2057,13 @@ static int create_special_folder (const struct vol *vol, const struct _special_f
 	p = (char *) malloc ( strlen(vol->v_path)+strlen(folder->name)+2);
 	if ( p == NULL) {
 		LOG(log_error, logtype_afpd,"malloc failed");
-		exit (-1);
+		exit (EXITERR_SYS);
 	}
 
 	q=strdup(folder->name);
 	if ( q == NULL) {
 		LOG(log_error, logtype_afpd,"malloc failed");
-		exit (-1);
+		exit (EXITERR_SYS);
 	}
 
 	strcpy(p, vol->v_path);

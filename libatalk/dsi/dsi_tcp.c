@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_tcp.c,v 1.9.10.6 2004-04-25 23:17:56 didg Exp $
+ * $Id: dsi_tcp.c,v 1.9.10.7 2004-05-04 15:38:26 didg Exp $
  *
  * Copyright (c) 1997, 1998 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -90,7 +90,7 @@ static void dsi_tcp_close(DSI *dsi)
 static void timeout_handler()
 {
   LOG(log_error, logtype_default, "dsi_tcp_open: connection timed out");
-  exit(1);
+  exit(EXITERR_CLNT);
 }
 
 #ifdef ATACC
@@ -146,7 +146,7 @@ static int dsi_tcp_open(DSI *dsi)
     if ((sigaction(SIGALRM, &newact, &oldact) < 0) ||
         (setitimer(ITIMER_REAL, &timer, NULL) < 0)) {
 	LOG(log_error, logtype_default, "dsi_tcp_open: %s", strerror(errno));
-	exit(1);
+	exit(EXITERR_SYS);
     }
     
     /* read in commands. this is similar to dsi_receive except
@@ -157,11 +157,11 @@ static int dsi_tcp_open(DSI *dsi)
     len = dsi_stream_read(dsi, block, 2);
     if (!len ) {
       /* connection already closed, don't log it (normal OSX 10.3 behaviour) */
-      exit(1);
+      exit(EXITERR_CLNT);
     }
     if (len < 2 || (block[0] > DSIFL_MAX) || (block[1] > DSIFUNC_MAX)) {
       LOG(log_error, logtype_default, "dsi_tcp_open: invalid header");
-      exit(1);
+      exit(EXITERR_CLNT);
     }      
     
     /* read in the rest of the header */
@@ -172,7 +172,7 @@ static int dsi_tcp_open(DSI *dsi)
 	stored += len;
       else {
 	LOG(log_error, logtype_default, "dsi_tcp_open: stream_read: %s", strerror(errno));
-	exit(1);
+	exit(EXITERR_CLNT);
       }
     }
     
@@ -196,7 +196,7 @@ static int dsi_tcp_open(DSI *dsi)
 	stored += len;
       else {
 	LOG(log_error, logtype_default, "dsi_tcp_open: stream_read: %s", strerror(errno));
-	exit(1);
+	exit(EXITERR_CLNT);
       }
     }
     

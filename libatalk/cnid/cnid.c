@@ -1,5 +1,5 @@
 /* 
- * $Id: cnid.c,v 1.1.4.9 2004-03-19 13:18:51 bfernhomberg Exp $
+ * $Id: cnid.c,v 1.1.4.10 2004-05-04 15:38:26 didg Exp $
  *
  * Copyright (c) 2003 the Netatalk Team
  * Copyright (c) 2003 Rafal Lewczuk <rlewczuk@pronet.pl>
@@ -123,7 +123,7 @@ struct _cnid_db *cnid_open(const char *volpath, mode_t mask, char *type, int fla
         if (cnid_dir(volpath, mask) < 0) {
             if ( setegid(gid) < 0 || seteuid(uid) < 0) {
                 LOG(log_error, logtype_afpd, "can't seteuid back %s", strerror(errno));
-                exit(1);
+                exit(EXITERR_SYS);
             }
             return NULL;
         }
@@ -135,7 +135,7 @@ struct _cnid_db *cnid_open(const char *volpath, mode_t mask, char *type, int fla
         seteuid(0);
         if ( setegid(gid) < 0 || seteuid(uid) < 0) {
             LOG(log_error, logtype_afpd, "can't seteuid back %s", strerror(errno));
-            exit(1);
+            exit(EXITERR_SYS);
         }
     }
 

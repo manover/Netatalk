@@ -1,5 +1,5 @@
 /*
- * $Id: afp_dsi.c,v 1.27.2.3.2.3 2003-11-11 08:48:32 didg Exp $
+ * $Id: afp_dsi.c,v 1.27.2.3.2.4 2004-05-04 15:38:24 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -118,7 +118,7 @@ static void afp_dsi_timedown()
 
     if ( setitimer( ITIMER_REAL, &it, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_timedown: setitimer: %s", strerror(errno) );
-        afp_dsi_die(1);
+        afp_dsi_die(EXITERR_SYS);
     }
     memset(&sv, 0, sizeof(sv));
     sv.sa_handler = afp_dsi_die;
@@ -128,7 +128,7 @@ static void afp_dsi_timedown()
     sv.sa_flags = SA_RESTART;
     if ( sigaction( SIGALRM, &sv, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_timedown: sigaction: %s", strerror(errno) );
-        afp_dsi_die(1);
+        afp_dsi_die(EXITERR_SYS);
     }
 
     /* ignore myself */
@@ -137,7 +137,7 @@ static void afp_dsi_timedown()
     sv.sa_flags = SA_RESTART;
     if ( sigaction( SIGUSR1, &sv, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_timedown: sigaction SIGHUP: %s", strerror(errno) );
-        afp_dsi_die(1);
+        afp_dsi_die(EXITERR_SYS);
     }
 
 }
@@ -174,11 +174,11 @@ static void alarm_handler()
         if (!(err = pollvoltime(child.obj)))
             err = dsi_tickle(child.obj->handle);
         if (err <= 0) 
-            afp_dsi_die(1);
+            afp_dsi_die(EXITERR_CLNT);
         
     } else { /* didn't receive a tickle. close connection */
         LOG(log_error, logtype_afpd, "afp_alarm: child timed out");
-        afp_dsi_die(1);
+        afp_dsi_die(EXITERR_CLNT);
     }
 }
 
@@ -232,7 +232,7 @@ void afp_over_dsi(AFPObj *obj)
     action.sa_flags = SA_RESTART;
     if ( sigaction( SIGHUP, &action, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_over_dsi: sigaction: %s", strerror(errno) );
-        afp_dsi_die(1);
+        afp_dsi_die(EXITERR_SYS);
     }
 
     /* install SIGTERM */
@@ -247,7 +247,7 @@ void afp_over_dsi(AFPObj *obj)
     action.sa_flags = SA_RESTART;
     if ( sigaction( SIGTERM, &action, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_over_dsi: sigaction: %s", strerror(errno) );
-        afp_dsi_die(1);
+        afp_dsi_die(EXITERR_SYS);
     }
 
 #ifdef SERVERTEXT
@@ -261,7 +261,7 @@ void afp_over_dsi(AFPObj *obj)
     action.sa_flags = SA_RESTART;
     if ( sigaction( SIGUSR2, &action, 0) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_over_dsi: sigaction: %s", strerror(errno) );
-        afp_dsi_die(1);
+        afp_dsi_die(EXITERR_SYS);
     }
 #endif /* SERVERTEXT */
 
@@ -277,7 +277,7 @@ void afp_over_dsi(AFPObj *obj)
     action.sa_flags = SA_RESTART;
     if ( sigaction( SIGUSR1, &action, 0) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_over_dsi: sigaction: %s", strerror(errno) );
-        afp_dsi_die(1);
+        afp_dsi_die(EXITERR_SYS);
     }
 
     /* tickle handler */
@@ -292,7 +292,7 @@ void afp_over_dsi(AFPObj *obj)
     action.sa_flags = SA_RESTART;
     if ((sigaction(SIGALRM, &action, NULL) < 0) ||
             (setitimer(ITIMER_REAL, &dsi->timer, NULL) < 0)) {
-        afp_dsi_die(1);
+        afp_dsi_die(EXITERR_SYS);
     }
 
 #ifdef DEBUG1
@@ -310,7 +310,7 @@ void afp_over_dsi(AFPObj *obj)
         }
 
         if (cmd == DSIFUNC_TICKLE) {
-            /* so we don't get killed on the client side. */
+            /* timer is not every 30 seconds anymore, so we don't get killed on the client side. */
             if ((child.flags & CHILD_DIE))
                 dsi_tickle(dsi);
             continue;
@@ -381,7 +381,7 @@ void afp_over_dsi(AFPObj *obj)
 #endif
             if (!dsi_cmdreply(dsi, err)) {
                 LOG(log_error, logtype_afpd, "dsi_cmdreply(%d): %s", dsi->socket, strerror(errno) );
-                afp_dsi_die(1);
+                afp_dsi_die(EXITERR_CLNT);
             }
             break;
 
@@ -418,7 +418,7 @@ void afp_over_dsi(AFPObj *obj)
 #endif
             if (!dsi_wrtreply(dsi, err)) {
                 LOG(log_error, logtype_afpd, "dsi_wrtreply: %s", strerror(errno) );
-                afp_dsi_die(1);
+                afp_dsi_die(EXITERR_CLNT);
             }
             break;
 
@@ -447,5 +447,5 @@ void afp_over_dsi(AFPObj *obj)
     }
 
     /* error */
-    afp_dsi_die(1);
+    afp_dsi_die(EXITERR_CLNT);
 }

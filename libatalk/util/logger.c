@@ -513,6 +513,81 @@ make_log_func set_log_location(char *srcfilename, int srclinenumber)
 }
 #endif /* DISABLE_LOGGER */
 
+/* ---------------------- 
+ * chainsawed from ethereal
+*/
+#ifdef isprint
+#undef isprint
+#endif
+#define isprint(c) ((c) >= 0x20 && (c) < 0x7f)
+
+static char *format_text(char *fmtbuf, const char *string)
+{
+  int column;
+  const char *stringend = string + strlen(string);
+  char c;
+  int i;
+
+  column = 0;
+  while (string < stringend) {
+    c = *string++;
+
+    if (isprint(c)) {
+      fmtbuf[column] = c;
+      column++;
+    } else {
+      fmtbuf[column] =  '\\';
+      column++;
+      switch (c) {
+      case '\\':
+	fmtbuf[column] = '\\';
+	column++;
+	break;
+      case '\a':
+	fmtbuf[column] = 'a';
+	column++;
+	break;
+      case '\b':
+	fmtbuf[column] = 'b';
+	column++;
+	break;
+      case '\f':
+	fmtbuf[column] = 'f';
+	column++;
+	break;
+      case '\n':
+	fmtbuf[column] = 'n';
+	column++;
+	break;
+      case '\r':
+	fmtbuf[column] = 'r';
+	column++;
+	break;
+      case '\t':
+	fmtbuf[column] = 't';
+	column++;
+	break;
+      case '\v':
+	fmtbuf[column] = 'v';
+	column++;
+	break;
+      default:
+	i = (c>>6)&03;
+	fmtbuf[column] = i + '0';
+	column++;
+	i = (c>>3)&07;
+	fmtbuf[column] = i + '0';
+	column++;
+	i = (c>>0)&07;
+	fmtbuf[column] = i + '0';
+	column++;
+	break;
+      }
+    }
+  }
+  fmtbuf[column] = '\0';
+  return fmtbuf;
+}
 /* -------------------------------------------------------------------------
     MakeLog has 1 main flaws:
       The message in its entirity, must fit into the tempbuffer.  
@@ -522,7 +597,8 @@ void make_log_entry(enum loglevels loglevel, enum logtypes logtype,
 		    char *message, ...)
 {
   va_list args;
-  char log_buffer[MAXLOGSIZE];
+  char temp_buffer[MAXLOGSIZE];
+  char log_buffer[4*MAXLOGSIZE];
   /* fn is not reentrant but is used in signal handler 
    * with LOGGER it's a little late source name and line number
    * are already changed.
@@ -559,10 +635,11 @@ void make_log_entry(enum loglevels loglevel, enum logtypes logtype,
   /* Initialise the Messages */
   va_start(args, message);
 
-  vsnprintf(log_buffer, sizeof(log_buffer), message, args);
+  vsnprintf(temp_buffer, sizeof(temp_buffer), message, args);
 
   /* Finished with args for now */
   va_end(args);
+  format_text(log_buffer, temp_buffer);
 
 #ifdef DISABLE_LOGGER
   syslog(get_syslog_equivalent(loglevel), "%s", log_buffer);

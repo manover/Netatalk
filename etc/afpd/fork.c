@@ -1,5 +1,5 @@
 /*
- * $Id: fork.c,v 1.51.2.2.2.9 2004-05-04 14:26:13 didg Exp $
+ * $Id: fork.c,v 1.51.2.2.2.10 2004-05-04 15:38:25 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -319,7 +319,7 @@ int		ibuflen, *rbuflen;
     case EACCES:
         return (access & OPENACC_WR) ? AFPERR_LOCK : AFPERR_ACCESS;
     default:
-        LOG(log_error, logtype_afpd, "afp_openfork: ad_open: %s", strerror(errno) );
+        LOG(log_error, logtype_afpd, "afp_openfork(%s): ad_open: %s", s_path->m_name, strerror(errno) );
         return AFPERR_PARAM;
     }
     /* FIXME should we check it first ? */
@@ -400,7 +400,7 @@ int		ibuflen, *rbuflen;
                 goto openfork_err;
                 break;
             default:
-                LOG(log_error, logtype_afpd, "afp_openfork: ad_open: %s", strerror(errno) );
+                LOG(log_error, logtype_afpd, "afp_openfork(%s): ad_open: %s", s_path->m_name, strerror(errno) );
                 ret = AFPERR_PARAM;
                 goto openfork_err;
                 break;
@@ -447,7 +447,7 @@ int		ibuflen, *rbuflen;
                 goto openfork_err;
                 break;
             default:
-                LOG(log_error, logtype_afpd, "afp_openfork: ad_open: %s", strerror(errno) );
+                LOG(log_error, logtype_afpd, "afp_openfork(%s): ad_open: %s", s_path->m_name, strerror(errno) );
                 goto openfork_err;
                 break;
             }
@@ -512,7 +512,7 @@ int		ibuflen, *rbuflen;
                 break;
             default:
                 *rbuflen = 0;
-                LOG(log_error, logtype_afpd, "afp_openfork: ad_lock: %s", strerror(ret) );
+                LOG(log_error, logtype_afpd, "afp_openfork(%s): ad_lock: %s", s_path->m_name, strerror(ret) );
                 return( AFPERR_PARAM );
             }
         }
@@ -557,7 +557,7 @@ int		ibuflen, *rbuflen;
 
     *rbuflen = 0;
     if (NULL == ( ofork = of_find( ofrefnum )) ) {
-        LOG(log_error, logtype_afpd, "afp_setforkparams: of_find could not locate open fork refnum: %u", ofrefnum );
+        LOG(log_error, logtype_afpd, "afp_setforkparams: of_find(%d) could not locate fork", ofrefnum );
         return( AFPERR_PARAM );
     }
 
@@ -628,7 +628,7 @@ int		ibuflen, *rbuflen;
             goto afp_setfork_err;
 
         if (ad_flush( ofork->of_ad, ADFLAGS_HF ) < 0) {
-            LOG(log_error, logtype_afpd, "afp_setforkparams: ad_flush: %s",strerror(errno) );
+            LOG(log_error, logtype_afpd, "afp_setforkparams(%s): ad_flush: %s", ofork->of_name, strerror(errno) );
             return AFPERR_PARAM;
         }
     } else
@@ -636,7 +636,7 @@ int		ibuflen, *rbuflen;
 
 #ifdef AFS
     if ( flushfork( ofork ) < 0 ) {
-        LOG(log_error, logtype_afpd, "afp_setforkparams: flushfork: %s", strerror(errno) );
+        LOG(log_error, logtype_afpd, "afp_setforkparams(%s): flushfork: %s", ofork->of_name, strerror(errno) );
     }
 #endif /* AFS */
 
@@ -696,7 +696,7 @@ int     is64;
     ibuf += sizeof(ofrefnum);
 
     if (NULL == ( ofork = of_find( ofrefnum )) ) {
-        LOG(log_error, logtype_afpd, "afp_bytelock: of_find");
+        LOG(log_error, logtype_afpd, "afp_bytelock: of_find(%d) could not locate fork", ofrefnum );
         return( AFPERR_PARAM );
     }
 
@@ -812,7 +812,7 @@ static __inline__ ssize_t read_file(struct ofork *ofork, int eid,
 
     cc = ad_read(ofork->of_ad, eid, offset, rbuf, *rbuflen);
     if ( cc < 0 ) {
-        LOG(log_error, logtype_afpd, "afp_read: ad_read: %s", strerror(errno) );
+        LOG(log_error, logtype_afpd, "afp_read(%s): ad_read: %s", ofork->of_name, strerror(errno) );
         *rbuflen = 0;
         return( AFPERR_PARAM );
     }
@@ -886,7 +886,7 @@ int is64;
     ibuf += sizeof( u_short );
 
     if (NULL == ( ofork = of_find( ofrefnum )) ) {
-        LOG(log_error, logtype_afpd, "afp_read: of_find");
+        LOG(log_error, logtype_afpd, "afp_read: of_find(%d) could not locate fork", ofrefnum );
         err = AFPERR_PARAM;
         goto afp_read_err;
     }
@@ -982,7 +982,7 @@ int is64;
                 if (errno == EINVAL || errno == ENOSYS)
                     goto afp_read_loop;
                 else {
-                    LOG(log_error, logtype_afpd, "afp_read: ad_readfile: %s", strerror(errno));
+                    LOG(log_error, logtype_afpd, "afp_read(%s): ad_readfile: %s", ofork->of_name, strerror(errno));
                     goto afp_read_exit;
                 }
             }
@@ -1027,10 +1027,10 @@ afp_read_loop:
         goto afp_read_done;
 
 afp_read_exit:
-        LOG(log_error, logtype_afpd, "afp_read: %s", strerror(errno));
+        LOG(log_error, logtype_afpd, "afp_read(%s): %s", ofork->of_name, strerror(errno));
         dsi_readdone(dsi);
         ad_tmplock(ofork->of_ad, eid, ADLOCK_CLR, saveoff, savereqcount,ofork->of_refnum);
-        obj->exit(1);
+        obj->exit(EXITERR_CLNT);
     }
 
 afp_read_done:
@@ -1094,12 +1094,12 @@ int		ibuflen, *rbuflen;
     memcpy(&ofrefnum, ibuf, sizeof( ofrefnum ));
 
     if (NULL == ( ofork = of_find( ofrefnum )) ) {
-        LOG(log_error, logtype_afpd, "afp_flushfork: of_find");
+        LOG(log_error, logtype_afpd, "afp_flushfork: of_find(%d) could not locate fork", ofrefnum );
         return( AFPERR_PARAM );
     }
 
     if ( flushfork( ofork ) < 0 ) {
-        LOG(log_error, logtype_afpd, "afp_flushfork: %s", strerror(errno) );
+        LOG(log_error, logtype_afpd, "afp_flushfork(%s): %s", ofork->of_name, strerror(errno) );
     }
 
     return( AFP_OK );
@@ -1115,8 +1115,8 @@ struct ofork	*ofork;
 
     if ( ad_dfileno( ofork->of_ad ) != -1 &&
             fsync( ad_dfileno( ofork->of_ad )) < 0 ) {
-        LOG(log_error, logtype_afpd, "flushfork: dfile(%d) %s",
-            ad_dfileno(ofork->of_ad), strerror(errno) );
+        LOG(log_error, logtype_afpd, "flushfork(%s): dfile(%d) %s",
+            ofork->of_name, ad_dfileno(ofork->of_ad), strerror(errno) );
         err = -1;
     }
 
@@ -1141,8 +1141,8 @@ struct ofork	*ofork;
             err = -1;
 
         if (err < 0)
-            LOG(log_error, logtype_afpd, "flushfork: hfile(%d) %s",
-                ad_hfileno(ofork->of_ad), strerror(errno) );
+            LOG(log_error, logtype_afpd, "flushfork(%s): hfile(%d) %s",
+                ofork->of_name, ad_hfileno(ofork->of_ad), strerror(errno) );
     }
 
     return( err );
@@ -1163,7 +1163,7 @@ int		ibuflen, *rbuflen;
     memcpy(&ofrefnum, ibuf, sizeof( ofrefnum ));
 
     if (NULL == ( ofork = of_find( ofrefnum )) ) {
-        LOG(log_error, logtype_afpd, "afp_closefork: of_find");
+        LOG(log_error, logtype_afpd, "afp_closefork: of_find(%d) could not locate fork", ofrefnum );
         return( AFPERR_PARAM );
     }
 
@@ -1189,7 +1189,7 @@ int		ibuflen, *rbuflen;
     }
 
     if ( ad_close( ofork->of_ad, adflags ) < 0 ) {
-        LOG(log_error, logtype_afpd, "afp_closefork: ad_close: %s", strerror(errno) );
+        LOG(log_error, logtype_afpd, "afp_closefork(%s): ad_close: %s", ofork->of_name, strerror(errno) );
         return( AFPERR_PARAM );
     }
 
@@ -1226,7 +1226,7 @@ static __inline__ ssize_t write_file(struct ofork *ofork, int eid,
         case ENOSPC :
             return( AFPERR_DFULL );
         default :
-            LOG(log_error, logtype_afpd, "afp_write: ad_write: %s", strerror(errno) );
+            LOG(log_error, logtype_afpd, "afp_write(%s): ad_write: %s", ofork->of_name, strerror(errno) );
             return( AFPERR_PARAM );
         }
     }
@@ -1261,7 +1261,7 @@ int                 is64;
     reqcount = get_off_t(&ibuf, is64);
 
     if (NULL == ( ofork = of_find( ofrefnum )) ) {
-        LOG(log_error, logtype_afpd, "afp_write: of_find");
+        LOG(log_error, logtype_afpd, "afp_write: of_find(%d) could not locate fork", ofrefnum );
         err = AFPERR_PARAM;
         goto afp_write_err;
     }
@@ -1460,7 +1460,7 @@ int		ibuflen, *rbuflen;
 
     *rbuflen = 0;
     if (NULL == ( ofork = of_find( ofrefnum )) ) {
-        LOG(log_error, logtype_afpd, "afp_getforkparams: of_find");
+        LOG(log_error, logtype_afpd, "afp_getforkparams: of_find(%d) could not locate fork", ofrefnum );
         return( AFPERR_PARAM );
     }
     attrbits = ((ofork->of_ad->ad_df.adf_refcount > 0) ? ATTRBIT_DOPEN : 0);
@@ -1468,7 +1468,7 @@ int		ibuflen, *rbuflen;
 
     if ( ad_hfileno( ofork->of_ad ) != -1 ) {
         if ( ad_refresh( ofork->of_ad ) < 0 ) {
-            LOG(log_error, logtype_afpd, "getforkparams: ad_refresh: %s", strerror(errno) );
+            LOG(log_error, logtype_afpd, "getforkparams(%s): ad_refresh: %s", ofork->of_name, strerror(errno) );
             return( AFPERR_PARAM );
         }
     }

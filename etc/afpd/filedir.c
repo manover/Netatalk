@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.45.2.2.2.9 2004-03-11 02:02:01 didg Exp $
+ * $Id: filedir.c,v 1.45.2.2.2.10 2004-05-04 15:38:25 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -93,29 +93,29 @@ more information */
             if (lchown(upath, sb.st_uid, sb.st_gid) < 0)
             {
                 LOG(log_error, logtype_afpd,
-                    "matchfile2dirperms: Error changing owner/gid of %s: %s",
+                    "matchfile2dirperms(%s): Error changing owner/gid: %s",
                     upath, strerror(errno));
                 ret = AFPERR_ACCESS;
             }
             else if (chmod(upath,(st.st_mode&~default_options.umask)| S_IRGRP| S_IROTH) < 0)
             {
                 LOG(log_error, logtype_afpd,
-                    "matchfile2dirperms:  Error adding file read permissions: %s",
-                    strerror(errno));
+                    "matchfile2dirperms(%s): Error adding file read permissions: %s",
+                    upath, strerror(errno));
                 ret = AFPERR_ACCESS;
             }
             else if (lchown(adpath, sb.st_uid, sb.st_gid) < 0)
             {
                 LOG(log_error, logtype_afpd,
-                    "matchfile2dirperms: Error changing AppleDouble owner/gid %s: %s",
+                    "matchfile2dirperms(%s): Error changing AppleDouble owner/gid: %s",
                     adpath, strerror(errno));
                 ret = AFPERR_ACCESS;
             }
             else if (chmod(adpath, (st.st_mode&~default_options.umask)| S_IRGRP| S_IROTH) < 0)
             {
                 LOG(log_error, logtype_afpd,
-                    "matchfile2dirperms:  Error adding AD file read permissions: %s",
-                    strerror(errno));
+                    "matchfile2dirperms(%s):  Error adding AD file read permissions: %s",
+                    adpath, strerror(errno));
                 ret = AFPERR_ACCESS;
             }
             seteuid(uid); 

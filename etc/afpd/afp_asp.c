@@ -1,5 +1,5 @@
 /*
- * $Id: afp_asp.c,v 1.18.6.5 2004-04-25 23:19:06 didg Exp $
+ * $Id: afp_asp.c,v 1.18.6.6 2004-05-04 15:38:23 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -160,7 +160,7 @@ static void afp_asp_timedown()
     it.it_value.tv_usec = 0;
     if ( setitimer( ITIMER_REAL, &it, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_timedown: setitimer: %s", strerror(errno) );
-        afp_asp_die(1);
+        afp_asp_die(EXITERR_SYS);
     }
 
     memset(&sv, 0, sizeof(sv));
@@ -171,7 +171,7 @@ static void afp_asp_timedown()
     sv.sa_flags = SA_RESTART;
     if ( sigaction( SIGALRM, &sv, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_timedown: sigaction: %s", strerror(errno) );
-        afp_asp_die(1);
+        afp_asp_die(EXITERR_SYS);
     }
 
     /* ignore myself */
@@ -180,7 +180,7 @@ static void afp_asp_timedown()
     sv.sa_flags = SA_RESTART;
     if ( sigaction( SIGUSR1, &sv, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_timedown: sigaction SIGUSR1: %s", strerror(errno) );
-        afp_asp_die(1);
+        afp_asp_die(EXITERR_SYS);
     }
 }
 
@@ -235,7 +235,7 @@ void afp_over_asp(AFPObj *obj)
     action.sa_flags = SA_RESTART;
     if ( sigaction( SIGHUP, &action, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_over_asp: sigaction: %s", strerror(errno) );
-        afp_asp_die(1);
+        afp_asp_die(EXITERR_SYS);
     }
 
     /*  install SIGTERM */
@@ -249,7 +249,7 @@ void afp_over_asp(AFPObj *obj)
     action.sa_flags = SA_RESTART;
     if ( sigaction( SIGTERM, &action, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_over_asp: sigaction: %s", strerror(errno) );
-        afp_asp_die(1);
+        afp_asp_die(EXITERR_SYS);
     }
 
 #ifdef SERVERTEXT
@@ -262,7 +262,7 @@ void afp_over_asp(AFPObj *obj)
     action.sa_flags = SA_RESTART;
     if ( sigaction( SIGUSR2, &action, 0) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_over_asp: sigaction: %s", strerror(errno) );
-        afp_asp_die(1);
+        afp_asp_die(EXITERR_SYS);
     }
 #endif /* SERVERTEXT */
 
@@ -277,7 +277,7 @@ void afp_over_asp(AFPObj *obj)
     action.sa_flags = SA_RESTART;
     if ( sigaction( SIGUSR1, &action, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_over_asp: sigaction: %s", strerror(errno) );
-        afp_asp_die(1);
+        afp_asp_die(EXITERR_SYS);
     }
 
     LOG(log_info, logtype_afpd, "session from %u.%u:%u on %u.%u:%u",
@@ -351,7 +351,7 @@ void afp_over_asp(AFPObj *obj)
 #endif
             if ( asp_cmdreply( asp, reply ) < 0 ) {
                 LOG(log_error, logtype_afpd, "asp_cmdreply: %s", strerror(errno) );
-                afp_asp_die(1);
+                afp_asp_die(EXITERR_CLNT);
             }
             break;
 
@@ -386,7 +386,7 @@ void afp_over_asp(AFPObj *obj)
 #endif
             if ( asp_wrtreply( asp, reply ) < 0 ) {
                 LOG(log_error, logtype_afpd, "asp_wrtreply: %s", strerror(errno) );
-                afp_asp_die(1);
+                afp_asp_die(EXITERR_CLNT);
             }
             break;
         default:

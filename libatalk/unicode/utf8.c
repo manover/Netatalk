@@ -73,14 +73,14 @@ static size_t utf8_pull(void *cd, char **inbuf, size_t *inbytesleft,
 			uc = c[0];
 		} else if ((c[0] & 0xf0) == 0xe0) {
 			if (*inbytesleft < 3) {
-				LOG(log_debug, logtype_default, "short utf8 char\n");
+				LOG(log_debug, logtype_default, "short utf8 char");
 				goto badseq;
 			}
 			uc = ((ucs2_t) (c[0] & 0x0f) << 12) | ((ucs2_t) (c[1] ^ 0x80) << 6) | (ucs2_t) (c[2] ^ 0x80);
 			len = 3;
 		} else if ((c[0] & 0xe0) == 0xc0) {
 			if (*inbytesleft < 2) {
-				LOG(log_debug, logtype_default, "short utf8 char\n");
+				LOG(log_debug, logtype_default, "short utf8 char");
 				goto badseq;
 			}
 			uc = ((ucs2_t) (c[0] & 0x1f) << 6) | (ucs2_t) (c[1] ^ 0x80);
@@ -124,7 +124,7 @@ static size_t utf8_push(void *cd, char **inbuf, size_t *inbytesleft,
 
 		if ( uc >= 0x800 ) {
 			if (*outbytesleft < 3) {
-				LOG(log_debug, logtype_default, "short utf8 write\n");
+				LOG(log_debug, logtype_default, "short utf8 write");
 				goto toobig;
 			}
 			c[2] = 0x80 | (uc & 0x3f);
@@ -137,7 +137,7 @@ static size_t utf8_push(void *cd, char **inbuf, size_t *inbytesleft,
 			len = 3;
 		} else if (uc >= 0x80) {
 			if (*outbytesleft < 2) {
-				LOG(log_debug, logtype_default, "short utf8 write\n");
+				LOG(log_debug, logtype_default, "short utf8 write");
 				goto toobig;
 			}
 			c[1] = 0x80 | (uc&0x3f);

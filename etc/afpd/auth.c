@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.44.2.3.2.11 2004-05-04 02:53:53 bfernhomberg Exp $
+ * $Id: auth.c,v 1.44.2.3.2.12 2004-05-04 15:38:24 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -282,7 +282,7 @@ static int login(AFPObj *obj, struct passwd *pwd, void (*logout)(void), int expi
     /* Basically if the user is in the admin group, we stay root */
 
     if (( ngroups = getgroups( NGROUPS, groups )) < 0 ) {
-        LOG(log_error, logtype_afpd, "login: getgroups: %s", strerror(errno) );
+        LOG(log_error, logtype_afpd, "login: %s getgroups: %s", pwd->pw_name, strerror(errno) );
         return AFPERR_BADUAM;
     }
 
@@ -333,13 +333,13 @@ static int login(AFPObj *obj, struct passwd *pwd, void (*logout)(void), int expi
             inet_ntoa( dsi->client.sin_addr ) );
 
         if (setegid( pwd->pw_gid ) < 0 || seteuid( pwd->pw_uid ) < 0) {
-            LOG(log_error, logtype_afpd, "login: %s", strerror(errno) );
+            LOG(log_error, logtype_afpd, "login: %s %s", pwd->pw_name, strerror(errno) );
             return AFPERR_BADUAM;
         }
     }
 #else /* TRU64 */
     if (setegid( pwd->pw_gid ) < 0 || seteuid( pwd->pw_uid ) < 0) {
-        LOG(log_error, logtype_afpd, "login: %s", strerror(errno) );
+        LOG(log_error, logtype_afpd, "login: %s %s", pwd->pw_name, strerror(errno) );
         return AFPERR_BADUAM;
     }
 #endif /* TRU64 */

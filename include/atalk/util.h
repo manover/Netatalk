@@ -1,5 +1,5 @@
 /*
- * $Id: util.h,v 1.7.10.5 2004-04-21 18:45:54 bfernhomberg Exp $
+ * $Id: util.h,v 1.7.10.6 2004-05-04 15:38:26 didg Exp $
  */
 
 #ifndef _ATALK_UTIL_H
@@ -11,6 +11,12 @@
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 #include <netatalk/at.h>
+
+/* exit error codes */
+#define EXITERR_CLNT 1  /* client related error */
+#define EXITERR_CONF 2  /* error in config files/cmd line parameters */
+#define EXITERR_SYS  3  /* local system error */
+
 
 extern int     sys_ftruncate __P((int fd, off_t length));
 

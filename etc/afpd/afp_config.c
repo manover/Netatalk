@@ -1,5 +1,5 @@
 /*
- * $Id: afp_config.c,v 1.22.6.5 2004-04-27 22:47:32 didg Exp $
+ * $Id: afp_config.c,v 1.22.6.6 2004-05-04 15:38:24 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -34,6 +34,7 @@ char *strchr (), *strrchr ();
 #endif /* HAVE_UNISTD_H */
 #include <ctype.h>
 #include <atalk/logger.h>
+#include <atalk/util.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -210,7 +211,7 @@ static int asp_start(AFPConfig *config, AFPConfig *configs,
     if (!(asp = asp_getsession(config->obj.handle, server_children,
                                config->obj.options.tickleval))) {
         LOG(log_error, logtype_afpd, "main: asp_getsession: %s", strerror(errno) );
-        exit( 1 );
+        exit( EXITERR_CLNT );
     }
 
     if (asp->child) {
@@ -231,7 +232,7 @@ static int dsi_start(AFPConfig *config, AFPConfig *configs,
     if (!(dsi = dsi_getsession(config->obj.handle, server_children,
                                config->obj.options.tickleval))) {
         LOG(log_error, logtype_afpd, "main: dsi_getsession: %s", strerror(errno) );
-        exit( 1 );
+        exit( EXITERR_CLNT );
     }
 
     /* we've forked. */

@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.23 2004-03-19 13:47:16 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.24 2004-05-04 15:38:24 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -2087,7 +2087,7 @@ int		ibuflen, *rbuflen;
 
     if ( setegid(gid) < 0 || seteuid(uid) < 0) {
         LOG(log_error, logtype_afpd, "can't seteuid back %s", strerror(errno));
-        exit(1);
+        exit(EXITERR_SYS);
     }
 
 #ifdef DEBUG

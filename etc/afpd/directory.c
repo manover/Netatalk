@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.12 2004-03-11 16:16:40 didg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.13 2004-05-04 15:38:24 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1728,8 +1728,8 @@ int setdirparams(const struct vol *vol,
                     goto setdirparam_done;
                     break;
                 default :
-                    LOG(log_error, logtype_afpd, "setdirparam: setdeskowner: %s",
-                        strerror(errno) );
+                    LOG(log_error, logtype_afpd, "setdirparam(%s): setdeskowner: %s",
+                        path->u_name, strerror(errno) );
                     if (!isad) {
                         err = AFPERR_PARAM;
                         goto setdirparam_done;
@@ -1749,8 +1749,8 @@ int setdirparams(const struct vol *vol,
                     goto setdirparam_done;
                     break;
                 default :
-                    LOG(log_error, logtype_afpd, "setdirparam: setdirowner: %s",
-                        strerror(errno) );
+                    LOG(log_error, logtype_afpd, "setdirparam(%s): setdirowner: %s",
+                        path->u_name, strerror(errno) );
                     break;
                 }
             }
@@ -1774,7 +1774,7 @@ int setdirparams(const struct vol *vol,
                 goto setdirparam_done;
                 break;
             default :
-                LOG(log_error, logtype_afpd, "setdirparam: setdeskowner: %m" );
+                LOG(log_error, logtype_afpd, "setdirparam(%s): setdeskowner: %s", path->u_name, strerror(errno)  );
                 if (!isad) {
                     err = AFPERR_PARAM;
                     goto setdirparam_done;
@@ -1795,8 +1795,8 @@ int setdirparams(const struct vol *vol,
                     goto setdirparam_done;
                     break;
                 default :
-                    LOG(log_error, logtype_afpd, "setdirparam: setdirowner: %s",
-                        strerror(errno) );
+                    LOG(log_error, logtype_afpd, "setdirparam(%s): setdirowner: %s",
+                        path->u_name, strerror(errno) );
                     break;
                 }
             }
@@ -1822,8 +1822,8 @@ int setdirparams(const struct vol *vol,
                 err = AFPERR_VLOCK;
                 goto setdirparam_done;
             default :
-                LOG(log_error, logtype_afpd, "setdirparam: setdeskmode: %s",
-                    strerror(errno) );
+                LOG(log_error, logtype_afpd, "setdirparam(%s): setdeskmode: %s",
+                    path->u_name, strerror(errno) );
                 break;
                 err = AFPERR_PARAM;
                 goto setdirparam_done;
@@ -1840,8 +1840,8 @@ int setdirparams(const struct vol *vol,
                     err = AFPERR_VLOCK;
                     goto setdirparam_done;
                 default :
-                    LOG(log_error, logtype_afpd, "setdirparam: setdirmode: %s",
-                        strerror(errno) );
+                    LOG(log_error, logtype_afpd, "setdirparam(%s): setdirmode: %s",
+                        path->u_name, strerror(errno) );
                     err = AFPERR_PARAM;
                     goto setdirparam_done;
                 }
@@ -1879,8 +1879,8 @@ int setdirparams(const struct vol *vol,
                 err = AFPERR_VLOCK;
                 goto setdirparam_done;
             default :
-                LOG(log_error, logtype_afpd, "setdirparam: setdeskmode: %s",
-                    strerror(errno) );
+                LOG(log_error, logtype_afpd, "setdirparam(%s): setdeskmode: %s",
+                    path->u_name, strerror(errno) );
                 break;
                 err = AFPERR_PARAM;
                 goto setdirparam_done;
@@ -1897,8 +1897,8 @@ int setdirparams(const struct vol *vol,
                     err = AFPERR_VLOCK;
                     goto setdirparam_done;
                 default :
-                    LOG(log_error, logtype_afpd, "setdirparam: setdirmode: %s",
-                        strerror(errno) );
+                    LOG(log_error, logtype_afpd, "setdirparam(%s): setdirmode: %s",
+                        path->u_name, strerror(errno) );
                     err = AFPERR_PARAM;
                     goto setdirparam_done;
                 }
