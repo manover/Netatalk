@@ -1,5 +1,5 @@
 /*
- * $Id: config.c,v 1.13.6.3 2004-02-14 00:30:51 didg Exp $
+ * $Id: config.c,v 1.13.6.4 2004-06-09 01:07:16 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -55,6 +55,7 @@ char *strchr (), *strrchr ();
 #include <sys/stropts.h>
 #endif /* __svr4__ */
 
+#include <atalk/unicode.h>
 #include "interface.h"
 #include "multicast.h"
 #include "rtmp.h"
@@ -187,6 +188,8 @@ int writeconf( cf )
     struct interface	*iface;
     struct list		*l;
     int			mode = 0644, fd;
+    size_t		len;
+    char		*zonename;
 
     if ( cf == NULL ) {
 	path = _PATH_ATALKDCONF;
@@ -259,9 +262,20 @@ int writeconf( cf )
 		    ntohs( iface->i_addr.sat_addr.s_net ),
 		    iface->i_addr.sat_addr.s_node );
 	    for ( l = iface->i_rt->rt_zt; l; l = l->l_next ) {
-		fprintf( newconf, " -zone \"%.*s\"",
-			((struct ziptab *)l->l_data)->zt_len,
-			((struct ziptab *)l->l_data)->zt_name );
+                /* codepage conversion */
+                if ((size_t)(-1) == (len = convert_string_allocate(CH_MAC, CH_UNIX, 
+                                      ((struct ziptab *)l->l_data)->zt_name,
+                                      ((struct ziptab *)l->l_data)->zt_len,
+                                      &zonename)) ) {
+                    if ( NULL == 
+                      (zonename = strdup(((struct ziptab *)l->l_data)->zt_name))) {
+		        LOG(log_error, logtype_atalkd, "malloc: %m" );
+		        return( -1 );
+                    }
+                    len = ((struct ziptab *)l->l_data)->zt_len;
+                } 
+		fprintf( newconf, " -zone \"%.*s\"", len, zonename);
+                free(zonename);
 	    }
 	    fprintf( newconf, "\n" );
 
@@ -667,9 +681,14 @@ int zone( iface, av )
     struct ziptab	*zt;
     char		*zname;
 
-    if (( zname = av[ 0 ] ) == NULL ) {
+    if ( av[ 0 ]  == NULL ) {
 	fprintf( stderr, "No zone.\n" );
 	return -1;
+    }
+
+    /* codepage conversion */
+    if ((size_t)(-1) == convert_string_allocate(CH_UNIX, CH_MAC, av[0], strlen(av[0]), &zname)) {
+	zname = strdup(av[0]);
     }
 
     /*
@@ -682,6 +701,7 @@ int zone( iface, av )
   	    fprintf( stderr, "Must specify net-range before zones.\n" );
 	    return -1;
         }
+
 	if (( zt = newzt( strlen( zname ), zname )) == NULL ) {
 	    perror( "newzt" );
 	    return -1;
@@ -693,6 +713,8 @@ int zone( iface, av )
 	    iface->i_czt->zt_next = zt;
 	}
     }
+    free(zname);
+
     return( 2 );
 }
 

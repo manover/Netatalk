@@ -1,5 +1,5 @@
 /*
- * $Id: afp_config.c,v 1.22.6.6 2004-05-04 15:38:24 didg Exp $
+ * $Id: afp_config.c,v 1.22.6.7 2004-06-09 01:07:17 bfernhomberg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -253,6 +253,7 @@ static AFPConfig *ASPConfigInit(const struct afp_options *options,
     ATP atp;
     ASP asp;
     char *Obj, *Type = "AFPServer", *Zone = "*";
+    char *convname;
 
     if ((config = (AFPConfig *) calloc(1, sizeof(AFPConfig))) == NULL)
         return NULL;
@@ -272,10 +273,19 @@ static AFPConfig *ASPConfigInit(const struct afp_options *options,
 
     /* register asp server */
     Obj = (char *) options->hostname;
-    if (nbp_name(options->server, &Obj, &Type, &Zone )) {
+    if ((size_t)-1 ==(convert_string_allocate( options->unixcharset, options->maccharset,
+                         options->server, strlen(options->server), &convname)) ) {
+        if ((convname = strdup(options->server)) == NULL ) {
+            LOG(log_error, logtype_afpd, "malloc: %m" );
+            goto serv_free_return;
+        }
+    }
+
+    if (nbp_name(convname, &Obj, &Type, &Zone )) {
         LOG(log_error, logtype_afpd, "main: can't parse %s", options->server );
         goto serv_free_return;
     }
+    free (convname);
 
     /* dup Obj, Type and Zone as they get assigned to a single internal
      * buffer by nbp_name */
