@@ -1,5 +1,5 @@
 /* 
- * $Id: mangle.c,v 1.16.2.1.2.10 2004-06-20 15:30:04 bfernhomberg Exp $ 
+ * $Id: mangle.c,v 1.16.2.1.2.11 2004-07-05 01:15:34 bfernhomberg Exp $ 
  *
  * Copyright (c) 2002. Joe Marcus Clarke (marcus@marcuscom.com)
  * All Rights Reserved.  See COPYRIGHT.
@@ -27,6 +27,7 @@ static char *demangle_checks ( const struct vol *vol, char* uname, char * mfilen
     u_int16_t flags;
     static char buffer[MAXPATHLEN +1];
     size_t len;
+    size_t mfilenamelen;
     char *u;
 
     /* We need to check, whether we really need to demangle the filename 	*/
@@ -54,7 +55,7 @@ static char *demangle_checks ( const struct vol *vol, char* uname, char * mfilen
 	return mfilename;
     }
     /* If the filename is too long we also needed to mangle isn't this stuff always false */
-    if ( len >= vol->max_filename ) {
+    if ( len >= vol->max_filename || (mfilenamelen = strlen(mfilename)) == MACFILELEN ) {
         flags |= CONV_REQMANGLE;
         len = prefix;
     }
@@ -77,7 +78,8 @@ static char *demangle_checks ( const struct vol *vol, char* uname, char * mfilen
             /* prefix can be longer than len, OSX might send us the first character(s) of a     */
             /* decomposed char as the *last* character(s) before the #, so our match below will */
             /* still work, but leaves room for a race ... FIXME				    */
-            if ( prefix >= len && !strncmp (mfilename, buffer, len)) {
+            if ( (prefix >= len || mfilenamelen == MACFILELEN) 
+                 && !strncmp (mfilename, buffer, len)) {
                  return uname;
             }
         }
