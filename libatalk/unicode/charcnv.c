@@ -375,7 +375,7 @@ static size_t convert_string_allocate_internal(charset_t from, charset_t to,
 
 	if (descriptor == (atalk_iconv_t)-1 || descriptor == (atalk_iconv_t)0) {
 		/* conversion not supported, return -1*/
-		LOG(log_debug, logtype_default, "convert_string_allocate: conversion not supported!\n");
+		LOG(log_debug, logtype_default, "convert_string_allocate: conversion not supported!");
 		return -1;
 	}
 
@@ -384,7 +384,7 @@ convert:
 	destlen = destlen * 2;
 	ob = (char *)realloc(ob, destlen);
 	if (!ob) {
-		LOG(log_debug, logtype_default,"convert_string_allocate: realloc failed!\n");
+		LOG(log_debug, logtype_default,"convert_string_allocate: realloc failed!");
 		SAFE_FREE(outbuf);
 		return (size_t)-1;
 	} else {
@@ -430,7 +430,7 @@ convert:
 	}
 
 	if (destlen && !*dest) {
-		LOG(log_debug, logtype_default, "convert_string_allocate: out of memory!\n");
+		LOG(log_debug, logtype_default, "convert_string_allocate: out of memory!");
 		SAFE_FREE(ob);
 		return (size_t)-1;
 	}

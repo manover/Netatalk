@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.17.8.5 2004-02-28 10:56:26 bfernhomberg Exp $
+ * $Id: main.c,v 1.17.8.6 2004-05-12 21:21:48 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -695,7 +695,7 @@ consistency()
 	for ( lr = zt->zt_rt; lr; lr = lr->l_next ) {
 	    rtmp = (struct rtmptab *)lr->l_data;
 	    if ( rtmp->rt_iprev == 0 && rtmp->rt_gate != 0 ) {
-		LOG(log_error, logtype_atalkd, "%.*s has %u-%u (unused)\n",
+		LOG(log_error, logtype_atalkd, "%.*s has %u-%u (unused)",
 			zt->zt_len, zt->zt_name, ntohs( rtmp->rt_firstnet ),
 			ntohs( rtmp->rt_lastnet ));
 		atalkd_exit(1);
@@ -706,7 +706,7 @@ consistency()
 		}
 	    }
 	    if ( lz == 0 ) {
-		LOG(log_error, logtype_atalkd, "no map from %u-%u to %.*s\n", 
+		LOG(log_error, logtype_atalkd, "no map from %u-%u to %.*s", 
 			ntohs( rtmp->rt_firstnet ),
 			ntohs( rtmp->rt_lastnet ),
 			zt->zt_len, zt->zt_name );

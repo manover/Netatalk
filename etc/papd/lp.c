@@ -1,5 +1,5 @@
 /*
- * $Id: lp.c,v 1.14.8.1 2004-02-20 20:53:14 bfernhomberg Exp $
+ * $Id: lp.c,v 1.14.8.2 2004-05-12 21:21:49 didg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -588,7 +588,7 @@ int lp_conn_inet()
     struct hostent	*hp;
 
     if (( sp = getservbyname( "printer", "tcp" )) == NULL ) {
-	LOG(log_error, logtype_papd, "printer/tcp: unknown service\n" );
+	LOG(log_error, logtype_papd, "printer/tcp: unknown service" );
 	return( -1 );
     }
 
@@ -598,7 +598,7 @@ int lp_conn_inet()
     }
 
     if (( hp = gethostbyname( hostname )) == NULL ) {
-	LOG(log_error, logtype_papd, "%s: unknown host\n", hostname );
+	LOG(log_error, logtype_papd, "%s: unknown host", hostname );
 	return( -1 );
     }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: unix.c,v 1.43.2.1.2.7 2004-05-10 18:40:32 didg Exp $
+ * $Id: unix.c,v 1.43.2.1.2.8 2004-05-12 21:21:48 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -791,19 +791,19 @@ static int recursive_chown(const char *path, uid_t uid, gid_t gid) {
     newpath[PATH_MAX] = '\0';
     
     if (chown(path, uid, gid) < 0) {
-        LOG(log_error, logtype_afpd, "cannot chown() file [%s] (uid = %d): %s\n", path, uid, strerror(errno));
+        LOG(log_error, logtype_afpd, "cannot chown() file [%s] (uid = %d): %s", path, uid, strerror(errno));
 	return -1;
     }
 
     if (stat(path, &sbuf) < 0) {
-	LOG(log_error, logtype_afpd, "cannot chown() file [%s] (uid = %d): %s\n", path, uid, strerror(errno));
+	LOG(log_error, logtype_afpd, "cannot chown() file [%s] (uid = %d): %s", path, uid, strerror(errno));
 	return -1;
     }
 	
     if (S_ISDIR(sbuf.st_mode)) {
 	odir = opendir(path);
 	if (odir == NULL) {
-	    LOG(log_error, logtype_afpd, "cannot opendir() [%s] (uid = %d): %s\n", path, uid, strerror(errno));
+	    LOG(log_error, logtype_afpd, "cannot opendir() [%s] (uid = %d): %s", path, uid, strerror(errno));
 	    goto recursive_chown_end;
 	}
 	while (NULL != (entry=readdir(odir)) ) {
@@ -849,7 +849,7 @@ int unix_rename(const char *oldpath, const char *newpath)
         pd_name[i++] = '.'; pd_name[i++] = '\0';
 
         if (stat(pd_name, &pd_stat) < 0) {
-	    LOG(log_error, logtype_afpd, "stat() of parent dir failed: pd_name = %s, uid = %d: %s\n",
+	    LOG(log_error, logtype_afpd, "stat() of parent dir failed: pd_name = %s, uid = %d: %s",
 		pd_name, geteuid(), strerror(errno));
 		return 0;
 	}
@@ -858,9 +858,9 @@ int unix_rename(const char *oldpath, const char *newpath)
         if ((S_ISGID & pd_stat.st_mode)	!= 0) {
             uid = geteuid();
             if (seteuid(0) < 0)
-		LOG(log_error, logtype_afpd, "seteuid() failed: %s\n", strerror(errno));
+		LOG(log_error, logtype_afpd, "seteuid() failed: %s", strerror(errno));
             if (recursive_chown(newpath, uid, pd_stat.st_gid) < 0)
-		LOG(log_error, logtype_afpd, "chown() of parent dir failed: newpath=%s, uid=%d: %s\n",
+		LOG(log_error, logtype_afpd, "chown() of parent dir failed: newpath=%s, uid=%d: %s",
 		    pd_name, geteuid(), strerror(errno));
             seteuid(uid);
 	}

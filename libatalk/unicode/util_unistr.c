@@ -250,7 +250,7 @@ ucs2_t *strndup_w(const ucs2_t *src, size_t len)
         if (!len) len = strlen_w(src);
         dest = (ucs2_t *)malloc((len + 1) * sizeof(ucs2_t));
         if (!dest) {
-                LOG (log_error, logtype_default, "strdup_w: out of memory!\n");
+                LOG (log_error, logtype_default, "strdup_w: out of memory!");
                 return NULL;
         }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: afp_options.c,v 1.30.2.2.2.6 2004-01-25 11:52:14 bfernhomberg Exp $
+ * $Id: afp_options.c,v 1.30.2.2.2.7 2004-05-12 21:21:48 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -435,7 +435,7 @@ int afp_options_parseline(char *buf, struct afp_options *options)
         struct in_addr inaddr;
         if (inet_aton(c, &inaddr) && (opt = strdup(c))) {
             if (!gethostbyaddr((const char *) &inaddr, sizeof(inaddr), AF_INET))
-                LOG(log_info, logtype_afpd, "WARNING: can't find %s\n", opt);
+                LOG(log_info, logtype_afpd, "WARNING: can't find %s", opt);
             options->ipaddr = opt;
         }
     }

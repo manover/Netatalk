@@ -1,5 +1,5 @@
 /*
- * $Id: quota.c,v 1.22.8.9 2004-04-06 23:05:15 bfernhomberg Exp $
+ * $Id: quota.c,v 1.22.8.10 2004-05-12 21:21:48 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -103,7 +103,7 @@ static void linuxquota_get_api( void )
         sig.sa_flags     = 0;
         sigemptyset(&sig.sa_mask);
         if (sigaction(SIGSEGV, &sig, &oldsig) < 0) {
-	    LOG( log_error, logtype_afpd, "cannot set SEGV signal handler: %s\n", strerror(errno));
+	    LOG( log_error, logtype_afpd, "cannot set SEGV signal handler: %s", strerror(errno));
             goto failure;
         }
         if (quotactl(QCMD(Q_V2_GETSTATS, 0), NULL, 0, (void *)&v2_stats) >= 0) {
@@ -150,7 +150,7 @@ static void linuxquota_get_api( void )
             }
         }
         if (sigaction(SIGSEGV, &oldsig, NULL) < 0) {
-	    LOG(log_error, logtype_afpd, "cannot reset signal handler: %s\n", strerror(errno));
+	    LOG(log_error, logtype_afpd, "cannot reset signal handler: %s", strerror(errno));
             goto failure;
         }
     }

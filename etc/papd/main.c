@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.18 2003-02-17 01:31:51 srittau Exp $
+ * $Id: main.c,v 1.18.6.1 2004-05-12 21:21:49 didg Exp $
  *
  * Copyright (c) 1990,1995 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -121,11 +121,11 @@ die( n )
     for ( pr = printers; pr; pr = pr->p_next ) {
 	if ( pr->p_flags & P_REGISTERED ) {
 	    if ( nbp_unrgstr( pr->p_name, pr->p_type, pr->p_zone, &addr ) < 0 ) {
-		LOG(log_error, logtype_papd, "can't unregister %s:%s@%s\n", pr->p_name,
+		LOG(log_error, logtype_papd, "can't unregister %s:%s@%s", pr->p_name,
 			pr->p_type, pr->p_zone );
 		papd_exit( n + 1 );
 	    }
-	    LOG(log_error, logtype_papd, "unregister %s:%s@%s\n", pr->p_name, pr->p_type,
+	    LOG(log_error, logtype_papd, "unregister %s:%s@%s", pr->p_name, pr->p_type,
 		    pr->p_zone );
 	}
     }

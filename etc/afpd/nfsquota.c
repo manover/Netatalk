@@ -1,5 +1,5 @@
 /*
- * $Id: nfsquota.c,v 1.10.8.2 2004-01-15 08:12:57 bfernhomberg Exp $
+ * $Id: nfsquota.c,v 1.10.8.3 2004-05-12 21:21:48 didg Exp $
  *
  * parts of this are lifted from the bsd quota program and are
  * therefore under the following copyright:
@@ -143,7 +143,7 @@ int getnfsquota(const struct vol *vol, const int uid, const u_int32_t bsize,
         break;
 
     case Q_EPERM:
-        LOG(log_error, logtype_afpd, "nfsquota: quota permission error, host: %s\n",
+        LOG(log_error, logtype_afpd, "nfsquota: quota permission error, host: %s",
             vol->v_gvs);
         break;
 
@@ -179,7 +179,7 @@ int getnfsquota(const struct vol *vol, const int uid, const u_int32_t bsize,
         break;
 
     default:
-        LOG(log_info, logtype_afpd, "bad rpc result, host: %s\n", vol->v_gvs);
+        LOG(log_info, logtype_afpd, "bad rpc result, host: %s", vol->v_gvs);
         break;
     }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: zip.c,v 1.11.8.1 2004-01-10 08:09:12 bfernhomberg Exp $
+ * $Id: zip.c,v 1.11.8.2 2004-05-12 21:21:48 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -753,7 +753,7 @@ int zip_packet( ap, from, data, len )
 	    break;
 
 	default :
-	    LOG(log_info, logtype_atalkd, "zip_packet bad zip op from %u.%u\n",
+	    LOG(log_info, logtype_atalkd, "zip_packet bad zip op from %u.%u",
 		    ntohs( from->sat_addr.s_net ), from->sat_addr.s_node );
 	}
 	break;
@@ -890,7 +890,7 @@ int zip_packet( ap, from, data, len )
 	break;
 
     default :
-	LOG(log_info, logtype_atalkd, "zip_packet bad ddp type from %u.%u\n",
+	LOG(log_info, logtype_atalkd, "zip_packet bad ddp type from %u.%u",
 		ntohs( from->sat_addr.s_net ), from->sat_addr.s_node );
 	return 1;
     }
