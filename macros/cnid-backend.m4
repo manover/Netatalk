@@ -38,8 +38,8 @@ AC_DEFUN([AC_NETATALK_CNID], [
             AC_MSG_RESULT([yes])
         fi
     ],[
-        use_dbd_backend=no
-        AC_MSG_RESULT([no])
+        use_dbd_backend=yes
+        AC_MSG_RESULT([yes])
     ])
 
     dnl Determine whether or not to use with transaction support in Database Daemon
@@ -54,8 +54,8 @@ AC_DEFUN([AC_NETATALK_CNID], [
             AC_MSG_RESULT([yes])
         fi
 	],[
-        use_dbd_txn=no
-        AC_MSG_RESULT([no])
+        use_dbd_txn=yes
+        AC_MSG_RESULT([yes])
     ])
 
     if test $use_dbd_txn = yes; then
@@ -115,7 +115,7 @@ AC_DEFUN([AC_NETATALK_CNID], [
             compiled_backends="$compiled_backends last"
         fi
     ],[
-        use_last_backend=no
+        use_last_backend=yes
     ])
 
     if test $use_last_backend = yes; then
