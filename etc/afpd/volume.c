@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.25 2004-03-11 02:02:03 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.26 2004-03-12 02:50:44 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1933,12 +1933,10 @@ struct vol	*vol;
     /* a little granularity */
     if (vol->v_mtime < tv.tv_sec) {
         vol->v_mtime = tv.tv_sec;
-#if 0
-/* if 0ed, we're sending too many */
-        if (afp_version > 21 && obj->options.server_notif) {
+        /* or OSX finder doesn't update free space */
+        if (afp_version >= 30 && obj->options.server_notif) {
             obj->attention(obj->handle, AFPATTN_NOTIFY | AFPATTN_VOLCHANGED);
         }
-#endif
     }
 }
 
