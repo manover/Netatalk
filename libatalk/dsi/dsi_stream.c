@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_stream.c,v 1.4.2.1 2002-02-08 00:03:29 srittau Exp $
+ * $Id: dsi_stream.c,v 1.4.2.2 2002-03-12 16:16:55 srittau Exp $
  *
  * Copyright (c) 1998 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -182,6 +182,14 @@ int dsi_stream_receive(DSI *dsi, void *buf, const int ilength,
 
   dsi->header.dsi_flags = block[0];
   dsi->header.dsi_command = block[1];
+  /* FIXME, not the right place, 
+     but we get a server disconnect without reason in the log
+  */
+  if (!block[1]) {
+      LOG(log_error, logtype_default, "dsi_stream_receive: invalid packet, fatal");
+      return 0;
+  }
+
   memcpy(&dsi->header.dsi_requestID, block + 2, 
 	 sizeof(dsi->header.dsi_requestID));
   memcpy(&dsi->header.dsi_code, block + 4, sizeof(dsi->header.dsi_code));
