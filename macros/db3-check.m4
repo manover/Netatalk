@@ -1,7 +1,8 @@
-dnl $Id: db3-check.m4,v 1.11.6.2 2003-11-24 17:16:51 bfernhomberg Exp $
+dnl $Id: db3-check.m4,v 1.11.6.3 2004-01-03 01:49:54 bfernhomberg Exp $
 dnl Autoconf macro to check for the Berkeley DB library
 
-AC_DEFUN([AC_PATH_BDB], [
+AC_DEFUN([AC_PATH_BDB], 
+[
 	trybdbdir=""
 	dobdbsearch=yes
 	bdb_search_dirs="/usr/local/include/db4 /usr/local/include /usr/include/db4 /usr/include"
@@ -9,9 +10,9 @@ AC_DEFUN([AC_PATH_BDB], [
 
 	AC_ARG_WITH(bdb,
 		[  --with-bdb=PATH         specify path to Berkeley DB installation[[auto]]],
-		if test "x$withval" == "xno"; then
+		if test "x$withval" = "xno"; then
 			dobdbsearch=no
-		elif test "x$withval" == "xyes"; then
+		elif test "x$withval" = "xyes"; then
 			dobdbsearch=yes
 		else
 			bdb_search_dirs="$withval/include/db4 $withval/include $withval"
@@ -19,8 +20,8 @@ AC_DEFUN([AC_PATH_BDB], [
 	)
 
 	bdbfound=no
-	if test "x$dobdbsearch" != "xno"; then
-	for bdbdir in $bdb_search_dirs ; do
+	if test "x$dobdbsearch" = "xyes"; then
+	    for bdbdir in $bdb_search_dirs; do
 		AC_MSG_CHECKING([for Berkeley DB headers in $bdbdir])
 		if test -f "$bdbdir/db.h" ; then
 			AC_MSG_RESULT([yes])
@@ -37,25 +38,36 @@ AC_DEFUN([AC_PATH_BDB], [
 			CFLAGS=""
 			LDFLAGS="-L$bdblibdir $LDFLAGS"
 
-			dnl db_create is BDB >3 specific 
-			AC_CHECK_LIB(db, db_create, [
-				bdbfound=yes
-				LIBS="$LIBS -ldb"
-				BDB_LIBS="-ldb"], [
-			    AC_CHECK_LIB(db4, db_create, [
-					bdbfound=yes
-					LIBS="$LIBS -ldb4"
-					BDB_LIBS="-ldb4"])
-                        ])
+dnl This check breaks if bdb was configured with --with-uniquename, removed for now
+dnl			dnl db_create is BDB >3 specific 
+dnl			AC_CHECK_LIB(db, db_create, [
+dnl				bdbfound=yes
+dnl				LIBS="$LIBS -ldb"
+dnl				BDB_LIBS="-ldb"], [
+dnl			    AC_CHECK_LIB(db4, db_create, [
+dnl					bdbfound=yes
+dnl					LIBS="$LIBS -ldb4"
+dnl					BDB_LIBS="-ldb4"])
+dnl                        ])
+			
+			bdbfound=yes
+			LIBS="$LIBS -ldb"
+			BDB_LIBS="-ldb"
 
 			dnl check for header ... should only fail if the header cannot be compiled
 			dnl it does exist, otherwise we wouldn't be here
 
 			if test "x$bdbfound" = "xyes"; then
-  			    AC_CHECK_HEADERS([db.h],[
-				dnl check we have the correct bdb version
-			  	AC_MSG_CHECKING(Berkeley DB version >= 4.0)
- 				AC_TRY_RUN([ 
+			    AC_CHECK_HEADERS(db.h, bdbfound=yes, bdbfound=no)
+			fi
+
+			if test "x$bdbfound" = "xno"; then
+				AC_MSG_WARN([Berkeley DB libraries found, but required header files cannot be used!!!])
+			fi
+
+			dnl check we have the correct bdb version
+		  	AC_MSG_CHECKING([Berkeley DB version >= 4.0])
+ 			AC_TRY_RUN([ 
 #if STDC_HEADERS
 #include <stdlib.h>
 #endif
@@ -87,21 +99,14 @@ int main(void) {
 
 	exit (0);
 }
-], 
-                 		atalk_cv_bdbversion="yes", 
-                 		atalk_cv_bdbversion="no",
-				atalk_cv_bdbversion="cross")
+], atalk_cv_bdbversion="yes", atalk_cv_bdbversion="no", atalk_cv_bdbversion="cross")
 
-  				if test ${atalk_cv_bdbversion} = "yes"; then
-   				   AC_MSG_RESULT(yes)
-  				else
-   				   AC_MSG_RESULT(no)
-				   bdbfound=no
-  				fi
-			    ],[
+
+			if test ${atalk_cv_bdbversion} = "yes"; then
+   				AC_MSG_RESULT(yes)
+			else
+   				AC_MSG_RESULT(no)
 				bdbfound=no
-                                AC_MSG_WARN([Berkeley DB libraries found, but required header files cannot be used!!!])
-			    ])
 			fi
 
 			if test "x$bdbfound" = "xyes"; then
@@ -123,7 +128,7 @@ int main(void) {
 		else
 			AC_MSG_RESULT([no])
 		fi
-	done
+	    done
 	fi
 
 	if test "x$bdbfound" = "xyes"; then
@@ -137,3 +142,5 @@ int main(void) {
 	AC_SUBST(BDB_BIN)
 	AC_SUBST(BDB_PATH)
 ])
+
+

@@ -1,4 +1,4 @@
-dnl $Id: gssapi-check.m4,v 1.1.2.2 2003-10-29 23:53:24 bfernhomberg Exp $
+dnl $Id: gssapi-check.m4,v 1.1.2.3 2004-01-03 01:49:54 bfernhomberg Exp $
 dnl Autoconf macro to check for kerberos
 
 AC_DEFUN([NETATALK_GSSAPI_CHECK], 
@@ -129,7 +129,7 @@ AC_DEFUN([NETATALK_GSSAPI_CHECK],
   	GSSAPI_LIBS="$LIBS $LDLAGS"
      else
     	AC_MSG_RESULT([no])
-	if test x"$compilegssapi" == x"yes"; then
+	if test x"$compilegssapi" = x"yes"; then
 	  AC_MSG_ERROR([GSSAPI installation not found])
 	fi
         GSSAPI_LIBS=""

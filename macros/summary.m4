@@ -16,10 +16,10 @@ AC_DEFUN([AM_NETATALK_CONFIG_SUMMARY], [
 	if test x"$netatalk_cv_use_pam" != x"no"; then
         	uams_using_options="PAM"
 	fi
-	if test "x$netatalk_cv_use_shadowpw" == "xyes"; then
+	if test "x$netatalk_cv_use_shadowpw" = "xyes"; then
         	uams_using_options="$uams_using_options SHADOW"
 	fi
-	if test "x$compile_ssl" == "xyes"; then
+	if test "x$compile_ssl" = "xyes"; then
 		AC_MSG_RESULT([         DHX     ($uams_using_options)])
 		AC_MSG_RESULT([         RANDNUM ($uams_using_options)])
 	fi

@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.14 2003-12-12 19:29:55 didg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.15 2004-01-03 01:49:54 bfernhomberg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(etc/afpd/main.c)
@@ -17,7 +17,7 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 AC_LIBTOOL_DLOPEN
-AM_PROG_LIBTOOL
+AC_PROG_LIBTOOL
 AC_PROG_PERL
 AC_PROG_GREP
 AC_PROG_PS
@@ -273,7 +273,7 @@ if test x"$afp3" = x"yes"; then
         AC_SYS_LARGEFILE([
 		AC_DEFINE(AFP3x, 1, [Define to enable AFP 3.x support])
 	],[
-		if test x"$afp3set" == x"yes"; then
+		if test x"$afp3set" = x"yes"; then
 			AC_MSG_ERROR([AFP 3.x support requires Large File Support.])
 		else
 			AC_MSG_WARN([AFP 3.x support requires Large File Support. AFP3.x support disabled])
@@ -282,7 +282,7 @@ if test x"$afp3" = x"yes"; then
 	])
 fi
 
-AM_ICONV
+AC_CHECK_ICONV
 
 dnl ----------- A NOTE ABOUT DROPKLUDGE
 dnl The trouble with this fix is that if you know what the file is called, it
@@ -377,7 +377,7 @@ if test "x$netatalk_cv_use_shadowpw" != "xno"; then
 fi
 
 AC_MSG_CHECKING([whether shadow support should be enabled])
-if test "x$netatalk_cv_use_shadowpw" == "xyes"; then
+if test "x$netatalk_cv_use_shadowpw" = "xyes"; then
 	AC_MSG_RESULT([yes])
 else
 	AC_MSG_RESULT([no])
@@ -597,11 +597,13 @@ if test x"$this_os" = "xlinux"; then
 	
 	dnl ----- kernel 2.6 changed struct at_addr to atalk_addr
 	AC_MSG_CHECKING([for struct atalk_addr])
-	AC_COMPILE_IFELSE([
+dnl	AC_COMPILE_IFELSE([
+	AC_TRY_COMPILE([
 #include <sys/socket.h>
 #include <asm/types.h>
 #include <linux/atalk.h>
-
+],
+[
 int main() {
 	struct atalk_addr foo;
 

@@ -1,4 +1,4 @@
-AC_DEFUN([AM_ICONV],
+AC_DEFUN([AC_CHECK_ICONV],
 [
 
 dnl	#################################################
