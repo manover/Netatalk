@@ -1,5 +1,5 @@
 /*
- * $Id: uam.c,v 1.24.6.2 2003-11-14 14:37:38 didg Exp $
+ * $Id: uam.c,v 1.24.6.3 2004-01-11 12:31:12 bfernhomberg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -491,7 +491,7 @@ AFPObj *obj = private;
     case UAM_OPTION_KRB5SERVICE:
 	*buf = obj->options.k5service;
         if (len)
-            *len = strlen(obj->options.k5service);
+            *len = (*buf)?strlen(*buf):0;
 	break;
     case UAM_OPTION_MACCHARSET:
         *((int *) option) = obj->options.maccharset;
