@@ -1,5 +1,5 @@
 /*
- * $Id: quota.c,v 1.22.8.7 2004-02-27 02:39:24 bfernhomberg Exp $
+ * $Id: quota.c,v 1.22.8.8 2004-03-22 22:46:29 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -74,6 +74,7 @@ static int is_xfs = 0;
 
 static int get_linux_xfs_quota(int, char*, uid_t, struct dqblk *);
 static int get_linux_fs_quota(int, char*, uid_t, struct dqblk *);
+static int overquota( struct dqblk *);
 
 /* format supported by current kernel */
 static int kernel_iface = IFACE_UNSET;
@@ -500,37 +501,44 @@ struct dqblk		*dq;
     }
 
 #else /* BSD4_4 */
-	if (get_linux_quota (WANT_USER_QUOTA, vol->v_gvs, uid, dq) !=0) {
-        	return( AFPERR_PARAM );
-    	}
+    if (get_linux_quota (WANT_USER_QUOTA, vol->v_gvs, uid, dq) !=0) {
+        return( AFPERR_PARAM );
+    }
 
-    	if (ngroups >= 1)
-    	{
-		if (get_linux_quota(WANT_GROUP_QUOTA, vol->v_gvs, groups[0],  &dqg) != 0)
-                	LOG(log_debug, logtype_afpd, "group quota did not work!" );
-     	}
+    if (get_linux_quota(WANT_GROUP_QUOTA, vol->v_gvs, getegid(),  &dqg) != 0) {
+#ifdef DEBUG_QUOTA
+        LOG(log_debug, logtype_afpd, "group quota did not work!" );
+#endif /* DEBUG_QUOTA */
+
+	return AFP_OK; /* no need to check user vs group quota */
+    }
 #endif  /* BSD4_4 */
 
+
 #ifndef TRU64
-    /* set stuff up for group quotas if necessary */
+    /* return either the group quota entry or user quota entry,
+       whichever has the least amount of space remaining
+    */
 
-    /* max(user blocks, group blocks) */
-    if (dqg.dqb_curblocks && (dq->dqb_curblocks < dqg.dqb_curblocks))
-        dq->dqb_curblocks = dqg.dqb_curblocks; 
-    /* min(user limit, group limit) */
-    if (dqg.dqb_bhardlimit && (!dq->dqb_bhardlimit ||
-                               (dq->dqb_bhardlimit > dqg.dqb_bhardlimit)))
+    /* if user space remaining > group space remaining */
+    if( 
+        /* if overquota, free space is 0 otherwise hard-current */
+        ( overquota( dq ) ? 0 : ( dq->dqb_bhardlimit ? dq->dqb_bhardlimit - 
+                                  dq->dqb_curblocks : ~((qsize_t) 0) ) )
+
+      >
+        
+        ( overquota( &dqg ) ? 0 : ( dqg.dqb_bhardlimit ? dqg.dqb_bhardlimit - 
+                                    dqg.dqb_curblocks : ~((qsize_t) 0) ) )
+
+      ) /* if */
+    {
+        /* use group quota limits rather than user limits */
+        dq->dqb_curblocks = dqg.dqb_curblocks;
         dq->dqb_bhardlimit = dqg.dqb_bhardlimit;
-
-    /* ditto */
-    if (dqg.dqb_bsoftlimit && (!dq->dqb_bsoftlimit ||
-                               (dq->dqb_bsoftlimit > dqg.dqb_bsoftlimit)))
         dq->dqb_bsoftlimit = dqg.dqb_bsoftlimit;
-
-    /* ditto */
-    if (dqg.dqb_btimelimit && (!dq->dqb_btimelimit ||
-                               (dq->dqb_btimelimit > dqg.dqb_btimelimit)))
         dq->dqb_btimelimit = dqg.dqb_btimelimit;
+    } /* if */
 
 #endif /* TRU64 */
 
@@ -632,7 +640,13 @@ struct dqblk	  *dqblk;
 {
     struct timeval	tv;
 
-    if ( dqblk->dqb_curblocks < dqblk->dqb_bsoftlimit ) {
+    if ( dqblk->dqb_curblocks > dqblk->dqb_bhardlimit &&
+         dqblk->dqb_bhardlimit != 0 ) {
+        return( 1 );
+    }
+
+    if ( dqblk->dqb_curblocks < dqblk->dqb_bsoftlimit ||
+         dqblk->dqb_bsoftlimit == 0 ) {
         return( 0 );
     }
 #ifdef ultrix
@@ -715,18 +729,18 @@ const u_int32_t bsize;
 	if (dqblk.dqb_bsoftlimit == 0 && dqblk.dqb_bhardlimit == 0) {
         	*btotal = *bfree = ~((VolSpace) 0);
     	} else if ( overquota( &dqblk )) {
-        	if ( tobytes( dqblk.dqb_curblocks, this_bsize ) > tobytes( dqblk.dqb_bhardlimit, this_bsize ) ) {
+        	if ( tobytes( dqblk.dqb_curblocks, this_bsize ) > tobytes( dqblk.dqb_bsoftlimit, this_bsize ) ) {
             		*btotal = tobytes( dqblk.dqb_curblocks, this_bsize );
             		*bfree = 0;
         	}
         	else {
-            		*btotal = tobytes( dqblk.dqb_bhardlimit, this_bsize );
-            		*bfree  = tobytes( dqblk.dqb_bhardlimit, this_bsize ) -
+            		*btotal = tobytes( dqblk.dqb_bsoftlimit, this_bsize );
+            		*bfree  = tobytes( dqblk.dqb_bsoftlimit, this_bsize ) -
                      		  tobytes( dqblk.dqb_curblocks, this_bsize );
         	}
     	} else {
-        	*btotal = tobytes( dqblk.dqb_bsoftlimit, this_bsize );
-        	*bfree  = tobytes( dqblk.dqb_bsoftlimit, this_bsize  ) -
+        	*btotal = tobytes( dqblk.dqb_bhardlimit, this_bsize );
+        	*bfree  = tobytes( dqblk.dqb_bhardlimit, this_bsize  ) -
                  	  tobytes( dqblk.dqb_curblocks, this_bsize );
     	}
 
