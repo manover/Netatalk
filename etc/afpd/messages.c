@@ -1,5 +1,5 @@
 /*
- * $Id: messages.c,v 1.16.6.1.2.5 2003-11-11 12:16:48 bfernhomberg Exp $
+ * $Id: messages.c,v 1.16.6.1.2.6 2003-11-13 00:19:45 bfernhomberg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -121,7 +121,10 @@ int ibuflen, *rbuflen;
     u_int16_t type, bitmap;
     u_int16_t msgsize;
     size_t outlen = 0;
+    size_t msglen = 0;
     int utf8 = 0;
+
+    *rbuflen = 0;
 
     msgsize = (obj->proto == AFPPROTO_DSI)?MAX(((DSI*)obj->handle)->attn_quantum, MAXMESGSIZE):MAXMESGSIZE;
 
@@ -136,37 +139,33 @@ int ibuflen, *rbuflen;
         message = servermesg;
         break;
     default:
-        *rbuflen = 0;
         return AFPERR_BITMAP;
     }
 
     /* output format:
      * message type:   2 bytes
      * bitmap:         2 bytes
-     * message length: 1 byte
-     * message:        up to 199 bytes
+     * message length: 1 byte ( 2 bytes for utf8)
+     * message:        up to 199 bytes (dsi attn_quantum for utf8)
      */
     memcpy(rbuf, &type, sizeof(type));
     rbuf += sizeof(type);
+    *rbuflen += sizeof(type);
     memcpy(rbuf, &bitmap, sizeof(bitmap));
     rbuf += sizeof(bitmap);
-
-    /* Convert the message to the macs codepage 
-     * according to AFP 3.1 specs page 200 
-     * bit 1 set in bitmap means Unicode ?= utf8
-     * Never saw this in the wild yet           
-     * Upd: Panther does ...                   */	
+    *rbuflen += sizeof(bitmap);
 
     utf8 = ntohs(bitmap) & 2; 
-    *rbuflen = strlen(message);
-    if (*rbuflen > msgsize)
-        *rbuflen = msgsize;
+    msglen = strlen(message);
+    if (msglen > msgsize)
+        msglen = msgsize;
 
-    if (*rbuflen ) { 
-        if ( (size_t)-1 == (outlen = convert_string(obj->options.unixcharset, utf8?CH_UTF8_MAC:obj->options.maccharset, message, *rbuflen, localized_message, msgsize)) )
+    if (msglen) { 
+        if ( (size_t)-1 == (outlen = convert_string(obj->options.unixcharset, utf8?CH_UTF8_MAC:obj->options.maccharset,
+                                                    message, msglen, localized_message, msgsize)) )
         {
-    	    memcpy(rbuf+((utf8)?2:1), message, *rbuflen); /*FIXME*/
-	    outlen = *rbuflen;
+    	    memcpy(rbuf+((utf8)?2:1), message, msglen); /*FIXME*/
+	    outlen = msglen;
         }
         else
         {
@@ -178,16 +177,13 @@ int ibuflen, *rbuflen;
 	/* UTF8 message, 2 byte length */
 	msgsize = htons(outlen);
     	memcpy(rbuf, &msgsize, sizeof(msgsize));
-    	rbuf += sizeof(msgsize);
 	*rbuflen += sizeof(msgsize);
     }
     else {
-        *rbuf++ = *rbuflen;
-	*rbuflen++;
+        *rbuf = outlen;
+	*rbuflen += 1;
     }
-
     *rbuflen += outlen;
-    *rbuflen += 4;
 
     return AFP_OK;
 }
