@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_cdb_add.c,v 1.1.4.4 2004-03-22 04:38:51 bfernhomberg Exp $
+ * $Id: cnid_cdb_add.c,v 1.1.4.5 2004-04-14 21:52:08 bfernhomberg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -283,7 +283,7 @@ int cnid_cdb_getstamp(struct _cnid_db *cdb, void *buffer, const int len)
         }
     }
 
-    memcpy(buffer, data.data + CNID_DEV_OFS, len);
+    memcpy(buffer, (char*)data.data + CNID_DEV_OFS, len);
 #ifdef DEBUG
     LOG(log_info, logtype_cnid, "cnid_getstamp: Returning stamp");
 #endif
