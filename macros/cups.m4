@@ -1,4 +1,4 @@
-dnl $Id: cups.m4,v 1.1.2.1 2004-06-09 02:18:32 bfernhomberg Exp $
+dnl $Id: cups.m4,v 1.1.2.2 2004-08-11 02:57:32 bfernhomberg Exp $
 dnl Autoconf macros to check for CUPS
 
 AC_DEFUN([NETATALK_AC_CUPS], [
@@ -32,8 +32,7 @@ AC_DEFUN([NETATALK_AC_CUPS], [
 				AC_WARN([*** Warning: iconv not found on your system, using simple ascii mapping***])
 			fi
 	                spool_required="yes"
-
-		elif test x"$enable_cups" == "xyes"; then
+		elif test x"$enable_cups" = "xyes"; then
 			AC_MSG_ERROR([*** CUPS not found. You might need to specify the path to cups-config ***])
 	        fi
 	fi
