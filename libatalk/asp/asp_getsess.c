@@ -1,5 +1,5 @@
 /*
- * $Id: asp_getsess.c,v 1.7.8.2 2003-11-13 15:39:02 didg Exp $
+ * $Id: asp_getsess.c,v 1.7.8.3 2004-04-27 22:47:32 didg Exp $
  *
  * Copyright (c) 1990,1996 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -99,6 +99,14 @@ void asp_kill(int sig)
     server_child_kill(children, CHILD_ASPFORK, sig);
 }
 
+void asp_stop_tickle(void)
+{
+    if (server_asp && server_asp->inited) {
+    	static const struct itimerval timer = {{0, 0}, {0, 0}};
+	
+	setitimer(ITIMER_REAL, &timer, NULL);
+    }
+}
 
 /*
  * This call handles open, tickle, and getstatus requests. On a
@@ -125,7 +133,8 @@ ASP asp_getsession(ASP asp, server_child *server_children,
       if (!(children = server_children))
 	return NULL;
 
-      if ((asp_ac = (struct asp_child **) 
+      /* only calloc once */
+      if (!asp_ac && (asp_ac = (struct asp_child **) 
 	   calloc(server_children->nsessions, sizeof(struct asp_child *)))
 	   == NULL)
 	return NULL;
@@ -151,6 +160,7 @@ ASP asp_getsession(ASP asp, server_child *server_children,
       if ((sigaction(SIGALRM, &action, NULL) < 0) ||
 	  (setitimer(ITIMER_REAL, &timer, NULL) < 0)) {
 	free(asp_ac);
+	server_asp = asp_ac = NULL;
 	return NULL;
       }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.20.4.2.2.6 2004-02-20 21:23:13 didg Exp $
+ * $Id: main.c,v 1.20.4.2.2.7 2004-04-27 22:47:32 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -116,6 +116,9 @@ static void afp_goaway(int sig)
                 if (config->server_cleanup)
                     config->server_cleanup(config);
 
+            /* configfree close atp socket used for DDP tickle, there's an issue
+             * with atp tid.
+            */
             configfree(configs, NULL);
             if (!(configs = configinit(&default_options))) {
                 LOG(log_error, logtype_afpd, "config re-read: no servers configured");

@@ -1,5 +1,5 @@
 /*
- * $Id: afp_config.c,v 1.22.6.4 2004-01-25 11:52:33 bfernhomberg Exp $
+ * $Id: afp_config.c,v 1.22.6.5 2004-04-27 22:47:32 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -194,6 +194,8 @@ srvloc_dereg_err:
 #ifndef NO_DDP
 static void asp_cleanup(const AFPConfig *config)
 {
+    /* we need to stop tickle handler */
+    asp_stop_tickle();
     nbp_unrgstr(config->obj.Obj, config->obj.Type, config->obj.Zone,
                 &config->obj.options.ddpaddr);
 }
