@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.6 2002-09-29 23:29:13 sibaz Exp $
+ * $Id: auth.c,v 1.6.8.1 2003-11-14 14:37:38 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -87,7 +87,7 @@ int auth_register(const int type, struct uam_obj *uam)
     return -1;
 
   if (!(start = UAM_LIST(type)))
-    return 0; /* silently fail */
+    return 1; 
 
   uam_attach(start, uam);
   return 0;

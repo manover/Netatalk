@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.20.4.2.2.4 2003-11-11 08:48:33 didg Exp $
+ * $Id: main.c,v 1.20.4.2.2.5 2003-11-14 14:37:38 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -115,6 +115,7 @@ static void afp_goaway(int sig)
     case SIGHUP :
         /* w/ a configuration file, we can force a re-read if we want */
         nologin++;
+        auth_unload();
         if (sig == SIGHUP || ((nologin + 1) & 1)) {
             AFPConfig *config;
 
@@ -131,7 +132,6 @@ static void afp_goaway(int sig)
             set_fd(Ipc_fd);
         } else {
             LOG(log_info, logtype_afpd, "disallowing logins");
-            auth_unload();
         }
         if (sig == SIGHUP) {
             nologin = 0;

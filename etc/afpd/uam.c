@@ -1,5 +1,5 @@
 /*
- * $Id: uam.c,v 1.24.6.1 2003-09-11 23:49:30 bfernhomberg Exp $
+ * $Id: uam.c,v 1.24.6.2 2003-11-14 14:37:38 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -154,6 +154,7 @@ int uam_register(const int type, const char *path, const char *name, ...)
 {
     va_list ap;
     struct uam_obj *uam;
+    int ret;
 
     if (!name)
         return -1;
@@ -203,13 +204,13 @@ int uam_register(const int type, const char *path, const char *name, ...)
     va_end(ap);
 
     /* attach to other uams */
-    if (auth_register(type, uam) < 0) {
+    ret = auth_register(type, uam);
+    if ( ret) {
         free(uam->uam_path);
         free(uam);
-        return -1;
     }
 
-    return 0;
+    return ret;
 }
 #endif
 
