@@ -1,5 +1,5 @@
 /*
- * $Id: at.h,v 1.3 2001-11-25 21:55:10 srittau Exp $
+ * $Id: at.h,v 1.3.4.1 2003-11-30 14:54:56 srittau Exp $
  *
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  *
@@ -10,9 +10,15 @@
 #define __AT_HEADER__
 
 #if defined(linux) /* pull in the linux header */
+
 #include <sys/socket.h>
 #include <asm/types.h>
 #include <linux/atalk.h>
+
+#ifdef HAVE_ATALK_ADDR
+#define at_addr atalk_addr
+#endif /* HAVE_ATALK_ADDR */
+
 #else /* linux */
 
 #include <sys/types.h>
