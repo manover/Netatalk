@@ -9,6 +9,8 @@ Changes in 1.6.4
        not set. [Sam Noble]
 * FIX: afpd: Catsearch, fix possible SIGSEGV
 * FIX: cnid: Fix compile problems on Tru64. [Burkhard Schmidt]
+* FIX: deadlock in signal handlers (Redhat 9)
+* FIX: don't log network probe (OSX 10.3)
 
 Changes in 1.6.3
 ================

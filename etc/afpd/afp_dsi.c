@@ -1,5 +1,5 @@
 /*
- * $Id: afp_dsi.c,v 1.24.2.2 2003-06-09 15:09:06 srittau Exp $
+ * $Id: afp_dsi.c,v 1.24.2.3 2003-11-05 06:41:01 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -178,6 +178,9 @@ void afp_over_dsi(AFPObj *obj)
     sigemptyset( &action.sa_mask );
     sigaddset(&action.sa_mask, SIGALRM);
     sigaddset(&action.sa_mask, SIGTERM);
+#ifdef SERVERTEXT
+    sigaddset(&action.sa_mask, SIGUSR2);
+#endif
     action.sa_flags = SA_RESTART;
     if ( sigaction( SIGHUP, &action, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_over_dsi: sigaction: %s", strerror(errno) );
@@ -188,6 +191,9 @@ void afp_over_dsi(AFPObj *obj)
     sigemptyset( &action.sa_mask );
     sigaddset(&action.sa_mask, SIGALRM);
     sigaddset(&action.sa_mask, SIGHUP);
+#ifdef SERVERTEXT
+    sigaddset(&action.sa_mask, SIGUSR2);
+#endif
     action.sa_flags = SA_RESTART;
     if ( sigaction( SIGTERM, &action, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_over_dsi: sigaction: %s", strerror(errno) );
@@ -198,7 +204,9 @@ void afp_over_dsi(AFPObj *obj)
     /* Added for server message support */
     action.sa_handler = afp_dsi_getmesg;
     sigemptyset( &action.sa_mask );
-    sigaddset(&action.sa_mask, SIGUSR2);
+    sigaddset(&action.sa_mask, SIGTERM);
+    sigaddset(&action.sa_mask, SIGALRM);
+    sigaddset(&action.sa_mask, SIGHUP);
     action.sa_flags = SA_RESTART;
     if ( sigaction( SIGUSR2, &action, 0) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_over_dsi: sigaction: %s", strerror(errno) );
@@ -221,6 +229,9 @@ void afp_over_dsi(AFPObj *obj)
     sigemptyset(&action.sa_mask);
     sigaddset(&action.sa_mask, SIGHUP);
     sigaddset(&action.sa_mask, SIGTERM);
+#ifdef SERVERTEXT
+    sigaddset(&action.sa_mask, SIGUSR2);
+#endif
     action.sa_flags = SA_RESTART;
     if ((sigaction(SIGALRM, &action, NULL) < 0) ||
             (setitimer(ITIMER_REAL, &dsi->timer, NULL) < 0)) {

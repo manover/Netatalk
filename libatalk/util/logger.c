@@ -522,6 +522,16 @@ void make_log_entry(enum loglevels loglevel, enum logtypes logtype,
   char log_details_buffer[MAXLOGSIZE];
 
   log_file_data_pair *logs;
+  
+  /* fn is not reentrant but is used in signal handler 
+   * with LOGGER it's a little late source name and line number
+   * are already changed.
+  */
+  static int inlog = 0;
+
+  if (inlog)
+     return;
+  inlog = 1;
 
   log_init();
 
@@ -593,6 +603,7 @@ void make_log_entry(enum loglevels loglevel, enum logtypes logtype,
         LOG(log_severe, logtype_logger, "can't open Logfile %s", 
 	    (*logs)[1].log_filename
 	    );
+	inlog = 0;
         return;
       }
     }
@@ -626,6 +637,7 @@ void make_log_entry(enum loglevels loglevel, enum logtypes logtype,
   global_log_data.temp_src_filename = NULL;
   global_log_data.temp_src_linenumber = 0;
 #endif /* DISABLE_LOGGER */
+  inlog = 0;
 }
 
 #ifndef DISABLE_LOGGER

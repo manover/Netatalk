@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.20 2002-10-04 15:15:05 srittau Exp $
+ * $Id: main.c,v 1.20.2.1 2003-11-05 06:41:01 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -143,6 +143,7 @@ char	**av;
     fd_set              rfds;
     struct sigaction	sv;
     sigset_t            sigs;
+    int                 ret;
 
 #ifdef TRU64
     argc = ac;
@@ -180,6 +181,9 @@ char	**av;
     memset(&sv, 0, sizeof(sv));
     sv.sa_handler = child_handler;
     sigemptyset( &sv.sa_mask );
+    sigaddset(&sv.sa_mask, SIGALRM);
+    sigaddset(&sv.sa_mask, SIGHUP);
+    sigaddset(&sv.sa_mask, SIGTERM);
     sv.sa_flags = SA_RESTART;
     if ( sigaction( SIGCHLD, &sv, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "main: sigaction: %s", strerror(errno) );
@@ -188,13 +192,20 @@ char	**av;
 
     sv.sa_handler = afp_goaway;
     sigemptyset( &sv.sa_mask );
-    sigaddset(&sv.sa_mask, SIGHUP);
+    sigaddset(&sv.sa_mask, SIGALRM);
     sigaddset(&sv.sa_mask, SIGTERM);
+    sigaddset(&sv.sa_mask, SIGCHLD);
     sv.sa_flags = SA_RESTART;
     if ( sigaction( SIGHUP, &sv, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "main: sigaction: %s", strerror(errno) );
         afp_exit(1);
     }
+
+    sigemptyset( &sv.sa_mask );
+    sigaddset(&sv.sa_mask, SIGALRM);
+    sigaddset(&sv.sa_mask, SIGHUP);
+    sigaddset(&sv.sa_mask, SIGCHLD);
+    sv.sa_flags = SA_RESTART;
     if ( sigaction( SIGTERM, &sv, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "main: sigaction: %s", strerror(errno) );
         afp_exit(1);
@@ -209,8 +220,13 @@ char	**av;
      */
 
     sigemptyset(&sigs);
+    sigaddset(&sigs, SIGALRM);
     sigaddset(&sigs, SIGHUP);
+#if 0 
+    /* don't block SIGTERM */   
     sigaddset(&sigs, SIGTERM);
+#endif    
+    sigaddset(&sigs, SIGCHLD);
     sigprocmask(SIG_BLOCK, &sigs, NULL);
     if (!(configs = configinit(&default_options))) {
         LOG(log_error, logtype_afpd, "main: no servers configured: %s\n", strerror(errno));
@@ -234,7 +250,10 @@ char	**av;
      * solution. */
     while (1) {
         rfds = save_rfds;
-        if (select(FD_SETSIZE, &rfds, NULL, NULL, NULL) < 0) {
+        sigprocmask(SIG_UNBLOCK, &sigs, NULL);
+        ret = select(FD_SETSIZE, &rfds, NULL, NULL, NULL);
+        sigprocmask(SIG_BLOCK, &sigs, NULL);
+        if (ret < 0) {
             if (errno == EINTR)
                 continue;
             LOG(log_error, logtype_afpd, "main: can't wait for input: %s", strerror(errno));

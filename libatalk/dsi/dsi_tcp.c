@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_tcp.c,v 1.9 2002-01-24 16:27:31 jmarcus Exp $
+ * $Id: dsi_tcp.c,v 1.9.4.1 2003-11-05 06:41:02 didg Exp $
  *
  * Copyright (c) 1997, 1998 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -148,7 +148,12 @@ static int dsi_tcp_open(DSI *dsi)
     
     /* read in the first two bytes */
     len = dsi_stream_read(dsi, block, 2);
-    if (len <= 0 || (block[0] > DSIFL_MAX) || (block[1] > DSIFUNC_MAX)) {
+    if (!len ) {
+      /* connection already closed, don't log it (normal OSX 10.3 behaviour) */
+      exit(1);
+    }
+
+    if (len < 2 || (block[0] > DSIFL_MAX) || (block[1] > DSIFUNC_MAX)) {
       LOG(log_error, logtype_default, "dsi_tcp_open: invalid header");
       exit(1);
     }      
