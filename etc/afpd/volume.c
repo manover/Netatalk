@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.13 2003-11-29 00:11:55 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.14 2003-12-17 17:19:20 lenneis Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1647,15 +1647,11 @@ int		ibuflen, *rbuflen;
     }
     if (volume->v_dbpath)
         volume->v_cdb = cnid_open (volume->v_dbpath, volume->v_umask, volume->v_cnidscheme);
-    if (volume->v_cdb == NULL)
+    else
         volume->v_cdb = cnid_open (volume->v_path, volume->v_umask, volume->v_cnidscheme);
     if (volume->v_cdb == NULL) {
-        volume->v_cdb = cnid_open (volume->v_path, volume->v_umask, DEFAULT_CNID_SCHEME);
-        LOG(log_error, logtype_afpd, "Error: invalid CNID backend for %s: %s", volume->v_path,
-            volume->v_cnidscheme);
-    }
-    if (volume->v_cdb == NULL) {
-        LOG(log_error, logtype_afpd, "Fatal error: cannot open CNID for %s", volume->v_path);
+        LOG(log_error, logtype_afpd, "Fatal error: cannot open CNID or invalid CNID backend for %s: %s", 
+	    volume->v_path, volume->v_cnidscheme);
         ret = AFPERR_MISC;
         goto openvol_err;
     }
