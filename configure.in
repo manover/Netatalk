@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.7 2003-10-17 00:01:10 didg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.8 2003-10-26 10:33:37 didg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(bin/adv1tov2/adv1tov2.c)
@@ -514,6 +514,14 @@ AC_ARG_ENABLE(shell-check,
 	if test "$enableval" = "no"; then 
 		AC_DEFINE(DISABLE_SHELLCHECK, 1, [Define if shell check should be disabled])
 		AC_MSG_RESULT([disabling valid shell check])
+	fi
+)
+
+AC_ARG_ENABLE(locking,
+	[  --disable-locking   disable system locking],
+	if test "$enableval" = "no"; then 
+		AC_DEFINE(DISABLE_LOCKING, 1, [Define if system (fcntl) locking should be disabled])
+		AC_MSG_RESULT([disabling system locking])
 	fi
 )
 

@@ -1,5 +1,5 @@
 /* 
- * $Id: ad_lock.c,v 1.11 2003-02-16 12:35:05 didg Exp $
+ * $Id: ad_lock.c,v 1.11.6.1 2003-10-26 10:33:37 didg Exp $
  *
  * Copyright (c) 1998,1999 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT for more information.
@@ -39,6 +39,10 @@
 #define XLATE_FLOCK(type) ((type) == ADLOCK_RD ? LOCK_SH : \
 ((type) == ADLOCK_WR ? LOCK_EX : \
  ((type) == ADLOCK_CLR ? LOCK_UN : -1)))
+
+#ifdef DISABLE_LOCKING
+#define fcntl(a, b, c ) (0)
+#endif
 
 /* ----------------------- */
 static int XLATE_FCNTL_LOCK(int type) 
