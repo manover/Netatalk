@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.12 2004-02-07 19:46:08 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.13 2004-02-10 02:40:33 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1629,7 +1629,7 @@ reenumerate_id(const struct vol *vol, char *name, cnid_t did)
     struct adouble  ad;
 	
 
-    if (vol->v_cdb != NULL) {
+    if (vol->v_cdb == NULL) {
 	return -1;
     }
     if (NULL == ( dp = opendir( name)) ) {
