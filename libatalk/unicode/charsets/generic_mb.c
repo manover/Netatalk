@@ -37,6 +37,7 @@
 #include <errno.h>
 
 #include "generic_mb.h"
+#include "../byteorder.h"
 
 
 /* ------------------------ */
@@ -46,11 +47,12 @@ size_t mb_generic_push( int (*char_func)(unsigned char *, ucs2_t), void *cd, cha
 {
         int len = 0;
 	unsigned char *tmpptr = (unsigned char *) *outbuf;
+	ucs2_t inval;
 
         while (*inbytesleft >= 2 && *outbytesleft >= 1) {
 
-		ucs2_t *inptr = (ucs2_t *) *inbuf;
-		if ( (char_func)( tmpptr, *inptr)) {
+		inval = SVAL((*inbuf),0);
+		if ( (char_func)( tmpptr, inval)) {
 			(*inbuf) += 2;
 			tmpptr++;
 			len++;
@@ -77,15 +79,15 @@ size_t mb_generic_push( int (*char_func)(unsigned char *, ucs2_t), void *cd, cha
 size_t mb_generic_pull ( int (*char_func)(ucs2_t *, const unsigned char *), void *cd, char **inbuf, size_t *inbytesleft,
                          char **outbuf, size_t *outbytesleft)
 {
-	ucs2_t 		*temp;
+	ucs2_t 		temp;
 	unsigned char	*inptr;
         size_t  len = 0;
 
         while (*inbytesleft >= 1 && *outbytesleft >= 2) {
 
 		inptr = (unsigned char *) *inbuf;
-		temp  = (ucs2_t*) *outbuf;	
-		if (char_func ( temp, inptr)) {
+		if (char_func ( &temp, inptr)) {
+			SSVAL((*outbuf), 0, temp);
 			(*inbuf)        +=1;
 			(*outbuf)       +=2;
 			(*inbytesleft) -=1;

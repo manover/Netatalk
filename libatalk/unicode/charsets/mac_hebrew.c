@@ -29,16 +29,13 @@
 #endif /* HAVE_CONFIG_H */
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include <netatalk/endian.h>
 #include <atalk/unicode.h>
-
-
 #include <atalk/logger.h>
-#include <errno.h>
 
-#include <atalk/unicode.h>
-
+#include "../byteorder.h"
 #include "mac_hebrew.h"
 
 static size_t   mac_hebrew_pull(void *,char **, size_t *, char **, size_t *);
@@ -90,11 +87,11 @@ static size_t mac_hebrew_push( void *cd, char **inbuf, size_t *inbytesleft,
     unsigned char *tmpptr = (unsigned char *) *outbuf;
 
     while (*inbytesleft >= 2 && *outbytesleft >= 1) {
-        ucs2_t *inptr = (ucs2_t *) *inbuf;
-	if (*inptr == 0x05b8) {
+	ucs2_t inptr = SVAL((*inbuf),0);
+	if (inptr == 0x05b8) {
 	    (*inbuf) += 2;
 	    (*inbytesleft)  -= 2;
-	    if (*inbytesleft >= 2 && *((ucs2_t *)*inbuf) == 0xf87f ) {
+	    if (*inbytesleft >= 2 && SVAL((*inbuf),0) == 0xf87f ) {
 	        (*inbuf) += 2;
 	        (*inbytesleft)  -= 2;
 	        c = 0xde;
@@ -104,17 +101,17 @@ static size_t mac_hebrew_push( void *cd, char **inbuf, size_t *inbytesleft,
 	    }
 	    *tmpptr = c; 
 	}
-	else if (*inptr == 0x05f2 && *inbytesleft >= 4 && *(inptr +1) == 0x05b7) {
+	else if (inptr == 0x05f2 && *inbytesleft >= 4 && SVAL((*inbuf),2) == 0x05b7) {
 	    (*inbuf) += 4;
 	    (*inbytesleft)  -= 4;
 	    *tmpptr = 0x81;
 	}
-	else if (*inptr == 0xf86a && *inbytesleft >= 6 && *(inptr +1) == 0x05dc && *(inptr +2) == 0x05b9) {
+	else if (inptr == 0xf86a && *inbytesleft >= 6 && SVAL((*inbuf),2) == 0x05dc && SVAL((*inbuf),4) == 0x05b9) {
 	    (*inbuf) += 6;
 	    (*inbytesleft)  -= 6;
 	    *tmpptr = 0xc0;
 	}
-	else if (char_ucs2_to_mac_hebrew ( tmpptr, *inptr)) {
+	else if (char_ucs2_to_mac_hebrew ( tmpptr, inptr)) {
 	    (*inbuf) += 2;
 	    (*inbytesleft)  -= 2;
 	}
@@ -157,49 +154,49 @@ char_mac_hebrew_to_ucs2 (ucs2_t *pwc, const unsigned char *s)
 static size_t mac_hebrew_pull ( void *cd, char **inbuf, size_t *inbytesleft,
                          char **outbuf, size_t *outbytesleft)
 {
-    ucs2_t         *temp;
+    ucs2_t         temp;
     unsigned char  *inptr;
     size_t         len = 0;
 
     while (*inbytesleft >= 1 && *outbytesleft >= 2) {
         inptr = (unsigned char *) *inbuf;
-	temp  = (ucs2_t*) *outbuf;	
-	if (char_mac_hebrew_to_ucs2 ( temp, inptr)) {
-	    if (*temp == 1) {       /* 0x81 --> 0x05f2+0x05b7 */
+	if (char_mac_hebrew_to_ucs2 ( &temp, inptr)) {
+	    if (temp == 1) {       /* 0x81 --> 0x05f2+0x05b7 */
 	        if (*outbytesleft < 4) {
 	            errno = E2BIG;
 	            return (size_t) -1;	
 	        }
-	        *temp = 0x05f2;
-	        *(temp +1) = 0x05b7;
+		SSVAL((*outbuf),0,0x05f2);
+		SSVAL((*outbuf),2,0x05b7);
 	        (*outbuf)      +=4;
 	        (*outbytesleft)-=4;
 	        len += 2;
 	    }
-	    else if (*temp == 2) { /* 0xc0 -> 0xf86a 0x05dc 0x05b9*/
+	    else if (temp == 2) { /* 0xc0 -> 0xf86a 0x05dc 0x05b9*/
 	        if (*outbytesleft < 6) {
 	            errno = E2BIG;
 	            return (size_t) -1;	
 	        }
-	        *temp = 0xf86a;
-	        *(temp +1) = 0x05dc;
-	        *(temp +2) = 0x05b9;
+		SSVAL((*outbuf),0,0xf86a);
+		SSVAL((*outbuf),2,0x05dc);
+		SSVAL((*outbuf),4,0x05b9);
 	        (*outbuf)      +=6;
 	        (*outbytesleft)-=6;
 	        len += 3;
 	    }
-	    else if (*temp == 3) { /* 0xde --> 0x05b8 0xf87f */
+	    else if (temp == 3) { /* 0xde --> 0x05b8 0xf87f */
 	        if (*outbytesleft < 4) {
 	            errno = E2BIG;
 	            return (size_t) -1;	
 	        }
-	        *temp = 0x05b8;
-	        *(temp +1) = 0xf87f;
+		SSVAL((*outbuf),0,0x05b8);
+		SSVAL((*outbuf),2,0xf87f);
 	        (*outbuf)      +=4;
 	        (*outbytesleft)-=4;
 	        len += 2;
 	    }
 	    else {
+		SSVAL((*outbuf),0,temp);
 	        (*outbuf)      +=2;
 		(*outbytesleft)-=2;
 		len++;

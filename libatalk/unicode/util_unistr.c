@@ -445,6 +445,13 @@ size_t decompose_w (ucs2_t *name, size_t inplen, ucs2_t *comp, size_t *outlen)
             		return (size_t)-1;
         	}
         	base = *in;
+		if ( (base > 0x1fff && base < 0x3000) || (base > 0xfe2f && base < 0xfe50)) {
+			/* exclude these ranges from decomposition according to AFP 3.1 spec */
+			/* page 97 */
+			*out = base;
+			*out++;
+			*outlen -= 2;
+		}
         	if ((result = do_decomposition(base))) {
 			if ( *outlen < 4 ) {
 				errno = E2BIG;

@@ -44,6 +44,7 @@
 #ifdef HAVE_USABLE_ICONV
 #include <iconv.h>
 #endif
+#include "byteorder.h"
 
 
 /**
@@ -70,13 +71,24 @@
  **/
 #define CHARSET_WIDECHAR    32
 
+#ifdef WITH_LIBICONV
+#define UCS2ICONV "UCS-2-INTERNAL"
+#else
+#if BYTE_ORDER==LITTLE_ENDIAN
+#define UCS2ICONV "UCS-2LE"
+#else
+#define UCS2ICONV "UCS-2BE"
+#endif
+#endif
+
+
 static size_t ascii_pull(void *,char **, size_t *, char **, size_t *);
 static size_t ascii_push(void *,char **, size_t *, char **, size_t *);
 static size_t iconv_copy(void *,char **, size_t *, char **, size_t *);
 
 struct charset_functions charset_ucs2 =
 {
-        "UCS-2LE",
+        "UCS-2",
         0,
         iconv_copy,
         iconv_copy,
@@ -112,7 +124,7 @@ extern  struct charset_functions charset_utf8_mac;
 
 
 static struct charset_functions builtin_functions[] = {
-	{"UCS-2LE",   0, iconv_copy, iconv_copy, CHARSET_WIDECHAR},
+	{"UCS-2",   0, iconv_copy, iconv_copy, CHARSET_WIDECHAR},
 	{"ASCII",     0, ascii_pull, ascii_push, CHARSET_MULTIBYTE | CHARSET_PRECOMPOSED},
 	{NULL, 0, NULL, NULL, 0}
 };
@@ -285,14 +297,16 @@ atalk_iconv_t atalk_iconv_open(const char *tocode, const char *fromcode)
 
 	/* check if we can use iconv for this conversion */
 #ifdef HAVE_USABLE_ICONV
+	LOG (log_debug, logtype_default, "Trying %s/%s", UCS2ICONV, fromcode);
 	if (!ret->pull) {
-		ret->cd_pull = iconv_open("UCS-2LE", fromcode);
+		ret->cd_pull = iconv_open(UCS2ICONV, fromcode);
 		if (ret->cd_pull != (iconv_t)-1)
 			ret->pull = sys_iconv;
 	}
 
+	LOG (log_debug, logtype_default, "Trying %s/%s", tocode, UCS2ICONV);
 	if (!ret->push) {
-		ret->cd_push = iconv_open(tocode, "UCS-2LE");
+		ret->cd_push = iconv_open(tocode, UCS2ICONV);
 		if (ret->cd_push != (iconv_t)-1)
 			ret->push = sys_iconv;
 	}
@@ -307,13 +321,13 @@ atalk_iconv_t atalk_iconv_open(const char *tocode, const char *fromcode)
 	}
 
 	/* check for conversion to/from ucs2 */
-	if (strcasecmp(fromcode, "UCS-2LE") == 0 && to) {
+	if (strcasecmp(fromcode, "UCS-2") == 0 && to) {
 		ret->direct = to->push;
 		ret->push = ret->pull = NULL;
 		return ret;
 	}
 
-	if (strcasecmp(tocode, "UCS-2LE") == 0 && from) {
+	if (strcasecmp(tocode, "UCS-2") == 0 && from) {
 		ret->direct = from->pull;
 		ret->push = ret->pull = NULL;
 		return ret;
@@ -321,13 +335,13 @@ atalk_iconv_t atalk_iconv_open(const char *tocode, const char *fromcode)
 
 	/* Check if we can do the conversion direct */
 #ifdef HAVE_USABLE_ICONV
-	if (strcasecmp(fromcode, "UCS-2LE") == 0) {
+	if (strcasecmp(fromcode, "UCS-2") == 0) {
 		ret->direct = sys_iconv;
 		ret->cd_direct = ret->cd_push;
 		ret->cd_push = NULL;
 		return ret;
 	}
-	if (strcasecmp(tocode, "UCS-2LE") == 0) {
+	if (strcasecmp(tocode, "UCS-2") == 0) {
 		ret->direct = sys_iconv;
 		ret->cd_direct = ret->cd_pull;
 		ret->cd_pull = NULL;
@@ -365,10 +379,11 @@ int atalk_iconv_close (atalk_iconv_t cd)
 static size_t ascii_pull(void *cd, char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
+	ucs2_t curchar;
 	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
 		if ((unsigned char)(*inbuf)[0] < 0x80) {
-			(*outbuf)[0] = (*inbuf)[0];
-			(*outbuf)[1] = 0;
+			curchar = (ucs2_t) (*inbuf)[0];
+			SSVAL((*outbuf),0,curchar);	
 		}
 		else {
 			errno = EILSEQ;
@@ -392,10 +407,13 @@ static size_t ascii_push(void *cd, char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	int ir_count=0;
+	ucs2_t curchar;
 
 	while (*inbytesleft >= 2 && *outbytesleft >= 1) {
-		if ((unsigned char)(*inbuf)[0] < 0x80 && (*inbuf)[1] == 0) 
-			(*outbuf)[0] = (*inbuf)[0];
+		curchar = SVAL((*inbuf), 0);
+		if (curchar < 0x0080) {
+			(*outbuf)[0] = curchar;
+		}
 		else {
 			errno = EILSEQ;
 			return -1;

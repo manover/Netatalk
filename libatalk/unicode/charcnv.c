@@ -49,6 +49,7 @@
 #if HAVE_LANGINFO_H
 #include <langinfo.h>
 #endif
+#include "byteorder.h"
 
 
 /**
@@ -84,7 +85,7 @@ static const char *charset_name(charset_t ch)
 {
 	const char *ret = NULL;
 
-	if (ch == CH_UCS2) ret = "UCS-2LE";
+	if (ch == CH_UCS2) ret = "UCS-2";
 	else if (ch == CH_UNIX) ret = "LOCALE"; /*lp_unix_charset();*/
 	else if (ch == CH_MAC) ret = "MAC_ROMAN"; /*lp_display_charset();*/
 	else if (ch == CH_UTF8) ret = "UTF8";
@@ -104,7 +105,7 @@ static const char *charset_name(charset_t ch)
 		if (ln) {
 			/* Check whether the charset name is supported
 			   by iconv */
-			atalk_iconv_t handle = atalk_iconv_open(ln,"UCS-2LE");
+			atalk_iconv_t handle = atalk_iconv_open(ln,"UCS-2");
 			if (handle == (atalk_iconv_t) -1) {
 				LOG(log_debug, logtype_default, "Locale charset '%s' unsupported, using ASCII instead", ln);
 				ln = NULL;
@@ -114,6 +115,8 @@ static const char *charset_name(charset_t ch)
 		}
 		ret = ln;
 	}
+#else /* system doesn't have LOCALE support */
+ret = NULL;
 #endif
 
 	if (!ret || !*ret) ret = "ASCII";
@@ -204,10 +207,10 @@ void init_iconv(void)
 	/* so that charset_name() works we need to get the UNIX<->UCS2 going
 	   first */
 	if (!conv_handles[CH_UNIX][CH_UCS2])
-		conv_handles[CH_UNIX][CH_UCS2] = atalk_iconv_open("UCS-2LE", "ASCII");
+		conv_handles[CH_UNIX][CH_UCS2] = atalk_iconv_open("UCS-2", "ASCII");
 
 	if (!conv_handles[CH_UCS2][CH_UNIX])
-		conv_handles[CH_UCS2][CH_UNIX] = atalk_iconv_open("ASCII", "UCS-2LE");
+		conv_handles[CH_UCS2][CH_UNIX] = atalk_iconv_open("ASCII", "UCS-2");
 
 	for (c1=0;c1<NUM_CHARSETS;c1++) {
 		const char *name = charset_name((charset_t)c1);
@@ -848,7 +851,7 @@ static size_t push_charset_flags (charset_t to_set, charset_t cap_set, char* src
     o_len=destlen;
     o_save=outbuf;
     
-    if (inbuf[0] == '.' && inbuf[1] == 0 && flags && (*flags & CONV_ESCAPEDOTS)) {
+    if ( SVAL(inbuf,0) == 0x002e && flags && (*flags & CONV_ESCAPEDOTS)) { /* 0x002e = . */
         if (o_len < 3) {
             errno = E2BIG;
             return (size_t) -1;
@@ -866,12 +869,12 @@ static size_t push_charset_flags (charset_t to_set, charset_t cap_set, char* src
 conversion_loop:
     if ( flags && (*flags & CONV_ESCAPEHEX)) {
         for ( i = 0; i < i_len; i+=2) {
-            if ( inbuf[i] == '/' && inbuf[i+1] == 0) {
+            if ( SVAL((inbuf+i),0) == 0x002f) { /* 0x002f = / */
                 j = i_len - i;
                 if ( 0 == ( i_len = i))
                     goto escape_slash;
                 break;
-            } else if ( inbuf[i] == ':' && inbuf[i+1] == 0) {
+            } else if ( SVAL(inbuf+i,0) == 0x003a) { /* 0x003a = : */
 		errno = EILSEQ;
 		return (size_t) -1;
 	    }

@@ -28,15 +28,13 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 #include <stdlib.h>
+#include <errno.h>
 
 #include <netatalk/endian.h>
 #include <atalk/unicode.h>
-
-
 #include <atalk/logger.h>
-#include <errno.h>
-
 #include <atalk/unicode.h>
+#include "byteorder.h"
 
 
 static size_t   utf8_pull(void *,char **, size_t *, char **, size_t *);
@@ -64,32 +62,36 @@ struct charset_functions charset_utf8_mac =
 static size_t utf8_pull(void *cd, char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
+	ucs2_t uc = 0;
+	int len;
+
 	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
 		unsigned char *c = (unsigned char *)*inbuf;
-		unsigned char *uc = (unsigned char *)*outbuf;
-		int len = 1;
+		len = 1;
 
 		if ((c[0] & 0x80) == 0) {
-			uc[0] = c[0];
-			uc[1] = 0;
+			uc = c[0];
 		} else if ((c[0] & 0xf0) == 0xe0) {
 			if (*inbytesleft < 3) {
 				LOG(log_debug, logtype_default, "short utf8 char\n");
 				goto badseq;
 			}
-			uc[1] = ((c[0]&0xF)<<4) | ((c[1]>>2)&0xF);
-			uc[0] = (c[1]<<6) | (c[2]&0x3f);
+			uc = ((ucs2_t) (c[0] & 0x0f) << 12) | ((ucs2_t) (c[1] ^ 0x80) << 6) | (ucs2_t) (c[2] ^ 0x80);
 			len = 3;
 		} else if ((c[0] & 0xe0) == 0xc0) {
 			if (*inbytesleft < 2) {
 				LOG(log_debug, logtype_default, "short utf8 char\n");
 				goto badseq;
 			}
-			uc[1] = (c[0]>>2) & 0x7;
-			uc[0] = (c[0]<<6) | (c[1]&0x3f);
+			uc = ((ucs2_t) (c[0] & 0x1f) << 6) | (ucs2_t) (c[1] ^ 0x80);
 			len = 2;
 		}
+		else {
+			errno = EINVAL;
+			return -1;
+		}
 
+		SSVAL(*outbuf,0,uc);
 		(*inbuf)  += len;
 		(*inbytesleft)  -= len;
 		(*outbytesleft) -= 2;
@@ -112,30 +114,39 @@ badseq:
 static size_t utf8_push(void *cd, char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
+	ucs2_t uc=0;
+	int len;
+
 	while (*inbytesleft >= 2 && *outbytesleft >= 1) {
 		unsigned char *c = (unsigned char *)*outbuf;
-		unsigned char *uc = (unsigned char *)*inbuf;
-		int len=1;
+		uc = SVAL((*inbuf),0);
+		len=1;
 
-		if (uc[1] & 0xf8) {
+		if ( uc >= 0x800 ) {
 			if (*outbytesleft < 3) {
 				LOG(log_debug, logtype_default, "short utf8 write\n");
 				goto toobig;
 			}
-			c[0] = 0xe0 | (uc[1]>>4);
-			c[1] = 0x80 | ((uc[1]&0xF)<<2) | (uc[0]>>6);
-			c[2] = 0x80 | (uc[0]&0x3f);
+			c[2] = 0x80 | (uc & 0x3f);
+			uc = uc >> 6;
+			uc |= 0x800;
+                        c[1] = 0x80 | (uc&0x3f);
+                        uc = uc >> 6;
+                        uc |= 0xc0;
+                        c[0] = uc;
 			len = 3;
-		} else if (uc[1] | (uc[0] & 0x80)) {
+		} else if (uc >= 0x80) {
 			if (*outbytesleft < 2) {
 				LOG(log_debug, logtype_default, "short utf8 write\n");
 				goto toobig;
 			}
-			c[0] = 0xc0 | (uc[1]<<2) | (uc[0]>>6);
-			c[1] = 0x80 | (uc[0]&0x3f);
+			c[1] = 0x80 | (uc&0x3f);
+			uc = uc >> 6;
+			uc |= 0xc0;
+			c[0] = uc;
 			len = 2;
 		} else {
-			c[0] = uc[0];
+			c[0] = uc;
 		}
 
 
