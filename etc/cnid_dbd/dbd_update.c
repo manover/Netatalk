@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_update.c,v 1.1.4.10 2004-01-21 21:28:42 lenneis Exp $
+ * $Id: dbd_update.c,v 1.1.4.11 2004-01-26 16:11:58 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -121,8 +121,10 @@ int dbd_update(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
     return 1;
 
 err_db:
+#ifdef DEBUG
     LOG(log_error, logtype_cnid, "dbd_update: Unable to update CNID %u dev/ino %s, DID %x:%s",
         ntohl(rqst->cnid), stringify_devino(rqst->ino, rqst->did), rqst->name);
+#endif
     rply->result = CNID_DBD_RES_ERR_DB;
     return -1;
 }
