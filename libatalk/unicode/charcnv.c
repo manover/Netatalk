@@ -150,7 +150,7 @@ static const char *charset_name(charset_t ch)
 		if (ln) {
 			/* Check whether the charset name is supported
 			   by iconv */
-			atalk_iconv_t handle = atalk_iconv_open(ln,"UCS-2");
+			atalk_iconv_t handle = atalk_iconv_open(ln, "UCS-2");
 			if (handle == (atalk_iconv_t) -1) {
 				LOG(log_debug, logtype_default, "Locale charset '%s' unsupported, using ASCII instead", ln);
 				ln = "ASCII";
@@ -432,13 +432,13 @@ static size_t convert_string_allocate_internal(charset_t from, charset_t to,
 	destlen = MAX(srclen, 512);
 convert:
 	destlen = destlen * 2;
-	ob = (char *)realloc(ob, destlen);
-	if (!ob) {
+	outbuf = (char *)realloc(ob, destlen);
+	if (!outbuf) {
 		LOG(log_debug, logtype_default,"convert_string_allocate: realloc failed!");
-		SAFE_FREE(outbuf);
+		SAFE_FREE(ob);
 		return (size_t)-1;
 	} else {
-		outbuf = ob;
+		ob = outbuf;
 	}
 	inbuf = src;   /* this restarts the whole conversion if buffer needed to be increased */
 	i_len = srclen;
@@ -459,7 +459,7 @@ convert:
 				break;
 		}
 		LOG(log_debug, logtype_default,"Conversion error: %s(%s)",reason,inbuf);
-		SAFE_FREE(outbuf);
+		SAFE_FREE(ob);
 		return (size_t)-1;
 	}
 
