@@ -1,0 +1,54 @@
+Netatalk and AFP 3.x
+
+It's alpha work, don't use it on a production box or on an existing volume,
+it will trash filenames.
+Filenames convention is subject to change.
+
+AFP 3.0 and AFP 3.1 are OSX extensions to AFP Apple protocol.
+
+New features:
+------------
+- UTF8 name
+- support for files > 2 GBytes
+
+Requirements
+------------
+- I think glibc2.2 or >
+- a kernel with large files support.
+
+Compilation
+-----------
+configure --enable-afp3
+
+if you have an error about AC_SYS_LARGEFILE you need to upgrade yours
+autoconf/automake tools.
+
+UAMS 
+----
+uams_guest.so 
+uams_pam.so uams_passwd.so  (clear text login)
+uams_dhx_pam.so uams_dhx_passwd.so 
+
+Configuration
+-------------
+afpd.conf
+use only uams above with -uamlist
+
+For volumes
+add options:utf8, don't use it with codepage: but you can use mswindows
+
+UTF8 strings
+------------
+-Only Mac roman to UTF8 for pre OSX
+-255 bytes max.
+
+-Decompose/precompose issue
+OS X uses the decomposed form:
+ latin small letter a with grave is 0x65 0x301 
+
+iconv from Mac to UTF8 and by default NT and Linux keyboards use precomposed form:
+ latin small letter a with grave is 0xe0
+
+Filenames are saved in precomposed form and are decomposed for OSX
+
+- It doesn't convert existing volumes to UTF8
