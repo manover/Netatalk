@@ -1,6 +1,7 @@
 # Makefile.am for etc/psf/
 
 sbin_PROGRAMS = psf psa
+sbin_SCRIPTS = etc2ps.sh
 
 pkgdata_DATA = pagecount.ps
 
