@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.4 2003-09-25 12:23:53 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.5 2003-09-27 03:05:41 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -136,6 +136,24 @@ m=u -> map both ways
       char *c_value;
       int i_value;
   };
+
+typedef struct _special_folder {
+        const char *name;
+        int precreate;
+        mode_t mode;
+        int hide;
+} _special_folder;
+
+static const _special_folder special_folders[] = {
+  {"Network Trash Folder",     1,  0777,  1},
+  {"Temporary Items",          1,  0777,  1},
+#if 0
+  {"TheFindByContentFolder",   0,     0,  1},
+  {"TheVolumeSettingsFolder",  0,     0,  1},
+#endif
+  {NULL, 0, 0, 0}};
+
+static void handle_special_folders (const struct vol *);
 
 static __inline__ void volfree(struct vol_option *options,
                                const struct vol_option *save)
@@ -1589,6 +1607,9 @@ int		ibuflen, *rbuflen;
 
     ret  = stat_vol(bitmap, volume, rbuf, rbuflen);
     if (ret == AFP_OK) {
+
+        handle_special_folders( volume );
+
         /*
          * If you mount a volume twice, the second time the trash appears on
          * the desk-top.  That's because the Mac remembers the DID for the
@@ -1904,3 +1925,76 @@ int wincheck(const struct vol *vol, const char *path)
     /* everything else is okay */
     return 1;
 }
+
+
+/*
+ * precreate a folder 
+ * this is only intended for folders in the volume root 
+ * It will *not* work if the folder name contains extended characters 
+ */
+static int create_special_folder (const struct vol *vol, const struct _special_folder *folder)
+{
+	char 		*p;
+    	struct adouble	ad;
+	u_int16_t	attr;
+	struct stat	st;
+	int		ret;
+
+
+	p = (char *) malloc ( strlen(vol->v_path)+strlen(folder->name)+2);
+	if ( p == NULL) {
+		LOG(log_error, logtype_afpd,"malloc failed");
+		exit (-1);
+	}
+	strcpy(p, vol->v_path);
+	strcat(p, "/");
+	strcat(p, folder->name);
+
+    	if ( (ret = stat( p, &st )) < 0 ) {
+		if (folder->precreate) {
+		    if (ad_mkdir(p, folder->mode & ~vol->v_umask)) {
+			LOG(log_debug, logtype_afpd,"Creating '%s' failed", folder->name);
+			free(p);
+			return -1;
+                    }
+		    ret = 0;
+		}
+	}
+
+	if ( !ret && folder->hide) {
+		/* Hide it */
+		ad_init(&ad, vol->v_adouble);
+		if (ad_open( p, vol_noadouble(vol) | ADFLAGS_HF|ADFLAGS_DIR,
+                 	O_RDWR|O_CREAT, 0666, &ad) < 0) {
+			free (p);
+			return (-1);
+		}
+    		if ((ad_get_HF_flags( &ad ) & O_CREAT) ) {
+        		ad_setentrylen( &ad, ADEID_NAME, strlen(folder->name));
+	        	memcpy(ad_entry( &ad, ADEID_NAME ), folder->name,
+        	       	ad_getentrylen( &ad, ADEID_NAME ));
+		}
+ 
+		ad_getattr(&ad, &attr);
+		attr |= htons( ntohs( attr ) | ATTRBIT_INVISIBLE );
+		ad_setattr(&ad, attr);
+    
+        	ad_flush( &ad, ADFLAGS_HF );
+        	ad_close( &ad, ADFLAGS_HF );
+	}
+	free(p);
+	return 0;
+}
+
+static void handle_special_folders (const struct vol * vol)
+{
+	const _special_folder *p = &special_folders[0];
+
+    	if (vol->v_flags & AFPVOL_RO)
+		return;
+
+        for (; p->name != NULL; p++) {
+		create_special_folder (vol, p);
+	}
+}
+
