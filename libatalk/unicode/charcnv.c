@@ -201,16 +201,6 @@ void init_iconv(void)
 {
 	int c1;
 
-	/* so that charset_name() works we need to get the UNIX<->UCS2 going
-	   first */
-#if 0
-	if (!conv_handles[CH_UNIX][CH_UCS2])
-		conv_handles[CH_UNIX][CH_UCS2] = atalk_iconv_open("UCS-2", "ASCII");
-
-	if (!conv_handles[CH_UCS2][CH_UNIX])
-		conv_handles[CH_UCS2][CH_UNIX] = atalk_iconv_open("ASCII", "UCS-2");
-#endif
-
 	for (c1=0;c1<NUM_CHARSETS;c1++) {
 		const char *name = charset_name((charset_t)c1);
 
@@ -222,10 +212,10 @@ void init_iconv(void)
 		}
 
 		conv_handles[CH_UCS2][c1] = atalk_iconv_open( name, charset_name(CH_UCS2));
-        	if (conv_handles[CH_UCS2][1] == (atalk_iconv_t)-1) {
+        	if (conv_handles[CH_UCS2][c1] == (atalk_iconv_t)-1) {
 			LOG(log_error, logtype_default, "Required conversion from %s to %s not supported",
 				charset_name(CH_UCS2), name);
-			conv_handles[c1][c1] = NULL;
+			conv_handles[CH_UCS2][c1] = NULL;
 		}
 		
 		charsets[c1] = get_charset_functions (c1);
