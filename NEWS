@@ -3,6 +3,8 @@ Changes in 1.6.1
 
 * UPD: Improve --enable-fhs. [Olaf Hering]
 * UPD: Add BDB 4.1.x support.
+* UPD: Add more documentation on CNID, as well as list which versions
+       of Berkeley DB are supported.
 * FIX: Codepage file maccode.koi8-r is now correctly cleaned.
 * FIX: Fix init script location on SuSE. [Olaf]
 * FIX: Build fixes. [Olaf]
