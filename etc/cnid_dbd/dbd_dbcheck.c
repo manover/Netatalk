@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_dbcheck.c,v 1.1.2.2 2005-01-03 13:49:56 didg Exp $
+ * $Id: dbd_dbcheck.c,v 1.1.2.3 2005-01-25 14:34:27 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -22,6 +22,7 @@
 #include "dbif.h"
 #include "dbd.h"
 
+#ifndef CNID_BACKEND_DBD_TXN
 int dbd_check(char *dbdir)
 {
     u_int32_t c_didname = 0, c_devino = 0, c_cnid = 0;
@@ -57,4 +58,6 @@ int dbd_check(char *dbdir)
     LOG(log_debug, logtype_cnid, "CNID database at `%s' seems ok, %u entries.", dbdir, c_cnid);
     return 0;  
 }
+
+#endif
 

@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_index.c,v 1.1.2.2 2005-01-03 13:49:55 didg Exp $
+ * $Id: cnid_index.c,v 1.1.2.3 2005-01-25 14:34:26 didg Exp $
  *
  * All Rights Reserved.  See COPYING.
  */
@@ -496,6 +496,12 @@ void free_lock(int lockfd)
 /* ------------------------ */
 int main(int argc, char *argv[])
 {
+#ifdef CNID_BACKEND_DBD_TXN
+
+    fprintf(stderr, "%s doesn't work with db transaction enabled\n", argv[0]);
+    exit (1);
+    
+#else
     int err = 0;
     int ret;
     int lockfd;
@@ -581,5 +587,6 @@ int main(int argc, char *argv[])
     
     if (err)
         exit(4);
+#endif
     return 0;
 }
