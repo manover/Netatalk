@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.31 2004-06-09 01:15:21 bfernhomberg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.32 2004-07-11 02:17:51 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1746,8 +1746,10 @@ int		ibuflen, *rbuflen;
     ret  = stat_vol(bitmap, volume, rbuf, rbuflen);
     if (ret == AFP_OK) {
 
-        handle_special_folders( volume );
-        savevoloptions( volume);
+        if (!(volume->v_flags & AFPVOL_RO)) {
+            handle_special_folders( volume );
+            savevoloptions( volume);
+        }
 
         /*
          * If you mount a volume twice, the second time the trash appears on
