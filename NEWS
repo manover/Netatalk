@@ -3,6 +3,9 @@ Changes from 1.5.1
 
 * NEW: NetBSD support contributed by David Rankin and NetBSD contributors.
        This includes a new configure option --enable-netbsd.
+* NEW: Add the -client_polling afpd.conf flag to allow for clients to poll
+       the server every 10 seconds for open window updates.  Currently
+       this is the only way to get asynchronous directory updates.
 * UPD: Use separate macro for AFS configure check.
 * UPD: Some Perl scripts are now (partially) auto-generated. This improves
        out-of-the-box usage of Netatalk.
