@@ -1,5 +1,5 @@
 /* 
- * $Id: cnid.h,v 1.9.6.5 2004-01-14 23:15:19 lenneis Exp $
+ * $Id: cnid.h,v 1.9.6.6 2004-02-22 18:36:37 didg Exp $
  *
  * Copyright (c) 2003 the Netatalk Team
  * Copyright (c) 2003 Rafal Lewczuk <rlewczuk@pronet.pl>
@@ -23,7 +23,6 @@
 #ifndef _ATALK_CNID__H
 #define _ATALK_CNID__H 1
 
-#include <sys/cdefs.h>
 #include <atalk/adouble.h>
 #include <atalk/list.h>
 
@@ -112,7 +111,11 @@ void cnid_close(struct _cnid_db *db);
 
 /*
  * $Log: cnid.h,v $
- * Revision 1.9.6.5  2004-01-14 23:15:19  lenneis
+ * Revision 1.9.6.6  2004-02-22 18:36:37  didg
+ *
+ * small clean up
+ *
+ * Revision 1.9.6.5  2004/01/14 23:15:19  lenneis
  * Check if we can get a DB stamp sucessfully in afs_openvol and fail
  * the open if not.
  *
