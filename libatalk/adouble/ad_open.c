@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.3 2003-11-25 05:05:43 didg Exp $
+ * $Id: ad_open.c,v 1.30.6.4 2003-12-12 19:34:27 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -881,7 +881,7 @@ int ad_open( path, adflags, oflags, mode, ad )
 	}
     } else if (fstat(ad->ad_hf.adf_fd, &st) == 0 && st.st_size == 0) {
 	/* for 0 length files, treat them as new. */
-	ad->ad_hf.adf_flags = (oflags & ~(O_RDONLY | O_WRONLY)) | O_RDWR | O_TRUNC;
+	ad->ad_hf.adf_flags = hoflags| O_TRUNC;
     } else {
         ad->ad_hf.adf_flags = hoflags;
     }
