@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_db3_private.h,v 1.1.4.2 2003-10-21 16:23:54 didg Exp $
+ * $Id: cnid_db3_private.h,v 1.1.4.3 2003-10-30 09:38:47 bfernhomberg Exp $
  */
 
 #ifndef LIBATALK_CNID_PRIVATE_H
@@ -11,12 +11,8 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
-
-#ifdef HAVE_DB4_DB_H
-#include <db4/db.h>
-#else
+#include <sys/cdefs.h>
 #include <db.h>
-#endif
 
 #include <atalk/adouble.h>
 #include "cnid_db3.h"

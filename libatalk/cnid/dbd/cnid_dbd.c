@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_dbd.c,v 1.1.4.4 2003-10-17 00:01:13 didg Exp $
+ * $Id: cnid_dbd.c,v 1.1.4.5 2003-10-30 09:38:47 bfernhomberg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -25,6 +25,9 @@
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
 #endif /* HAVE_SYS_UIO_H */
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
 #include <sys/time.h>
 #include <sys/un.h>
 #include <sys/socket.h>
@@ -44,6 +47,10 @@
 #include <atalk/cnid.h>
 #include "cnid_dbd.h"
 #include <atalk/cnid_dbd_private.h>
+
+#ifndef SOL_TCP
+#define SOL_TCP IPPROTO_TCP
+#endif /* ! SOL_TCP */
 
 #define RQST_RESET(r) do { (r).namelen = 0; } while (0)
 
@@ -344,7 +351,7 @@ cnid_t cnid_dbd_add(struct _cnid_db *cdb, const struct stat *st,
     rqst.ino = st->st_ino;
     rqst.type = S_ISDIR(st->st_mode)?1:0;
     rqst.did = did;
-    rqst.name = name;
+    rqst.name = (char*) name;
     rqst.namelen = len;
 
     if (transmit(db, &rqst, &rply) < 0) {
@@ -396,7 +403,7 @@ cnid_t cnid_dbd_get(struct _cnid_db *cdb, const cnid_t did, const char *name,
     RQST_RESET(rqst);
     rqst.op = CNID_DBD_OP_GET;
     rqst.did = did;
-    rqst.name = name;
+    rqst.name = (char*) name;
     rqst.namelen = len;
 
     if (transmit(db, &rqst, &rply) < 0) {
@@ -556,7 +563,7 @@ cnid_t cnid_dbd_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t
     rqst.ino = st->st_ino;
     rqst.type = S_ISDIR(st->st_mode)?1:0;
     rqst.did = did;
-    rqst.name = name;
+    rqst.name = (char*) name;
     rqst.namelen = len;
 
     if (transmit(db, &rqst, &rply) < 0) {
@@ -610,7 +617,7 @@ int cnid_dbd_update(struct _cnid_db *cdb, const cnid_t id, const struct stat *st
     rqst.ino = st->st_ino;
     rqst.type = S_ISDIR(st->st_mode)?1:0;
     rqst.did = did;
-    rqst.name = name;
+    rqst.name = (char*) name;
     rqst.namelen = len;
 
     if (transmit(db, &rqst, &rply) < 0) {
