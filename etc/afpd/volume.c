@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.30 2004-05-11 08:30:07 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.31 2004-06-09 01:15:21 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -141,13 +141,47 @@ typedef struct _special_folder {
 static const _special_folder special_folders[] = {
   {"Network Trash Folder",     1,  0777,  1},
   {"Temporary Items",          1,  0777,  1},
+  {".AppleDesktop",            1,  0777,  0},
 #if 0
   {"TheFindByContentFolder",   0,     0,  1},
   {"TheVolumeSettingsFolder",  0,     0,  1},
 #endif
   {NULL, 0, 0, 0}};
 
+typedef struct _volopt_name {
+	const u_int32_t option;
+	const char 	*name;
+} _vol_opt_name;
+
+static const _vol_opt_name vol_opt_names[] = {
+    {AFPVOL_A2VOL,      "PRODOS"},      /* prodos volume */
+    {AFPVOL_CRLF,       "CRLF"},        /* cr/lf translation */
+    {AFPVOL_NOADOUBLE,  "NOADOUBLE"},   /* don't create .AppleDouble by default */
+    {AFPVOL_RO,         "READONLY"},    /* read-only volume */
+    {AFPVOL_MSWINDOWS,  "MSWINDOWS"},   /* deal with ms-windows yuckiness. this is going away. */
+    {AFPVOL_NOHEX,      "NOHEX"},       /* don't do :hex translation */
+    {AFPVOL_USEDOTS,    "USEDOTS"},     /* use real dots */
+    {AFPVOL_LIMITSIZE,  "LIMITSIZE"},   /* limit size for older macs */
+    {AFPVOL_MAPASCII,   "MAPASCII"},    /* map the ascii range as well */
+    {AFPVOL_DROPBOX,    "DROPBOX"},     /* dropkludge dropbox support */
+    {AFPVOL_NOFILEID,   "NOFILEID"},    /* don't advertise createid resolveid and deleteid calls */
+    {AFPVOL_NOSTAT,     "NOSTAT"},      /* advertise the volume even if we can't stat() it
+                                         * maybe because it will be mounted later in preexec */
+    {AFPVOL_UNIX_PRIV,  "UNIXPRIV"},    /* support unix privileges */
+    {AFPVOL_NODEV,      "NODEV"},       /* always use 0 for device number in cnid calls */
+    {0, NULL}
+};
+
+static const _vol_opt_name vol_opt_casefold[] = {
+    {AFPVOL_MTOUUPPER,	"MTOULOWER"},
+    {AFPVOL_MTOULOWER,  "MTOULOWER"},
+    {AFPVOL_UTOMUPPER,  "UTOMUPPER"},
+    {AFPVOL_UTOMLOWER,  "UTOMLOWER"},
+    {0, NULL}
+};
+
 static void handle_special_folders (const struct vol *);
+static int savevoloptions (const struct vol *);
 
 static __inline__ void volfree(struct vol_option *options,
                                const struct vol_option *save)
@@ -1713,6 +1747,7 @@ int		ibuflen, *rbuflen;
     if (ret == AFP_OK) {
 
         handle_special_folders( volume );
+        savevoloptions( volume);
 
         /*
          * If you mount a volume twice, the second time the trash appears on
@@ -2139,3 +2174,118 @@ static void handle_special_folders (const struct vol * vol)
 	}
 }
 
+/*
+ * Save the volume options to a file, used by
+ * shell utilities.
+ * Writing the file everytime a volume is opened is
+ * unnecessary, but it shouldn't hurt much.
+ */
+static int savevoloptions (const struct vol *vol)
+{
+    char buf[16348];
+    char item[MAXPATHLEN];
+    int fd;
+    int ret = 0;
+    struct flock lock;
+    const _vol_opt_name *op = &vol_opt_names[0];
+    const _vol_opt_name *cf = &vol_opt_casefold[0];
+
+    strlcpy (item, vol->v_path, sizeof(item));
+    strlcat (item, "/.AppleDesktop/", sizeof(item));
+    strlcat (item, VOLINFOFILE, sizeof(item));
+
+    if ((fd = open( item, O_RDWR | O_CREAT , 0666)) <0 ) {
+        LOG(log_debug, logtype_afpd,"Error opening %s: %s", item, strerror(errno));
+        return (-1);
+    }
+
+    /* try to get a lock */
+    lock.l_start  = 0;
+    lock.l_whence = SEEK_SET;
+    lock.l_len    = 0;
+    lock.l_type   = F_WRLCK;
+
+    if (fcntl(fd, F_SETLK, &lock) < 0) {
+        if (errno == EACCES || errno == EAGAIN) {
+            /* ignore, other process already writing the file */
+            return 0;
+        } else {
+            LOG(log_error, logtype_cnid, "savevoloptions: cannot get lock: %s", strerror(errno));
+            return (-1);
+        }
+    }
+
+    /* write volume options */
+    snprintf(buf, sizeof(buf), "MAC_CHARSET:%s\n", vol->v_maccodepage);
+    snprintf(item, sizeof(item), "VOL_CHARSET:%s\n", vol->v_volcodepage);
+    strlcat(buf, item, sizeof(buf));
+
+    switch (vol->v_adouble) {
+        case AD_VERSION1:
+            strlcat(buf, "ADOUBLE_VER:v1\n", sizeof(buf));
+            break;
+        case AD_VERSION2:
+            strlcat(buf, "ADOUBLE_VER:v2\n", sizeof(buf));
+            break;
+        case AD_VERSION2_OSX:
+            strlcat(buf, "ADOUBLE_VER:osx\n", sizeof(buf));
+            break;
+    }
+
+    strlcat(buf, "CNIDBACKEND:", sizeof(buf));
+    strlcat(buf, vol->v_cnidscheme, sizeof(buf));
+    strlcat(buf, "\n", sizeof(buf));
+
+    strlcat(buf, "CNIDDBDHOST:", sizeof(buf));
+    strlcat(buf, Cnid_srv, sizeof(buf));
+    strlcat(buf, "\n", sizeof(buf));
+
+    snprintf(item, sizeof(item), "CNIDDBDPORT:%u\n", Cnid_port);
+    strlcat(buf, item, sizeof(buf));
+
+    strcpy(item, "CNID_DBPATH:");
+    if (vol->v_dbpath)
+        strlcat(item, vol->v_dbpath, sizeof(item));
+    else
+        strlcat(item, vol->v_path, sizeof(item));
+    strlcat(item, "\n", sizeof(item));
+    strlcat(buf, item, sizeof(buf));
+
+    /* volume flags */
+    strcpy(item, "VOLUME_OPTS:");
+    for (;op->name; op++) {
+	if ( vol->v_flags & op->option ) {
+            strlcat(item, op->name, sizeof(item));
+            strlcat(item, " ", sizeof(item));
+        }
+    }
+    strlcat(item, "\n", sizeof(item));
+    strlcat(buf, item, sizeof(buf));
+
+    /* casefold flags */
+    strcpy(item, "VOLCASEFOLD:");
+    for (;cf->name; cf++) {
+        if ( vol->v_casefold & cf->option ) {
+            strlcat(item, cf->name, sizeof(item));
+            strlcat(item, " ", sizeof(item));
+        }
+    }
+    strlcat(item, "\n", sizeof(item));
+    strlcat(buf, item, sizeof(buf));
+
+    if (strlen(buf) >= sizeof(buf)-1)
+        LOG(log_debug, logtype_afpd,"Error writing .volinfo file: buffer too small, %s", buf);
+
+
+   if (write( fd, buf, strlen(buf)) < 0) {
+       LOG(log_debug, logtype_afpd,"Error writing .volinfo file: %s", strerror(errno));
+       goto done;
+   }
+   ftruncate(fd, strlen(buf));
+
+done:
+   lock.l_type = F_UNLCK;
+   fcntl(fd, F_SETLK, &lock);
+   close (fd);
+   return ret;
+}

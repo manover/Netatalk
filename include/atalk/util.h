@@ -1,5 +1,5 @@
 /*
- * $Id: util.h,v 1.7.10.6 2004-05-04 15:38:26 didg Exp $
+ * $Id: util.h,v 1.7.10.7 2004-06-09 01:15:19 bfernhomberg Exp $
  */
 
 #ifndef _ATALK_UTIL_H
@@ -11,6 +11,7 @@
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 #include <netatalk/at.h>
+#include <atalk/unicode.h>
 
 /* exit error codes */
 #define EXITERR_CLNT 1  /* client related error */
@@ -79,5 +80,30 @@ extern void *mod_symbol  __P((void *, const char *));
 #define mod_error()      dlerror()
 #define mod_close(a)     dlclose(a)
 #endif /* ! HAVE_DLFCN_H */
+
+
+/* volinfo for shell utilities */
+
+#define VOLINFOFILE ".volinfo"
+
+struct volinfo {
+    char                *v_name;
+    char                *v_path;
+    int                 v_flags;
+    int                 v_casefold;
+    char                *v_cnidscheme;
+    char                *v_dbpath;
+    char                *v_volcodepage;
+    charset_t           v_volcharset;
+    char                *v_maccodepage;
+    charset_t           v_maccharset;
+    int                 v_adouble;  /* default adouble format */
+    char                *(*ad_path)(const char *, int);
+    char                *v_dbd_host;
+    int                 v_dbd_port;
+};
+
+extern int loadvolinfo __P((char *path, struct volinfo *vol));
+extern int vol_load_charsets __P(( struct volinfo *vol));
 
 #endif

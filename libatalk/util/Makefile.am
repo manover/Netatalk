@@ -16,6 +16,7 @@ libutil_la_SOURCES = \
 	strcasestr.c    \
 	strdicasecmp.c	\
 	strlcpy.c	\
-	fault.c
+	fault.c		\
+	volinfo.c
 
 #	util_unicode.c
