@@ -1,5 +1,5 @@
 /*
- * $Id: afp_options.c,v 1.30.2.2.2.4 2004-01-08 19:16:57 lenneis Exp $
+ * $Id: afp_options.c,v 1.30.2.2.2.5 2004-01-24 18:05:26 bfernhomberg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -470,23 +470,31 @@ int afp_options_parseline(char *buf, struct afp_options *options)
             if ((opt = strdup(c)))
                 options->fqdn = opt;
         }
+	else {
+            LOG(log_error, logtype_afpd, "error parsing -fqdn, gethostbyname failed for: %s", c);
+	}
     }
 
     if ((c = getoption(buf, "-unixcodepage"))) {
-	options->unixcodepage = c;
-    	if ( 0 == ( options->unixcharset = add_charset(options->unixcodepage)) ) {
-		options->unixcodepage= "LOCALE";
-        	options->unixcharset = CH_UNIX;
+    	if ((charset_t)-1  == ( options->unixcharset = add_charset(c)) ) {
+            options->unixcharset = CH_UNIX;
+            LOG(log_warning, logtype_afpd, "setting Unix codepage to '%s' failed", c);
     	}
+	else {
+            if (opt = strdup(c))
+                options->unixcodepage = strdup(c);
+	}
     }
 	
     if ((c = getoption(buf, "-maccodepage"))) {
-	options->maccodepage = c;
-    	if ( 0 == ( options->maccharset = add_charset(options->maccodepage)) ) {
-		options->maccodepage= "Mac_Roman";
-        	options->maccharset = CH_MAC;
+    	if ((charset_t)-1 == ( options->maccharset = add_charset(c)) ) {
+            options->maccharset = CH_MAC;
+            LOG(log_warning, logtype_afpd, "setting Mac codepage to '%s' failed", c);
     	}
-	LOG(log_debug, logtype_afpd, "Setting Mac Codepage to '%s'", options->maccodepage);
+	else {
+            if (opt = strdup(c))
+                options->maccodepage = strdup(c);
+	}
     }
 
     return 1;

@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <dirent.h>
 #include <errno.h>
-#include <syslog.h>
 #include <unistd.h>
 #include <ctype.h>
 #include <string.h>
@@ -228,7 +227,7 @@ static int resolve_dir(struct vol *vol, int cidx)
 
 		path.u_name = dstack[cidx].path;   
 		if (of_stat(&path)==-1) {
-			syslog(LOG_DEBUG, "resolve_dir: stat %s: %s", dstack[cidx].path, strerror(errno));
+			LOG(log_debug, logtype_afpd, "resolve_dir: stat %s: %s", dstack[cidx].path, strerror(errno));
 			return 0;
 		}
 		path.m_name = dstack[cidx].m_name;
