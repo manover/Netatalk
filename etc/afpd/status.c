@@ -1,5 +1,5 @@
 /*
- * $Id: status.c,v 1.13.6.7 2004-06-20 15:25:45 bfernhomberg Exp $
+ * $Id: status.c,v 1.13.6.8 2004-06-24 01:22:36 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -570,12 +570,15 @@ static int do_status_init(AFPConfig *aspconfig, AFPConfig *dsiconfig,
 #endif /* ! NO_DDP */
 
     if (!forceasp) {
-        if ((options->flags & OPTION_CUSTOMICON) == 0) {
-            status_icon(status, apple_tcp_icon, sizeof(apple_tcp_icon), 0);
-        }
         if (aspconfig && statuslen <= ATP_MAXDATA-4) { /* set ASP as well, lenght matches */
             memcpy(aspconfig->status, status, ATP_MAXDATA);
-            ret = 1;
+            asp_setstatus(asp, aspconfig->status, statuslen);
+            aspconfig->signature = aspconfig->status + sigoff;
+            aspconfig->statuslen = statuslen;
+            ret=1;
+        }
+        if ((options->flags & OPTION_CUSTOMICON) == 0) {
+            status_icon(status, apple_tcp_icon, sizeof(apple_tcp_icon), 0);
         }
         dsi_setstatus(dsi, status, statuslen);
         dsiconfig->signature = status + sigoff;
