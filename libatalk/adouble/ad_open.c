@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.11 2004-05-04 14:26:14 didg Exp $
+ * $Id: ad_open.c,v 1.30.6.12 2004-05-08 22:38:33 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -223,6 +223,12 @@ static int ad_update(struct adouble *ad, const char *path)
   if (!path || (ad->ad_flags != AD_VERSION2))
     return 0;
   
+  if (!(ad->ad_hf.adf_flags & ( O_RDWR | O_WRONLY))) {
+      /* we were unable to open the file read write the last time
+      */
+      return 0;
+  }
+
   if (ad->ad_eid[ADEID_RFORK].ade_off)  
     shiftdata = ADEDOFF_RFORK_V2 -ad->ad_eid[ADEID_RFORK].ade_off;
 
@@ -332,6 +338,11 @@ static int ad_v1tov2(struct adouble *ad, const char *path)
   if (ad->ad_flags != AD_VERSION2)
       return 0;
 
+  if (!(ad->ad_hf.adf_flags & ( O_RDWR | O_WRONLY))) {
+      /* we were unable to open the file read write the last time
+      */
+      return 0;
+  }
 
   if (!ad->ad_flags) {
       /* we don't really know what we want */
@@ -505,7 +516,7 @@ static void parse_entries(struct adouble *ad, char *buf,
 	    ad->ad_eid[ eid ].ade_len = len;
 	} else if (!warning) {
 	    warning = 1;
-	    LOG(log_debug, logtype_default, "ad_refresh: nentries %hd  eid %d\n",
+	    LOG(log_debug, logtype_default, "ad_refresh: nentries %hd  eid %d",
 		    nentries, eid );
 	}
     }
@@ -599,8 +610,9 @@ static int ad_header_read(struct adouble *ad, struct stat *hst)
     if (!ad_getentryoff(ad, ADEID_RFORK)
 	|| (ad_getentryoff(ad, ADEID_RFORK) > sizeof(ad->ad_data))
 	) {
-      LOG(log_debug, logtype_default, "ad_header_read: problem with rfork entry offset."); 
-      return -1;
+        errno = EIO;
+        LOG(log_debug, logtype_default, "ad_header_read: problem with rfork entry offset."); 
+        return -1;
     }
 
     if (ad_getentryoff(ad, ADEID_RFORK) > header_len) {
@@ -871,12 +883,14 @@ struct stat stbuf;
 /* ----------------- */
 static int ad_error(struct adouble *ad, int adflags)
 {
+int err = errno;
     if ((adflags & ADFLAGS_NOHF)) {
         /* FIXME double check : set header offset ?*/
         return 0;
     }
     if ((adflags & ADFLAGS_DF)) {
 	ad_close( ad, ADFLAGS_DF );
+	err = errno;
     }
     return -1 ;
 }
@@ -1056,8 +1070,10 @@ int ad_open( path, adflags, oflags, mode, ad )
          * instead of reading it.
         */
         if (new_rfork(path, ad, adflags) < 0) {
+            int err = errno;
             /* the file is already deleted, perm, whatever, so return an error*/
             ad_close(ad, adflags);
+            errno = err;
 	    return -1;
 	}
     } else {
@@ -1067,8 +1083,11 @@ int ad_open( path, adflags, oflags, mode, ad )
 		|| (ad_v1tov2(ad, ad_p) < 0) || (ad_update(ad, ad_p) < 0)
 #endif /* AD_VERSION == AD_VERSION2 */
         ) {
+            int err = errno;
+            
             ad_close( ad, adflags );
-	    return( -1 );
+            errno = err;
+	    return -1;
 	}
     }
     return 0 ;
