@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.20 2004-08-26 04:14:34 bfernhomberg Exp $
+ * $Id: adouble.h,v 1.21.6.20.2.1 2004-10-20 20:16:21 didg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -50,7 +50,7 @@
    Still have to figure out which platforms really
    need _XOPEN_SOURCE defined for pread.
  */  
-#if defined(HAVE_PREAD) && !defined(SOLARIS) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(__FreeBSD__)
+#if defined(HAVE_PREAD) && !defined(SOLARIS) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(__FreeBSD__) && !defined(TRU64)
 #ifdef _XOPEN_SOURCE
 #undef _XOPEN_SOURCE
 #endif
@@ -293,7 +293,12 @@ struct adouble {
 #if _FILE_OFFSET_BITS == 64   
 #define BYTELOCK_MAX (0x7FFFFFFFFFFFFFFFULL)
 #else
+/* Tru64 is an always-64-bit OS; version 4.0 does not set _FILE_OFFSET_BITS */
+#if defined(TRU64)
+#define BYTELOCK_MAX (0x7FFFFFFFFFFFFFFFULL)
+#else
 #define BYTELOCK_MAX (0x7FFFFFFFU)
+#endif
 #endif
 
 #define AD_FILELOCK_OPEN_WR        (AD_FILELOCK_BASE + 0)
