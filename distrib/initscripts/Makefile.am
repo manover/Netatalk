@@ -21,6 +21,7 @@ GENERATED_FILES = \
 	rc.atalk.bsd		\
 	rc.atalkd.netbsd	\
 	rc.atalk.suse		\
+	rc.cnid_metad.netbsd	\
 	rc.papd.netbsd		\
 	rc.timelord.netbsd
 TEMPLATES = \
@@ -30,6 +31,7 @@ TEMPLATES = \
 	rc.atalk.bsd.tmpl		\
 	rc.atalkd.netbsd.tmpl		\
 	rc.atalk.suse.tmpl		\
+	rc.cnid_metad.netbsd.tmpl	\
 	rc.papd.netbsd.tmpl		\
 	rc.timelord.netbsd.tmpl
 
