@@ -211,11 +211,13 @@ void init_iconv(void)
 			conv_handles[c1][CH_UCS2] = NULL;
 		}
 
-		conv_handles[CH_UCS2][c1] = atalk_iconv_open( name, charset_name(CH_UCS2));
-        	if (conv_handles[CH_UCS2][c1] == (atalk_iconv_t)-1) {
-			LOG(log_error, logtype_default, "Required conversion from %s to %s not supported",
-				charset_name(CH_UCS2), name);
-			conv_handles[CH_UCS2][c1] = NULL;
+		if (c1 != CH_UCS2) { /* avoid lost memory, make valgrind happy */
+			conv_handles[CH_UCS2][c1] = atalk_iconv_open( name, charset_name(CH_UCS2));
+		      	if (conv_handles[CH_UCS2][c1] == (atalk_iconv_t)-1) {
+				LOG(log_error, logtype_default, "Required conversion from %s to %s not supported",
+					charset_name(CH_UCS2), name);
+				conv_handles[CH_UCS2][c1] = NULL;
+			}
 		}
 		
 		charsets[c1] = get_charset_functions (c1);
