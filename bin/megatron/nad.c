@@ -1,5 +1,5 @@
 /*
- * $Id: nad.c,v 1.11.8.1 2004-06-09 01:19:51 bfernhomberg Exp $
+ * $Id: nad.c,v 1.11.8.2 2004-06-27 02:38:42 didg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -520,8 +520,9 @@ int nad_header_read( fh )
       if ( NULL == (p = strrchr(nad.adpath[DATA], '/')) )
         p = nad.adpath[DATA];
       else p++;
-      
-      //strcpy(fh->name, utompath(nad.adpath[DATA]));
+#if 0      
+      strcpy(fh->name, utompath(nad.adpath[DATA]));
+#endif      
       strcpy(fh->name, utompath(p));
     }
 
