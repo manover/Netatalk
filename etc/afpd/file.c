@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.14 2004-02-20 21:22:58 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.15 2004-02-29 22:18:24 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -537,8 +537,12 @@ int getfilparams(struct vol *vol,
     	    */
     	    if ((bitmap & (1 << FILPBIT_ATTR))) {
 	         if (!(attrbits & ATTRBIT_ROPEN)) {
+    		     attribs | = ad_testlock(adp, ADEID_RFORK, AD_FILELOCK_OPEN_RD) ? ATTRBIT_ROPEN : 0;
+    		     attribs | = ad_testlock(adp, ADEID_RFORK, AD_FILELOCK_OPEN_WR) ? ATTRBIT_ROPEN : 0;
 	    	 }
     		 if (!(attrbits & ATTRBIT_DOPEN)) {
+    		     attribs | = ad_testlock(adp, ADEID_DFORK, AD_FILELOCK_OPEN_RD) ? ATTRBIT_DOPEN : 0;
+    		     attribs | = ad_testlock(adp, ADEID_DFORK, AD_FILELOCK_OPEN_WR) ? ATTRBIT_DOPEN : 0;
 	    	 }
     	    }
     	}
