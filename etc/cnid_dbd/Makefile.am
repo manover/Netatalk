@@ -1,6 +1,10 @@
 # Makefile.am for etc/cnid_dbd/
 
+if BUILD_DBD_DAEMON
 sbin_PROGRAMS = cnid_dbd cnid_metad
+else
+sbin_PROGRAMS =
+endif
 
 cnid_dbd_SOURCES = dbif.c pack.c comm.c usockfd.c db_param.c main.c \
                    dbd_add.c dbd_get.c dbd_resolve.c dbd_lookup.c \
@@ -20,3 +24,4 @@ LIBS = @LIBS@ @BDB_LIBS@
 
 
 CFLAGS = -I$(top_srcdir)/include @CFLAGS@ @BDB_CFLAGS@ 
+
