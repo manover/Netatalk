@@ -1,5 +1,5 @@
 /*
- * $Id: uams_passwd.c,v 1.19.2.1.2.4 2003-10-30 06:43:45 bfernhomberg Exp $
+ * $Id: uams_passwd.c,v 1.19.2.1.2.5 2004-01-10 08:01:36 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -62,6 +62,8 @@ char *strchr (), *strrchr ();
 
 static char *clientname;
 #endif /* TRU64 */
+
+extern void append(void *, const char *, int);
 
 static int pwd_login(void *obj, char *username, int ulen, struct passwd **uam_pwd,
                         char *ibuf, int ibuflen,

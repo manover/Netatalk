@@ -1,5 +1,5 @@
 /*
- * $Id: uams_guest.c,v 1.12 2003-03-12 15:07:03 didg Exp $
+ * $Id: uams_guest.c,v 1.12.6.1 2004-01-10 08:01:36 bfernhomberg Exp $
  *
  * (c) 2001 (see COPYING)
  */
@@ -33,6 +33,8 @@ char *strchr (), *strrchr ();
 
 #include <atalk/afp.h>
 #include <atalk/uam.h>
+
+extern void append(void *, const char *, int);
 
 /* login and login_ext are almost the same */
 static int noauth_login(void *obj, struct passwd **uam_pwd,

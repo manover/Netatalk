@@ -1,5 +1,5 @@
 /* 
- * $Id: uams_randnum.c,v 1.12.6.1 2003-09-11 23:49:30 bfernhomberg Exp $
+ * $Id: uams_randnum.c,v 1.12.6.2 2004-01-10 08:01:36 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -152,7 +152,8 @@ static int afppasswd(const struct passwd *pwd,
   char buf[MAXPATHLEN + 1], *p;
   Key_schedule	schedule;
   FILE *fp;
-  int i, j, keyfd = -1, err = 0;
+  unsigned int i, j;
+  int keyfd = -1, err = 0;
   off_t pos;
   
   if ((fp = fopen(path, (set) ? "r+" : "r")) == NULL) {
@@ -162,7 +163,7 @@ static int afppasswd(const struct passwd *pwd,
   
   /* open the key file if it exists */
   strcpy(buf, path);
-  if (pathlen < sizeof(buf) - 5) {
+  if (pathlen < (int) sizeof(buf) - 5) {
     strcat(buf, ".key");
     keyfd = open(buf, O_RDONLY);
   } 
@@ -407,7 +408,7 @@ static int rand2num_logincont(void *obj, struct passwd **uam_pwd,
 			      char *rbuf, int *rbuflen)
 {
   u_int16_t sessid;
-  int i;
+  unsigned int i;
 
   *rbuflen = 0;
 
