@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_update.c,v 1.1.4.5 2003-11-25 00:41:31 lenneis Exp $
+ * $Id: dbd_update.c,v 1.1.4.6 2003-12-03 00:40:20 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -23,6 +23,15 @@
 
 /* cnid_update: takes the given cnid and updates the metadata. */
 
+/* FIXME: This calls pack_cnid_data(rqst) three times without modifying rqst */
+/* FIXME: (Only tested with DB 4.1.25):
+
+      dbif_pget on the secondary index followed by dbif_del with the CNID on the
+      main cnid db could be replaced by a single dbif_del on the secondary index. That 
+      deletes the secondary, the corresponding entry from the main cnid db as well as the 
+      other secondary index.
+*/   
+   
 int dbd_update(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
 {
     DBT key,pkey, data;
@@ -47,8 +56,7 @@ int dbd_update(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
         goto err_db;
     }
     else if  (rc > 0) { 
-	/* FIXME: pkey.data points to the CNID? */
-        if ((rc = dbif_del(DBIF_IDX_DEVINO, &pkey, 0)) < 0 ) {
+        if ((rc = dbif_del(DBIF_IDX_CNID, &pkey, 0)) < 0 ) {
             goto err_db;
         }
     }
@@ -65,8 +73,7 @@ int dbd_update(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
         goto err_db;
     }
     else if  (rc > 0) {
-	/* FIXME: pkey.data points to the CNID? */
-        if ((rc = dbif_del(DBIF_IDX_DIDNAME, &pkey, 0)) < 0) {
+        if ((rc = dbif_del(DBIF_IDX_CNID, &pkey, 0)) < 0) {
             goto err_db;
         }
     }
