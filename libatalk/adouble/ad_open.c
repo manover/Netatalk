@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.21 2002-10-11 14:18:37 didg Exp $
+ * $Id: ad_open.c,v 1.19.2.1 2003-04-10 23:34:57 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -176,6 +176,7 @@ static const struct entry entry_order[] = {
 static __inline__ int ad_v1tov2(struct adouble *ad, const char *path)
 {
   struct stat st;
+  struct timeval tv;
   u_int16_t attr;
   char *buf;
   int fd, off;
@@ -202,6 +203,9 @@ static __inline__ int ad_v1tov2(struct adouble *ad, const char *path)
   if ((fd = open(path, O_RDWR)) < 0) 
     goto bail_lock;
   
+  if (gettimeofday(&tv, NULL) < 0) 
+    goto bail_lock;
+  
   if (fstat(fd, &st) ||
       ftruncate(fd, st.st_size + SHIFTDATA) < 0) {
     goto bail_open;
@@ -216,6 +220,12 @@ static __inline__ int ad_v1tov2(struct adouble *ad, const char *path)
   }
   
   off = ad->ad_eid[ADEID_RFORK].ade_off;
+
+#ifdef USE_MMAPPED_HEADERS
+  /* okay, unmap our old ad header and point it to our local copy */
+  munmap(ad->ad_data, off);
+  ad->ad_data = buf;
+#endif /* USER_MMAPPED_HEADERS */
 
   /* move the RFORK. this assumes that the RFORK is at the end */
   memmove(buf + off + SHIFTDATA, buf + off, 
@@ -256,7 +266,7 @@ static __inline__ int ad_v1tov2(struct adouble *ad, const char *path)
   
   /* now, fill in the space with appropriate stuff. we're
      operating as a v2 file now. */
-  ad_setdate(ad, AD_DATE_ACCESS | AD_DATE_UNIX, st.st_mtime);
+  ad_setdate(ad, AD_DATE_ACCESS | AD_DATE_UNIX, tv.tv_sec);
   memset(ad_entry(ad, ADEID_DID), 0, ADEDLEN_DID);
   memset(ad_entry(ad, ADEID_AFPFILEI), 0, ADEDLEN_AFPFILEI);
   ad_setattr(ad, attr);
@@ -268,6 +278,15 @@ static __inline__ int ad_v1tov2(struct adouble *ad, const char *path)
   munmap(buf, st.st_size + SHIFTDATA);
   close(fd);
   ad_tmplock(ad, ADEID_RFORK, ADLOCK_CLR, 0, 0);
+
+#ifdef USE_MMAPPED_HEADERS
+  /* now remap our header */
+  ad->ad_data = mmap(NULL, ADEDOFF_RFORK_V2, PROT_READ | PROT_WRITE,
+		     (ad_getoflags(ad, ADFLAGS_HF) & O_RDWR) ? MAP_SHARED :
+		     MAP_PRIVATE, ad->ad_hf.adf_fd, 0);
+  if (ad->ad_data == MAP_FAILED)
+    goto bail_err;
+#endif /* USE_MMAPPED_HEADERS */
 
   return 0;
   
@@ -282,35 +301,9 @@ bail_err:
 }
 #endif /* AD_VERSION == AD_VERSION2 */
 
-#ifdef ATACC
-mode_t ad_hf_mode (mode_t mode)
-{
-#ifndef USE_FLOCK_LOCKS
-    /* fnctl lock need write access */
-    if ((mode & S_IRUSR))
-        mode |= S_IWUSR;
-    if ((mode & S_IRGRP))
-        mode |= S_IWGRP;
-    if ((mode & S_IROTH))
-        mode |= S_IWOTH;
-#endif
-    /* if write mode set add read mode */
-    if ((mode & S_IWUSR))
-        mode |= S_IRUSR;
-    if ((mode & S_IWGRP))
-        mode |= S_IRGRP;
-    if ((mode & S_IWOTH))
-        mode |= S_IROTH;
 
-    return mode;
-}
-
-#endif
-
-/* ------------------------------------- 
-  read in the entries 
-*/
-static void parse_entries(struct adouble *ad, char *buf,
+/* read in the entries */
+static __inline__ void parse_entries(struct adouble *ad, char *buf,
 				    u_int16_t nentries)
 {
     u_int32_t		eid, len, off;
@@ -345,26 +338,36 @@ static void parse_entries(struct adouble *ad, char *buf,
  * NOTE: we're assuming that the resource fork is kept at the end of
  *       the file. also, mmapping won't work for the hfs fs until it
  *       understands how to mmap header files. */
-static int ad_header_read(struct adouble *ad, struct stat *hst)
+static __inline__ int ad_header_read(struct adouble *ad)
 {
+#ifdef USE_MMAPPED_HEADERS
+    char                buf[AD_ENTRY_LEN*ADEID_MAX];
+#else /* USE_MMAPPED_HEADERS */
     char                *buf = ad->ad_data;
+#endif /* USE_MMAPPED_HEADERS */
     u_int16_t           nentries;
     int                 len;
-    ssize_t             header_len;
     static int          warning = 0;
-    struct stat         st;
 
     /* read the header */
-    if ((header_len = adf_pread( &ad->ad_hf, buf, sizeof(ad->ad_data), 0)) < 0) {
-	return -1;
-    }
-    if (header_len < AD_HEADER_LEN) {
-        errno = EIO;
-        return -1;
+    if ( ad->ad_hf.adf_off != 0 ) {
+      if ( lseek( ad->ad_hf.adf_fd, 0L, SEEK_SET ) < 0L ) {
+		return( -1 );
+      }
+      ad->ad_hf.adf_off = 0;
     }
 
+    if (read( ad->ad_hf.adf_fd, buf, AD_HEADER_LEN) != AD_HEADER_LEN) {
+	if ( errno == 0 ) {
+	    errno = EIO;
+	}
+	return( -1 );
+    }
+    ad->ad_hf.adf_off = AD_HEADER_LEN;
+
     memcpy(&ad->ad_magic, buf, sizeof( ad->ad_magic ));
-    memcpy(&ad->ad_version, buf + ADEDOFF_VERSION, sizeof( ad->ad_version ));
+    memcpy(&ad->ad_version, buf + ADEDOFF_VERSION, 
+	   sizeof( ad->ad_version ));
 
     /* tag broken v1 headers. just assume they're all right. 
      * we detect two cases: null magic/version
@@ -379,7 +382,8 @@ static int ad_header_read(struct adouble *ad, struct stat *hst)
       ad->ad_magic = AD_MAGIC;
       ad->ad_version = AD_VERSION1;
 
-    } else if (ad->ad_magic == AD_MAGIC && ad->ad_version == AD_VERSION1) {
+    } else if ((ad->ad_magic == AD_MAGIC) && 
+	       (ad->ad_version == AD_VERSION1)) {
       if (!warning) {
 	LOG(log_debug, logtype_default, "notice: fixing up byte-swapped v1 magic/version.");
 	warning++;
@@ -407,49 +411,66 @@ static int ad_header_read(struct adouble *ad, struct stat *hst)
     /* read in all the entry headers. if we have more than the 
      * maximum, just hope that the rfork is specified early on. */
     len = nentries*AD_ENTRY_LEN;
-
+#ifdef USE_MMAPPED_HEADERS
+    if (len > sizeof(buf))
+      len = sizeof(buf);
+#else /* USE_MMAPPED_HEADERS */
     if (len + AD_HEADER_LEN > sizeof(ad->ad_data))
       len = sizeof(ad->ad_data) - AD_HEADER_LEN;
-
     buf += AD_HEADER_LEN;
-    if (len > header_len - AD_HEADER_LEN) {
-        errno = EIO;
+#endif /* USE_MMAPPED_HEADERS */
+    if (read(ad->ad_hf.adf_fd, buf, len) != len) {
+        if (errno == 0)
+	    errno = EIO;
 	LOG(log_debug, logtype_default, "ad_header_read: can't read entry info.");
 	return -1;
     }
+    ad->ad_hf.adf_off += len;
 
     /* figure out all of the entry offsets and lengths. if we aren't
      * able to read a resource fork entry, bail. */
     parse_entries(ad, buf, nentries);
     if (!ad_getentryoff(ad, ADEID_RFORK)
+#ifndef USE_MMAPPED_HEADERS
 	|| (ad_getentryoff(ad, ADEID_RFORK) > sizeof(ad->ad_data))
+#endif /* ! USE_MMAPPED_HEADERS */
 	) {
       LOG(log_debug, logtype_default, "ad_header_read: problem with rfork entry offset."); 
       return -1;
     }
 
-    if (ad_getentryoff(ad, ADEID_RFORK) > header_len) {
-	errno = EIO;
+    /* read/mmap up to the beginning of the resource fork. */
+#ifdef USE_MMAPPED_HEADERS
+    ad->ad_data = mmap(NULL, ad_getentryoff(ad, ADEID_RFORK),
+		       PROT_READ | PROT_WRITE,
+		       (ad_getoflags(ad, ADFLAGS_HF) & O_RDWR) ? MAP_SHARED :
+		       MAP_PRIVATE, ad->ad_hf.adf_fd, 0);
+    if (ad->ad_data == MAP_FAILED) 
+      return -1;
+#else /* USE_MMAPPED_HEADERS */
+    buf += len;
+    len = ad_getentryoff(ad, ADEID_RFORK) - ad->ad_hf.adf_off;
+    if (read(ad->ad_hf.adf_fd, buf, len) != len) {
+        if (errno == 0)
+	    errno = EIO;
 	LOG(log_debug, logtype_default, "ad_header_read: can't read in entries.");
 	return -1;
     }
+#endif /* USE_MMAPPED_HEADERS */
     
-    if (hst == NULL) {
-        hst = &st;
-        if (fstat(ad->ad_hf.adf_fd, &st) < 0) {
-	    return 1; /* fail silently */
-	 }
-    }
-    ad->ad_rlen = hst->st_size - ad_getentryoff(ad, ADEID_RFORK);
-
     /* fix up broken dates */
     if (ad->ad_version == AD_VERSION1) {
+      struct stat st;
       u_int32_t aint;
+      
+      if (fstat(ad->ad_hf.adf_fd, &st) < 0) {
+	return 1; /* fail silently */
+      }
       
       /* check to see if the ad date is wrong. just see if we have
       * a modification date in the future. */
       if (((ad_getdate(ad, AD_DATE_MODIFY | AD_DATE_UNIX, &aint)) == 0) &&
-	  (aint > TIMEWARP_DELTA + hst->st_mtime)) {
+	  (aint > TIMEWARP_DELTA + st.st_mtime)) {
 	ad_setdate(ad, AD_DATE_MODIFY | AD_DATE_UNIX, aint - AD_DATE_DELTA);
 	ad_getdate(ad, AD_DATE_CREATE | AD_DATE_UNIX, &aint);
 	ad_setdate(ad, AD_DATE_CREATE | AD_DATE_UNIX, aint - AD_DATE_DELTA);
@@ -471,7 +492,7 @@ static int ad_header_read(struct adouble *ad, struct stat *hst)
  */
 char *
 ad_path( path, adflags )
-    const char	*path;
+    char	*path;
     int		adflags;
 {
     static char	pathbuf[ MAXPATHLEN + 1];
@@ -511,7 +532,7 @@ ad_path( path, adflags )
 
 char 
 *ad_dir(path)
-    const char		*path;
+    char		*path;
 {
     static char		modebuf[ MAXPATHLEN + 1];
     char 		*slash;
@@ -537,7 +558,7 @@ char
 
 int
 ad_mode( path, mode )
-    const char		*path;
+    char		*path;
     int			mode;
 {
     struct stat		stbuf;
@@ -563,7 +584,7 @@ ad_mode( path, mode )
  */
 int
 ad_mkdir( path, mode )
-    const char		*path;
+    char		*path;
     int			mode;
 {
 #ifdef DEBUG
@@ -573,49 +594,46 @@ ad_mkdir( path, mode )
 }
 
 
-static int new_rfork(const char *path, struct adouble *ad, int adflags);
-
-#ifdef  HAVE_PREAD
-#define AD_SET(a) 
-#else 
-#define AD_SET(a) a = 0
-#endif
 /*
  * It's not possible to open the header file O_RDONLY -- the read
  * will fail and return an error. this refcounts things now. 
  */
 int ad_open( path, adflags, oflags, mode, ad )
-    const char		*path;
+    char		*path;
     int			adflags, oflags, mode;
     struct adouble	*ad;
 {
+    const struct entry  *eid;
     struct stat         st;
     char		*slash, *ad_p;
     int			hoflags, admode;
+    u_int16_t           ashort;
 
     if (ad->ad_inited != AD_INITED) {
         ad_dfileno(ad) = -1;
         ad_hfileno(ad) = -1;
 	adf_lock_init(&ad->ad_df);
 	adf_lock_init(&ad->ad_hf);
+#ifdef USE_MMAPPED_HEADERS
+	ad->ad_data = MAP_FAILED;
+#endif /* USE_MMAPPED_HEADERS */
         ad->ad_inited = AD_INITED;
         ad->ad_refcount = 1;
     }
 
-    if ((adflags & ADFLAGS_DF)) { 
+    if (adflags & ADFLAGS_DF) { 
         if (ad_dfileno(ad) == -1) {
 	  hoflags = (oflags & ~(O_RDONLY | O_WRONLY)) | O_RDWR;
 	  admode = ad_mode( path, mode ); 
 	  if (( ad->ad_df.adf_fd = open( path, hoflags, admode )) < 0 ) {
-             if (errno == EACCES && !(oflags & O_RDWR)) {
+             if ((errno == EACCES || errno == EROFS) && !(oflags & O_RDWR)) {
                 hoflags = oflags;
                 ad->ad_df.adf_fd =open( path, hoflags, admode );
              }
 	  }
 	  if ( ad->ad_df.adf_fd < 0)
-	  	return -1;
-
-	  AD_SET(ad->ad_df.adf_off);
+	  	return -1;	
+	  ad->ad_df.adf_off = 0;
 	  ad->ad_df.adf_flags = hoflags;
 	} 
         else {
@@ -623,185 +641,217 @@ int ad_open( path, adflags, oflags, mode, ad )
             if ((oflags & ( O_RDWR | O_WRONLY)) &&             /* we want write access */
             	!(ad->ad_df.adf_flags & ( O_RDWR | O_WRONLY))) /* and it was denied the first time */
             {
-                 errno == EACCES;
+                 errno = EACCES;
                  return -1;
             }
 	}
 	ad->ad_df.adf_refcount++;
     }
 
-    if (!(adflags & ADFLAGS_HF)) 
-        return 0;
-        
-    if (ad_hfileno(ad) != -1) { /* the file is already open */
-        if ((oflags & ( O_RDWR | O_WRONLY)) &&             
-            	!(ad->ad_hf.adf_flags & ( O_RDWR | O_WRONLY))) {
-	    if (adflags & ADFLAGS_DF) {
-                /* don't call with ADFLAGS_HF because we didn't open ressource fork */
-	        ad_close( ad, ADFLAGS_DF );
-	    }
-            errno == EACCES;
-	    return -1;
-	}
-	ad_refresh(ad);
-	ad->ad_hf.adf_refcount++;
-	return 0;
-    }
+    if (adflags & ADFLAGS_HF) {
+        if (ad_hfileno(ad) == -1) {
+	  ad_p = ad_path( path, adflags );
 
-    ad_p = ad_path( path, adflags );
-
-    hoflags = oflags & ~O_CREAT;
-    hoflags = (hoflags & ~(O_RDONLY | O_WRONLY)) | O_RDWR;
-    if (( ad->ad_hf.adf_fd = open( ad_p, hoflags, 0 )) < 0 ) {
-        if (errno == EACCES && !(oflags & O_RDWR)) {
-            hoflags = oflags & ~O_CREAT;
-            ad->ad_hf.adf_fd = open( ad_p, hoflags, 0 );
-        }    
-    }
-
-    if ( ad->ad_hf.adf_fd < 0 ) { 
-        if (errno == ENOENT && (oflags & O_CREAT) ) {
-	    /*
-	     * We're expecting to create a new adouble header file,
-	     * here.
-	     * if ((oflags & O_CREAT) ==> (oflags & O_RDWR)
-	     */
-	    admode = ad_hf_mode(ad_mode( ad_p, mode )); 
-	    errno = 0;
-	    if (( ad->ad_hf.adf_fd = open( ad_p, oflags,admode )) < 0 ) {
+	  hoflags = oflags & ~O_CREAT;
+	  hoflags = (hoflags & ~(O_RDONLY | O_WRONLY)) | O_RDWR;
+	  if (( ad->ad_hf.adf_fd = open( ad_p, hoflags, 0 )) < 0 ) {
+            if ((errno == EACCES || errno == EROFS) && !(oflags & O_RDWR)) {
+                hoflags = oflags & ~O_CREAT;
+                ad->ad_hf.adf_fd = open( ad_p, hoflags, 0 );
+            }    
+          }
+	  if ( ad->ad_hf.adf_fd < 0 ) {
+	    if (errno == ENOENT && (oflags & O_CREAT) ) {
+	      /*
+	       * We're expecting to create a new adouble header file,
+	       * here.
+	       * if ((oflags & O_CREAT) ==> (oflags & O_RDWR)
+	       */
+	      admode = ad_hf_mode(ad_mode( ad_p, mode )); 
+	      errno = 0;
+	      if (( ad->ad_hf.adf_fd = open( ad_p, oflags,
+					     admode )) < 0 ) {
 		/*
 		 * Probably .AppleDouble doesn't exist, try to
 		 * mkdir it.
 		 */
-		if (errno == ENOENT && (adflags & ADFLAGS_NOADOUBLE) == 0) {
-		    if (( slash = strrchr( ad_p, '/' )) == NULL ) {
-		        ad_close( ad, adflags );
-		        return( -1 );
-		    }
-		    *slash = '\0';
-		    errno = 0;
-		    if ( ad_mkdir( ad_p, 0777 ) < 0 ) {
-		        ad_close( ad, adflags );
-		        return( -1 );
-		    }
-		    *slash = '/';
-		    if (( ad->ad_hf.adf_fd = 
-		                   open( ad_p, oflags, ad_mode( ad_p, mode) )) < 0 ) {
-		        ad_close( ad, adflags );
-		        return( -1 );
-		    }
+		if ((errno == ENOENT) && 
+		    ((adflags & ADFLAGS_NOADOUBLE) == 0)) {
+		  if (( slash = strrchr( ad_p, '/' )) == NULL ) {
+		    ad_close( ad, adflags );
+		    return( -1 );
+		  }
+		  *slash = '\0';
+		  errno = 0;
+		  if ( ad_mkdir( ad_p, 0777 ) < 0 ) {
+		    ad_close( ad, adflags );
+		    return( -1 );
+		  }
+		  *slash = '/';
+		  if (( ad->ad_hf.adf_fd = 
+			open( ad_p, oflags, ad_mode( ad_p, mode) )) < 0 ) {
+		    ad_close( ad, adflags );
+		    return( -1 );
+		  }
 		} else {
 		  ad_close( ad, adflags );
 		  return( -1 );
 		}
+	      }
+	      ad->ad_hf.adf_flags = oflags;
+	    } else {
+	      ad_close( ad, adflags );
+	      return( -1 );
 	    }
-	    ad->ad_hf.adf_flags = oflags;
-	} else {
-	    ad_close( ad, adflags );
-	    return( -1 );
-	}
-    } else if (fstat(ad->ad_hf.adf_fd, &st) == 0 && st.st_size == 0) {
-	/* for 0 length files, treat them as new. */
-	ad->ad_hf.adf_flags = (oflags & ~(O_RDONLY | O_WRONLY)) | O_RDWR | O_TRUNC;
-    } else {
-        ad->ad_hf.adf_flags = hoflags;
-    }
-    AD_SET(ad->ad_hf.adf_off);
+	  } else if ((fstat(ad->ad_hf.adf_fd, &st) == 0) && 
+		     (st.st_size == 0)) {
+	    /* for 0 length files, treat them as new. */
+	    ad->ad_hf.adf_flags = (oflags & ~O_RDONLY) | O_RDWR;
+	  } else {
+	    ad->ad_hf.adf_flags = hoflags;
+	  }
+	  ad->ad_hf.adf_off = 0;
 	  
-    memset(ad->ad_eid, 0, sizeof( ad->ad_eid ));
-    if ((ad->ad_hf.adf_flags & ( O_TRUNC | O_CREAT ))) {
-        /*
-         * This is a new adouble header file. Initialize the structure,
-         * instead of reading it.
-        */
-        if (new_rfork(path, ad, adflags) < 0) {
-            ad_close(ad, adflags);
-	    return -1;
-	}
-    } else {
-	    /* Read the adouble header in and parse it.*/
-	if ((ad_header_read( ad , &st) < 0)
+	  /*
+	   * This is a new adouble header file. Initialize the structure,
+	   * instead of reading it.
+	   */
+	  memset(ad->ad_eid, 0, sizeof( ad->ad_eid ));
+	  if ( ad->ad_hf.adf_flags & ( O_TRUNC | O_CREAT )) {
+	    struct timeval tv;
+
+	    ad->ad_magic = AD_MAGIC;
+	    ad->ad_version = AD_VERSION;
+	    memset(ad->ad_filler, 0, sizeof( ad->ad_filler ));
+
+#ifdef USE_MMAPPED_HEADERS
+	    /* truncate the header file and mmap it. */
+	    ftruncate(ad->ad_hf.adf_fd, AD_DATASZ);
+	    ad->ad_data = mmap(NULL, AD_DATASZ, PROT_READ | PROT_WRITE,
+			       MAP_SHARED, ad->ad_hf.adf_fd, 0);
+	    if (ad->ad_data == MAP_FAILED) {
+	      ad_close(ad, adflags);
+	      return -1;
+	    }	    
+#else /* USE_MMAPPED_HEADERS */
+	    memset(ad->ad_data, 0, sizeof(ad->ad_data));
+#endif /* USE_MMAPPED_HEADERS */
+
+	    eid = entry_order;
+	    while (eid->id) {
+	      ad->ad_eid[eid->id].ade_off = eid->offset;
+	      ad->ad_eid[eid->id].ade_len = eid->len;
+	      eid++;
+	    }
+	    
+	    /* put something sane in the directory finderinfo */
+	    if (adflags & ADFLAGS_DIR) {
+	      /* set default view */
+	      ashort = htons(FINDERINFO_CLOSEDVIEW);
+	      memcpy(ad_entry(ad, ADEID_FINDERI) + FINDERINFO_FRVIEWOFF, 
+		     &ashort, sizeof(ashort));
+	    } else {
+	      /* set default creator/type fields */
+	      memcpy(ad_entry(ad, ADEID_FINDERI) + FINDERINFO_FRTYPEOFF,
+		     "TEXT", 4);
+	      memcpy(ad_entry(ad, ADEID_FINDERI) + FINDERINFO_FRCREATOFF,
+		     "UNIX", 4);
+	    }
+
+	    /* make things invisible */
+	    if ((*path == '.') && strcmp(path, ".") && strcmp(path, "..")) {
+	      ashort = htons(ATTRBIT_INVISIBLE);
+	      ad_setattr(ad, ashort);
+	      ashort = htons(FINDERINFO_INVISIBLE);
+	      memcpy(ad_entry(ad, ADEID_FINDERI) + FINDERINFO_FRFLAGOFF,
+		     &ashort, sizeof(ashort));
+	    }
+
+	    if (gettimeofday(&tv, NULL) < 0) {
+	      ad_close(ad, adflags);
+	      return -1;
+	    }
+	    
+	    /* put something sane in the date fields */
+	    ad_setdate(ad, AD_DATE_CREATE | AD_DATE_UNIX, tv.tv_sec);
+	    ad_setdate(ad, AD_DATE_MODIFY | AD_DATE_UNIX, tv.tv_sec);
+	    ad_setdate(ad, AD_DATE_ACCESS | AD_DATE_UNIX, tv.tv_sec);
+	    ad_setdate(ad, AD_DATE_BACKUP, AD_DATE_START);
+
+	  } else {
+	    /*
+	     * Read the adouble header in and parse it.
+	     */
+	    if ((ad_header_read( ad ) < 0)
 #if AD_VERSION == AD_VERSION2
 		|| (ad_v1tov2(ad, ad_p) < 0)
 #endif /* AD_VERSION == AD_VERSION2 */
-        ) {
-            ad_close( ad, adflags );
-	    return( -1 );
+		) {
+	      ad_close( ad, adflags );
+	      return( -1 );
+	    }
+	  }
 	}
+	else { /* already open */
+            if ((oflags & ( O_RDWR | O_WRONLY)) &&             
+            	!(ad->ad_hf.adf_flags & ( O_RDWR | O_WRONLY))) {
+		if (adflags & ADFLAGS_DF) {
+              	    /* don't call with ADFLAGS_HF because we didn't open ressource fork */
+	            ad_close( ad, ADFLAGS_DF );
+	         }
+                 errno = EACCES;
+	         return -1;
+	    }
+	}
+	ad->ad_hf.adf_refcount++;
     }
-    ad->ad_hf.adf_refcount++;
-    return 0 ;
-}
-
-/* ----------------------------------- */
-static int new_rfork(const char *path, struct adouble *ad, int adflags)
-{
-#if 0
-    struct timeval      tv;
-#endif    
-    const struct entry  *eid;
-    u_int16_t           ashort;
-    struct stat         st;
-
-    ad->ad_magic = AD_MAGIC;
-    ad->ad_version = AD_VERSION;
-
-    memset(ad->ad_filler, 0, sizeof( ad->ad_filler ));
-    memset(ad->ad_data, 0, sizeof(ad->ad_data));
-
-    eid = entry_order;
-    while (eid->id) {
-        ad->ad_eid[eid->id].ade_off = eid->offset;
-	ad->ad_eid[eid->id].ade_len = eid->len;
-	eid++;
-    }
-	    
-    /* put something sane in the directory finderinfo */
-    if (adflags & ADFLAGS_DIR) {
-        /* set default view */
-	ashort = htons(FINDERINFO_CLOSEDVIEW);
-	memcpy(ad_entry(ad, ADEID_FINDERI) + FINDERINFO_FRVIEWOFF, 
-		     &ashort, sizeof(ashort));
-    } else {
-        /* set default creator/type fields */
-	memcpy(ad_entry(ad, ADEID_FINDERI) + FINDERINFO_FRTYPEOFF,"TEXT", 4);
-	memcpy(ad_entry(ad, ADEID_FINDERI) + FINDERINFO_FRCREATOFF,"UNIX", 4);
-    }
-
-    /* make things invisible */
-    if ((*path == '.') && strcmp(path, ".") && strcmp(path, "..")) {
-        ashort = htons(ATTRBIT_INVISIBLE);
-	ad_setattr(ad, ashort);
-	ashort = htons(FINDERINFO_INVISIBLE);
-	memcpy(ad_entry(ad, ADEID_FINDERI) + FINDERINFO_FRFLAGOFF,
-		     &ashort, sizeof(ashort));
-    }
-
-#if 0
-    if (gettimeofday(&tv, NULL) < 0) {
-	return -1;
-    } 
-#endif
-    
-    if (stat(path, &st) < 0) {
-	return -1;
-    }
-	    
-    /* put something sane in the date fields */
-    ad_setdate(ad, AD_DATE_CREATE | AD_DATE_UNIX, st.st_mtime);
-    ad_setdate(ad, AD_DATE_MODIFY | AD_DATE_UNIX, st.st_mtime);
-    ad_setdate(ad, AD_DATE_ACCESS | AD_DATE_UNIX, st.st_mtime);
-    ad_setdate(ad, AD_DATE_BACKUP, AD_DATE_START);
-    return 0;
+	
+    return( 0 );
 }
 
 /* to do this with mmap, we need the hfs fs to understand how to mmap
    header files. */
 int ad_refresh(struct adouble *ad)
 {
+#ifdef USE_MMAPPED_HEADERS
+  off_t off;
+#endif /* USE_MMAPPED_HEADERS */
 
   if (ad->ad_hf.adf_fd < -1)
     return -1;
 
-  return ad_header_read(ad, NULL);
+#ifdef USE_MMAPPED_HEADERS
+  if (ad->ad_data == MAP_FAILED)
+    return -1;
+  
+  /* re-read the header */
+  off = ad_getentryoff(ad, ADEID_RFORK);
+  memcpy(&nentries, ad->ad_data + ADEDOFF_NENTRIES, sizeof(nentries));
+  nentries = ntohs(nentries);
+  parse_entries(ad, ad->ad_data + AD_HEADER_LEN, nentries);
+
+  /* check to see if something screwy happened */
+  if (!ad_getentryoff(ad, ADEID_RFORK))
+    return -1;
+
+  /* if there's a length discrepancy, remap the header. this shouldn't
+   * really ever happen. */
+  if (off != ad_getentryoff(ad, ADEID_RFORK)) {
+    char *buf = ad->ad_data;
+    buf = ad->ad_data;
+    ad->ad_data = mmap(NULL, ad_getentryoff(ad, ADEID_RFORK), 
+		       PROT_READ | PROT_WRITE,
+		       (ad_getoflags(ad, ADFLAGS_HF) & O_RDWR) ? 
+		       MAP_SHARED : MAP_PRIVATE, ad->ad_hf.adf_fd, 0);
+    if (ad->ad_data == MAP_FAILED) {
+      ad->ad_data = buf;
+      return -1;
+    }
+    munmap(buf, off);
+  }
+  return 0;
+
+#else /* USE_MMAPPED_HEADERS */
+  return ad_header_read(ad);
+#endif /* USE_MMAPPED_HEADERS */
 }

@@ -1,3 +1,8 @@
+Changes in 1.6.3
+================
+
+* FIX: open files on a read-only filesystem.
+
 Changes in 1.6.2
 ================
 
