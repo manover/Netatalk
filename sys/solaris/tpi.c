@@ -36,7 +36,11 @@ tpi_getinfo( dev_info_t *dip, ddi_info_cmd_t cmd, void *arg, void **resultp )
     static int
 tpi_identify( dev_info_t *dip )
 {
-    if ( strcmp( ddi_get_name( dip ), "ddp" ) == 0 ) {
+    char *tmp;
+
+    /* don't use strcmp under Solaris 9, problem loading kernel module */
+    tmp = ddi_get_name( dip );
+    if ((tmp[0]== 'd') && (tmp[1]=='d') && (tmp[2]=='p') && tmp[3]==0) {
 	return( DDI_IDENTIFIED );
     } else {
 	return( DDI_NOT_IDENTIFIED );
