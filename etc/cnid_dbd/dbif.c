@@ -1,5 +1,5 @@
 /*
- * $Id: dbif.c,v 1.1.4.10 2004-01-09 21:05:50 lenneis Exp $
+ * $Id: dbif.c,v 1.1.4.11 2004-01-10 06:18:43 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -152,6 +152,7 @@ int dbif_env_init(struct db_param *dbp)
     if ((ret = db_env_create(&db_env, 0))) {
         LOG(log_error, logtype_cnid, "error creating DB environment: %s", 
             db_strerror(ret));
+        db_env = NULL;
         return -1;
     }    
     if (db_errlog != NULL)
@@ -179,6 +180,7 @@ int dbif_env_init(struct db_param *dbp)
     if ((ret = db_env_create(&db_env, 0))) {
         LOG(log_error, logtype_cnid, "error creating DB environment after recovery: %s",
             db_strerror(ret));
+        db_env = NULL;
         return -1;
     }
     if ((ret = db_env->set_cachesize(db_env, 0, 1024 * dbp->cachesize, 0))) {
