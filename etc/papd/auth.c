@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.6.8.2.2.1 2005-02-06 10:16:02 didg Exp $
+ * $Id: auth.c,v 1.6.8.2.2.2 2005-03-11 15:36:59 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -31,11 +31,11 @@
 #include "uam_auth.h"
 
 static struct uam_mod uam_modules = {NULL, NULL, &uam_modules, &uam_modules};
-static struct uam_obj uam_login = {"", "", 0, {{NULL, NULL}}, &uam_login,
+static struct uam_obj uam_login = {"", "", 0, {{NULL, NULL, NULL}}, &uam_login,
 				   &uam_login};
-static struct uam_obj uam_changepw = {"", "", 0, {{NULL, NULL}}, &uam_changepw, 
+static struct uam_obj uam_changepw = {"", "", 0, {{NULL, NULL, NULL}}, &uam_changepw, 
 				      &uam_changepw};
-static struct uam_obj uam_printer = {"", "", 0, {{NULL, NULL}}, &uam_printer,
+static struct uam_obj uam_printer = {"", "", 0, {{NULL, NULL, NULL}}, &uam_printer,
 					&uam_printer};
 
 

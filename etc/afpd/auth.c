@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.44.2.3.2.15.2.2 2005-01-31 17:00:41 didg Exp $
+ * $Id: auth.c,v 1.44.2.3.2.15.2.3 2005-03-11 15:36:58 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -81,9 +81,9 @@ static struct afp_versions	afp_versions[] = {
         };
 
 static struct uam_mod uam_modules = {NULL, NULL, &uam_modules, &uam_modules};
-static struct uam_obj uam_login = {"", "", 0, {{NULL}}, &uam_login,
+static struct uam_obj uam_login = {"", "", 0, {{NULL, NULL, NULL, NULL }}, &uam_login,
                                       &uam_login};
-static struct uam_obj uam_changepw = {"", "", 0, {{NULL}}, &uam_changepw,
+static struct uam_obj uam_changepw = {"", "", 0, {{NULL, NULL, NULL, NULL}}, &uam_changepw,
                                          &uam_changepw};
 
 static struct uam_obj *afp_uam = NULL;
