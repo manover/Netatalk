@@ -1,5 +1,5 @@
 /*
- * $Id: adv1tov2.c,v 1.3.14.1 2004-01-10 06:40:58 didg Exp $
+ * $Id: adv1tov2.c,v 1.3.14.2 2004-05-08 14:12:00 didg Exp $
  * v1tov2: given a root directory, run down and convert all the
  * files/directories into appledouble v2.
  */
@@ -66,6 +66,7 @@ void descend(DIR *dp)
   int flags;
   static int count = 0;
 
+  ad_init(&ad, AD_VERSION2);
   if (count++ > MAXDESCEND) {
     fprintf(stderr, "FAILURE: too many subdirectories! possible infinite recursion.");
     return;
@@ -108,6 +109,7 @@ int main(int argc, char **argv)
   DIR           *dp;
   struct adouble ad;
  
+  ad_init(&ad, AD_VERSION2);
   if (argc != 2) {
     fprintf(stderr, "%s <directory>\n", *argv);
     return -1;
