@@ -194,6 +194,7 @@ static int resolve_dir(struct vol *vol, int cidx)
 {
 	struct dir *dir, *curdir;
 	struct stat statbuf;
+	char* mname = NULL;
 
 	if (dstack[cidx].dir != NULL)
 		return 1;
@@ -218,7 +219,8 @@ static int resolve_dir(struct vol *vol, int cidx)
 			return 0;
 		}
 
-	if (!dir && ((dir = adddir(vol, curdir, dstack[cidx].lname, strlen(dstack[cidx].lname),
+	mname = utompath(vol, dstack[cidx].lname);
+	if (!dir && ((dir = adddir(vol, curdir, mname, strlen(mname),
 						dstack[cidx].path, strlen(dstack[cidx].path), &statbuf)) == NULL))
 			return 0;
 	dstack[cidx].dir = dir;
@@ -381,7 +383,8 @@ crit_check_ret:
 static int rslt_add(struct vol *vol, struct stat *statbuf, char *fname, short cidx, int isdir, char **rbuf)
 {
 	char *p = *rbuf;
-	int l = fname != NULL ? strlen(fname) : 0;
+	char *savefname = (fname != NULL) ? strdup (fname) : NULL;
+	int l = savefname != NULL ? strlen(savefname) : 0;
 	u_int32_t did;
 	char p0;
 
@@ -398,11 +401,11 @@ static int rslt_add(struct vol *vol, struct stat *statbuf, char *fname, short ci
 	}
 
 	/* Fill offset of returned file name */
-	if (fname != NULL) {
+	if (savefname != NULL) {
 		*p++ = 0;
 		*p++ = (int)(p - *rbuf) - 1;
 		p[0] = l;
-		strcpy(p+1, fname);
+		strcpy(p+1, savefname);
 		p += l + 1;
 	}
 
@@ -411,6 +414,7 @@ static int rslt_add(struct vol *vol, struct stat *statbuf, char *fname, short ci
 
 	*rbuf = p;
 	/* *rbuf[0] = (int)(p-*rbuf); */
+	free (savefname);
 	return 1;
 } /* rslt_add */
 
@@ -633,10 +637,10 @@ int afp_catsearch(AFPObj *obj, char *ibuf, int ibuflen,
 
     /* File attribute bits... */
     if (c1.rbitmap & (1 << FILPBIT_ATTR)) {
-	    memcpy(&c1.attr, ibuf, sizeof(c1.attr));
+	    memcpy(&c1.attr, spec1, sizeof(c1.attr));
 	    spec1 += sizeof(c1.attr);
 	    c1.attr = ntohs(c1.attr);
-	    memcpy(&c2.attr, ibuf, sizeof(c2.attr));
+	    memcpy(&c2.attr, spec2, sizeof(c2.attr));
 	    spec2 += sizeof(c1.attr);
 	    c2.attr = ntohs(c2.attr);
     }
@@ -681,7 +685,7 @@ int afp_catsearch(AFPObj *obj, char *ibuf, int ibuflen,
     }
 
     /* Finder info */
-    if (c1.rbitmap * (1 << FILPBIT_FINFO)) {
+    if (c1.rbitmap & (1 << FILPBIT_FINFO)) {
 	    memcpy(&c1.finfo, spec1, sizeof(c1.finfo));
 	    spec1 += sizeof(c1.finfo);
 	    memcpy(&c2.finfo, spec2, sizeof(c2.finfo));
