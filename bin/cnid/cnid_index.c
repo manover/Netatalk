@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_index.c,v 1.1.2.1 2004-12-21 13:36:11 didg Exp $
+ * $Id: cnid_index.c,v 1.1.2.2 2005-01-03 13:49:55 didg Exp $
  *
  * All Rights Reserved.  See COPYING.
  */
@@ -300,14 +300,17 @@ static int dbd_check(char *dbdir)
     if (dbif_count(DBIF_IDX_DIDNAME, &c_didname)) 
         return -1;
     
-    /* bailout after the first error */
     if (dbif_count(DBIF_IDX_DEVINO, &c_devino))
         return -1;
 
+    /* bailout after the first error */
     if ( c_cnid != c_devino) {
         LOG(log_error, logtype_cnid, "CNID database at `%s' corrupted (%u/%u)", dbdir, c_cnid, c_devino);
         return 1;
     }
+
+    if (dbif_count(DBIF_IDX_DIDNAME, &c_didname)) 
+        return -1;
 
     if ( c_cnid != c_didname) {
         LOG(log_error, logtype_cnid, "CNID database at `%s' corrupted (%u/%u)", dbdir, c_cnid, c_didname);

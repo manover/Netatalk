@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_dbcheck.c,v 1.1.2.1 2004-12-21 13:36:12 didg Exp $
+ * $Id: dbd_dbcheck.c,v 1.1.2.2 2005-01-03 13:49:56 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -37,18 +37,18 @@ int dbd_check(char *dbdir)
     if (dbif_count(DBIF_IDX_CNID, &c_cnid)) 
         return -1;
 
-    if (dbif_count(DBIF_IDX_DIDNAME, &c_didname)) 
-        return -1;
-    
-    /* bailout after the first error */
     if (dbif_count(DBIF_IDX_DEVINO, &c_devino))
         return -1;
 
+    /* bailout after the first error */
     if ( c_cnid != c_devino) {
         LOG(log_error, logtype_cnid, "CNID database at `%s' corrupted (%u/%u)", dbdir, c_cnid, c_devino);
         return 1;
     }
 
+    if (dbif_count(DBIF_IDX_DIDNAME, &c_didname)) 
+        return -1;
+    
     if ( c_cnid != c_didname) {
         LOG(log_error, logtype_cnid, "CNID database at `%s' corrupted (%u/%u)", dbdir, c_cnid, c_didname);
         return 1;
