@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.168.2.6 2003-06-06 17:24:00 srittau Exp $
+dnl $Id: configure.in,v 1.168.2.7 2003-11-20 17:21:00 bfernhomberg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(bin/adv1tov2/adv1tov2.c)
@@ -315,17 +315,6 @@ AC_ARG_ENABLE(shell-check,
 		AC_MSG_RESULT([disabling valid shell check])
 	fi
 )
-
-AC_MSG_CHECKING([whether flock locks should be enabled])
-AC_ARG_WITH(flock-locks,
-	[  --with-flock-locks      enable flock locks support],
-	[flock_locks="$withval"],
-	[flock_locks="no"]
-)
-if test "x$flock_locks" = "xyes"; then
-	AC_DEFINE(USE_FLOCK_LOCKS)
-fi
-AC_MSG_RESULT([$flock_locks])
 
 AC_ARG_WITH(tcp-wrappers,
 	[  --with-tcp-wrappers     enable TCP wrappers support],

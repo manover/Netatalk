@@ -1,5 +1,5 @@
 /* 
- * $Id: ad_lock.c,v 1.5 2002-07-01 23:25:00 didg Exp $
+ * $Id: ad_lock.c,v 1.5.2.1 2003-11-20 17:21:01 bfernhomberg Exp $
  *
  * Copyright (c) 1998,1999 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT for more information.
@@ -448,69 +448,4 @@ void ad_fcntl_unlock(struct adouble *ad, const int user)
     adf_unlock(&ad->ad_hf, ad->ad_hf.adf_fd, user);
   }
 }
-
-/* byte-range locks. ad_lock is used by afp_bytelock and afp_openfork
- * to establish locks. both ad_lock and ad_tmplock take 0, 0, 0 to
- * signify locking of the entire file. in the absence of working 
- * byte-range locks, this will default to file-wide flock-style locks.
- */
-int ad_flock_lock(struct adouble *ad, const u_int32_t eid, const int type,
-		  const off_t off, const size_t len, const int user)
-{
-  int err, lock_type;
-  
-  lock_type = XLATE_FLOCK(type & ADLOCK_MASK);
-  if (eid == ADEID_DFORK) {
-    if ((err = flock(ad_dfileno(ad), lock_type | LOCK_NB)) == 0)
-      ad->ad_df.adf_lockcount = lock_type;
-  } else if ((err = flock(ad_hfileno(ad), lock_type | LOCK_NB)) == 0)
-    ad->ad_hf.adf_lockcount = lock_type;
-
-  if (err) {
-    if ((EWOULDBLOCK != EAGAIN) && (errno == EWOULDBLOCK))
-      errno = EAGAIN;
-    return -1;
-  } 
-
-  return 0; 
-}
-
-/* ad_tmplock is used by afpd to lock actual read/write operations. 
- * it saves the current lock state before attempting to lock to prevent
- * mixups. if byte-locks don't exist, it will lock the entire file with
- * an flock. we can be a little smart here by just upgrading/downgrading
- * locks. */
-int ad_flock_tmplock(struct adouble *ad, const u_int32_t eid, const int type,
-	             const off_t off, const size_t len) 
-{
-  int fd, oldlock, lock_type;
-  
-  if (eid == ADEID_DFORK) {
-    oldlock = ad->ad_df.adf_lockcount;
-    fd = ad_dfileno(ad);
-  } else {
-    oldlock = ad->ad_hf.adf_lockcount;
-    fd = ad_hfileno(ad);
-  }
-
-  /* if we already have a write lock, we don't need to do anything */
-  if (oldlock == LOCK_EX) {
-    return 0;
-  }
-
-  /* if we have a read lock, upgrade it if necessary */
-  lock_type = XLATE_FLOCK(type & ADLOCK_MASK);
-  if (oldlock == LOCK_SH) {
-    if (lock_type == LOCK_EX) 
-      return flock(fd, LOCK_EX | LOCK_NB);
-    else if (lock_type == LOCK_UN) /* reset it */
-      return flock(fd, LOCK_SH | LOCK_NB);
-    else /* do nothing */
-      return 0;
-  }
-
-  /* if we don't already have a lock, just do it. */
-  return flock(fd, lock_type | LOCK_NB);
-}
-
 
