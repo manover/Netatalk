@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.15 2004-01-03 22:21:09 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.16 2004-01-08 04:17:21 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -2043,7 +2043,7 @@ static int create_special_folder (const struct vol *vol, const struct _special_f
 
     	if ( (ret = stat( p, &st )) < 0 ) {
 		if (folder->precreate) {
-		    if (ad_mkdir(p, folder->mode & ~vol->v_umask)) {
+		    if (ad_mkdir(p, folder->mode)) {
 			LOG(log_debug, logtype_afpd,"Creating '%s' failed", folder->name);
 			free(p);
 			return -1;
