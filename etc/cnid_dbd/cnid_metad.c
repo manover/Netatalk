@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_metad.c,v 1.1.4.2 2003-09-20 02:47:21 bfernhomberg Exp $
+ * $Id: cnid_metad.c,v 1.1.4.3 2003-10-28 07:24:02 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -320,6 +320,7 @@ int main(int argc, char *argv[])
     gid_t  gid = 0;
     int    err = 0;
     int    debug = 0;
+    int    ret;
     
     while (( cc = getopt( argc, argv, "ds:p:h:u:g:")) != -1 ) {
         switch (cc) {
@@ -440,8 +441,17 @@ int main(int argc, char *argv[])
             continue;
         /* TODO: Check out read errors, broken pipe etc. in libatalk. Is
            SIGIPE ignored there? Answer: Ignored for dsi, but not for asp ... */
-        if (read(rqstfd, &len, sizeof(int)) != sizeof(int)) {
-            LOG(log_error, logtype_cnid, "error/short read: %s", strerror(errno));
+        ret = read(rqstfd, &len, sizeof(int));
+        if (!ret) {
+            /* already close */
+            goto loop_end;
+        }
+        else if (ret < 0) {
+            LOG(log_error, logtype_cnid, "error read: %s", strerror(errno));
+            goto loop_end;
+        }
+        else if (ret != sizeof(int)) {
+            LOG(log_error, logtype_cnid, "short read: got %d", ret);
             goto loop_end;
         }
         /*
