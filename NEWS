@@ -13,6 +13,7 @@ Changes from 1.5.2
        directory.
 * FIX: NetBSD ELF support.
 * FIX: acleandir.rc is now installed in the bin directory.
+* FIX: megatron does now compile even if compiled with -DDEBUG.
 * FIX: Clean up some syslog messages.
 
 Changes from 1.5.1
