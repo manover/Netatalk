@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179 2003-03-09 19:55:33 didg Exp $
+dnl $Id: configure.in,v 1.179.2.1 2003-04-28 10:12:53 didg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(bin/adv1tov2/adv1tov2.c)
@@ -231,7 +231,7 @@ bdb_required=no
 dnl Determine DID scheme
 AC_MSG_CHECKING([for DID scheme to use])
 AC_ARG_WITH(did,
-	[  --with-did=SCHEME       set DID scheme (cnid,last)],
+	[  --with-did=SCHEME       set DID scheme (cnid,last,hash)],
 	[ did_scheme="$withval" ],
 	[ did_scheme="cnid" ]
 )
@@ -239,6 +239,9 @@ AC_ARG_WITH(did,
 if test "x$did_scheme" = "xlast"; then
 	AC_DEFINE(USE_LASTDID, 1, [Define if the last DID scheme should be used])
 	AC_MSG_RESULT([last])
+elif test "x$did_scheme" = "xhash"; then
+	AC_DEFINE(USE_HASHDID, 1, [Define if the hash DID scheme should be used, only one dev])
+	AC_MSG_RESULT([hash])
 elif test "x$did_scheme" = "xcnid"; then
 	bdb_required="yes"
 	AC_DEFINE(CNID_DB, 1, [Define if the CNID DB DID scheme should be used])

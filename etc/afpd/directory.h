@@ -1,5 +1,5 @@
 /*
- * $Id: directory.h,v 1.13 2003-04-20 06:53:40 didg Exp $
+ * $Id: directory.h,v 1.13.2.1 2003-04-28 10:12:53 didg Exp $
  *
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
@@ -153,6 +153,8 @@ extern int path_isadir(struct path *o_path);
 /* file/directory ids. what a mess. we scramble things in a vain attempt
  * to get something meaningful */
 #ifndef AFS
+
+#if 0
 #define CNID_XOR(a)  (((a) >> 16) ^ (a))
 #define CNID_DEV(a)   ((((CNID_XOR(major((a)->st_dev)) & 0xf) << 3) | \
 	(CNID_XOR(minor((a)->st_dev)) & 0x7)) << 24)
@@ -160,6 +162,10 @@ extern int path_isadir(struct path *o_path);
 				       & 0x00ffffff)
 #define CNID_FILE(a)  (((a) & 0x1) << 31)
 #define CNID(a,b)     (CNID_DEV(a) | CNID_INODE(a) | CNID_FILE(b))
+#endif
+
+#define CNID(a,b)     ((a)->st_ino & 0xffffffff)
+
 #else /* AFS */
 #define CNID(a,b)     (((a)->st_ino & 0x7fffffff) | CNID_FILE(b))
 #endif /* AFS */
