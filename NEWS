@@ -8,6 +8,8 @@ Changes from 1.5.0
 * FIX: Really fix Tru64 compilation (see last entry).
 * FIX: Hand correct error value back to AFP client when deleting files or
        directories fails.
+* FIX: Leading or trailing spaces are now forbidden on volumes that have
+       the AFPVOL_MSWINDOWS flag set.
 * FIX: Minor code cleanups and warning fixes.
 * FIX: Make quota support work on FreeBSD.
 
