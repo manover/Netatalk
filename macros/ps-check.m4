@@ -1,5 +1,5 @@
-dnl Autoconf macro to check for the existence of Perl
-dnl $Id: ps-check.m4,v 1.1.2.1 2002-02-08 16:30:17 jmarcus Exp $
+dnl Autoconf macro to check for the existence of ps
+dnl $Id: ps-check.m4,v 1.1.2.2 2002-03-12 16:23:11 srittau Exp $
 
 AC_DEFUN([AC_PROG_PS], [
 AC_REQUIRE([AC_EXEEXT])dnl
