@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.10 2004-03-11 02:01:59 didg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.11 2004-03-11 16:16:40 didg Exp $
  *
  * See COPYRIGHT.
  *
@@ -737,9 +737,7 @@ static int ad_addcomment(struct vol *vol, struct path *path, char *ibuf)
         } else {
             name = path->m_name;
         }
-        ad_setentrylen( adp, ADEID_NAME, strlen( name ));
-        memcpy( ad_entry( adp, ADEID_NAME ), name,
-                ad_getentrylen( adp, ADEID_NAME ));
+        ad_setname(adp, name);
     }
 
     ad_setentrylen( adp, ADEID_COMMENT, clen );

@@ -1,5 +1,5 @@
 /*
- * $Id: ad_attr.c,v 1.4.8.4 2004-03-11 02:02:05 didg Exp $
+ * $Id: ad_attr.c,v 1.4.8.5 2004-03-11 16:16:41 didg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -87,3 +87,16 @@ int ad_setid (struct adouble *adp, const dev_t dev, const ino_t ino , const u_in
 }
 
 #endif
+
+/* ----------------- 
+ * set resource fork filename attribute.
+*/
+int ad_setname(const struct adouble *ad, const char *path)
+{
+    if (ad_getentryoff(ad, ADEID_NAME)) {
+        ad_setentrylen( ad, ADEID_NAME, strlen( path ));
+        memcpy(ad_entry( ad, ADEID_NAME ), path, ad_getentrylen( ad, ADEID_NAME ));
+        return 1;
+    }
+    return 0;
+}

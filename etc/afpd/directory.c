@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.11 2004-03-11 02:01:59 didg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.12 2004-03-11 16:16:40 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1638,10 +1638,8 @@ int setdirparams(const struct vol *vol,
          * Check to see if a create was necessary. If it was, we'll want
          * to set our name, etc.
          */
-        if ( (ad_get_HF_flags( &ad ) & O_CREAT) && ad_getentryoff(&ad, ADEID_NAME)) {
-            ad_setentrylen( &ad, ADEID_NAME, strlen( curdir->d_m_name ));
-            memcpy( ad_entry( &ad, ADEID_NAME ), curdir->d_m_name,
-                    ad_getentrylen( &ad, ADEID_NAME ));
+        if ( (ad_get_HF_flags( &ad ) & O_CREAT)) {
+            ad_setname(&ad, curdir->d_m_name);
         }
     }
 
@@ -2026,12 +2024,7 @@ int		ibuflen, *rbuflen;
             goto createdir_done;
         return( AFPERR_ACCESS );
     }
-
-    if (ad_getentryoff(&ad, ADEID_NAME)) {
-        ad_setentrylen( &ad, ADEID_NAME, strlen( s_path->m_name ));
-        memcpy( ad_entry( &ad, ADEID_NAME ), s_path->m_name,
-            ad_getentrylen( &ad, ADEID_NAME ));
-    }
+    ad_setname(&ad, s_path->m_name);
     ad_setid( &ad, (vol->v_flags & AFPVOL_NODEV)?0:s_path->st.st_dev,
                    s_path->st.st_ino, dir->d_did, did, vol->v_stamp);
 
@@ -2102,10 +2095,7 @@ struct dir	*dir, *newparent;
     ad_init(&ad, vol->v_adouble);
 
     if (!ad_open( dst, ADFLAGS_HF|ADFLAGS_DIR, O_RDWR, 0, &ad)) {
-        if (ad_getentryoff(&ad, ADEID_NAME)) {
-            ad_setentrylen( &ad, ADEID_NAME, len );
-            memcpy( ad_entry( &ad, ADEID_NAME ), newname, len );
-        }
+        ad_setname(&ad, newname);
         ad_flush( &ad, ADFLAGS_HF );
         ad_close( &ad, ADFLAGS_HF );
     }

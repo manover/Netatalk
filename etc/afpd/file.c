@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.19 2004-03-11 12:47:59 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.20 2004-03-11 16:16:40 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -662,10 +662,7 @@ int		ibuflen, *rbuflen;
     }
 
     path = s_path->m_name;
-    if (ad_getentryoff(adp, ADEID_NAME)) {
-        ad_setentrylen( adp, ADEID_NAME, strlen( path ));
-        memcpy(ad_entry( adp, ADEID_NAME ), path, ad_getentrylen( adp, ADEID_NAME ));
-    }
+    ad_setname(adp, path);
     ad_flush( adp, ADFLAGS_DF|ADFLAGS_HF );
     ad_close( adp, ADFLAGS_DF|ADFLAGS_HF );
 
@@ -799,10 +796,8 @@ int setfilparams(struct vol *vol,
             return vol_noadouble(vol) ? AFP_OK : AFPERR_ACCESS;
         }
         isad = 0;
-    } else if (ad_getentryoff(adp, ADEID_NAME) && (ad_get_HF_flags( adp ) & O_CREAT) ) {
-        ad_setentrylen( adp, ADEID_NAME, strlen( path->m_name ));
-        memcpy(ad_entry( adp, ADEID_NAME ), path->m_name,
-               ad_getentrylen( adp, ADEID_NAME ));
+    } else if ((ad_get_HF_flags( adp ) & O_CREAT) ) {
+        ad_setname(adp, path->m_name);
     }
 
     while ( bitmap != 0 ) {
@@ -957,7 +952,6 @@ char	*src, *dst, *newname;
 struct adouble    *adp;
 {
     char	adsrc[ MAXPATHLEN + 1];
-    int		len;
     int		rc;
 
 #ifdef DEBUG
@@ -1047,11 +1041,7 @@ struct adouble    *adp;
     /* don't care if we can't open the newly renamed ressource fork
      */
     if (!ad_open( dst, ADFLAGS_HF, O_RDWR, 0666, adp)) {
-        if (ad_getentryoff(adp, ADEID_NAME) ) {
-            len = strlen( newname );
-            ad_setentrylen( adp, ADEID_NAME, len );
-            memcpy(ad_entry( adp, ADEID_NAME ), newname, len );
-        }
+        ad_setname(adp, newname);
         ad_flush( adp, ADFLAGS_HF );
         ad_close( adp, ADFLAGS_HF );
     }
@@ -1314,7 +1304,7 @@ const struct vol *s_vol, *d_vol;
 char	*src, *dst, *newname;
 {
     struct adouble	ads, add;
-    int			len, err = 0;
+    int			err = 0;
     int                 ret_err = 0;
     int                 adflags;
     int                 noadouble = vol_noadouble(d_vol);
@@ -1368,10 +1358,8 @@ char	*src, *dst, *newname;
 	}
     }
 
-    if (!ret_err && newname && ad_getentryoff(&add, ADEID_NAME)) {
-        len = strlen( newname );
-        ad_setentrylen( &add, ADEID_NAME, len );
-        memcpy(ad_entry( &add, ADEID_NAME ), newname, len );
+    if (!ret_err && newname) {
+        ad_setname(&add, newname);
     }
 
     ad_flush( &add, adflags );
