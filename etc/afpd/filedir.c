@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.45.2.2.2.3 2003-10-30 05:57:44 bfernhomberg Exp $
+ * $Id: filedir.c,v 1.45.2.2.2.4 2003-11-15 00:00:34 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -351,6 +351,7 @@ int         isdir;
     struct ofork	*opened = NULL;
     struct path         path;
     cnid_t      id;
+    ucs2_t *oldname_w, *newname_w;
 
     ad_init(&ad, vol->v_adouble);
     adp = &ad;
@@ -411,9 +412,24 @@ int         isdir;
             return AFP_OK;
 
         /* deal with case insensitive, case-preserving filesystems. */
-        if ((stat(upath, st) == 0) && strdiacasecmp(oldname, newname))
-            return AFPERR_EXIST;
-
+        if ((stat(upath, st) == 0)) {
+	    if ((size_t)-1 == (convert_string_allocate(CH_UCS2, vol->v_volcharset, oldname,
+                                strlen(oldname), (char**) &oldname_w)) ) {
+                return AFPERR_MISC; /* conversion error has already been logged */
+            }
+	    if ((size_t)-1 == (convert_string_allocate(CH_UCS2, vol->v_volcharset, newname, 
+                                strlen(newname), (char**) &newname_w)) ) {
+                free(oldname_w);
+                return AFPERR_MISC; /* conversion error has already been logged */
+            }
+	    if (!strcasecmp_w(oldname_w, newname_w)) {
+		free(oldname_w);
+		free(newname_w);
+                return AFPERR_EXIST;
+	    }
+	    free (oldname_w);	
+	    free (newname_w);	
+        }
     } else if (stat(upath, st ) == 0)
         return AFPERR_EXIST;
 

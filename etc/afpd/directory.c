@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.4 2003-10-30 07:11:31 bfernhomberg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.5 2003-11-15 00:00:30 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -565,9 +565,10 @@ struct vol	*vol;
 struct dir	*dir;
 struct path *path;
 {
+    char *save_m_name;
 
     if ( path->u_name == NULL) {
-        path->u_name = mtoupath(vol, path->m_name, dir->d_did, utf8_encoding() );
+        path->u_name = mtoupath(vol, path->m_name, dir->d_did, (path->m_type==3) );
     }
     path->dir = NULL;
 
@@ -583,8 +584,23 @@ struct path *path;
         return( NULL );
     }
 
-    if (( dir = adddir( vol, dir, path)) == NULL ) {
-        return( NULL );
+    /* FIXME: if this is an AFP3 connection and path->m_type != 3 we might screw dircache here */
+    if ( utf8_encoding() && path->m_type != 3)
+    {
+	save_m_name = path->m_name;
+	path->m_name = NULL;
+        if (( dir = adddir( vol, dir, path)) == NULL ) {
+	    free(save_m_name);
+            return( NULL );
+        }
+	path->m_name = save_m_name;
+        LOG(log_debug, logtype_afpd, "AFP3 connection, mismatch in mtype: %u, unix: %s, mac: %s",
+            path->m_type, path->u_name, path->m_name);
+    }
+    else { 
+        if (( dir = adddir( vol, dir, path)) == NULL ) {
+            return( NULL );
+        }
     }
 
     path->dir = dir;
@@ -2248,7 +2264,8 @@ int		ibuflen, *rbuflen;
             if (( pw = getpwuid( id )) == NULL ) {
                 return( AFPERR_NOITEM );
             }
-            name = pw->pw_name;
+	    len = convert_string_allocate( obj->options.unixcharset, ((sfunc == 1)?obj->options.maccharset:CH_UTF8_MAC),
+                                            pw->pw_name, strlen(pw->pw_name), &name);
             break;
 
         case 2 :
@@ -2256,7 +2273,8 @@ int		ibuflen, *rbuflen;
             if (NULL == ( gr = (struct group *)getgrgid( id ))) {
                 return( AFPERR_NOITEM );
             }
-            name = gr->gr_name;
+	    len = convert_string_allocate( obj->options.unixcharset, (sfunc == 1)?obj->options.maccharset:CH_UTF8_MAC,
+                                            gr->gr_name, strlen(gr->gr_name), &name);
             break;
 
         default :
@@ -2282,6 +2300,8 @@ int		ibuflen, *rbuflen;
         memcpy( rbuf, name, len );
     }
     *rbuflen += len;
+    if (name)
+	free(name);
     return( AFP_OK );
 }
 

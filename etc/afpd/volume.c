@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.9 2003-10-30 05:57:44 bfernhomberg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.10 2003-11-15 00:00:35 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -477,11 +477,11 @@ static void volset(struct vol_option *options, struct vol_option *save,
 }
 
 /* ----------------- */
-static void showvol(const char *name)
+static void showvol(const ucs2_t *name)
 {
     struct vol	*volume;
     for ( volume = Volumes; volume; volume = volume->v_next ) {
-        if ( !strcasecmp( volume->v_name, name ) && volume->v_hide) {
+        if ( !strcasecmp_w( volume->v_name, name ) && volume->v_hide) {
             volume->v_hide = 0;
             return;
         }
@@ -498,6 +498,7 @@ static int creatvol(AFPObj *obj, struct passwd *pwd,
     struct vol	*volume;
     int		vlen;
     int         hide = 0;
+    ucs2_t	tmpname[512];
 
     if ( name == NULL || *name == '\0' ) {
         if ((name = strrchr( path, '/' )) == NULL) {
@@ -509,8 +510,18 @@ static int creatvol(AFPObj *obj, struct passwd *pwd,
             return -1;
     }
 
+    vlen = strlen( name );
+    if ( vlen > AFPVOL_NAMELEN ) {
+        vlen = AFPVOL_NAMELEN;
+        name[AFPVOL_NAMELEN] = '\0';
+    }
+
+    /* convert name to UCS2 first */
+    if ( 0 >= ( vlen = convert_string(obj->options.unixcharset, CH_UCS2, name, vlen, tmpname, 512)) )
+        return -1;
+
     for ( volume = Volumes; volume; volume = volume->v_next ) {
-        if ( strcasecmp( volume->v_name, name ) == 0 ) {
+        if ( strcasecmp_w( volume->v_name, tmpname ) == 0 ) {
            if (volume->v_deleted) {
                hide = 1;
            }
@@ -520,17 +531,12 @@ static int creatvol(AFPObj *obj, struct passwd *pwd,
         }
     }
 
-    vlen = strlen( name );
-    if ( vlen > AFPVOL_NAMELEN ) {
-        vlen = AFPVOL_NAMELEN;
-        name[AFPVOL_NAMELEN] = '\0';
-    }
 
     if (!( volume = (struct vol *)calloc(1, sizeof( struct vol ))) ) {
         LOG(log_error, logtype_afpd, "creatvol: malloc: %s", strerror(errno) );
         return -1;
     }
-    if (! ( volume->v_name = (char *)malloc( vlen + 1 ) ) ) {
+    if ( NULL == ( volume->v_name = strdup_w(tmpname))) {
         LOG(log_error, logtype_afpd, "creatvol: malloc: %s", strerror(errno) );
         free(volume);
         return -1;
@@ -542,7 +548,6 @@ static int creatvol(AFPObj *obj, struct passwd *pwd,
         return -1;
     }
     volume->v_hide = hide;
-    strcpy( volume->v_name, name);
     strcpy( volume->v_path, path );
 
 #ifdef __svr4__
@@ -1316,9 +1321,13 @@ int		*buflen;
     if ( nameoff ) {
         ashort = htons( data - buf );
         memcpy(nameoff, &ashort, sizeof( ashort ));
-        aint = strlen( vol->v_name );
+	aint = ucs2_to_charset( (utf8_encoding()?CH_UTF8_MAC:vol->v_maccharset), vol->v_name, data+1, 255);
+	if ( aint <= 0 ) {
+	    *buflen = 0;
+            return AFPERR_MISC;
+        }
+		
         *data++ = aint;
-        memcpy(data, vol->v_name, aint );
         data += aint;
     }
     if ( isad ) {
@@ -1340,7 +1349,7 @@ int static stat_vol(u_int16_t bitmap, struct vol *vol, char *rbuf, int *rbuflen)
     }
 
     buflen = *rbuflen - sizeof( bitmap );
-    if (( ret = getvolparams( bitmap, vol, &st,
+    if (( ret = getvolparams(bitmap, vol, &st,
                               rbuf + sizeof( bitmap ), &buflen )) != AFP_OK ) {
         *rbuflen = 0;
         return( ret );
@@ -1415,6 +1424,7 @@ int 	ibuflen, *rbuflen;
     struct stat		st;
     struct vol		*volume;
     char	*data;
+    char		*namebuf;
     int			vcnt, len;
 
     load_volumes(obj);
@@ -1445,10 +1455,15 @@ int 	ibuflen, *rbuflen;
            off.. <shirsch@ibm.net> */
         *data |= (volume->v_flags & AFPVOL_A2VOL) ? AFPSRVR_CONFIGINFO : 0;
         *data++ |= 0; /* UNIX PRIVS BIT ..., OSX doesn't seem to use it, so we don't either */
-        len = strlen( volume->v_name );
+
+	len = ucs2_to_charset_allocate((utf8_encoding()?CH_UTF8_MAC:obj->options.maccharset),
+					&namebuf, volume->v_name);
+	if (len <= 0)
+		continue;
         *data++ = len;
-        memcpy(data, volume->v_name, len );
+        memcpy(data, namebuf, len );
         data += len;
+	free(namebuf);
         vcnt++;
     }
 
@@ -1480,6 +1495,7 @@ int		ibuflen, *rbuflen;
     struct vol	*volume;
     struct dir	*dir;
     int		len, ret;
+    size_t	namelen;
     u_int16_t	bitmap;
 
     ibuf += 2;
@@ -1493,8 +1509,13 @@ int		ibuflen, *rbuflen;
 
     len = (unsigned char)*ibuf++;
     volname = obj->oldtmp;
-    memcpy(volname, ibuf, len );
-    *(volname +  len) = '\0';
+    namelen = convert_string( (utf8_encoding()?CH_UTF8_MAC:obj->options.maccharset), CH_UCS2,
+                              ibuf, len, volname, sizeof(obj->oldtmp));
+    if ( namelen <= 0){
+        *rbuflen = 0;
+        return AFPERR_PARAM;
+    }
+
     ibuf += len;
     if ((len + 1) & 1) /* pad to an even boundary */
         ibuf++;
@@ -1502,7 +1523,7 @@ int		ibuflen, *rbuflen;
     load_volumes(obj);
 
     for ( volume = Volumes; volume; volume = volume->v_next ) {
-        if ( strcasecmp( volname, volume->v_name ) == 0 ) {
+        if ( strcasecmp_w( (ucs2_t*) volname, volume->v_name ) == 0 ) {
             break;
         }
     }
@@ -1539,11 +1560,33 @@ int		ibuflen, *rbuflen;
     volume->v_dir = volume->v_root = NULL;
 
     /* FIXME unix name != mac name */
-    if ((dir = dirnew(volume->v_name, volume->v_name) ) == NULL) {
+    char *vol_uname;
+    char *vol_mname;
+
+    len = convert_string_allocate( CH_UCS2, (utf8_encoding()?CH_UTF8_MAC:obj->options.maccharset),
+                              	       volume->v_name, namelen, &vol_mname);
+    if ( !vol_mname || len <= 0) {
+        ret = AFPERR_MISC;
+        goto openvol_err;
+    }
+	
+    len = convert_string_allocate( CH_UCS2 , volume->v_volcharset, volume->v_name, namelen, &vol_uname);
+
+    if ( !vol_uname || len <= 0) {
+	free(vol_mname);
+        ret = AFPERR_MISC;
+        goto openvol_err;
+    }
+	
+    if ((dir = dirnew(vol_mname, vol_uname) ) == NULL) {
+	free(vol_mname);
+	free(vol_uname);
         LOG(log_error, logtype_afpd, "afp_openvol: malloc: %s", strerror(errno) );
         ret = AFPERR_MISC;
         goto openvol_err;
     }
+    free(vol_mname);
+    free(vol_uname);
 
     dir->d_did = DIRDID_ROOT;
     dir->d_color = DIRTREE_COLOR_BLACK; /* root node is black */
@@ -1648,6 +1691,8 @@ int		ibuflen, *rbuflen;
 
             /* FIXME find db time stamp */
             cnid_getstamp(volume->v_cdb, volume->v_stamp, sizeof(volume->v_stamp));
+	}
+	else {
             p = Trash;
             cname( volume, volume->v_dir, &p );
         }
@@ -1850,9 +1895,12 @@ struct vol	*vol;
     /* a little granularity */
     if (vol->v_mtime < tv.tv_sec) {
         vol->v_mtime = tv.tv_sec;
+#if 0
+/* if 0ed, we're sending too many */
         if (afp_version > 21 && obj->options.server_notif) {
             obj->attention(obj->handle, AFPATTN_NOTIFY | AFPATTN_VOLCHANGED);
         }
+#endif
     }
 }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: volume.h,v 1.19.2.5.2.3 2003-09-30 12:24:49 didg Exp $
+ * $Id: volume.h,v 1.19.2.5.2.4 2003-11-15 00:00:37 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -25,7 +25,7 @@
 
 struct vol {
     struct vol		*v_next;
-    char		*v_name;
+    ucs2_t		*v_name;
     char		*v_path;
     struct dir		*v_dir, *v_root;
     int			v_flags;
