@@ -98,7 +98,7 @@ endif
 if USE_NETBSD
 
 sysvdir = /etc/rc.d
-sysv_SCRIPTS = afp atalk pap timelord
+sysv_SCRIPTS = afpd atalkd papd timelord
 
 afpd: rc.afpd.netbsd
 	cp -f $< $@
