@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_delete.c,v 1.1.4.4 2004-01-09 21:05:50 lenneis Exp $
+ * $Id: dbd_delete.c,v 1.1.4.5 2004-01-21 21:28:42 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -36,10 +36,15 @@ int dbd_delete(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
         rply->result = CNID_DBD_RES_ERR_DB;
         return -1;
     }
-    else {
+
+    if (rc) {
 #ifdef DEBUG
-        LOG(log_info, logtype_cnid, "cnid_delete: CNID %u not in database",
-            ntohl(rqst->cnid));
+        LOG(log_info, logtype_cnid, "cnid_delete: CNID %u deleted", ntohl(rqst->cnid));
+#endif
+        rply->result = CNID_DBD_RES_OK;
+    } else {
+#ifdef DEBUG
+        LOG(log_info, logtype_cnid, "cnid_delete: CNID %u not in database", ntohl(rqst->cnid));
 #endif
         rply->result = CNID_DBD_RES_NOTFOUND;
     }

@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_add.c,v 1.1.4.5 2004-01-09 21:05:50 lenneis Exp $
+ * $Id: dbd_add.c,v 1.1.4.6 2004-01-21 21:28:42 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -175,7 +175,7 @@ int dbd_add(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
     if (rply->result == CNID_DBD_RES_OK) {
         /* Found it. rply->cnid is the correct CNID now. */
 #ifdef DEBUG
-        LOG(log_info, logtype_cnid, "dbd_add: Looked up did %u, name %s as %u", ntohl(rqst->did), rqst->name, ntohl(rply->cnid));
+        LOG(log_info, logtype_cnid, "dbd_add: dbd_lookup success, cnid %u", ntohl(rply->cnid));
 #endif
         return 1;
     }
@@ -202,7 +202,9 @@ int dbd_add(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
         }
     }
 #ifdef DEBUG
-    LOG(log_info, logtype_cnid, "dbd_add: Returned CNID for did %u, name %s as %u", ntohl(rqst->did), rqst->name, ntohl(rply->cnid));
+    LOG(log_info, logtype_cnid, "dbd_add: Added dev/ino %s did %u name %s cnid %u",
+	stringify_devino(rqst->dev, rqst->ino),
+	ntohl(rqst->did), rqst->name, ntohl(rply->cnid));
 #endif
     rply->result = CNID_DBD_RES_OK;
     return 1;

@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_lookup.c,v 1.1.4.5 2004-01-09 21:05:50 lenneis Exp $
+ * $Id: dbd_lookup.c,v 1.1.4.6 2004-01-21 21:28:42 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -95,12 +95,20 @@ int dbd_lookup(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
     
     if (!devino && !didname) {  
         /* not found */
+#ifdef DEBUG
+	LOG(log_info, logtype_cnid, "cnid_lookup: dev/ino %s did %u name %s neither in devino nor didname", 
+	    stringify_devino(rqst->dev, rqst->ino), ntohl(rqst->did), rqst->name);
+#endif
         rply->result = CNID_DBD_RES_NOTFOUND;
         return 1;
     }
 
     if (devino && didname && id_devino == id_didname && type_devino == rqst->type) {
         /* the same */
+#ifdef DEBUG
+	LOG(log_info, logtype_cnid, "cnid_lookup: Looked up dev/ino %s did %u name %s as %u", 
+	    stringify_devino(rqst->dev, rqst->ino), ntohl(rqst->did), rqst->name, ntohl(id_didname));
+#endif
         rply->cnid = id_didname;
         rply->result = CNID_DBD_RES_OK;
         return 1;
@@ -147,8 +155,8 @@ int dbd_lookup(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
         rply->cnid = rqst->cnid;
     }
 #ifdef DEBUG
-    LOG(log_info, logtype_cnid, "cnid_lookup: Looked up did %u, name %s, as %u (needed update)", 
-    ntohl(rqst->did), rqst->name, ntohl(rply->cnid));
+    LOG(log_info, logtype_cnid, "cnid_lookup: Looked up dev/ino %s did %u name %s as %u (needed update)", 
+	stringify_devino(rqst->dev, rqst->ino), ntohl(rqst->did), rqst->name, ntohl(rply->cnid));
 #endif
     return rc;
 }

@@ -1,5 +1,5 @@
 /*
- * $Id: pack.h,v 1.1.4.2 2004-01-09 21:05:50 lenneis Exp $
+ * $Id: pack.h,v 1.1.4.3 2004-01-21 21:28:42 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -39,5 +39,9 @@
 #endif
 
 extern char      *pack_cnid_data  __P((struct cnid_dbd_rqst *));
+
+#ifdef DEBUG
+extern char      *stringify_devino  __P((dev_t dev, ino_t ino));
+#endif
 
 #endif /* CNID_DBD_PACK_H */

@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_resolve.c,v 1.1.4.5 2004-01-09 21:05:50 lenneis Exp $
+ * $Id: dbd_resolve.c,v 1.1.4.6 2004-01-21 21:28:42 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -35,12 +35,16 @@ int dbd_resolve(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
     key.size = sizeof(cnid_t);
 
     if ((rc = dbif_get(DBIF_IDX_CNID, &key, &data, 0)) < 0) {
-        LOG(log_error, logtype_cnid, "dbd_resolve: Unable to get did/name %u/%s", ntohl(rqst->did), rqst->name);
+        LOG(log_error, logtype_cnid, "dbd_resolve: DB Error resolving CNID %u", ntohl(rqst->cnid));
         rply->result = CNID_DBD_RES_ERR_DB;
         return -1;
     }
      
     if (rc == 0) {
+#ifdef DEBUG
+	LOG(log_info, logtype_cnid, "dbd_resolve: Could not resolve CNID %u",
+	    ntohl(rqst->cnid));
+#endif
         rply->result = CNID_DBD_RES_NOTFOUND;
         return 1;
     }
@@ -51,8 +55,8 @@ int dbd_resolve(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
     rply->name = data.data + CNID_NAME_OFS;
 
 #ifdef DEBUG
-    LOG(log_info, logtype_cnid, "cnid_resolve: Returning id = %u, did/name = %s",
-        ntohl(rply->did), (char *)data.data + CNID_NAME_OFS);
+    LOG(log_info, logtype_cnid, "dbd_resolve: Resolving CNID %u to did %u name %s",
+        ntohl(rqst->cnid), ntohl(rply->did), rply->name);
 #endif
     rply->result = CNID_DBD_RES_OK;
     return 1;
