@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.44.2.3.2.9 2004-02-14 00:30:50 didg Exp $
+ * $Id: auth.c,v 1.44.2.3.2.10 2004-02-14 15:47:19 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -943,7 +943,7 @@ int auth_load(const char *path, const char *list)
     }
 
     while (p) {
-        strncpy(name + len, p, sizeof(name) - len);
+        strlcpy(name + len, p, sizeof(name) - len);
         LOG(log_debug, logtype_afpd, "uam: loading (%s)", name);
         /*
         if ((stat(name, &st) == 0) && (mod = uam_load(name, p))) {

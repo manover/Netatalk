@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.6 2004-02-06 13:39:52 bfernhomberg Exp $
+ * $Id: ad_open.c,v 1.30.6.7 2004-02-14 15:47:22 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -640,6 +640,8 @@ static int ad_header_read(struct adouble *ad, struct stat *hst)
  *	    /	a/.AppleDouble/b
  *	a/b
  *	    \	b/.AppleDouble/.Parent
+ *
+ * FIXME: should do something for pathname > MAXPATHLEN
  */
 char *
 ad_path( path, adflags )
@@ -648,27 +650,29 @@ ad_path( path, adflags )
 {
     static char	pathbuf[ MAXPATHLEN + 1];
     char	c, *slash, buf[MAXPATHLEN + 1];
+    size_t      l;
 
-    strncpy(buf, path, MAXPATHLEN);
+    l = strlcpy(buf, path, MAXPATHLEN +1);
     if ( adflags & ADFLAGS_DIR ) {
-	strncpy( pathbuf, buf, MAXPATHLEN );
-	if ( *buf != '\0' ) {
-	    strcat( pathbuf, "/" );
+	strcpy( pathbuf, buf);
+	if ( *buf != '\0' && l < MAXPATHLEN) {
+	    pathbuf[l++] = '/';
+	    pathbuf[l] = 0;
 	}
 	slash = ".Parent";
     } else {
 	if (NULL != ( slash = strrchr( buf, '/' )) ) {
 	    c = *++slash;
 	    *slash = '\0';
-	    strncpy( pathbuf, buf, MAXPATHLEN);
+	    strcpy( pathbuf, buf);
 	    *slash = c;
 	} else {
 	    pathbuf[ 0 ] = '\0';
 	    slash = buf;
 	}
     }
-    strncat( pathbuf, ".AppleDouble/", MAXPATHLEN - strlen(pathbuf));
-    strncat( pathbuf, slash, MAXPATHLEN - strlen(pathbuf));
+    strlcat( pathbuf, ".AppleDouble/", MAXPATHLEN +1);
+    strlcat( pathbuf, slash, MAXPATHLEN +1);
 
     return( pathbuf );
 }

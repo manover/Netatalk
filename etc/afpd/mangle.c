@@ -1,5 +1,5 @@
 /* 
- * $Id: mangle.c,v 1.16.2.1.2.7 2003-11-03 03:10:01 bfernhomberg Exp $ 
+ * $Id: mangle.c,v 1.16.2.1.2.8 2004-02-14 15:47:20 didg Exp $ 
  *
  * Copyright (c) 2002. Joe Marcus Clarke (marcus@marcuscom.com)
  * All Rights Reserved.  See COPYRIGHT.
@@ -17,11 +17,10 @@
 #include <ctype.h>
 #include "mangle.h"
 #include "desktop.h"
+#include <atalk/util.h>  
 
 #define hextoint( c )   ( isdigit( c ) ? c - '0' : c + 10 - 'A' )
 #define isuxdigit(x)    (isdigit(x) || (isupper(x) && isxdigit(x)))
-
-
 
 static char *demangle_checks ( const struct vol *vol, char* uname, char * mfilename, size_t prefix, char * ext)
 {
@@ -229,10 +228,9 @@ mangle(const struct vol *vol, char *filename, char *uname, cnid_t id, int flags)
 	}
     }
     m = mfilename;
-    memset(m, 0, MAX_LENGTH + 1);
     k = sprintf(mangle_suffix, "%c%X", MANGLE_CHAR, ntohl(id));
 
-    strncpy(m, filename, MAX_LENGTH - k - ext_len);
+    strlcpy(m, filename, MAX_LENGTH - k - ext_len +1);
     if (*m == 0) {
         strcat(m, "???");
     }

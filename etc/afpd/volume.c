@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.19 2004-02-05 16:55:19 bfernhomberg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.20 2004-02-14 15:47:20 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -210,7 +210,7 @@ static char *volxlate(AFPObj *obj, char *dest, size_t destlen,
     if (!ret) {
         return NULL;
     }
-    strncpy(dest, src, destlen);
+    strlcpy(dest, src, destlen +1);
     if ((p = strchr(src, '$')) == NULL) /* nothing to do */
         return ret;
 
@@ -692,7 +692,7 @@ const char *name;
     if (!args)
         return -1;
 
-    strncpy(buf, args, sizeof(buf));
+    strlcpy(buf, args, sizeof(buf));
     if ((p = strtok(buf, ",")) == NULL) /* nothing, return okay */
         return -1;
 

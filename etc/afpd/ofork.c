@@ -1,5 +1,5 @@
 /*
- * $Id: ofork.c,v 1.20.6.3 2003-11-01 02:38:09 bfernhomberg Exp $
+ * $Id: ofork.c,v 1.20.6.4 2004-02-14 15:47:20 didg Exp $
  *
  * Copyright (c) 1996 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -20,7 +20,7 @@
 #include <atalk/logger.h>
 #include <errno.h>
 
-#include <atalk/adouble.h>
+#include <atalk/util.h>
 
 #include "globals.h"
 #include "volume.h"
@@ -120,7 +120,7 @@ const char *oldpath, *newpath;
         if (vol == of->of_vol && olddir == of->of_dir &&
 	         s_of->key.dev == of->key.dev && 
 	         s_of->key.inode == of->key.inode ) {
-            strncpy( of->of_name, newpath, of->of_namelen);
+            strlcpy( of->of_name, newpath, of->of_namelen);
             if (newdir != olddir) {
                 of->of_d_prev->of_d_next = of->of_d_next;
                 of->of_d_next->of_d_prev = of->of_d_prev;
@@ -253,7 +253,7 @@ struct stat     *st;
         oforks[ of_refnum ] = NULL;
         return NULL;
     }
-    strncpy( of->of_name, path, of->of_namelen = 255 + 1);
+    strlcpy( of->of_name, path, of->of_namelen = 255 + 1);
     *ofrefnum = refnum;
     of->of_refnum = refnum;
     of->key.dev = st->st_dev;
