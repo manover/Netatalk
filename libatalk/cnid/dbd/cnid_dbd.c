@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_dbd.c,v 1.1.4.17 2004-02-07 19:46:09 didg Exp $
+ * $Id: cnid_dbd.c,v 1.1.4.18 2004-04-24 18:13:27 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -223,6 +223,7 @@ static int dbd_rpc(CNID_private *db, struct cnid_dbd_rqst *rqst, struct cnid_dbd
     struct timeval tv;
     fd_set readfds;
     int    maxfd;
+    size_t len;
 
     if (send_packet(db, rqst, silent) < 0) {
         return -1;
@@ -250,6 +251,7 @@ static int dbd_rpc(CNID_private *db, struct cnid_dbd_rqst *rqst, struct cnid_dbd
         return -1;
     }
 
+    len = rply->namelen;
     nametmp = rply->name;
     /* assume that if we have something then everything is there (doesn't sleep) */ 
     if ((ret = read(db->fd, rply, sizeof(struct cnid_dbd_rply))) != sizeof(struct cnid_dbd_rply)) {
@@ -260,6 +262,13 @@ static int dbd_rpc(CNID_private *db, struct cnid_dbd_rqst *rqst, struct cnid_dbd
         return -1;
     }
     rply->name = nametmp;
+    if (rply->namelen && rply->namelen > len) {
+	if (!silent)
+            LOG(log_error, logtype_cnid, 
+                 "dbd_rpc: Error reading name (db_dir %s): %s name too long wanted %d only %d, garbage?",
+                 db->db_dir, rply->namelen, len);
+        return -1;
+    }
     if (rply->namelen && (ret = read(db->fd, rply->name, rply->namelen)) != rply->namelen) {
 	if (!silent)
             LOG(log_error, logtype_cnid, "dbd_rpc: Error reading name from fd (db_dir %s): %s",
@@ -299,6 +308,8 @@ static int transmit(CNID_private *db, struct cnid_dbd_rqst *rqst, struct cnid_db
                 dbd_initstamp(&rqst_stamp);
         	memset(stamp, 0, ADEDLEN_PRIVSYN);
                 rply_stamp.name = stamp;
+                rply_stamp.namelen = ADEDLEN_PRIVSYN;
+                
         	if (dbd_rpc(db, &rqst_stamp, &rply_stamp, silent) < 0)
         	    goto transmit_fail;
         	if (dbd_reply_stamp(&rply_stamp ) < 0)
@@ -570,6 +581,7 @@ char *cnid_dbd_resolve(struct _cnid_db *cdb, cnid_t *id, void *buffer, u_int32_t
        nobody uses the content of buffer. It only provides space for the
        name in the caller. */
     rply.name = (char *)buffer + CNID_HEADER_LEN;
+    rply.namelen = len - CNID_HEADER_LEN;
 
     if (transmit(db, &rqst, &rply) < 0) {
         errno = CNID_ERR_DB;
@@ -599,7 +611,7 @@ char *cnid_dbd_resolve(struct _cnid_db *cdb, cnid_t *id, void *buffer, u_int32_t
 }
 
 /* --------------------- */
-static int dbd_getstamp(CNID_private *db, void *buffer, const int len)
+static int dbd_getstamp(CNID_private *db, void *buffer, const size_t len)
 {
     struct cnid_dbd_rqst rqst;
     struct cnid_dbd_rply rply;
@@ -608,6 +620,7 @@ static int dbd_getstamp(CNID_private *db, void *buffer, const int len)
     dbd_initstamp(&rqst);
 
     rply.name = buffer;
+    rply.namelen = len;
 
     if (transmit(db, &rqst, &rply) < 0) {
         errno = CNID_ERR_DB;

@@ -72,7 +72,7 @@ struct cnid_dbd_rqst {
     int     type;
     cnid_t  did;
     char   *name;
-    int     namelen;
+    size_t  namelen;
 };
 
 struct cnid_dbd_rply {
@@ -80,7 +80,7 @@ struct cnid_dbd_rply {
     cnid_t  cnid;
     cnid_t  did;
     char   *name;
-    int     namelen;
+    size_t  namelen;
 };
 
 typedef struct CNID_private {
