@@ -1,7 +1,7 @@
 # Solaris specific defines, passed to subdirectories.
 # To use Sun CC, uncomment the CC and KFLAGS variables.
 #
-# $Id: Makefile.in,v 1.1.2.1 2004-02-29 15:25:09 bfernhomberg Exp $
+# $Id: Makefile.in,v 1.1.2.2 2004-03-22 23:00:24 bfernhomberg Exp $
 
 
 CC	= @CC@
@@ -24,6 +24,8 @@ COMPILE_KERNEL_GCC=@COMPILE_KERNEL_GCC@
 SPARC64=@COMPILE_64BIT_KMODULE@
 SOLARIS_MODULE_FALSE=@SOLARIS_MODULE_FALSE@
 SOLARIS_MODULE_TRUE=@SOLARIS_MODULE_TRUE@
+USE_SOLARIS_TRUE=@USE_SOLARIS_TRUE@
+USE_SOLARIS_FALSE=@USE_SOLARIS_FALSE@
 
 OPTOPTS=
 
@@ -37,11 +39,13 @@ EXTRA_DIST= ddp.conf Makefile
 INCPATH=	-I../../include -I../netatalk -I../..
 CFLAGS=	${DEFS} ${OPTOPTS} ${INCPATH} ${KCFLAGS}
 
+# Not building on Solaris
+@USE_SOLARIS_FALSE@all:
 
 # No Solaris kernel module build
-@SOLARIS_MODULE_FALSE@all:
-@SOLARIS_MODULE_FALSE@	@echo
-@SOLARIS_MODULE_FALSE@	@echo "Solaris kernel module cannot be build"
+@USE_SOLARIS_TRUE@@SOLARIS_MODULE_FALSE@all:
+@USE_SOLARIS_TRUE@@SOLARIS_MODULE_FALSE@	@echo
+@USE_SOLARIS_TRUE@@SOLARIS_MODULE_FALSE@	@echo "Solaris kernel module cannot be build"
 @SOLARIS_MODULE_FALSE@install:
 @SOLARIS_MODULE_FALSE@
 @SOLARIS_MODULE_FALSE@uninstall:
@@ -106,6 +110,9 @@ clean : sysclean
 klean sysclean :
 	rm -f a.out core* *.o *.bak *[Ee]rrs tags
 	rm -f ddp
+
+distclean: clean
+	 -rm -f Makefile
 
 depend :
 
