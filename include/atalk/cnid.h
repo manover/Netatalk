@@ -1,5 +1,5 @@
 /* 
- * $Id: cnid.h,v 1.9.6.6 2004-02-22 18:36:37 didg Exp $
+ * $Id: cnid.h,v 1.9.6.6.2.1 2005-01-30 20:56:21 didg Exp $
  *
  * Copyright (c) 2003 the Netatalk Team
  * Copyright (c) 2003 Rafal Lewczuk <rlewczuk@pronet.pl>
@@ -51,16 +51,16 @@ struct _cnid_db {
 	void *_private;              /* back-end speficic data */
 
 	cnid_t (*cnid_add)(struct _cnid_db *cdb, const struct stat *st, const cnid_t did, 
-			const char *name, const int len, cnid_t hint);
+			char *name, const int len, cnid_t hint);
 	int (*cnid_delete)(struct _cnid_db *cdb, cnid_t id);
-	cnid_t (*cnid_get)(struct _cnid_db *cdb, const cnid_t did, const char *name,
+	cnid_t (*cnid_get)(struct _cnid_db *cdb, const cnid_t did, char *name,
 			const int len);
 	cnid_t (*cnid_lookup)(struct _cnid_db *cdb, const struct stat *st, const cnid_t did,
-			const char *name, const int len);
+			char *name, const int len);
 	cnid_t (*cnid_nextid)(struct _cnid_db *cdb);
 	char *(*cnid_resolve)(struct _cnid_db *cdb, cnid_t *id, void *buffer, u_int32_t len);
 	int (*cnid_update)(struct _cnid_db *cdb, const cnid_t id, const struct stat *st, 
-			const cnid_t did, const char *name, const int len);	
+			const cnid_t did, char *name, const int len);	
 	void (*cnid_close)(struct _cnid_db *cdb);
 	int  (*cnid_getstamp)(struct _cnid_db *cdb, void *buffer, const int len);
 };
@@ -88,21 +88,21 @@ void cnid_register(struct _cnid_module *module);
 struct _cnid_db *cnid_open(const char *volpath, mode_t mask, char *type, int flags);
 
 cnid_t cnid_add(struct _cnid_db *cdb, const struct stat *st, const cnid_t did, 
-			const char *name, const int len, cnid_t hint);
+			char *name, const int len, cnid_t hint);
 
 int    cnid_delete(struct _cnid_db *cdb, cnid_t id);
 
-cnid_t cnid_get   (struct _cnid_db *cdb, const cnid_t did, const char *name,const int len);
+cnid_t cnid_get   (struct _cnid_db *cdb, const cnid_t did, char *name,const int len);
 
 int    cnid_getstamp(struct _cnid_db *cdb, void *buffer, const int len);
 
 cnid_t cnid_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t did,
-			const char *name, const int len);
+			char *name, const int len);
 
 char *cnid_resolve(struct _cnid_db *cdb, cnid_t *id, void *buffer, u_int32_t len);
 
 int cnid_update   (struct _cnid_db *cdb, const cnid_t id, const struct stat *st, 
-			const cnid_t did, const char *name, const int len);	
+			const cnid_t did, char *name, const int len);	
 
 /* This function closes a CNID database and frees all resources assigned to it. */ 
 void cnid_close(struct _cnid_db *db);
@@ -111,7 +111,11 @@ void cnid_close(struct _cnid_db *db);
 
 /*
  * $Log: cnid.h,v $
- * Revision 1.9.6.6  2004-02-22 18:36:37  didg
+ * Revision 1.9.6.6.2.1  2005-01-30 20:56:21  didg
+ *
+ * Olaf Hering at suse.de warning fixes.
+ *
+ * Revision 1.9.6.6  2004/02/22 18:36:37  didg
  *
  * small clean up
  *

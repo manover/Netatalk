@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_tdb_add.c,v 1.1.2.1 2003-09-09 16:42:21 didg Exp $
+ * $Id: cnid_tdb_add.c,v 1.1.2.1.2.1 2005-01-30 20:56:23 didg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -104,7 +104,7 @@ cleanup:
 
 /* ------------------------ */
 cnid_t cnid_tdb_add(struct _cnid_db *cdb, const struct stat *st,
-                     const cnid_t did, const char *name, const int len, cnid_t hint)
+                     const cnid_t did, char *name, const int len, cnid_t hint)
 {
     const struct stat *lstp;
     cnid_t id;

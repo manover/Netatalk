@@ -1,5 +1,5 @@
 /*
- * $Id: uams_pgp.c,v 1.9.6.2 2003-10-30 00:21:47 bfernhomberg Exp $
+ * $Id: uams_pgp.c,v 1.9.6.2.2.1 2005-01-30 20:56:21 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -60,8 +60,6 @@ static int pgp_login(void *obj, struct passwd **uam_pwd,
 		     char *ibuf, int ibuflen,
 		     char *rbuf, int *rbuflen)
 {
-    BIGNUM *bn, *gbn, *pbn;
-    u_int16_t sessid;
     int len, i;
     char *name;
 

@@ -70,16 +70,16 @@ extern void cnid_tdb_close __P((struct _cnid_db *));
 
 /* cnid_add.c */
 extern cnid_t cnid_tdb_add __P((struct _cnid_db *, const struct stat *, const cnid_t,
-                                 const char *, const int, cnid_t));
+                                 char *, const int, cnid_t));
 
 /* cnid_get.c */
-extern cnid_t cnid_tdb_get __P((struct _cnid_db *, const cnid_t, const char *, const int));
+extern cnid_t cnid_tdb_get __P((struct _cnid_db *, const cnid_t, char *, const int));
 extern char *cnid_tdb_resolve __P((struct _cnid_db *, cnid_t *, void *, u_int32_t));
-extern cnid_t cnid_tdb_lookup __P((struct _cnid_db *, const struct stat *, const cnid_t, const char *, const int));
+extern cnid_t cnid_tdb_lookup __P((struct _cnid_db *, const struct stat *, const cnid_t, char *, const int));
 
 /* cnid_update.c */
 extern int cnid_tdb_update __P((struct _cnid_db *, const cnid_t, const struct stat *,
-                                 const cnid_t, const char *, int));
+                                 const cnid_t, char *, int));
 
 /* cnid_delete.c */
 extern int cnid_tdb_delete __P((struct _cnid_db *, const cnid_t));

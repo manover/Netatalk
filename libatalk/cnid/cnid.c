@@ -1,5 +1,5 @@
 /* 
- * $Id: cnid.c,v 1.1.4.11 2004-06-30 01:27:14 didg Exp $
+ * $Id: cnid.c,v 1.1.4.11.2.1 2005-01-30 20:56:22 didg Exp $
  *
  * Copyright (c) 2003 the Netatalk Team
  * Copyright (c) 2003 Rafal Lewczuk <rlewczuk@pronet.pl>
@@ -196,7 +196,7 @@ u_int32_t flags;
 
 /* --------------- */
 cnid_t cnid_add(struct _cnid_db *cdb, const struct stat *st, const cnid_t did, 
-			const char *name, const int len, cnid_t hint)
+			char *name, const int len, cnid_t hint)
 {
 cnid_t ret;
 
@@ -219,7 +219,7 @@ int ret;
 
 
 /* --------------- */
-cnid_t cnid_get(struct _cnid_db *cdb, const cnid_t did, const char *name,const int len)
+cnid_t cnid_get(struct _cnid_db *cdb, const cnid_t did, char *name,const int len)
 {
 cnid_t ret;
 
@@ -252,7 +252,7 @@ time_t t;
 
 /* --------------- */
 cnid_t cnid_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t did,
-			const char *name, const int len)
+			char *name, const int len)
 {
 cnid_t ret;
 
@@ -275,7 +275,7 @@ char *ret;
 
 /* --------------- */
 int cnid_update   (struct _cnid_db *cdb, const cnid_t id, const struct stat *st, 
-			const cnid_t did, const char *name, const int len)
+			const cnid_t did, char *name, const int len)
 {
 int ret;
 

@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_hash_add.c,v 1.1.2.1 2003-09-09 16:42:21 didg Exp $
+ * $Id: cnid_hash_add.c,v 1.1.2.1.2.1 2005-01-30 20:56:23 didg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -22,7 +22,7 @@
 
 /* ------------------------ */
 cnid_t cnid_hash_add(struct _cnid_db *cdb, const struct stat *st,
-                     const cnid_t did, const char *name, const int len, cnid_t hint)
+                     const cnid_t did, char *name, const int len, cnid_t hint)
 {
     struct stat lst;
     const struct stat *lstp;

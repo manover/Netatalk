@@ -1,5 +1,5 @@
 /*
- * $Id: timelord.c,v 1.7 2002-01-04 04:45:47 sibaz Exp $
+ * $Id: timelord.c,v 1.7.12.1 2005-01-30 20:56:19 didg Exp $
  *
  * Copyright (c) 1990,1992 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -25,6 +25,7 @@
 #include <sys/time.h>
 #include <sys/file.h>
 #include <sys/uio.h>
+#include <stdlib.h>
 
 #include <unistd.h>
 

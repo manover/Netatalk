@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_cdb_add.c,v 1.1.4.6 2004-06-30 01:27:15 didg Exp $
+ * $Id: cnid_cdb_add.c,v 1.1.4.6.2.1 2005-01-30 20:56:22 didg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -70,7 +70,7 @@ char *make_cnid_data(const struct stat *st,const cnid_t did,
 #endif
 
 extern int cnid_cdb_update(struct _cnid_db *cdb, const cnid_t id, const struct stat *st,
-                const cnid_t did, const char *name, const int len);
+                const cnid_t did, char *name, const int len);
 
 /* --------------- */
 int db_stamp(void *buffer, size_t size)
@@ -169,7 +169,7 @@ cleanup:
 
 /* ------------------------ */
 cnid_t cnid_cdb_add(struct _cnid_db *cdb, const struct stat *st,
-                const cnid_t did, const char *name, const int len,
+                const cnid_t did, char *name, const int len,
                 cnid_t hint)
 {
     CNID_private *db;

@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.31.2.6 2004-12-09 16:10:54 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.31.2.7 2005-01-30 20:56:20 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -171,7 +171,7 @@ char *set_name(const struct vol *vol, char *data, cnid_t pid, char *name, cnid_t
 
 /* -------------------------- */
 u_int32_t get_id(struct vol *vol, struct adouble *adp,  const struct stat *st,
-             const cnid_t did, const char *upath, const int len) 
+             const cnid_t did, char *upath, const int len) 
 {
 u_int32_t aint = 0;
 

@@ -23,18 +23,18 @@ extern void cnid_cdb_close __P((struct _cnid_db *));
 
 /* cnid_add.c */
 extern cnid_t cnid_cdb_add __P((struct _cnid_db *, const struct stat *, const cnid_t,
-			    const char *, const int, cnid_t));
+			    char *, const int, cnid_t));
 extern int cnid_cdb_getstamp __P((struct _cnid_db *, void *, const int ));
 
 /* cnid_get.c */
-extern cnid_t cnid_cdb_get __P((struct _cnid_db *, const cnid_t, const char *, const int)); 
+extern cnid_t cnid_cdb_get __P((struct _cnid_db *, const cnid_t, char *, const int)); 
 extern char *cnid_cdb_resolve __P((struct _cnid_db *, cnid_t *, void *, u_int32_t )); 
 extern cnid_t cnid_cdb_lookup __P((struct _cnid_db *, const struct stat *, const cnid_t,
-			       const char *, const int));
+			       char *, const int));
 
 /* cnid_update.c */
 extern int cnid_cdb_update __P((struct _cnid_db *, const cnid_t, const struct stat *,
-			    const cnid_t, const char *, int));
+			    const cnid_t, char *, int));
 
 /* cnid_delete.c */
 extern int cnid_cdb_delete __P((struct _cnid_db *, const cnid_t));

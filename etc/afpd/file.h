@@ -1,5 +1,5 @@
 /*
- * $Id: file.h,v 1.16.2.2.2.3.2.2 2004-12-07 03:23:49 didg Exp $
+ * $Id: file.h,v 1.16.2.2.2.3.2.3 2005-01-30 20:56:21 didg Exp $
  *
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
@@ -139,7 +139,7 @@ extern size_t mtoUTF8   __P((const struct vol *, const char *, size_t , char *, 
 extern int  copy_path_name __P((const struct vol *, char *, char *i));
 
 extern u_int32_t get_id  __P((struct vol *, struct adouble *, const struct stat *,
-                                const cnid_t , const char *, const int ));
+                                const cnid_t , char *, const int ));
 
 /* FP functions */
 extern int      afp_exchangefiles __P((AFPObj *, char *, int, char *, int *));

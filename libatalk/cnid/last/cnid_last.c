@@ -1,6 +1,6 @@
 
 /*
- * $Id: cnid_last.c,v 1.1.4.1 2003-09-09 16:42:21 didg Exp $
+ * $Id: cnid_last.c,v 1.1.4.1.2.1 2005-01-30 20:56:23 didg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -23,7 +23,7 @@
 
 /* ------------------------ */
 cnid_t cnid_last_add(struct _cnid_db *cdb, const struct stat *st,
-                     const cnid_t did, const char *name, const int len, cnid_t hint)
+                     const cnid_t did, char *name, const int len, cnid_t hint)
 {
 
     /* FIXME: it relies on fact, that this is never called twice for the same file/dir. */
@@ -88,7 +88,7 @@ int cnid_last_delete(struct _cnid_db *cdb, const cnid_t id)
 
 
 /* Return CNID for a given did/name. */
-cnid_t cnid_last_get(struct _cnid_db *cdb, const cnid_t did, const char *name, const int len)
+cnid_t cnid_last_get(struct _cnid_db *cdb, const cnid_t did, char *name, const int len)
 {
     /* FIXME: it relies on fact, that this is never called twice for the same file/dir. */
     /* Propably we should look through DID tree. */
@@ -98,7 +98,7 @@ cnid_t cnid_last_get(struct _cnid_db *cdb, const cnid_t did, const char *name, c
 
 
 /* */
-cnid_t cnid_last_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t did, const char *name, const int len)
+cnid_t cnid_last_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t did, char *name, const int len)
 {
     /* FIXME: this function doesn't work in [last] scheme ! */
     /* Should be never called or CNID should be somewhat refactored again. */
@@ -174,7 +174,7 @@ char *cnid_last_resolve(struct _cnid_db *cdb, cnid_t * id, void *buffer, u_int32
 
 
 int cnid_last_update(struct _cnid_db *cdb, const cnid_t id, const struct stat *st,
-                     const cnid_t did, const char *name, const int len
+                     const cnid_t did, char *name, const int len
                      /*, const char *info, const int infolen */ )
 {
     return 0;

@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_db3_add.c,v 1.1.4.2 2003-10-21 16:23:54 didg Exp $
+ * $Id: cnid_db3_add.c,v 1.1.4.2.2.1 2005-01-30 20:56:22 didg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -203,7 +203,7 @@ cleanup_abort:
 
 /* ------------------------ */
 cnid_t cnid_db3_add(struct _cnid_db *cdb, const struct stat *st,
-                const cnid_t did, const char *name, const int len,
+                const cnid_t did, char *name, const int len,
                 cnid_t hint)
 {
     CNID_private *db;

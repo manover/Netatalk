@@ -83,6 +83,8 @@ void set_processname(char *processname);
 /* Log a Message */
 void make_log(enum loglevels loglevel, enum logtypes logtype, 
 	      char *message, ...);
+int get_syslog_equivalent(enum loglevels loglevel);
+
 #ifndef DISABLE_LOGGER
 make_log_func set_log_location(char *srcfilename, int srclinenumber);
 
@@ -131,8 +133,6 @@ void generate_message_details(char *message_details_buffer,
                               int message_details_buffer_length,
                               struct tag_log_file_data *log_struct,
                               enum loglevels loglevel, enum logtypes logtype);
-
-int get_syslog_equivalent(enum loglevels loglevel);
 
 static char *get_command_name(char *commandpath);
 

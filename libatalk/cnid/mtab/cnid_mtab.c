@@ -1,6 +1,6 @@
 
 /*
- * $Id: cnid_mtab.c,v 1.1.4.1 2003-09-09 16:42:21 didg Exp $
+ * $Id: cnid_mtab.c,v 1.1.4.1.2.1 2005-01-30 20:56:23 didg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -31,7 +31,7 @@
 
 /* ------------------------ */
 cnid_t cnid_mtab_add(struct _cnid_db *cdb, const struct stat *st,
-                     const cnid_t did, const char *name, const int len, cnid_t hint)
+                     const cnid_t did, char *name, const int len, cnid_t hint)
 {
     struct stat lst;
     const struct stat *lstp;
@@ -59,13 +59,13 @@ int cnid_mtab_delete(struct _cnid_db *cdb, const cnid_t id)
 
 
 /* Return CNID for a given did/name. */
-cnid_t cnid_mtab_get(struct _cnid_db *cdb, const cnid_t did, const char *name, const int len)
+cnid_t cnid_mtab_get(struct _cnid_db *cdb, const cnid_t did, char *name, const int len)
 {
     return CNID_INVALID;
 }
 
 
-cnid_t cnid_mtab_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t did, const char *name, const int len)
+cnid_t cnid_mtab_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t did, char *name, const int len)
 {
     return CNID_INVALID;
 }
@@ -128,7 +128,7 @@ char *cnid_mtab_resolve(struct _cnid_db *cdb, cnid_t * id, void *buffer, u_int32
 
 
 int cnid_mtab_update(struct _cnid_db *cdb, const cnid_t id, const struct stat *st,
-                     const cnid_t did, const char *name, const int len
+                     const cnid_t did, char *name, const int len
                      /*, const char *info, const int infolen */ )
 {
     return 0;

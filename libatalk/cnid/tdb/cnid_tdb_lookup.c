@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_tdb_lookup.c,v 1.1.2.1 2003-09-09 16:42:21 didg Exp $
+ * $Id: cnid_tdb_lookup.c,v 1.1.2.1.2.1 2005-01-30 20:56:23 didg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -11,7 +11,7 @@
 #include "cnid_tdb.h"
 #include <atalk/logger.h>
 
-cnid_t cnid_tdb_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t did, const char *name, const int len)
+cnid_t cnid_tdb_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t did, char *name, const int len)
 {
     char *buf;
     struct _cnid_tdb_private *db;
