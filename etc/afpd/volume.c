@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.3 2003-09-21 09:25:17 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.4 2003-09-25 12:23:53 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -78,7 +78,7 @@ extern int afprun(int root, char *cmd, int *outfd);
 #endif /* ! NO_LARGE_VOL_SUPPORT */
 
 static struct vol *Volumes = NULL;
-static int		lastvid = 0;
+static u_int16_t	lastvid = 0;
 static char		*Trash = "\02\024Network Trash Folder";
 
 static struct extmap	*Extmap = NULL, *Defextmap = NULL;
@@ -529,7 +529,9 @@ static int creatvol(AFPObj *obj, struct passwd *pwd,
 #ifdef __svr4__
     volume->v_qfd = -1;
 #endif /* __svr4__ */
-    volume->v_vid = lastvid++;
+    /* os X start at 1 and use network order ie. 1 2 3 */
+    volume->v_vid = ++lastvid;
+    volume->v_vid = htons(volume->v_vid);
 
     /* handle options */
     if (options) {

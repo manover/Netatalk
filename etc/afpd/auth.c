@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.44.2.3.2.2 2003-09-12 06:53:18 bfernhomberg Exp $
+ * $Id: auth.c,v 1.44.2.3.2.3 2003-09-25 12:23:53 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -359,7 +359,7 @@ unsigned int ibuflen, *rbuflen;
     u_int32_t           idlen = 0;
     u_int32_t		boottime;
 
-    u_int16_t           tklen; /* FIXME: spec  u_int32_t? */
+    u_int16_t           tklen, tp; /* FIXME: spec  u_int32_t? */
     pid_t               token;
     char 		*p;
 
@@ -415,11 +415,18 @@ unsigned int ibuflen, *rbuflen;
     rbuf += sizeof(type);
 
     *rbuflen += sizeof(tklen);
-    tklen = htons(sizeof(pid_t));
-    memcpy(rbuf, &tklen, sizeof(tklen));
+
+    /* use at least 8 bytes for token as OSX, don't know if it helps */
+    tklen = sizeof(pid_t);
+    if (tklen < 8)
+        tklen = 8;
+
+    tp = htons(tklen);
+    memcpy(rbuf, &tp, sizeof(tklen));
     rbuf += sizeof(tklen);
-    
-    *rbuflen += sizeof(pid_t);
+
+    *rbuflen += tklen;
+    memset(rbuf, 0, tklen);
     token = getpid();
     memcpy(rbuf, &token, sizeof(pid_t));
     return AFP_OK;
