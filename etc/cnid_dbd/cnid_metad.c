@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_metad.c,v 1.1.4.9 2004-01-04 21:36:20 didg Exp $
+ * $Id: cnid_metad.c,v 1.1.4.10 2004-01-07 19:00:24 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -109,7 +109,7 @@ struct server {
     time_t tm;                    /* When respawned last */
     int count;                    /* Times respawned in the last TESTTIME secondes */
     int toofast; 
-    int   sv[2];
+    int control_fd;               /* file descriptor to child cnid_dbd process */
 };
 
 static struct server srv[MAXSRV +1];
@@ -173,6 +173,7 @@ static int maybe_start_dbd(char *dbdpn, char *dbdir, char *usockfn)
 {
     pid_t pid;
     struct server *up;
+    int sv[2];
     int i;
     time_t t;
     char buf1[8];
@@ -181,7 +182,7 @@ static int maybe_start_dbd(char *dbdpn, char *dbdir, char *usockfn)
     up = test_usockfn(dbdir, usockfn);
     if (up && up->pid) {
        /* we already have a process, send our fd */
-       if (send_cred(up->sv[0], rqstfd) < 0) {
+       if (send_cred(up->control_fd, rqstfd) < 0) {
            /* FIXME */
            return -1;
        }
@@ -233,8 +234,8 @@ static int maybe_start_dbd(char *dbdpn, char *dbdir, char *usockfn)
     /* create socketpair for comm between parent and child 
      * FIXME Do we really need a permanent pipe between them ?
      */
-    if (socketpair(PF_UNIX, SOCK_STREAM, 0, up->sv) < 0) {
-	LOG(log_error, logtype_cnid, "error in fork: %s", strerror(errno));
+    if (socketpair(PF_UNIX, SOCK_STREAM, 0, sv) < 0) {
+	LOG(log_error, logtype_cnid, "error in socketpair: %s", strerror(errno));
 	return -1;
     }
         
@@ -251,16 +252,15 @@ static int maybe_start_dbd(char *dbdpn, char *dbdir, char *usockfn)
 	 */
 
 	close(srvfd);
-	close(up->sv[0]);
+	close(sv[0]);
 	
 	for (i = 1; i <= MAXSRV; i++) {
             if (srv[i].pid && up != &srv[i]) {
-		close(srv[i].sv[0]);
-		close(srv[i].sv[1]);
+		close(srv[i].control_fd);
             }
         }
 
-	sprintf(buf1, "%i", up->sv[1]);
+	sprintf(buf1, "%i", sv[1]);
 	sprintf(buf2, "%i", rqstfd);
 	
 	if (up->count == MAXSPAWN) {
@@ -282,8 +282,8 @@ static int maybe_start_dbd(char *dbdpn, char *dbdir, char *usockfn)
      *  Parent.
      */
     up->pid = pid;
-    /* FIXME Any reason we do not close up->sv[1] here? Do we need both
-       descriptors in the srv table? */
+    close(sv[1]);
+    up->control_fd = sv[0];
     return 0;
 }
 
@@ -471,8 +471,7 @@ int main(int argc, char *argv[])
 #if 0                   
                    free(srv[i].name);
 #endif                   
-                   close(srv[i].sv[0]);
-                   close(srv[i].sv[1]);
+                   close(srv[i].control_fd);
                    break;
                }
             }
