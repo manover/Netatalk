@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_metad.c,v 1.1.4.5 2003-11-18 12:32:46 didg Exp $
+ * $Id: cnid_metad.c,v 1.1.4.6 2003-11-25 13:28:54 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -65,6 +65,21 @@
 /* functions for username and group */
 #include <pwd.h>
 #include <grp.h>
+
+/* FIXME */
+#ifdef linux
+#ifndef USE_SETRESUID
+#define USE_SETRESUID 1
+#define SWITCH_TO_GID(gid)  ((setresgid(gid,gid,gid) < 0 || setgid(gid) < 0) ? -1 : 0)
+#define SWITCH_TO_UID(uid)  ((setresuid(uid,uid,uid) < 0 || setuid(uid) < 0) ? -1 : 0)
+#endif
+#else
+#ifndef USE_SETEUID
+#define USE_SETEUID 1
+#define SWITCH_TO_GID(gid)  ((setegid(gid) < 0 || setgid(gid) < 0) ? -1 : 0)
+#define SWITCH_TO_UID(uid)  ((setuid(uid) < 0 || seteuid(uid) < 0 || setuid(uid) < 0) ? -1 : 0)
+#endif
+#endif
 
 #include <atalk/logger.h>
 #include <atalk/cnid_dbd_private.h>
@@ -393,18 +408,18 @@ int main(int argc, char *argv[])
 
     if ((srvfd = tsockfd_create(host, port, 10)) < 0)
         exit(1);
+
     /* switch uid/gid */
     if (uid || gid) {
-
         LOG(log_info, logtype_cnid, "Setting uid/gid to %i/%i", uid, gid);
         if (gid) {
-            if (setresgid(gid,gid,gid) < 0 || setgid(gid) < 0) {
+            if (SWITCH_TO_GID(gid) < 0) {
                 LOG(log_info, logtype_cnid, "unable to switch to group %d", gid);
                 exit(1);
             }
         }
         if (uid) {
-            if (setresuid(uid,uid,uid) < 0 || setuid(uid) < 0) {
+            if (SWITCH_TO_UID(uid) < 0) {
                 LOG(log_info, logtype_cnid, "unable to switch to user %d", uid);
                 exit(1);
             }
