@@ -1,4 +1,4 @@
-dnl $Id: pam-check.m4,v 1.2.10.1 2003-10-29 23:53:24 bfernhomberg Exp $
+dnl $Id: pam-check.m4,v 1.2.10.2 2004-03-18 03:20:52 bfernhomberg Exp $
 dnl PAM finding macro
 
 AC_DEFUN([AC_PATH_PAM], [
@@ -21,9 +21,9 @@ AC_DEFUN([AC_PATH_PAM], [
 	if test "$host_os" != "solaris"; then
 		if test "x$PAMDIR" = "xNONE" -a "x$require_pam" != "xnever"; then
 		  dnl Test for PAM
-		  pam_paths="/ /usr /usr/local"
+		  pam_paths="/ /usr/ /usr/local/"
 		  for path in $pam_paths; do
-			if test -d "$path/etc/pam.d"; then
+			if test -d "${path}etc/pam.d"; then
 				PAMDIR="$path"
 				break
 			fi
@@ -31,7 +31,7 @@ AC_DEFUN([AC_PATH_PAM], [
 		fi
 
 		if test "x$PAMDIR" != "xNONE"; then
-			AC_MSG_RESULT([yes (path: $PAMDIR)])
+			AC_MSG_RESULT([yes (path: ${PAMDIR}etc/pam.d)])
 		else
 			AC_MSG_RESULT([no])
 		fi
@@ -46,9 +46,9 @@ AC_DEFUN([AC_PATH_PAM], [
 		savedLDFLAGS="$LDFLAGS"
 		savedLIBS="$LIBS"
 
-		if test "x$PAMDIR" != "xNONE"; then
-			PAM_CFLAGS="-I$PAMDIR/include"
-			PAM_LDFLAGS="-L$PAMDIR/lib"
+		if test "x$PAMDIR" != "xNONE" -a "x$PAMDIR" != "x/"; then
+			PAM_CFLAGS="-I$PAMDIRinclude"
+			PAM_LDFLAGS="-L$PAMDIRlib"
 			LDFLAGS="$LDFLAGS $PAM_LDFLAGS"
 			CFLAGS="$CFLAGS $PAM_CFLAGS"
 		fi
