@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.33.2.1 2004-10-20 20:05:27 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.33.2.2 2004-12-10 13:33:34 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1771,6 +1771,7 @@ int		ibuflen, *rbuflen;
 		LOG (log_error, logtype_afpd, 
 		      "afp_openvol(%s): Fatal error: Unable to get stamp value from CNID backend",
 		      volume->v_path);
+		ret = AFPERR_MISC;
 		goto openvol_err;
 	    }
 	}
