@@ -1,12 +1,12 @@
-.TH nbp 1  24\ June\ 2004 "Netatalk 2.0-beta2" 
+.TH nbp 1 "24 June 2004" 2.0-rc1 Netatalk 
 .SH NAME
 nbplkup, nbprgstr, nbpunrgstr \- access NBP database
 .SH SYNOPSIS
-\fBnbplkup \fR [\-r \fBmaxresponses\fR] [\-A \fBaddress\fR] [\-m \fBmaccodepage\fR] \fBnbpname\fR 
+\fBnbplkup \fR[\-r \fBmaxresponses\fR] [\-A \fBaddress\fR] [\-m \fBmaccodepage\fR] \fBnbpname\fR 
 .PP
-\fBnbprgstr \fR [\-A \fBaddress\fR] [\-p \fBport\fR] [\-m \fBmaccodepage\fR] \fBnbpname\fR 
+\fBnbprgstr \fR[\-A \fBaddress\fR] [\-p \fBport\fR] [\-m \fBmaccodepage\fR] \fBnbpname\fR 
 .PP
-\fBnbpunrgstr\fR [\-A \fBaddress\fR] [\-m \fBmaccodepage\fR] \fBnbpname\fR 
+\fBnbpunrgstr \fR[\-A \fBaddress\fR] [\-m \fBmaccodepage\fR] \fBnbpname\fR 
 .SH DESCRIPTION
 nbprgstr registers \fInbpname\fR
 with \fBatalkd\fR(8),
@@ -22,7 +22,7 @@ An `\fI=\fR' for the \fIobject\fR
 or \fItype\fR matches anything, and an `\fI*\fR' for \fIzone\fR means
 the local zone. The default values are taken from the \fINBPLKUP\fR
 environment variable, parsed as an \fInbpname\fR.
-.SH ENVIRONMENT\ VARIABLES
+.SH "ENVIRONMENT VARIABLES"
 .TP 
 NBPLKUP
 default nbpname for nbplkup
@@ -49,8 +49,7 @@ example% \fBnbplkup :LaserWriter\fR
          Iron Mountain :LaserWriter        7942.128:250
 example%
 .fi
-.SH SEE\ ALSO
+.SH "SEE ALSO"
 \fBnbp_name\fR(3),
-\fBnbp\fR(4),
-\fBzip\fR(4),
 \fBatalkd\fR(8).
+

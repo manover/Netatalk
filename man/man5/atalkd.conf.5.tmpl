@@ -1,6 +1,6 @@
-.TH atalkd.conf 5  22\ September\ 2000 "Netatalk 2.0-beta2" 
+.TH atalkd.conf 5 "22 September 2000" 2.0-rc1 Netatalk 
 .SH NAME
-atalkd.conf \- Configuration file used by atalkd(8) to determine the  interfaces used by the master Netatalk daemon
+atalkd.conf \- Configuration file used by atalkd(8) to determine the interfaces used by the master Netatalk daemon
 .SH DESCRIPTION
 \fI:ETCDIR:/atalkd.conf\fR is the
 configuration file used by atalkd to configure the Appletalk interfaces
@@ -9,16 +9,15 @@ and their behavior
 Any line not prefixed with \fI#\fR is
 interpreted. The configuration lines are composed like:
 .PP
-\fIInterface\fR \fI[\fR
-\fIoptions\fR \fI]\fR
+\fIInterface\fR \fI[\fR \fIoptions\fR \fI]\fR
 .PP
 The simplest case is to have either no atalkd.conf, or to have one
 that has no active lines. In this case, atalkd should auto\-discover the
-local interfaces on the machine. Please note that you cannot split lines.
+local interfaces on the machine. Please note that you cannot split
+lines.
 .PP
 The interface is the network interface that this to work over, such
-as \fIeth0\fR for Linux, or \fIle0\fR
-for Sun.
+as \fIeth0\fR for Linux, or \fIle0\fR for Sun.
 .PP
 The possible options and their meanings are:
 .TP 
@@ -32,14 +31,16 @@ Disables Appletalk routing. It is the opposite of
 \fB\-router\fR.
 .TP 
 \fB\-net first[\-last]\fR
-Allows the available net to be set, optionally as a range.
+Allows the available net to be set, optionally as a
+range.
 .TP 
 \fB\-noallmulti\fR (linux only)
-On linux the interfaces, atalkd uses, are set to ALLMULTI by default
-caused by countless NICs having problems without being forced into this mode
-(some even don't work with allmulti set). In case, you've a NIC known to 
-support multicasts properly, you might want to set this option causing less
-packets to be processed
+On linux the interfaces, atalkd uses, are set to
+ALLMULTI by default caused by countless NICs having problems
+without being forced into this mode (some even don't work with
+allmulti set). In case, you've a NIC known to support multicasts
+properly, you might want to set this option causing less packets to
+be processed
 .TP 
 \fB\-phase ( 1 | 2 )\fR
 Specifies the Appletalk phase that this interface is to use
@@ -55,9 +56,10 @@ also causes all missing arguments to be automagically configured
 from the network.
 .TP 
 \fB\-zone \fIzonename\fB\fR
-Specifies a specific zone that this interface should appear on
-(example: \fB\-zone "Parking Lot"\fR). Please note
-that zones with spaces and other special characters should be
-enclosed in parentheses.
-.SH SEE\ ALSO
+Specifies a specific zone that this interface should appear on (example:
+\fB\-zone "Parking Lot"\fR). Please note that zones with
+spaces and other special characters should be enclosed in
+parentheses.
+.SH "SEE ALSO"
 \fBatalkd\fR(8)
+

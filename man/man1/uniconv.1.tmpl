@@ -1,4 +1,4 @@
-.TH uniconv 1  24\ Jun\ 2004 "Netatalk 2.0-beta2" 
+.TH uniconv 1 "24 Jun 2004" 2.0-rc1 Netatalk 
 .SH NAME
 uniconv \- convert Netatalk volume encoding
 .SH SYNOPSIS
@@ -55,7 +55,7 @@ encoding. Remember to change \fBvolcodepage\fR in
 to the new codepage, before restarting afpd.
 .PP
 \fBUSE AT YOUR OWN RISK!!!\fR
-.SH SELECTABLE\ CHARSETS
+.SH "SELECTABLE CHARSETS"
 Netatalk provides internal support for UTF\-8 (pre\- and decomposed)
 and CAP. If you want to use other charsets, they must be provided by
 \fBiconv\fR(1)
@@ -64,7 +64,7 @@ uniconv also knows iso\-8859.adapted, an old style
 1.x NLS widely used. This is only intended for upgrading old volumes,
 \fBafpd\fR(8)
 cannot handle iso\-8859.adapted anymore.
-.SH CNID\ BACKGROUND
+.SH "CNID BACKGROUND"
 The CNID backends maintains name to ID mappings. If you change a
 filename outside afpd(8) (shell, samba), the CNID db, i.e. the DIDNAME
 index, gets inconsistent. Netatalk tries to recover from such
@@ -118,5 +118,6 @@ convert UTF\-8 volume to CAP, for MacCyrillic clients:
 .nf
 example%\fB uniconv \-f UTF8 \-t ASCII \-m MAC_CYRILLIC /path/to/share\fR
 .fi
-.SH SEE\ ALSO
+.SH "SEE ALSO"
 \fBAppleVolumes.default\fR(5),\fBafpd\fR(8),\fBiconv\fR(1),\fBcnid_metad\fR(8),\fBcnid_dbd\fR(8)
+

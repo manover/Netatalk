@@ -1,4 +1,4 @@
-.TH cnid_metad 8  28\ Nov\ 2003 "Netatalk 2.0-beta2" 
+.TH cnid_metad 8 "28 Nov 2003" 2.0-rc1 Netatalk 
 .SH NAME
 cnid_metad \- start cnid_dbd daemons on request
 .SH SYNOPSIS
@@ -25,7 +25,8 @@ and standard error file descriptors open. Useful for debugging.
 \fB\-h\fR\fI hostname\fR
 Use \fIhostname\fR as the network
 interface for requests as opposed to the default \fIlocalhost
-\fR.TP 
+\fR\&.
+.TP 
 \fB\-p\fR\fI port\fR
 Use \fIport\fR as the port number for
 reqests. Default is 4700.
@@ -59,6 +60,7 @@ state about and IPC access to the subprocesses is only maintained in
 memory by cnid_metad this is desired behaviour. As soon
 as cnid_metad is restarted \fIafpd\fR
 processes will transparently reconnect.
-.SH SEE\ ALSO
+.SH "SEE ALSO"
 \fBcnid_dbd\fR(8),
 \fBafpd\fR(8)
+

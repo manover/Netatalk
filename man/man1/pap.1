@@ -1,8 +1,8 @@
-.TH pap 1  6\ May\ 2002 "Netatalk 2.0-beta2" 
+.TH pap 1 "6 May 2002" 2.0-rc1 Netatalk 
 .SH NAME
-pap, papstatus \- client interface to remote printers using Printer Access  Protocol
+pap \- client interface to remote printers using Printer Access Protocol
 .SH SYNOPSIS
-\fBpap\fR [ \-A \fBaddress\fR ] [\-c] [\-d] [\-e] [\-E] [ \-p \fBnbpname\fR ] [ \-s \fBstatusfile\fR ] [\-w] [\-W] [\fBFILES\fR] \fBpapstatus\fR [ \-p \fBnbpname\fR ]
+\fBpap\fR [ \-A \fBaddress\fR ] [\-c] [\-d] [\-e] [\-E] [ \-p \fBnbpname\fR ] [ \-s \fBstatusfile\fR ] [\-w] [\-W] [\fBFILES\fR]
 .SH DESCRIPTION
 pap is used to connect and send files to an
 AppleTalk connected printer using the Apple Printer Access Protocol (PAP).
@@ -86,8 +86,9 @@ available on HP IV and V printers.
 \&.paprc
 file read to obtain printer name if not specified on command
 line
-.SH SEE\ ALSO
+.SH "SEE ALSO"
 \fBnbp_name\fR(3),
 \fBatalk_aton\fR(3),
 \fBlpd\fR(8),
 \fBpsf\fR(8).
+

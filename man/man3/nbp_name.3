@@ -1,8 +1,8 @@
-.TH nbp_name 3  12\ Jan\ 1994 "Netatalk 2.0-beta2" 
+.TH nbp_name 3 "12 Jan 1994" 2.0-rc1 Netatalk 
 .SH NAME
 nbp_name \- NBP name parsing
 .SH SYNOPSIS
-\fInbp_name\fR(char * \fIname\fR, char ** \fIobj\fR, char ** \fItype\fR, char ** \fIzone\fR));
+int \fInbp_name\fR(char *\fIname\fR, char **\fIobj\fR, char **\fItype\fR, char **\fIzone\fR);
 .SH DESCRIPTION
 nbp_name() parses user supplied names into
 their component object, type, and zone. \fIobj\fR,
@@ -37,3 +37,4 @@ would retain their default values.
 \fIobj\fR, \fItype\fR,
 and zone return pointers into static
 area which may be over\-written on each call.
+
