@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_add.c,v 1.30 2002-08-30 03:12:52 jmarcus Exp $
+ * $Id: cnid_add.c,v 1.30.2.1 2003-02-08 03:07:24 jmarcus Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -117,9 +117,11 @@ retry:
     return 0;
 
 abort:
+#ifndef CNID_DB_CDB
     if ((ret = txn_abort(tid)) != 0) {
         return ret;
     }
+#endif /* CNID_DB_CDB */
     return rc;
 }
 
