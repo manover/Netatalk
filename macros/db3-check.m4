@@ -1,4 +1,4 @@
-dnl $Id: db3-check.m4,v 1.11.6.3 2004-01-03 01:49:54 bfernhomberg Exp $
+dnl $Id: db3-check.m4,v 1.11.6.4 2004-03-02 13:32:17 bfernhomberg Exp $
 dnl Autoconf macro to check for the Berkeley DB library
 
 AC_DEFUN([AC_PATH_BDB], 
@@ -71,6 +71,7 @@ dnl                        ])
 #if STDC_HEADERS
 #include <stdlib.h>
 #endif
+#include <stdio.h>
 #include <db.h>
 
 #define DB_MAJOR_REQ	4
@@ -86,17 +87,25 @@ int main(void) {
 
 	/* check header version */
 	if (DB_VERSION_MAJOR < DB_MAJOR_REQ || DB_VERSION_MINOR < DB_MINOR_REQ ||
-	    DB_VERSION_PATCH < DB_PATCH_REQ )
+	    DB_VERSION_PATCH < DB_PATCH_REQ ) {
+		printf("header file version too old (%d.%d.%d), ", DB_VERSION_MAJOR, DB_VERSION_MINOR, DB_VERSION_PATCH);
 		exit (1);
+	}
 		
 	/* check library version */
-	if (major < DB_MAJOR_REQ || minor < DB_MINOR_REQ || patch < DB_PATCH_REQ)
+	if (major < DB_MAJOR_REQ || minor < DB_MINOR_REQ || patch < DB_PATCH_REQ) {
+		printf("library version too old (%d.%d.%d), ",major, minor, patch);
 		exit (2);
+	}
 
 	/* check header and library match */
-	if ( major != DB_VERSION_MAJOR || minor != DB_VERSION_MINOR || patch != DB_VERSION_PATCH)
+	if ( major != DB_VERSION_MAJOR || minor != DB_VERSION_MINOR || patch != DB_VERSION_PATCH) {
+		printf("header/library version mismatch (%d.%d.%d/%d.%d.%d), ",
+			 DB_VERSION_MAJOR, DB_VERSION_MINOR, DB_VERSION_PATCH, major, minor, patch);
 		exit(3);
+	}
 
+	printf("%d.%d.%d, ",major, minor, patch); 
 	exit (0);
 }
 ], atalk_cv_bdbversion="yes", atalk_cv_bdbversion="no", atalk_cv_bdbversion="cross")
