@@ -1,4 +1,4 @@
-dnl $Id: db3-check.m4,v 1.11.6.4 2004-03-02 13:32:17 bfernhomberg Exp $
+dnl $Id: db3-check.m4,v 1.11.6.5 2004-03-30 04:18:21 bfernhomberg Exp $
 dnl Autoconf macro to check for the Berkeley DB library
 
 AC_DEFUN([AC_PATH_BDB], 
@@ -66,7 +66,7 @@ dnl                        ])
 			fi
 
 			dnl check we have the correct bdb version
-		  	AC_MSG_CHECKING([Berkeley DB version >= 4.0])
+		  	AC_MSG_CHECKING([Berkeley DB version >= 4.1])
  			AC_TRY_RUN([ 
 #if STDC_HEADERS
 #include <stdlib.h>
@@ -75,7 +75,7 @@ dnl                        ])
 #include <db.h>
 
 #define DB_MAJOR_REQ	4
-#define DB_MINOR_REQ	0
+#define DB_MINOR_REQ	1
 #define DB_PATCH_REQ	0
 
 
