@@ -1,5 +1,5 @@
 /*
- * $Id: at.h,v 1.3 2001-11-25 21:55:10 srittau Exp $
+ * $Id: at.h,v 1.3.10.1 2003-12-12 19:29:55 didg Exp $
  *
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  *
@@ -13,6 +13,12 @@
 #include <sys/socket.h>
 #include <asm/types.h>
 #include <linux/atalk.h>
+
+#ifdef HAVE_ATALK_ADDR
+#define at_addr atalk_addr
+#define netrange atalk_netrange
+#endif /* HAVE_ATALK_ADDR */
+
 #else /* linux */
 
 #include <sys/types.h>
@@ -121,3 +127,4 @@ extern struct protosw	atalksw[];
 
 #endif /* linux */
 #endif /* __AT_HEADER__ */
+
