@@ -1,7 +1,8 @@
 Changes in 1.6.5
 ================
 
-* FIX: Man page fixes. [Eric S. Raymond, Sebastian Rittau]
+* FIX: configure: Make the --disable-admin-group option work. [Sebastian Rittau]
+* FIX: man pages: Consistency fixes. [Eric S. Raymond, Sebastian]
 
 Changes in 1.6.4
 ================

@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.168.2.9 2003-12-02 13:20:51 bfernhomberg Exp $
+dnl $Id: configure.in,v 1.168.2.10 2003-12-15 07:03:16 srittau Exp $
 dnl configure.in for netatalk
 
 AC_INIT(bin/adv1tov2/adv1tov2.c)
@@ -116,7 +116,7 @@ dnl --------------------------------------------------------------------------
 
 AC_DEFINE(ADMIN_GRP, 1)
 
-AC_ARG_WITH(admin-group,
+AC_ARG_ENABLE(admin-group,
  	[  --disable-admin-group   disable admin group],
         if test "$enableval" = "no"; then
 		AC_DEFINE(ADMIN_GRP, 0)
