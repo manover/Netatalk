@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.126 2001-11-16 15:44:31 srittau Exp $
+dnl $Id: configure.in,v 1.126.2.1 2001-11-17 23:43:01 srittau Exp $
 dnl configure.in for netatalk
 
 AC_INIT(bin/adv1tov2/adv1tov2.c)
@@ -261,19 +261,25 @@ fi
 CFLAGS="$CFLAGS $DB3_CFLAGS"
 LIBS="$LIBS $DB3_LIBS"
 
+dnl Determine DID scheme
+AC_MSG_CHECKING([for DID scheme to use])
 AC_ARG_WITH(did,
 	[  --with-did=SCHEME       set DID scheme (last,mtab)],
-	if test "x$withval" != "xno" ; then
-		if test "$withval" = "last"; then
-			AC_DEFINE(USE_LASTDID, 1)
-			AC_MSG_RESULT([enabling build without DID dev/inode mapping kludge])
-		fi
-		if test "$withval" = "mtab"; then
-			AC_DEFINE(DID_MTAB, 1)
-			AC_MSG_RESULT([enabling mtab-based DID creation support])
-		fi
-	fi
+	[ did_scheme="$withval" ],
+	[ did_scheme="last" ]
 )
+
+if test "x$did_scheme" = "xlast"; then
+	AC_DEFINE(USE_LASTDID, 1)
+	AC_MSG_RESULT([no DID dev/inode mapping kludge])
+elif test "x$did_scheme" = "xmtab"; then
+	AC_DEFINE(DID_MTAB, 1)
+	AC_MSG_RESULT([mtab-based DID creation support])
+elif test "x$did_scheme" != "xno"; then
+	AC_MSG_RESULT([default])
+else
+	AC_MSG_ERROR([unknown DID scheme])
+fi
 
 msg_dir=""
 AC_ARG_WITH(message-dir,
