@@ -191,8 +191,11 @@ atalk: rc.atalk.gentoo
 	chmod a+x atalk
 
 install-data-hook:
+	-rc-update add atalk default
 
-uninstall-hook:
+uninstall:
+	-rc-update del atalk default
+	rm -f /etc/init.d/atalk
 
 endif
 
