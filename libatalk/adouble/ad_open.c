@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.18.2.1 2005-01-25 14:32:00 didg Exp $
+ * $Id: ad_open.c,v 1.30.6.18.2.2 2005-02-05 14:54:49 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -210,6 +210,7 @@ static const struct entry entry_order_osx[ADEID_NUM_OSX +1] = {
 
 #if AD_VERSION == AD_VERSION2
 
+/* update a version 2 adouble resource fork with our private entries */
 static int ad_update(struct adouble *ad, const char *path)
 {
   struct stat st;
@@ -219,19 +220,20 @@ static int ad_update(struct adouble *ad, const char *path)
   static off_t entry_len[ADEID_MAX];
   static char  databuf[ADEID_MAX][256], *buf;
   int fd;
+  int ret = -1;
 
   /* check to see if we should convert this header. */
-  if (!path || (ad->ad_flags != AD_VERSION2))
+  if (!path || ad->ad_flags != AD_VERSION2)
     return 0;
   
-  if (!(ad->ad_hf.adf_flags & ( O_RDWR | O_WRONLY))) {
-      /* we were unable to open the file read write the last time
-      */
+  if (!(ad->ad_hf.adf_flags & O_RDWR)) {
+      /* we were unable to open the file read write the last time */
       return 0;
   }
 
-  if (ad->ad_eid[ADEID_RFORK].ade_off)  
-    shiftdata = ADEDOFF_RFORK_V2 -ad->ad_eid[ADEID_RFORK].ade_off;
+  if (ad->ad_eid[ADEID_RFORK].ade_off) {
+      shiftdata = ADEDOFF_RFORK_V2 -ad->ad_eid[ADEID_RFORK].ade_off;
+  }
 
   memcpy(&nentries, ad->ad_data + ADEDOFF_NENTRIES, sizeof( nentries ));
   nentries = ntohs( nentries );
@@ -246,39 +248,42 @@ static int ad_update(struct adouble *ad, const char *path)
   if (ad_tmplock(ad, ADEID_RFORK, ADLOCK_WR, 0, 0, 0) < 0)
     goto bail_err;
 
-  if ((fd = open(path, O_RDWR)) < 0)
-    goto bail_lock;
+  fd = ad->ad_hf.adf_fd;
 
-  if (fstat(fd, &st) ||
-    sys_ftruncate(fd, st.st_size + shiftdata) < 0) {
-    goto bail_open;
+  if (fstat(fd, &st)) {
+    goto bail_lock;
   }
+
   if (st.st_size > 0x7fffffff) {
-    LOG(log_debug, logtype_default, "ad_update: file '%s' too big for update.", path);
-    goto bail_truncate;
+      LOG(log_debug, logtype_default, "ad_update: file '%s' too big for update.", path);
+      errno = EIO;
+      goto bail_lock;
   }
 
   off = ad->ad_eid[ADEID_RFORK].ade_off;
   if (off > st.st_size) {
-      LOG(log_error, logtype_default, "ad_v1tov2: invalid resource fork offset. (off: %u)", off); 
+      LOG(log_error, logtype_default, "ad_update: invalid resource fork offset. (off: %u)", off); 
       errno = EIO;
-      goto bail_truncate;
+      goto bail_lock;
   }
 
   if (ad->ad_eid[ADEID_RFORK].ade_len > st.st_size - off) {
-      LOG(log_error, logtype_default, "ad_v1tov2: invalid resource fork length. (rfork len: %u)", ad->ad_eid[ADEID_RFORK].ade_len); 
+      LOG(log_error, logtype_default, "ad_update: invalid resource fork length. (rfork len: %u)", ad->ad_eid[ADEID_RFORK].ade_len); 
       errno = EIO;
-      goto bail_truncate;
+      goto bail_lock;
   }
   
-  /* last place for failure. */
   if ((void *) (buf = (char *)
                 mmap(NULL, st.st_size + shiftdata,
                      PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) ==
           MAP_FAILED) {
-    goto bail_truncate;
+    goto bail_lock;
   }
 
+  /* last place for failure. */
+  if (sys_ftruncate(fd, st.st_size + shiftdata) < 0) {
+    goto bail_lock;
+  }
 
   /* move the RFORK. this assumes that the RFORK is at the end */
   if (off) {
@@ -286,7 +291,6 @@ static int ad_update(struct adouble *ad, const char *path)
   }
 
   munmap(buf, st.st_size + shiftdata);
-  close(fd);
 
   /* now, fix up our copy of the header */
   memset(ad->ad_filler, 0, sizeof(ad->ad_filler));
@@ -316,53 +320,46 @@ static int ad_update(struct adouble *ad, const char *path)
   }
 
   /* rebuild the header and cleanup */
-  ad_flush(ad, ADFLAGS_HF );
-  ad_tmplock(ad, ADEID_RFORK, ADLOCK_CLR, 0, 0, 0);
-
   LOG(log_debug, logtype_default, "updated AD2 header %s", path);
+  ad_flush(ad, ADFLAGS_HF );
+  ret = 0;
 
-  return 0;
-
-bail_truncate:
-  sys_ftruncate(fd, st.st_size);
-bail_open:
-  close(fd);
 bail_lock:
   ad_tmplock(ad, ADEID_RFORK, ADLOCK_CLR, 0, 0, 0);
 bail_err:
-  return -1;
+  return ret;
 }
 
-
-/* FIXME work only if < 2GB */
-static int ad_v1tov2(struct adouble *ad, const char *path)
+/* ------------------------------------------
+   FIXME work only if < 2GB 
+*/
+static int ad_convert(struct adouble *ad, const char *path)
 {
   struct stat st;
   u_int16_t attr;
   char *buf;
   int fd, off;
+  int ret = -1;
   /* use resource fork offset from file */
   int shiftdata;
+  int toV2;
+  int toV1;
   
+  if (!path) {
+      return 0;
+  }
+  
+  if (!(ad->ad_hf.adf_flags & ( O_RDWR))) {
+      /* we were unable to open the file read write the last time */
+      return 0;
+  }
+
   /* check to see if we should convert this header. */
-  if (!path || (ad->ad_version != AD_VERSION1))
-    return 0;
+  toV2 = ad->ad_version == AD_VERSION1 && ad->ad_flags == AD_VERSION2;
+  toV1 = ad->ad_version == AD_VERSION2 && ad->ad_flags == AD_VERSION1;
 
-  /* we want version1 anyway */
-  if (ad->ad_flags != AD_VERSION2)
+  if (!toV2 && !toV1)
       return 0;
-
-  if (!(ad->ad_hf.adf_flags & ( O_RDWR | O_WRONLY))) {
-      /* we were unable to open the file read write the last time
-      */
-      return 0;
-  }
-
-  if (!ad->ad_flags) {
-      /* we don't really know what we want */
-      ad->ad_flags = ad->ad_version;
-      return 0;
-  }
 
   /* convert from v1 to v2. what does this mean?
    *  1) change FILEI into FILEDATESI
@@ -375,9 +372,9 @@ static int ad_v1tov2(struct adouble *ad, const char *path)
   /* bail if we can't get a lock */
   if (ad_tmplock(ad, ADEID_RFORK, ADLOCK_WR, 0, 0, 0) < 0) 
     goto bail_err;
-  
-  if ((fd = open(path, O_RDWR)) < 0) 
-    goto bail_lock;
+
+  /* we reuse fd from the resource fork */
+  fd = ad->ad_hf.adf_fd;
 
   if (ad->ad_eid[ADEID_RFORK].ade_off) {
       shiftdata = ADEDOFF_RFORK_V2 -ad->ad_eid[ADEID_RFORK].ade_off;
@@ -386,35 +383,41 @@ static int ad_v1tov2(struct adouble *ad, const char *path)
       shiftdata = ADEDOFF_RFORK_V2 -ADEDOFF_RFORK_V1; /* 136 */
   }
 
-  if (fstat(fd, &st) ||
-      sys_ftruncate(fd, st.st_size + shiftdata) < 0) {
-    goto bail_open;
-  }
-  if (st.st_size > 0x7fffffff) {
-      LOG(log_debug, logtype_default, "ad_v1tov2: file too big."); 
-      goto bail_truncate;
+  if (fstat(fd, &st)) { 
+      goto bail_lock;
   }
 
+  if (st.st_size > 0x7fffffff -shiftdata) {
+      LOG(log_debug, logtype_default, "ad_v1tov2: file too big."); 
+      errno = EIO;
+      goto bail_lock;
+  }
+  
   off = ad->ad_eid[ADEID_RFORK].ade_off;
 
   if (off > st.st_size) {
       LOG(log_error, logtype_default, "ad_v1tov2: invalid resource fork offset. (off: %u)", off); 
       errno = EIO;
-      goto bail_truncate;
+      goto bail_lock;
   }
 
   if (ad->ad_eid[ADEID_RFORK].ade_len > st.st_size - off) {
       LOG(log_error, logtype_default, "ad_v1tov2: invalid resource fork length. (rfork len: %u)", ad->ad_eid[ADEID_RFORK].ade_len); 
       errno = EIO;
-      goto bail_truncate;
+      goto bail_lock;
   }
   
-  /* last place for failure. */
   if ((void *) (buf = (char *) 
 		mmap(NULL, st.st_size + shiftdata,
 		     PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) == 
 	  MAP_FAILED) {
-    goto bail_truncate;
+    goto bail_lock;
+  }
+
+  /* last place for failure. */
+
+  if (sys_ftruncate(fd, st.st_size + shiftdata) < 0) {
+      goto bail_lock;
   }
   
   /* move the RFORK. this assumes that the RFORK is at the end */
@@ -423,7 +426,6 @@ static int ad_v1tov2(struct adouble *ad, const char *path)
   }
 
   munmap(buf, st.st_size + shiftdata);
-  close(fd);
 
   /* now, fix up our copy of the header */
   memset(ad->ad_filler, 0, sizeof(ad->ad_filler));
@@ -460,8 +462,8 @@ static int ad_v1tov2(struct adouble *ad, const char *path)
   ad->ad_eid[ADEID_FINDERI].ade_off = ADEDOFF_FINDERI_V2;
   ad->ad_eid[ADEID_RFORK].ade_off = ADEDOFF_RFORK_V2;
   
-  /* switch to v2 */
-  ad->ad_version = AD_VERSION2;
+  /* switch to dest version */
+  ad->ad_version = (toV2)?AD_VERSION2:AD_VERSION1;
   
   /* move our data buffer to make space for the new entries. */
   memmove(ad->ad_data + ADEDOFF_NAME_V2, ad->ad_data + ADEDOFF_NAME_V1,
@@ -478,21 +480,16 @@ static int ad_v1tov2(struct adouble *ad, const char *path)
   
   /* rebuild the header and cleanup */
   ad_flush(ad, ADFLAGS_HF );
-  ad_tmplock(ad, ADEID_RFORK, ADLOCK_CLR, 0, 0, 0);
-
-  return 0;
+  ret = 0;
   
-bail_truncate:
-  sys_ftruncate(fd, st.st_size);
-bail_open:
-  close(fd);
 bail_lock:
   ad_tmplock(ad, ADEID_RFORK, ADLOCK_CLR, 0, 0, 0);
 bail_err:
-  return -1;
+  return ret;
 }
 #endif /* AD_VERSION == AD_VERSION2 */
 
+/* --------------------------- */
 #ifdef ATACC
 mode_t ad_hf_mode (mode_t mode)
 {
@@ -1113,7 +1110,7 @@ int ad_open( path, adflags, oflags, mode, ad )
 	    /* Read the adouble header in and parse it.*/
 	if ((ad_header_read( ad , &st) < 0)
 #if AD_VERSION == AD_VERSION2
-		|| (ad_v1tov2(ad, ad_p) < 0) || (ad_update(ad, ad_p) < 0)
+		|| (ad_convert(ad, ad_p) < 0) || (ad_update(ad, ad_p) < 0)
 #endif /* AD_VERSION == AD_VERSION2 */
         ) {
             int err = errno;
