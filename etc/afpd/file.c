@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.31.2.5 2004-12-07 03:23:49 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.31.2.6 2004-12-09 16:10:54 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -778,7 +778,6 @@ int setfilparams(struct vol *vol,
                  struct path *path, u_int16_t f_bitmap, char *buf )
 {
     struct adouble	ad, *adp;
-    struct ofork        *of;
     struct extmap	*em;
     int			bit, isad = 1, err = AFP_OK;
     char                *upath;
