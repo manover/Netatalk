@@ -5,6 +5,7 @@ Changes in 1.6.3
 * FIX: afpd: Debugging using SIGUSR1 was broken. [Stefan Muenkner]
 * FIX: shell_utils: Don't distribute generated files.
 * FIX: aecho: -A option didn't work. [Chris Shiels]
+* FIX: configure: Berkeley DB path detection could be wrong. [Stefan Muenkner]
 * FIX: Automake build fixes.
 
 Changes in 1.6.2
