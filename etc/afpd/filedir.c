@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.45.2.2.2.5 2004-01-08 03:50:56 bfernhomberg Exp $
+ * $Id: filedir.c,v 1.45.2.2.2.6 2004-02-13 22:32:18 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -625,7 +625,7 @@ char	*u;
     *p = '\0';
     len = strlen( u );
     p -= len;
-    strncpy( p, u, len );
+    memcpy( p, u, len );
     if (dir) for ( d = dir; d->d_parent; d = d->d_parent ) {
         u = d->d_u_name;
         len = strlen( u );
@@ -637,7 +637,7 @@ char	*u;
         }
         *--p = '/';
         p -= len;
-        strncpy( p, u, len );
+        memcpy( p, u, len );
     }
     len = strlen( vol->v_path );
     if (p -len -1 < path) {
@@ -645,7 +645,7 @@ char	*u;
     }
     *--p = '/';
     p -= len;
-    strncpy( p, vol->v_path, len );
+    memcpy( p, vol->v_path, len );
 
     return( p );
 }

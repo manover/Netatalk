@@ -1,5 +1,5 @@
 /*
- * $Id: appl.c,v 1.12.2.1 2003-05-10 10:33:16 didg Exp $
+ * $Id: appl.c,v 1.12.2.1.2.1 2004-02-13 22:32:17 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -134,7 +134,8 @@ u_short	mplen;
  * but uses upaths instead of mac format paths.
  *
  * The new way: dir and path refer to an app, path is a mac format
- * pathname.  makemacpath() builds a cname.
+ * pathname.  makemacpath() builds a cname. (zero is a path separator
+ * and it's not \0 terminated).
  *
  * See afp_getappl() for the backward compatiblity code.
  */
@@ -149,10 +150,14 @@ char	*path;
 
     p = mpath + mpathlen;
     p -= strlen( path );
-    strncpy( p, path, strlen( path ));
+    memcpy( p, path, strlen( path )); 
 
     while ( dir->d_parent != NULL ) {
         p -= strlen( dir->d_m_name ) + 1;
+        if (p < mpath) {
+            /* FIXME: pathname too long */
+            return NULL;
+        }
         strcpy( p, dir->d_m_name );
         dir = dir->d_parent;
     }
@@ -218,6 +223,9 @@ int		ibuflen, *rbuflen;
     }
     mpath = obj->newtmp;
     mp = makemacpath( mpath, AFPOBJ_TMPSIZ, curdir, path->m_name );
+    if (!mp) {
+        return AFPERR_PARAM;
+    }
     mplen =  mpath + AFPOBJ_TMPSIZ - mp;
 
     /* write the new appl entry at start of temporary file */
@@ -301,6 +309,10 @@ int		ibuflen, *rbuflen;
     }
     mpath = obj->newtmp;
     mp = makemacpath( mpath, AFPOBJ_TMPSIZ, curdir, path->m_name );
+    if (!mp) {
+        return AFPERR_PARAM ;
+    }
+
     mplen =  mpath + AFPOBJ_TMPSIZ - mp;
     cc = copyapplfile( sa.sdt_fd, tfd, mp, mplen );
     close( tfd );

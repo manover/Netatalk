@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.8 2004-02-09 23:49:31 bfernhomberg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.9 2004-02-13 22:32:18 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1203,7 +1203,7 @@ struct dir	*dir;
         }
         *--p = '/';
         p -= n;
-        strncpy( p, u, n );
+        memcpy( p, u, n );
     }
     if ( d != curdir ) {
         n = strlen( vol->v_path );
@@ -1213,7 +1213,7 @@ struct dir	*dir;
         }
         *--p = '/';
         p -= n;
-        strncpy( p, vol->v_path, n );
+        memcpy( p, vol->v_path, n );
     }
     if ( chdir( p ) < 0 ) {
         switch (errno) {
