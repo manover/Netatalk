@@ -1,5 +1,5 @@
 /*
- * $Id: db_param.h,v 1.1.4.3 2004-01-09 21:05:50 lenneis Exp $
+ * $Id: db_param.h,v 1.1.4.4 2004-04-29 18:09:16 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -13,7 +13,7 @@
 
 
 struct db_param {
-    int backlog;
+    int logfile_autoremove;
     int cachesize;
     int nosync;
     int flush_frequency;

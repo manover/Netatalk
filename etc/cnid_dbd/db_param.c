@@ -1,5 +1,5 @@
 /*
- * $Id: db_param.c,v 1.1.4.3 2004-01-09 21:05:50 lenneis Exp $
+ * $Id: db_param.c,v 1.1.4.4 2004-04-29 18:09:14 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -30,7 +30,7 @@
 #define DB_PARAM_FN       "db_param"
 #define MAXKEYLEN         64
 
-#define DEFAULT_BACKLOG            20   
+#define DEFAULT_LOGFILE_AUTOREMOVE 0   
 #define DEFAULT_CACHESIZE          1024 * 4 
 #define DEFAULT_NOSYNC             0    
 #define DEFAULT_FLUSH_FREQUENCY    100  
@@ -71,7 +71,7 @@ static int make_pathname(char *path, char *dir, char *fn, int maxlen)
 
 static void default_params(struct db_param *dbp, char *dir)
 {        
-    dbp->backlog             = DEFAULT_BACKLOG;
+    dbp->logfile_autoremove  = DEFAULT_LOGFILE_AUTOREMOVE;
     dbp->cachesize           = DEFAULT_CACHESIZE;
     dbp->nosync              = DEFAULT_NOSYNC;
     dbp->flush_frequency     = DEFAULT_FLUSH_FREQUENCY;
@@ -139,8 +139,8 @@ struct db_param *db_param_read(char *dir)
             break;
         }
         
-        if (! strcmp(key, "backlog")) 
-            params.backlog = parse_int(val);
+        if (! strcmp(key, "logfile_autoremove")) 
+            params.logfile_autoremove = parse_int(val);
         else if (! strcmp(key, "cachesize"))
             params.cachesize = parse_int(val);
         else if (! strcmp(key, "nosync"))

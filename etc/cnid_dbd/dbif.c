@@ -1,5 +1,5 @@
 /*
- * $Id: dbif.c,v 1.1.4.14 2004-02-07 18:45:46 didg Exp $
+ * $Id: dbif.c,v 1.1.4.15 2004-04-29 18:09:16 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -138,6 +138,10 @@ int dbif_stamp(void *buffer, int size)
 int dbif_env_init(struct db_param *dbp)
 {
     int ret;
+#ifdef CNID_BACKEND_DBD_TXN
+    char **logfiles = NULL;
+    char **file;
+#endif
 
     /* Refuse to do anything if this is an old version of the CNID database */
     if (upgrade_required()) {
@@ -207,7 +211,21 @@ int dbif_env_init(struct db_param *dbp)
             db_strerror(ret));
         db_env->close(db_env, 0);
         db_env = NULL;
-        return -1;      
+        return -1;
+    }
+    if (dbp->logfile_autoremove && db_env->log_archive(db_env, &logfiles, 0)) {
+	LOG(log_error, logtype_cnid, "error getting list of stale logfiles: %s",
+            db_strerror(ret));
+        db_env->close(db_env, 0);
+        db_env = NULL;
+        return -1;
+    }
+    if (logfiles != NULL) {
+	for (file = logfiles; *file != NULL; file++) {
+	    if (unlink(*file) < 0)
+		LOG(log_warning, logtype_cnid, "Error removing stale logfile %s: %s", *file, strerror(errno));
+	}
+	free(logfiles);
     }
 #endif
     return 0;
