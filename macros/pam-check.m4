@@ -1,4 +1,4 @@
-dnl $Id: pam-check.m4,v 1.2.10.2 2004-03-18 03:20:52 bfernhomberg Exp $
+dnl $Id: pam-check.m4,v 1.2.10.3 2004-04-04 17:44:18 bfernhomberg Exp $
 dnl PAM finding macro
 
 AC_DEFUN([AC_PATH_PAM], [
@@ -47,8 +47,8 @@ AC_DEFUN([AC_PATH_PAM], [
 		savedLIBS="$LIBS"
 
 		if test "x$PAMDIR" != "xNONE" -a "x$PAMDIR" != "x/"; then
-			PAM_CFLAGS="-I$PAMDIRinclude"
-			PAM_LDFLAGS="-L$PAMDIRlib"
+			PAM_CFLAGS="-I${PAMDIR}include"
+			PAM_LDFLAGS="-L${PAMDIR}lib"
 			LDFLAGS="$LDFLAGS $PAM_LDFLAGS"
 			CFLAGS="$CFLAGS $PAM_CFLAGS"
 		fi
