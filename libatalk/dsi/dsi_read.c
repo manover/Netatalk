@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_read.c,v 1.3.14.2 2004-02-10 10:21:50 didg Exp $
+ * $Id: dsi_read.c,v 1.3.14.3 2004-02-20 20:53:15 bfernhomberg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -17,6 +17,9 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/time.h>
+#ifdef HAVE_SYS_FILIO_H
+#include <sys/filio.h>
+#endif
 
 #include <atalk/dsi.h>
 #include <sys/ioctl.h> 

@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.11 2004-02-20 20:17:53 didg Exp $
+ * $Id: adouble.h,v 1.21.6.12 2004-02-20 20:53:14 bfernhomberg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -46,7 +46,7 @@
 #endif
 #endif
 
-#ifdef  HAVE_PREAD
+#if defined(HAVE_PREAD) && !defined(SOLARIS)
 #ifdef _XOPEN_SOURCE
 #undef _XOPEN_SOURCE
 #endif

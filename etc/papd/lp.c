@@ -1,5 +1,5 @@
 /*
- * $Id: lp.c,v 1.14 2002-09-29 23:29:13 sibaz Exp $
+ * $Id: lp.c,v 1.14.8.1 2004-02-20 20:53:14 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -288,11 +288,13 @@ int lp_init( out, sat )
 	    return( -1 );
 	}
 
+#ifndef SOLARIS /* flock is unsupported, I doubt this stuff work anyway with newer solaris so ignore for now */
 	if ( flock( fd, LOCK_EX ) < 0 ) {
 	    LOG(log_error, logtype_papd, "lp_init: can't lock .seq" );
 	    spoolerror( out, NULL );
 	    return( -1 );
 	}
+#endif
 
 	n = 0;
 	if (( len = read( fd, buf, sizeof( buf ))) < 0 ) {

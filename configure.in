@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.19 2004-02-14 23:43:47 bfernhomberg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.20 2004-02-20 20:53:10 bfernhomberg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(etc/afpd/main.c)
@@ -90,7 +90,7 @@ AC_CHECK_HEADER(sys/cdefs.h,,
 	AC_MSG_RESULT([enabling generic cdefs.h from tree])
 	CFLAGS="-I\$(top_srcdir)/sys/generic $CFLAGS"
 )
-AC_CHECK_HEADERS(langinfo.h locale.h)
+AC_CHECK_HEADERS(langinfo.h locale.h sys/filio.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

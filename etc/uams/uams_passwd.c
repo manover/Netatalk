@@ -1,16 +1,19 @@
 /*
- * $Id: uams_passwd.c,v 1.19.2.1.2.6 2004-02-14 02:47:15 didg Exp $
+ * $Id: uams_passwd.c,v 1.19.2.1.2.7 2004-02-20 20:53:14 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
  * All Rights Reserved.  See COPYRIGHT.
  */
 
-#define _XOPEN_SOURCE 500 /* for crypt() */
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif /* HAVE_CONFIG_H */
+
+/* crypt needs _XOPEN_SOURCE 500 at least on BSD, but that breaks Solaris compile */
+#ifndef SOLARIS
+#define _XOPEN_SOURCE 500 /* for crypt() */
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>

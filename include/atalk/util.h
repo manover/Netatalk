@@ -1,5 +1,5 @@
 /*
- * $Id: util.h,v 1.7.10.3 2004-02-14 00:30:52 didg Exp $
+ * $Id: util.h,v 1.7.10.4 2004-02-20 20:53:15 bfernhomberg Exp $
  */
 
 #ifndef _ATALK_UTIL_H
@@ -35,11 +35,11 @@ extern void fault_setup	  __P((void (*fn)(void *)));
 #define server_unlock(x)  (unlink(x))
 
 #ifndef HAVE_STRLCPY
-size_t strlcpy(char *d, const char *s, size_t bufsize);
+size_t strlcpy __P((char *, const char *, size_t));
 #endif
  
 #ifndef HAVE_STRLCAT
-size_t strlcat(char *d, const char *s, size_t bufsize);
+size_t strlcat __P((char *, const char *, size_t));
 #endif
 
 #ifndef HAVE_DLFCN_H
