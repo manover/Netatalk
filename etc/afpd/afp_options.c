@@ -1,5 +1,5 @@
 /*
- * $Id: afp_options.c,v 1.30.2.2.2.2 2003-09-13 02:46:28 bfernhomberg Exp $
+ * $Id: afp_options.c,v 1.30.2.2.2.3 2003-11-13 15:29:01 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -440,9 +440,13 @@ int afp_options_parseline(char *buf, struct afp_options *options)
         }
     }
 
-    /* FIXME CNID */
+    /* FIXME CNID Cnid_srv is a server attribute */
     if ((c = getoption(buf, "-cnidserver"))) {
         char *p;
+
+        if (Cnid_srv) {
+            free(Cnid_srv);
+        }
         
         Cnid_srv = strdup(c);
         p = strchr(Cnid_srv, ':');
