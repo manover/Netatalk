@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.14 2004-03-11 16:16:41 didg Exp $
+ * $Id: adouble.h,v 1.21.6.15 2004-03-11 19:57:32 didg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -430,7 +430,7 @@ extern int ad_getdate __P((const struct adouble *, unsigned int, u_int32_t *));
 extern int ad_setattr __P((const struct adouble *, const u_int16_t));
 extern int ad_getattr __P((const struct adouble *, u_int16_t *));
 
-extern int ad_setname __P((const struct adouble *, const char *));
+extern int ad_setname __P((struct adouble *, const char *));
 #if AD_VERSION == AD_VERSION2
 extern int ad_setid __P((struct adouble *, const dev_t dev,const ino_t ino, const u_int32_t, const u_int32_t, const void *));
 #else
