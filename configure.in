@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.31 2004-06-24 00:41:00 bfernhomberg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.32 2004-06-28 22:48:48 didg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(etc/afpd/main.c)
@@ -833,14 +833,26 @@ if test x"$this_os" = "xsolaris"; then
 
 	   AC_MSG_RESULT([$COMPILE_64BIT_KMODULE])
 
-
 	   if test "${GCC}" = yes; then
 		COMPILE_KERNEL_GCC=yes
 		if test "$COMPILE_64BIT_KMODULE" = yes; then
-                	# use for 64 bit
-                	KCFLAGS="-m64"
-                	#KLDFLAGS="-melf64_sparc"
-                	KLDFLAGS="-64"
+  	        
+                        AC_MSG_CHECKING([if we can build a 64bit kernel module])
+		        
+                        case `$CC --version 2>/dev/null` in
+			[[12]].* | 3.0.*)
+				COMPILE_64BIT_KMODULE=no
+				COMPILE_KERNEL_GCC=no	
+				solaris_module=no;;
+			*)
+			       	# use for 64 bit
+				KCFLAGS="-m64"
+				#KLDFLAGS="-melf64_sparc"
+				KLDFLAGS="-64";;
+			esac	
+			
+			AC_MSG_RESULT([$COMPILE_64BIT_KMODULE])
+			
 		else
 			KCFLAGS=""
 			KLDFLAGS=""
