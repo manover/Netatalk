@@ -1,3 +1,9 @@
+Changes in 1.6.0
+================
+
+* FIX: pap looks at the STDOUT file descriptor to see if it's connected to
+       a tty, instead of STDIN.
+
 Changes in 1.6pre2
 ==================
 
