@@ -1,5 +1,5 @@
 Netatalk Frequently Asked Questions
-($Id: FAQ,v 1.9.2.2 2003-03-29 22:23:42 srittau Exp $)
+($Id: FAQ,v 1.9.2.3 2003-11-21 01:54:30 bfernhomberg Exp $)
 
 -----------------------------------------------------------------------------
 
@@ -21,8 +21,7 @@ Q11: I get a "socket: Invalid argument" error when trying to start netatalk
      under Linux. What is causing this?
 Q12: Netatalk works over Appletalk, but my IP connections are refused, even
      though I have enabled them in the configuration files.
-Q13: I'm having Quark Express file locking problems, is there information on
-     that?
+Q13: removed, deprecated
 Q14: I'm getting this error in Quark Express when trying to save a file to
      the server: 'Error Type -50'
 Q15: Does netatalk work with Mac OSX?
@@ -336,14 +335,7 @@ A:  If tcp_wrappers support is compiled into Netatalk, access has to be
       afpd:  127. xxx.xxx.xxx. (whatever other subnets)    
     
 
-Q13: I'm having Quark Express file locking problems, is there information on
-     that?
-
-A:  Yes, see the question regarding DID conflicts and the --enable-did= flag. 
-    Also, try using the --flock-locks flag. Enabling this code disabled the 
-    new byte locking feature. With FLOCK locks, the whole file would be locked. 
-    With byte locks, a byte range could be locked without locking the whole
-    file.
+Q13: (removed, deprecated)
 
 
 Q14: I'm getting this error in Quark Express when trying to save a file to
