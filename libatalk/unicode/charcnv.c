@@ -133,7 +133,7 @@ static const char *charset_name(charset_t ch)
 			strlcpy(macname, ret, sizeof(macname));
 		}
 		else
-			ret = unixname;
+			ret = macname;
 	}
 
 	if (!ret)
@@ -741,6 +741,7 @@ size_t utf8_decompose ( char * src, size_t inlen, char * dst, size_t outlen)
 	return charset_decompose ( CH_UTF8, src, inlen, dst, outlen);
 }
 
+#if 0
 static char  debugbuf[ MAXPATHLEN +1 ];
 char * debug_out ( char * seq, size_t len)
 {
@@ -761,6 +762,7 @@ char * debug_out ( char * seq, size_t len)
         q = debugbuf;
         return q;
 }
+#endif
 
 /* 
  * Convert from MB to UCS2 charset 
