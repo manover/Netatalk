@@ -1,5 +1,5 @@
 /*
- * $Id: printcap.c,v 1.9 2003-02-17 01:33:01 srittau Exp $
+ * $Id: printcap.c,v 1.9.6.1 2004-06-18 07:56:04 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -118,6 +118,10 @@ int getprent( cap, bp, bufsize )
 	for (;;) {
 		switch (c = getc(pfp)) {
 		case EOF:
+                        if (bp != tbuf) {
+				*bp = '\0';
+				return(1);
+			}
 			fclose(pfp);
 			pfp = NULL;
 			return(0);
@@ -347,7 +351,7 @@ tskip(bp)
 
 	while (*bp && *bp != ':')
 		bp++;
-	if (*bp == ':')
+	while (*bp && *bp == ':')
 		bp++;
 	return (bp);
 }
