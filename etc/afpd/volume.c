@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.2 2003-05-26 11:17:25 didg Exp $
+ * $Id: volume.c,v 1.51.2.3 2003-05-26 11:41:33 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1322,7 +1322,7 @@ void load_volumes(AFPObj *obj)
                 readvolfile(obj, &obj->options.uservol, ".applevolumes", 1, pwent) < 0 &&
                 obj->options.defaultvol.name != NULL ) {
             if (readvolfile(obj, &obj->options.defaultvol, NULL, 1, pwent) < 0)
-                creatvol(pwent->pw_dir, NULL, NULL);
+                creatvol(obj, pwent, pwent->pw_dir, NULL, NULL, 1);
         }
     }
     if ( obj->options.flags & OPTION_USERVOLFIRST ) {
@@ -1598,6 +1598,18 @@ static void closevol(struct vol	*vol)
     cnid_close(vol->v_db);
     vol->v_db = NULL;
 #endif /* CNID_DB */
+
+#ifdef AFP3x
+    if (vol->v_utf8toucs2 != (iconv_t)(-1))
+        iconv_close(vol->v_utf8toucs2);
+    if (vol->v_ucs2toutf8 != (iconv_t)(-1))
+        iconv_close(vol->v_ucs2toutf8);
+    if (vol->v_mactoutf8  != (iconv_t)(-1))
+        iconv_close(vol->v_mactoutf8);
+    if (vol->v_ucs2tomac  != (iconv_t)(-1))
+        iconv_close(vol->v_ucs2tomac);
+#endif
+
     if (vol->v_postexec) {
 	afprun(0, vol->v_postexec, NULL);
     }
@@ -1611,7 +1623,7 @@ void close_all_vol(void)
 {
     struct vol	*ovol;
     curdir = NULL;
-    for ( ovol = volumes; ovol; ovol = ovol->v_next ) {
+    for ( ovol = Volumes; ovol; ovol = ovol->v_next ) {
         if ( ovol->v_flags & AFPVOL_OPEN ) {
             ovol->v_flags &= ~AFPVOL_OPEN;
             closevol(ovol);
@@ -1647,24 +1659,8 @@ int		ibuflen, *rbuflen;
             curdir = ovol->v_dir;
         }
     }
-    dirfree( vol->v_root );
-    vol->v_dir = NULL;
-#ifdef CNID_DB
-    cnid_close(vol->v_db);
-    vol->v_db = NULL;
-#endif /* CNID_DB */
 
-#ifdef AFP3x
-    if (vol->v_utf8toucs2 != (iconv_t)(-1))
-        iconv_close(vol->v_utf8toucs2);
-    if (vol->v_ucs2toutf8 != (iconv_t)(-1))
-        iconv_close(vol->v_ucs2toutf8);
-    if (vol->v_mactoutf8  != (iconv_t)(-1))
-        iconv_close(vol->v_mactoutf8);    
-    if (vol->v_ucs2tomac  != (iconv_t)(-1))
-        iconv_close(vol->v_ucs2tomac);
-#endif        
-
+    closevol(vol);
     if (vol->v_deleted) {
 	showvol(vol->v_name);
 	volume_free(vol);
