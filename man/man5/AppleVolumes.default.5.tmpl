@@ -1,4 +1,4 @@
-.TH AppleVolumes.default 5 "06 September 2004" 2.0.1 Netatalk 
+.TH AppleVolumes.default 5 "03 January 2005" 2.0.2 Netatalk 
 .SH NAME
 AppleVolumes.default \- Configuration file used by afpd(8) to determine the shares made available through Appletalk
 .SH DESCRIPTION
@@ -354,6 +354,12 @@ Forces filename restrictions imposed by MS WinXX.
 \fIWarning\fR: This is \fINOT\fR
 recommened for volumes mainly used by Macs. Please make sure
 you fully understand this option before using it.
+.RS 
+\fBWarning\fR
+
+This option breaks direct saving to netatalk volumes from
+some applications, i.e. OfficeX.
+.RE
 .TP 
 noadouble
 Forces afpd to not create

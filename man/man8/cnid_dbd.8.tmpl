@@ -1,4 +1,4 @@
-.TH cnid_dbd 8 "2 Dec 2003" 2.0.1 Netatalk 
+.TH cnid_dbd 8 "2 Dec 2003" 2.0.2 Netatalk 
 .SH NAME
 cnid_dbd \- implement access to CNID databases through a dedicated daemon process
 .SH SYNOPSIS
@@ -148,6 +148,11 @@ process is expected to run, e.g. home directories.
 is the number of seconds of inactivity before an idle
 cnid_dbd exits. Default: 600. Set this to 0 to
 disable the timeout.
+.TP 
+\fIcheck\fR
+is a flag value. If set cnid_dbd will 
+automatically check the database indexes. Default: 0. Set this 
+to 1 to enable checking. 
 .SH "SEE ALSO"
 \fBcnid_metad\fR(8), \fBafpd\fR(8)
 
