@@ -1,5 +1,5 @@
 /*
- * $Id: queries.c,v 1.16.2.1 2003-09-03 20:40:50 didg Exp $
+ * $Id: queries.c,v 1.16.2.1.2.1 2004-06-09 01:25:54 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -50,8 +50,10 @@ int cq_font( struct papfile *, struct papfile * );
 int cq_feature( struct papfile *, struct papfile * );
 int cq_printer( struct papfile *, struct papfile * );
 int cq_rmjob( struct papfile *, struct papfile * );
+#ifndef HAVE_CUPS
 int cq_listq( struct papfile *, struct papfile * );
 int cq_rbilogin( struct papfile *, struct papfile * );
+#endif  /* HAVE_CUPS */
 
 
 
@@ -600,6 +602,8 @@ int cq_printer( in, out )
     }
 }
 
+#ifndef HAVE_CUPS
+
 static const char	*rmjobfailed = "Failed\n";
 static const char	*rmjobok = "Ok\n";
 
@@ -666,6 +670,7 @@ int cq_listq( in, out )
     CONSUME( in, linelength + crlflength );
     return( CH_DONE );
 }
+#endif /* HAVE_CUPS */
 
 
 /*
@@ -747,8 +752,10 @@ struct papd_comment	queries[] = {
     { "%%Login: UMICHKerberosIV", 0,			cq_k4login,	0 },
     { "%%?BeginUAMethodsQuery",	"%%?EndUAMethodsQuery:", cq_uameth, C_FULL },
 #endif /* KRB */
+#ifndef HAVE_CUPS
     { "%UMICHListQueue", 0,				cq_listq, C_FULL },
     { "%UMICHDeleteJob", 0,				cq_rmjob,	0 },
+#endif /* HAVE_CUPS */
     { "%%?BeginQuery: RBILogin ", "%%?EndQuery",	cq_rbilogin,	0 },
     { "%%?BeginQuery",		"%%?EndQuery",		cq_query,	0 },
     { "%%?BeginFeatureQuery",	"%%?EndFeatureQuery",	cq_feature,	0 },

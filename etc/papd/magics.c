@@ -1,5 +1,5 @@
 /*
- * $Id: magics.c,v 1.11 2003-02-17 01:34:35 srittau Exp $
+ * $Id: magics.c,v 1.11.6.1 2004-06-09 01:25:53 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -21,6 +21,8 @@
 #include "comment.h"
 #include "lp.h"
 
+static int state=0;
+
 int ps( infile, outfile, sat )
     struct papfile	*infile, *outfile;
     struct sockaddr_at	*sat;
@@ -30,6 +32,15 @@ int ps( infile, outfile, sat )
     struct papd_comment		*comment;
 
     for (;;) {
+        if ( infile->pf_state & PF_STW ) {
+		infile->pf_state &= ~PF_STW;
+		/* set up spool file */
+		if ( lp_open( outfile, sat ) < 0 && !state) {
+		    LOG(log_error, logtype_papd, "lp_open failed" );
+		    spoolerror( outfile, "Ignoring job." );
+		}
+		state = 1;
+	}	
 	if ( (comment = compeek()) ) {
 	    switch( (*comment->c_handler)( infile, outfile, sat )) {
 	    case CH_DONE :
@@ -41,7 +52,6 @@ int ps( infile, outfile, sat )
 	    default :
 		return( CH_ERROR );
 	    }
-
 	} else {
 	    switch ( markline( infile, &start, &linelength, &crlflength )) {
 	    case 0 :
@@ -69,7 +79,7 @@ int ps( infile, outfile, sat )
 	    }
 
 	    /* write to file */
-	    lp_write( start, linelength + crlflength );
+	    lp_write( infile, start, linelength + crlflength );
 	    CONSUME( infile, linelength + crlflength );
 	}
     }
@@ -127,13 +137,14 @@ int cm_psadobe( in, out, sat )
 	case -1 :
 	    return( CH_MORE );
 	}
-
 	if ( in->pf_state & PF_BOT ) {
 	    in->pf_state &= ~PF_BOT;
+#if 0
 	    if ( lp_open( out, sat ) < 0 ) {
 		LOG(log_error, logtype_papd, "lp_open failed" );
 		spoolerror( out, "Ignoring job." );
 	    }
+#endif
 	} else {
 	    if (( comment = commatch( start, start + linelength, headers )) != NULL ) {
 		compush( comment );
@@ -141,7 +152,7 @@ int cm_psadobe( in, out, sat )
 	    }
 	}
 
-	lp_write( start, linelength + crlflength );
+	lp_write( in, start, linelength + crlflength );
 	CONSUME( in, linelength + crlflength );
     }
 }
@@ -192,6 +203,7 @@ int cm_psswitch( in, out, sat )
     }
     return( CH_DONE );
 }
+
 
 struct papd_comment	magics[] = {
     { "%!PS-Adobe-3.0 Query",	0,			cm_psquery, C_FULL },

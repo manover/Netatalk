@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.28 2004-05-18 23:42:30 bfernhomberg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.29 2004-06-09 01:25:52 bfernhomberg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(etc/afpd/main.c)
@@ -545,6 +545,8 @@ AC_ARG_WITH(uams-path,
 		uams_path="${PKGCONFDIR}/uams"
 	]
 )
+
+NETATALK_AC_CUPS
 
 dnl --------------------------------------------------------------------------
 dnl FHS stuff has to be done last because it overrides other defaults
