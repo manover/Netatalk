@@ -2,7 +2,7 @@
 
 noinst_LTLIBRARIES = libutil.la
 
-INCLUDES = -I$(top_srcdir)/sys
+INCLUDES = -I$(top_srcdir)/include -I$(top_srcdir)/sys
 
 libutil_la_SOURCES = \
 	atalk_addr.c	\
