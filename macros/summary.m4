@@ -1,11 +1,15 @@
-dnl $Id: summary.m4,v 1.1.2.5 2004-06-24 00:43:58 bfernhomberg Exp $
+dnl $Id: summary.m4,v 1.1.2.5.2.1 2004-12-07 18:47:28 bfernhomberg Exp $
 dnl Autoconf macros, display configure summary
 
 AC_DEFUN([AC_NETATALK_CONFIG_SUMMARY], [
 
 	AC_MSG_RESULT([Configure summary:])
 	AC_MSG_RESULT([    Install style:])
-	AC_MSG_RESULT([         $sysv_style])
+	if test "x$sysv_style" != "x"; then
+		AC_MSG_RESULT([         $sysv_style])
+	else
+		AC_MSG_RESULT([         none])
+	fi
 	AC_MSG_RESULT([    AFP:])
 	AC_MSG_RESULT([         AFP 3.x calls activated: $afp3])
 	if test "x$afp3" = "xyes"; then
