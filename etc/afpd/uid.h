@@ -1,5 +1,5 @@
 /*
- * $Id: uid.h,v 1.4 2001-08-15 01:13:25 samnoble Exp $
+ * $Id: uid.h,v 1.4.2.1 2001-12-03 05:01:04 jmarcus Exp $
  * code: jeff@univrel.pr.uconn.edu
  */
 
@@ -13,8 +13,8 @@
 
 /* set up a structure for this */
 typedef struct uidgidset_t {
-	uid_t uid;
-	gid_t gid;
+    uid_t uid;
+    gid_t gid;
 } uidgidset;
 
 /* functions to save and restore uid/gid pairs */
