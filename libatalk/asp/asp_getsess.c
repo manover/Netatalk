@@ -1,5 +1,5 @@
 /*
- * $Id: asp_getsess.c,v 1.7.8.4 2004-07-01 01:53:21 bfernhomberg Exp $
+ * $Id: asp_getsess.c,v 1.7.8.5 2004-07-01 02:01:00 didg Exp $
  *
  * Copyright (c) 1990,1996 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -162,7 +162,8 @@ ASP asp_getsession(ASP asp, server_child *server_children,
       if ((sigaction(SIGALRM, &action, NULL) < 0) ||
 	  (setitimer(ITIMER_REAL, &timer, NULL) < 0)) {
 	free(asp_ac);
-	server_asp = asp_ac = NULL;
+	server_asp = NULL;
+	asp_ac = NULL;
 	return NULL;
       }
 
