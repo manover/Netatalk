@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.44.2.3.2.10 2004-02-14 15:47:19 didg Exp $
+ * $Id: auth.c,v 1.44.2.3.2.11 2004-05-04 02:53:53 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -787,6 +787,12 @@ int		ibuflen, *rbuflen;
 
     *rbuflen = 0;
     ibuf += 2;
+
+    /* check if password change is allowed, OS-X ignores the flag.
+     * we shouldn't trust the client on this anyway.
+     * not sure about the "right" error code, NOOP for now */ 
+    if (!(obj->options.passwdbits & PASSWD_SET))
+         return AFPERR_NOOP;
 
     /* make sure we can deal w/ this uam */
     len = (unsigned char) *ibuf++;
