@@ -102,7 +102,7 @@ static void smb_panic(const char *why)
 		extern unsigned int global_clobber_region_line;
 
 		if (global_clobber_region_function) {
-			DEBUG(0,("smb_panic: clobber_region() last called from [%s(%u)]\n",
+			DEBUG(0,("smb_panic: clobber_region() last called from [%s(%u)]",
 					 global_clobber_region_function,
 					 global_clobber_region_line));
 		} 

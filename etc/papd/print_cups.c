@@ -1,5 +1,5 @@
 /*
- * $Id: print_cups.c,v 1.1.2.1 2004-06-09 01:25:54 bfernhomberg Exp $
+ * $Id: print_cups.c,v 1.1.2.1.2.1 2005-01-11 23:00:40 didg Exp $
  *
  * Copyright 2004 Bjoern Fernhomberg.
  *
@@ -113,7 +113,7 @@ cups_printername_ok(char *name)         /* I - Name of printer */
 
         if ((http = httpConnect(cupsServer(), ippPort())) == NULL)
         {
-		LOG(log_error, logtype_papd, "Unable to connect to CUPS server %s - %s\n",
+		LOG(log_error, logtype_papd, "Unable to connect to CUPS server %s - %s",
                          cupsServer(), strerror(errno));
                 return (0);
         }
@@ -156,7 +156,7 @@ cups_printername_ok(char *name)         /* I - Name of printer */
 
         if ((response = cupsDoRequest(http, request, "/")) == NULL)
         {
-      		LOG(log_error, logtype_papd, "Unable to get printer status for %s - %s\n", name,
+      		LOG(log_error, logtype_papd, "Unable to get printer status for %s - %s", name,
                          ippErrorString(cupsLastError()));
                 httpClose(http);
                 return (0);
@@ -166,7 +166,7 @@ cups_printername_ok(char *name)         /* I - Name of printer */
 
         if (response->request.status.status_code >= IPP_OK_CONFLICT)
         {
-      		LOG(log_error, logtype_papd, "Unable to get printer status for %s - %s\n", name,
+      		LOG(log_error, logtype_papd, "Unable to get printer status for %s - %s", name,
                          ippErrorString(response->request.status.status_code));
                 ippDelete(response);
                 return (0);
@@ -218,7 +218,7 @@ cups_get_printer_status (struct printer *pr)
 
         if ((http = httpConnect(cupsServer(), ippPort())) == NULL)
         {
-		LOG(log_error, logtype_papd, "Unable to connect to CUPS server %s - %s\n",
+		LOG(log_error, logtype_papd, "Unable to connect to CUPS server %s - %s",
                          cupsServer(), strerror(errno));
                 return (0);
         }
@@ -268,7 +268,7 @@ cups_get_printer_status (struct printer *pr)
 
         if ((response = cupsDoRequest(http, request, "/")) == NULL)
         {
-      		LOG(log_error, logtype_papd, "Unable to get printer status for %s - %s\n", pr->p_printer,
+      		LOG(log_error, logtype_papd, "Unable to get printer status for %s - %s", pr->p_printer,
                          ippErrorString(cupsLastError()));
                 httpClose(http);
                 return (0);
@@ -276,7 +276,7 @@ cups_get_printer_status (struct printer *pr)
 
         if (response->request.status.status_code >= IPP_OK_CONFLICT)
         {
-      		LOG(log_error, logtype_papd, "Unable to get printer status for %s - %s\n", pr->p_printer,
+      		LOG(log_error, logtype_papd, "Unable to get printer status for %s - %s", pr->p_printer,
                          ippErrorString(response->request.status.status_code));
                 ippDelete(response);
                 httpClose(http);
@@ -357,7 +357,7 @@ int cups_print_job ( char * name, char *filename, char *job, char *username, cha
 	strlcat ( filepath , filename, sizeof(filepath));
 	
 	if ((jobid = cupsPrintFile( name, filepath, job, 0, options)) == 0)
-		LOG(log_error, logtype_papd, "Unable to print job '%s' (%s) to printer '%s' for user '%s' - CUPS error : '%s'\n", job, filepath, name, username, ippErrorString(cupsLastError()));
+		LOG(log_error, logtype_papd, "Unable to print job '%s' (%s) to printer '%s' for user '%s' - CUPS error : '%s'", job, filepath, name, username, ippErrorString(cupsLastError()));
 	else 
 		LOG(log_info, logtype_papd, "Job '%s' queued to printer '%s' with id '%d'", job, name, jobid);
 

@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_tcp.c,v 1.9.10.7 2004-05-04 15:38:26 didg Exp $
+ * $Id: dsi_tcp.c,v 1.9.10.7.2.1 2005-01-11 23:00:42 didg Exp $
  *
  * Copyright (c) 1997, 1998 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -335,8 +335,8 @@ int dsi_tcp_init(DSI *dsi, const char *hostname, const char *address,
 	       inet_ntoa(dsi->server.sin_addr), ifr.ifr_name);
 	  goto iflist_done;
       }
-      LOG(log_info, logtype_default, "dsi_tcp (Chooser will not select afp/tcp)\n\
-Check to make sure %s is in /etc/hosts and the correct domain is in\n\
+      LOG(log_info, logtype_default, "dsi_tcp (Chooser will not select afp/tcp) \
+Check to make sure %s is in /etc/hosts and the correct domain is in \
 /etc/resolv.conf: %s", hostname, strerror(errno));
 
 iflist_done:
