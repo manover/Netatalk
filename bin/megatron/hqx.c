@@ -1,5 +1,5 @@
 /*
- * $Id: hqx.c,v 1.12 2002-04-29 01:52:49 morgana Exp $
+ * $Id: hqx.c,v 1.12.2.1 2003-08-09 14:35:25 srittau Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -28,6 +28,7 @@
 #include <netatalk/endian.h>
 
 #include "megatron.h"
+#include "nad.h"
 #include "hqx.h"
 
 #define HEXOUTPUT	0

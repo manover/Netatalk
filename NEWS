@@ -4,6 +4,7 @@ Changes in 1.6.4
 * UPD: afpd.8: Updated the option documentation. [Thomas Kaiser, Sebastian
   Rittau]
 * FIX: megatron: Fixed an uninitialized variable. [Olaf Hering]
+* FIX: Compilation issues. [Olaf Hering, Sebastian Rittau]
 
 Changes in 1.6.3
 ================
