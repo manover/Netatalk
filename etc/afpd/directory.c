@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.7 2004-02-06 13:39:51 bfernhomberg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.8 2004-02-09 23:49:31 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1931,8 +1931,10 @@ setdirparam_done:
         if (path->st_valid && !path->st_errno) {
             struct stat *st = &path->st;
 
-            ad_setid(&ad,(vol->v_flags & AFPVOL_NODEV)?0:st->st_dev, 
+            if (curdir->d_parent) {
+                ad_setid(&ad,(vol->v_flags & AFPVOL_NODEV)?0:st->st_dev, 
                          st->st_ino,  curdir->d_did, curdir->d_parent->d_did, vol->v_stamp);
+            }
         }
     
         ad_flush( &ad, ADFLAGS_HF );
