@@ -1,34 +1,28 @@
-.TH APPLE_CP 1 "15 Oct 2001" "Netatalk 1.5"
+.TH apple_cp 1  15\ Oct\ 2001 "Netatalk 2.0-alpha1" 
 .SH NAME
 apple_cp \- Do an apple copy, copying the resource fork as well
 .SH SYNOPSIS
-.BR :BINDIR:/apple_cp
-\fISOURCE DEST\fR
-.br
-.BR :BINDIR:/apple_cp
-\fISOURCE\fR... \fIDIRECTORY\fR
-
+\fI:BINDIR:/apple_cp\fR \fISOURCE
+DEST\fR \fI:BINDIR:/apple_cp\fR \fISOURCE\fR... \fIDIRECTORY\fR
 .SH DESCRIPTION
-.BR apple_cp
-is a perl script to copy SOURCE to DEST or multiple SOURCE(s) to
-DIRECTORY. It also copies the resource forks to the .AppleDouble
-directory for DEST or DIRECTORY. If the .AppleDouble directory doesn't
-exist for DEST or DIRECTORY it will create it.
-
+\fIapple_cp\fR is a perl script to copy
+SOURCE to DEST or multiple SOURCE(s) to DIRECTORY. It also copies the
+resource forks to the .AppleDouble directory for DEST or DIRECTORY. If the
+\&.AppleDouble directory doesn't exist for DEST or DIRECTORY it will
+create it.
 .SH EXAMPLES
+\fI:BINDIR:/apple_cp\fR test.text
+/target/directory/
+.PP
+\fI:BINDIR:/apple_cp\fR test.text
+/target/directory/test2.text
+.PP
+\fI:BINDIR:/apple_cp\fR test.text
+testing.text /target/directory/
+.SH REPORTING\ BUGS
+Report bugs to the Netatalk\-devel list
+<netatalk\-devel@lists.sourceforge.net>.
+.SH SEE\ ALSO
+\fBapple_mv\fR(1),
+\fBapple_rm\fR(1).
 
-.BR :BINDIR:/apple_cp
-test.text /target/directory/
-
-.BR :BINDIR:/apple_cp
-test.text /target/directory/test2.text
-
-.BR :BINDIR:/apple_cp
-test.text testing.text /target/directory/
-
-.SH REPORTING BUGS
-Report bugs to the Netatalk-devel list <netatalk-devel@lists.sourceforge.net>.
-
-.SH SEE ALSO
-.BR apple_mv (1),
-.BR apple_rm (1).

@@ -1,198 +1,136 @@
-.TH CNID_DBD 8 "2 Dez 2003" ":NETATALK_VERSION:"
-
+.TH cnid_dbd 8  2\ Dec\ 2003 "Netatalk 2.0-alpha1" 
 .SH NAME
-cnid_dbd \- implement access to CNID databases through a dedicated daemon process
+cnid_dbd \- implement access to CNID databases through a dedicated daemon  process
 .SH SYNOPSIS
-.B cnid_dbd 
-.BI dbdir
+\fBcnid_dbd\fR \fBdbdir\fR \fBctrlfd\fR \fBclntfd\fR 
 .SH DESCRIPTION
-.B cnid_dbd
-provides an interface for storage and retrieval of catalog node IDs
-(CNIDs) and related information to the
-.BR afpd
-daemon. CNIDs are a component of Macintosh based file
-systems with semantics that map not easily onto Unix file systems.
-This makes separate storage in a database necessary. 
-.B cnid_dbd
-is part of the 
-.BR "CNID backend"
-framework of
-.BR afpd
-and implements the
-.B dbd
-backend.
-.LP
-.B cnid_dbd
-is never started via the command line or system startup scripts but only by the
-.BR cnid_metad
-daemon. There is at most one instance of
-.B cnid_dbd
-per netatalk volume. 
-.LP
-.B cnid_dbd
-uses the 
-.BR "Berkleley DB"
-database library and optionally supports
-transactionally protected updates if the netatalk package is compiled
-with the appropriate options. Using the
-.B dbd
-backend without transactions will protect the CNID database against unexpected crashes of the 
-.BR afpd
-daemon.
-Using the
-.B dbd
-backend with transactions will avoid corruption of the CNID database even if the 
-system crashes unexpectedly.
-.LP 
-.B cnid_dbd
-uses the same on-disk database format as the 
-.B cdb
-backend. It is therefore possible to switch between the two backends as necessary.
-.LP 
-.B cnid_dbd
-inherits the effective userid and groupid from
-.BR cnid_metad
-on startup, which is normally caused by 
-.BR afpd
-serving a netatalk volume to a client. It changes to the
-.BR "Berkleley DB"
-database home directory 
-.I dbdir
-that is associated with the volume, opens the database
-and starts serving requests. Subsequent instances of
-.BR afpd
-that want to access the same volume are redirected to the running
-.B cnid_dbd
-by 
-.BR cnid_metad.
-.LP 
-.B cnid_dbd
-can be configured to run forever or to exit after a period of inactivity. If 
-.B cnid_dbd
-receives a TERM or an INT signal it will exit cleanly after
-flushing dirty database buffers to disk and closing 
-.BR "Berkleley DB"
-database environments. It is safe to terminate
-.B cnid_dbd
+cnid_dbd provides an interface for storage and
+retrieval of catalog node IDs (CNIDs) and related information to the
+\fIafpd\fR daemon. CNIDs are a component of
+Macintosh based file systems with semantics that map not easily onto Unix
+file systems. This makes separate storage in a database necessary.
+cnid_dbd is part of the \fICNID
+backend\fR framework of \fIafpd\fR and
+implements the \fIdbd\fR backend.
+.PP
+cnid_dbd is never started via the command line or
+system startup scripts but only by the \fIcnid_metad\fR
+daemon. There is at most one instance of cnid_dbd per
+netatalk volume.
+.PP
+cnid_dbd uses the \fIBerkleley
+DB\fR database library and optionally supports transactionally
+protected updates if the netatalk package is compiled with the appropriate
+options. Using the \fIdbd\fR backend without
+transactions will protect the CNID database against unexpected crashes of
+the \fIafpd\fR daemon. Using the \fIdbd\fR backend with transactions will avoid corruption
+of the CNID database even if the system crashes unexpectedly.
+.PP
+cnid_dbd uses the same on\-disk database format as
+the \fIcdb\fR backend. It is therefore possible
+to switch between the two backends as necessary.
+.PP
+cnid_dbd inherits the effective userid and
+groupid from \fIcnid_metad\fR on startup, which
+is normally caused by \fIafpd\fR serving a
+netatalk volume to a client. It changes to the \fIBerkleley
+DB\fR database home directory \fIdbdir\fR
+that is associated with the volume, opens the database and starts serving
+requests using the filedescriptor \fIclntfd\fR.
+Subsequent instances of \fIafpd\fR that
+want to access the same volume are redirected to the running
+cnid_dbd by \fIcnid_metad\fR
+via the filedescriptor \fIctrlfd\fR.
+.PP
+cnid_dbd can be configured to run forever or to
+exit after a period of inactivity. If cnid_dbd receives
+a TERM or an INT signal it will exit cleanly after flushing dirty database
+buffers to disk and closing \fIBerkleley DB\fR
+database environments. It is safe to terminate cnid_dbd
 this way, it will be restarted when necessary. Other signals are not
 handled and will cause an immediate exit, possibly leaving the CNID
 database in an inconsistent state (no transactions) or losing recent
 updates during recovery (transactions).
-
+.PP
+If transactions are used the \fIBerkleley DB\fR
+database subsystem will create files named log.xxxxxxxxxx in the 
+database home directory \fIdbdir\fR, where xxxxxxxxxx 
+is a monotonically increasing integer. These files contain information to 
+replay database changes and are not automatically removed. Please see the sections 
+\fIDatabase and log file archival\fR, \fI
+Log file removal\fR and the documentation of the \fI
+db_archive\fR command line utility in the Berkeley DB Tutorial and Reference
+for information when and how it is safe to remove these files.
 .SH CONFIGURATION
-.B cnid_dbd
-reads configuration information from the file 
-.I db_param
-in the database directory
-.I dbdir
-on startup. If the file does not exist or a parameter is not listed, suitable default
-values are used.  The format for a single parameter
-is the parameter name, followed by one or more spaces, followed by the
-parameter value, followed by a newline. The following parameters are
-currently recognized:
-.TP
-.BI cachesize
-Determines the size of the Berkeley DB cache in
-kilobytes. Default: 1024. Each 
-.B cnid_dbd 
-process grabs that much memory on top of its
-normal memory footprint. It can be used to tune database
-performance. The 
-.BI db_stat 
-utility with the 
-.B "-m" 
-option that comes with
-Berkely DB can help you determine wether you need to change this
-value. The default is pretty conservative so that a large percentage
-of requests should be satisfied from the cache directly. If memory is
-not a bottleneck on your system you might want to leave it at that
-value. The 
-.B "Berkeley DB Tutorial and Reference Guide" 
-has a section
-.B "Selecting a cache size" 
-that gives more detailed information.
-.TP
-.BI "nosync" 
-This flag is only valid if transactional support is enabled. If it is
-set to 1, transactional changes to the database are not synchronously
-written to disk when the transaction completes. This will increase
-performance considerably at the risk of recent changes getting
-lost in case of a crash. The database will still be consistent,
-though. See 
-.B "Transaction Throughput"
-in the Berkeley DB Tutorial for
-more information. Default: 0.
+cnid_dbd reads configuration information from the
+file \fIdb_param\fR in the database directory
+\fIdbdir\fR on startup. If the file does not
+exist or a parameter is not listed, suitable default values are used. The
+format for a single parameter is the parameter name, followed by one or
+more spaces, followed by the parameter value, followed by a newline. The
+following parameters are currently recognized:
 .TP 
-.BI "flush_frequency" 
-.TP
-.BI "flush_interval" 
-.I "flush_frequency"
-(Default: 100)
-and 
-.I "flush_interval"
-(Default: 30) 
-control how often changes to
-the database are written to the underlying database files if no
-transactions are used or how often the transaction system is
-checkpointed for transactions. Both of these operations are
-performed if either i) more than 
-.I flush_frequency 
-requests have been
-received or ii) more than 
-.I flush_interval 
-seconds have elapsed since
-the last save/checkpoint. If you use transactions with 
-.I nosync 
-set to
-zero these parameters only influence how long recovery takes after
-a crash, there should never be any lost data. If 
-.I nosync 
-is 1, changes
-might be lost, but only since the last checkpoint. Be careful to check
-your harddisk configuration for on disk cache settings. Many IDE disks
-just cache writes as the default behaviour, so even flushing database
-files to disk will not have the desired effect.
-.TP
-.BI fd_table_size 
-is the maximum number of connections (filedescriptors)
-that can be open for 
-.BI afpd 
-client processes in 
-.B cnid_dbd.
-Default: 16. 
-If this number
-is exceeded, one of the existing connections is closed and reused. The
-affected 
-.BI afpd 
-process will transparently reconnect later, which causes
-slight overhead. On the other hand, setting this parameter too high
-could affect performance in 
-.B cnid_dbd 
-since all descriptors have to be
-checked in a 
-.BI select() 
-system call, or worse, you might exceed the per
-process limit of open file descriptors on your system. It is safe to
-set the value to 1 on volumes where only one 
-.BI afpd 
-client process
-is expected to run, e.g. home directories.
-.TP
-.BI "idle_timeout" 
+\fIcachesize\fR
+Determines the size of the Berkeley DB cache in kilobytes.
+Default: 1024. Each cnid_dbd process grabs that
+much memory on top of its normal memory footprint. It can be used to
+tune database performance. The \fIdb_stat\fR
+utility with the \fB\-m\fR option that comes with Berkely
+DB can help you determine wether you need to change this value. The
+default is pretty conservative so that a large percentage of
+requests should be satisfied from the cache directly. If memory is
+not a bottleneck on your system you might want to leave it at that
+value. The \fIBerkeley DB Tutorial and Reference
+Guide\fR has a section \fISelecting a cache
+size\fR that gives more detailed information.
+.TP 
+\fInosync\fR
+This flag is only valid if transactional support is enabled.
+If it is set to 1, transactional changes to the database are not
+synchronously written to disk when the transaction completes. This
+will increase performance considerably at the risk of recent changes
+getting lost in case of a crash. The database will still be
+consistent, though. See \fITransaction Throughput\fR
+in the Berkeley DB Tutorial for more information. Default: 0.
+.TP 
+\fIflush_frequency\fR, \fIflush_interval\fR
+\fIflush_frequency\fR (Default: 100)
+and \fIflush_interval\fR (Default: 30)
+control how often changes to the database are written to the
+underlying database files if no transactions are used or how often
+the transaction system is checkpointed for transactions. Both of
+these operations are performed if either i) more than \fIflush_frequency\fR requests have been received or
+ii) more than \fIflush_interval\fR seconds
+have elapsed since the last save/checkpoint. If you use transactions
+with \fInosync\fR set to zero these
+parameters only influence how long recovery takes after a crash,
+there should never be any lost data. If \fInosync\fR
+is 1, changes might be lost, but only since the last checkpoint. Be
+careful to check your harddisk configuration for on disk cache
+settings. Many IDE disks just cache writes as the default behaviour,
+so even flushing database files to disk will not have the desired
+effect.
+.TP 
+\fIfd_table_size\fR
+is the maximum number of connections (filedescriptors) that
+can be open for \fIafpd\fR client processes
+in \fIcnid_dbd.\fR Default: 16. If this
+number is exceeded, one of the existing connections is closed and
+reused. The affected \fIafpd\fR process
+will transparently reconnect later, which causes slight overhead. On
+the other hand, setting this parameter too high could affect
+performance in cnid_dbd since all descriptors
+have to be checked in a select() system call,
+or worse, you might exceed the per process limit of open file
+descriptors on your system. It is safe to set the value to 1 on
+volumes where only one \fIafpd\fR client
+process is expected to run, e.g. home directories.
+.TP 
+\fIidle_timeout\fR
 is the number of seconds of inactivity before an idle
-.B cnid_dbd 
-exits. Default: 600. Set this to 0 to disable the timeout. 
-
-
-.SH SEE ALSO
-.BR cnid_metad (1),
-.BR afpd (8)
-
-
-
-
-
-
-
-
+cnid_dbd exits. Default: 600. Set this to 0 to
+disable the timeout.
+.SH SEE\ ALSO
+\fBcnid_metad\fR(1),
+\fBafpd\fR(8)
 
