@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_metad.c,v 1.1.4.6 2003-11-25 13:28:54 lenneis Exp $
+ * $Id: cnid_metad.c,v 1.1.4.7 2003-12-01 22:23:12 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -97,6 +97,9 @@ static int rqstfd;
 
 #define MAXSPAWN   3                   /* Max times respawned in.. */
 #define TESTTIME   20                  /* this much seconds */
+
+#define DEFAULTHOST  "localhost"
+#define DEFAULTPORT  4700
 
 struct server {
     char  *name;
@@ -326,9 +329,9 @@ int main(int argc, char *argv[])
     int   len;
     pid_t pid;
     int   status;
-    char  *dbdpn = NULL;
-    char  *host = NULL;
-    int   port = 0;
+    char  *dbdpn = _PATH_CNID_DBD;
+    char  *host = DEFAULTHOST;
+    int   port = DEFAULTPORT;
     struct db_param *dbp;
     int    i;
     int    cc;
@@ -372,7 +375,7 @@ int main(int argc, char *argv[])
         }
     }
     
-    if (err || !host || !port || !dbdpn) {
+    if (err) {
         LOG(log_error, logtype_cnid, "main: bad arguments");
         exit(1);
     }
