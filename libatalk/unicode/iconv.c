@@ -70,7 +70,7 @@
  **/
 #define CHARSET_WIDECHAR    32
 
-#ifdef WITH_LIBICONV
+#if defined(WITH_LIBICONV) && defined(HAVE_UCS2INTERNAL)
 #define UCS2ICONV "UCS-2-INTERNAL"
 #else
 #if BYTE_ORDER==LITTLE_ENDIAN
