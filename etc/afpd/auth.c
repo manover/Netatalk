@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.44.2.3.2.13 2004-06-15 00:35:06 bfernhomberg Exp $
+ * $Id: auth.c,v 1.44.2.3.2.14 2004-06-18 07:58:20 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -801,7 +801,7 @@ int		ibuflen, *rbuflen;
         return send_reply(obj, AFPERR_NOTAUTH );
     }
 
-    ibuf += 2;
+    ibuf += 2; ibuflen -= 2;
     err = afp_uam->u.uam_login.logincont(obj, &pwd, ibuf, ibuflen,
                                          rbuf, rbuflen);
     if (!pwd || ( err != AFP_OK && err != AFPERR_PWDEXPR))
