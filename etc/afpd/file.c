@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.28 2004-06-15 22:53:54 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.29 2004-09-02 12:31:55 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1393,6 +1393,11 @@ char	*src, *dst, *newname;
         goto done;
     }
 
+    if (ad_hfileno(&ads) == -1) {
+        /* no resource fork, don't create one for dst file */
+        adflags &= ~ADFLAGS_HF;
+    }
+
     if (ad_open(dst , adflags | noadouble, O_RDWR|O_CREAT|O_EXCL, 0666, &add) < 0) {
         ret_err = errno;
         ad_close( &ads, adflags );
@@ -1436,13 +1441,15 @@ char	*src, *dst, *newname;
     if (ret_err) {
         deletefile(d_vol, dst, 0);
     }
-
-    /* set dest modification date to src date */
-    if (!stat(src, &st)) {
+    else if (!stat(src, &st)) {
+        /* set dest modification date to src date */
         struct utimbuf	ut;
 
     	ut.actime = ut.modtime = st.st_mtime;
     	utime(dst, &ut);
+    	/* FIXME netatalk doesn't use resource fork file date
+    	 * but maybe we should set its modtime too.
+    	*/
     }
 
 #ifdef DEBUG
