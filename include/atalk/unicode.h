@@ -81,7 +81,8 @@ struct charset_functions {
 extern atalk_iconv_t 	atalk_iconv_open __P((const char *, const char *));
 extern size_t 		atalk_iconv __P((atalk_iconv_t, const char **, size_t *, char **, size_t *));
 extern int 		atalk_iconv_close __P((atalk_iconv_t));
-extern struct charset_functions *find_charset_functions(const char *name);
+extern struct charset_functions *find_charset_functions __P((const char *));
+extern int 		atalk_register_charset __P((struct charset_functions *));
 
 /* from util_unistr.c */
 extern ucs2_t 	toupper_w  __P((ucs2_t));
