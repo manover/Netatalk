@@ -1,11 +1,10 @@
-dnl $Id: db3-check.m4,v 1.11.6.8 2004-06-28 02:22:54 didg Exp $
+dnl $Id: db3-check.m4,v 1.11.6.9 2004-08-11 03:01:11 bfernhomberg Exp $
 dnl Autoconf macros to check for the Berkeley DB library
 
 
 AC_DEFUN([NETATALK_BDB_LINK_TRY],
 [if test $atalk_cv_lib_db = no ; then
-	AC_CACHE_CHECK([for Berkeley DB link (]ifelse($2,,default,$2)[)],[$1],
-[
+	AC_MSG_CHECKING([for Berkeley DB link (]ifelse($2,,default,$2)[)])
 	atalk_DB_LIB=ifelse($2,,-ldb,$2)
 	atalk_LIBS=$LIBS
 	LIBS="$atalk_DB_LIB $LIBS"
@@ -20,9 +19,8 @@ AC_DEFUN([NETATALK_BDB_LINK_TRY],
 	return (0);
 ],[$1=yes],[$1=no])
 
+	AC_MSG_RESULT([$$1])
 	LIBS="$atalk_LIBS"
-])
-
 	if test $$1 = yes ; then
 		atalk_cv_lib_db=ifelse($2,,-ldb,$2)
 	fi
@@ -80,7 +78,7 @@ int main(void) {
 AC_DEFUN([NETATALK_BDB_HEADER],
 [
 	savedcflags="$CFLAGS"
-	CPPFLAGS="$CFLAGS -I$1"
+	CFLAGS="-I$1 $CFLAGS"
 	dnl check for header version
         AC_MSG_CHECKING(ifelse($1,,default,$1)[/db.h version >= ${DB_MAJOR_REQ}.${DB_MINOR_REQ}.${DB_PATCH_REQ}])
         AC_TRY_RUN([
@@ -110,7 +108,7 @@ int main(void) {
         else
                 AC_MSG_RESULT([yes])
         fi
-	CPPFLAGS="$savedcflags"
+	CFLAGS="$savedcflags"
 ])
 
 
@@ -136,7 +134,7 @@ AC_DEFUN([AC_PATH_BDB],
 	trybdbdir=""
 	dobdbsearch=yes
 	bdb_search_dirs="/usr/local/include /usr/include"
-	search_subdirs="/db4.2 /db4.1 /db4 /"
+	search_subdirs="/db4.2 /db42 /db4.1 /db41 /db4 /"
 
 dnl required BDB version
 	DB_MAJOR_REQ=4
@@ -182,13 +180,15 @@ dnl define the required BDB version
 			NETATALK_BDB_HEADER([${bdbdir}${subdir}])
 			if test ${atalk_cv_bdbheader} != "no"; then
 			
-			  bdblibdir="`echo $bdbdir | sed 's/\/include\/db4\.*.*//'`"
+dnl			  bdblibdir="`echo $bdbdir | sed 's/\/include\/db4\.*.*//'`"
+			  bdblibdir="`echo $bdbdir | sed 's/\/include\/db4.*//'`"
 			  bdblibdir="`echo $bdblibdir | sed 's/\/include$//'`"
 			  bdblibdir="${bdblibdir}/${atalk_libname}"
-			  bdbbindir="`echo $bdbdir | sed 's/include\/db4\.*.*/bin/'`"
+dnl			  bdbbindir="`echo $bdbdir | sed 's/include\/db4\.*.*/bin/'`"
+			  bdbbindir="`echo $bdbdir | sed 's/\/include\/db4.*/bin/'`"
 			  bdbbindir="`echo $bdbbindir | sed 's/include$/bin/'`"
 
-			  CPPFLAGS="$CFLAGS -I${bdbdir}${subdir}"
+			  CPPFLAGS="-I${bdbdir}${subdir} $CFLAGS"
 			  CFLAGS=""
 			  LDFLAGS="-L$bdblibdir $LDFLAGS"
 			  NETATALK_BERKELEY_LINK
