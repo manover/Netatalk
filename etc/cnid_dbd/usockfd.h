@@ -1,5 +1,5 @@
 /*
- * $Id: usockfd.h,v 1.1.4.4 2004-02-07 19:46:08 didg Exp $
+ * $Id: usockfd.h,v 1.1.4.5 2004-09-06 07:19:22 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -14,7 +14,7 @@
 
 
 extern int      usockfd_create  __P((char *, mode_t, int));
-extern int      tsockfd_create  __P((char *, int, int));
+extern int      tsockfd_create  __P((char *, u_int16_t, int));
 extern int      usockfd_check   __P((int, unsigned long));
 
 #ifndef OSSH_ALIGNBYTES

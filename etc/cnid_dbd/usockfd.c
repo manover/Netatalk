@@ -1,5 +1,5 @@
 /*
- * $Id: usockfd.c,v 1.1.4.3 2004-01-09 21:05:50 lenneis Exp $
+ * $Id: usockfd.c,v 1.1.4.4 2004-09-06 07:19:21 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -79,7 +79,7 @@ int usockfd_create(char *usock_fn, mode_t mode, int backlog)
 /* ---------------
    create a tcp socket (should share dsi stuff)
 */
-int tsockfd_create(char *host, int ipport, int backlog)
+int tsockfd_create(char *host, u_int16_t ipport, int backlog)
 {
     int sockfd;
     struct sockaddr_in server;

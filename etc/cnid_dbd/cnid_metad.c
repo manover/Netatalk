@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_metad.c,v 1.1.4.14 2004-03-21 23:04:07 lenneis Exp $
+ * $Id: cnid_metad.c,v 1.1.4.15 2004-09-06 07:19:21 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -371,7 +371,7 @@ int main(int argc, char *argv[])
     int   status;
     char  *dbdpn = _PATH_CNID_DBD;
     char  *host = DEFAULTHOST;
-    int   port = DEFAULTPORT;
+    u_int16_t   port = DEFAULTPORT;
     struct db_param *dbp;
     int    i;
     int    cc;
