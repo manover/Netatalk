@@ -40,6 +40,7 @@ AC_DEFUN([AC_NETATALK_CONFIG_SUMMARY], [
 	if test x"$netatalk_cv_linux_sendfile" != x; then
 		AC_MSG_RESULT([         Linux sendfile support: $netatalk_cv_linux_sendfile])
 	fi
+	AC_MSG_RESULT([         quota support:          $netatalk_cv_quotasupport])
 	AC_MSG_RESULT([         admin group support:    $netatalk_cv_admin_group])
 	AC_MSG_RESULT([         valid shell check:      $netatalk_cv_use_shellcheck])
 	AC_MSG_RESULT([         cracklib support:       $netatalk_cv_with_cracklib])
@@ -50,7 +51,7 @@ AC_DEFUN([AC_NETATALK_CONFIG_SUMMARY], [
 		AC_MSG_RESULT([])
 		AC_MSG_WARN([ PAM support was configured for your system, but the netatalk PAM configuration file])
 		AC_MSG_WARN([ cannot be installed. Please install the config/netatalk.pamd file manually.])
-		AC_MSG_WARN([ If you're running solaris you'll have to edit /etc/pam.conf to get PAM working.])
+		AC_MSG_WARN([ If you're running Solaris or BSD you'll have to edit /etc/pam.conf to get PAM working.])
 		AC_MSG_WARN([ You can also re-run configure and specify --without-pam to disable PAM support.])
 	fi
 

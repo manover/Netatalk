@@ -1,5 +1,5 @@
 /*
- * $Id: nfsquota.c,v 1.10.8.1 2003-10-30 05:57:44 bfernhomberg Exp $
+ * $Id: nfsquota.c,v 1.10.8.2 2004-01-15 08:12:57 bfernhomberg Exp $
  *
  * parts of this are lifted from the bsd quota program and are
  * therefore under the following copyright:
@@ -18,8 +18,8 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#ifndef NO_QUOTA_SUPPORT
 #include <stdio.h>
-
 /* STDC check */
 #if STDC_HEADERS
 #include <string.h>
@@ -55,7 +55,6 @@ char *strchr (), *strrchr ();
 
 #include "unix.h"
 
-#ifndef NO_QUOTA_SUPPORT
 /* lifted (with modifications) from the bsd quota program */
 static int
 callaurpc(vol, prognum, versnum, procnum, inproc, in, outproc, out)

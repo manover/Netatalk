@@ -1,5 +1,5 @@
 /*
- * $Id: quota.c,v 1.22.8.5 2003-10-30 05:57:44 bfernhomberg Exp $
+ * $Id: quota.c,v 1.22.8.6 2004-01-15 08:12:57 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -9,6 +9,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#ifndef NO_QUOTA_SUPPORT
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -49,7 +50,6 @@ char *strchr (), *strrchr ();
 #define WANT_USER_QUOTA 0
 #define WANT_GROUP_QUOTA 1
 
-#ifndef NO_QUOTA_SUPPORT
 #ifdef NEED_QUOTACTL_WRAPPER
 int quotactl(int cmd, const char *special, int id, caddr_t addr)
 {
