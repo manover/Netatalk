@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.31.2.11 2005-02-12 11:22:04 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.31.2.12 2005-03-11 17:36:20 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -75,6 +75,19 @@ const u_char ufinderi[ADEDLEN_FINDERI] = {
                               0, 0, 0, 0, 0, 0, 0, 0
                           };
 
+static const u_char old_ufinderi[] = {
+                              'T', 'E', 'X', 'T', 'U', 'N', 'I', 'X'
+                          };
+
+/* ---------------------- 
+*/
+static int default_type(void *finder) 
+{
+    if (!memcmp(finder, ufinderi, 8) || !memcmp(finder, old_ufinderi, 8))
+        return 1;
+    return 0;
+}
+
 /* FIXME path : unix or mac name ? (for now it's unix name ) */
 void *get_finderinfo(const char *upath, struct adouble *adp, void *data)
 {
@@ -88,7 +101,7 @@ void *get_finderinfo(const char *upath, struct adouble *adp, void *data)
     if (ad_finder) {
         memcpy(data, ad_finder, ADEDLEN_FINDERI);
         /* default type ? */
-        if (!memcmp(ad_finder, ufinderi, 8))
+        if (default_type(ad_finder)) 
             chk_ext = 1;
     }
     else {
@@ -922,7 +935,7 @@ int setfilparams(struct vol *vol,
             ad_setdate(adp, AD_DATE_BACKUP, bdate);
             break;
         case FILPBIT_FINFO :
-            if (!memcmp( ad_entry( adp, ADEID_FINDERI ), ufinderi, 8 )
+            if (default_type( ad_entry( adp, ADEID_FINDERI ))
                     && ( 
                      ((em = getextmap( path->m_name )) &&
                       !memcmp(finder_buf, em->em_type, sizeof( em->em_type )) &&
