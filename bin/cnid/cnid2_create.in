@@ -3,10 +3,10 @@
 #
 # Upgrade version 1 CNID databases to version 2
 #
-# $Id: cnid2_create.in,v 1.1.2.3 2004-01-10 08:49:56 bfernhomberg Exp $
+# $Id: cnid2_create.in,v 1.1.2.4 2004-01-11 22:38:37 lenneis Exp $
 #
 # Copyright (C) Joerg Lenneis 2003
-# All Rights Reserved.  See COPYRIGHT.
+# All Rights Reserved.  See COPYING.
 #
 #
 

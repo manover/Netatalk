@@ -1,5 +1,6 @@
 Makefile
 Makefile.in
+cnid2_create
 cnid_didname_verify
 cnid_maint
 .deps

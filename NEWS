@@ -1,3 +1,82 @@
+Changes in 2.0-alpha1
+=====================
+
+* NEW: afpd: We now support AFP 3.x, which features long filenames and 
+       large file support
+* NEW: CNID handling completely reworked. We now use per Volume configurable
+       CNID backends.
+* NEW: Two new daemons, cnid_metad and cnid_dbd to implement the dbd CNID backend.
+       Using Berkeley DB transactions with the CNID database should be safe now.
+* NEW: The on disk format of the CNID database has changed. We now support 8 byte
+       device and inode numbers and an additinal type field that should make 
+       detection of file/directory changes outside of afpd more robust. 
+       Changed from HASH to BTREE access which speeds things up in certain cases 
+       and reduces database file size.
+* NEW: Long file name mangling is now implemented using the CNID ID, so no database is 
+       required to map names to mangled names. This is the same method Mac OS X uses. 
+* NEW: New format (version 2) for Metadata in AppleDouble files. We record device and  
+       inode of the underlying file as well as the CNID. This can be used for recovery
+       and speeds up access to the CNID.
+* NEW: The old NLS codepage system has been removed. It was replaced by an iconv 
+       based conversion system, which provides much more flexibility.
+* NEW: You can safely use extended characters in volume names and for SIGUSR2 messaging.
+* NEW: The default volume encoding is UTF-8.
+* NEW: All documentation is now generated using DocBook. New or completely reworked 
+       sections about installing, setting up and upgrading Netatalk replace various 
+       README files in the doc directory.
+* FIX: Protect afpd better against unexpected signals during updates of the CNID
+       database with the cdb backend. This makes database corruption less likely.   
+* FIX: All manpages have been reviewed and should now be up to date.
+* FIX: Tons of bug fixes since 1.6.4. Please consults the CVS change log for details.
+
+Changes in 1.6.4
+================
+
+* NEW: afpd: Using the mswindows option now implicitly specifies usedots.
+  [Sam Noble]
+* UPD: afpd.8: Updated the option documentation.
+  [Thomas Kaiser, Sebastian Rittau]
+* FIX: configure: Removed broken --with-flock-locks option. [Björn Fernhomberg]
+* FIX: libatalk: Do not log network probe (OSX 10.3). [Didier Gautheron]
+* FIX: libatalk: Deadlock in signal handlers. [Didier]
+* FIX: libatalk: Compilation with Linux kernel 2.6 fixed. [Sebastian, Björn]
+* FIX: afpd: Solaris compile issues. [Björn]
+* FIX: afpd: If connection broke in dsi_tickle the child did never die. [Björn]
+* FIX: afpd: Catsearch, fixes a possible segmentation fault. [Björn]
+* FIX: afpd: Compilation issues. [Olaf Hering, Sebastian]
+* FIX: cnid: Fix compile problems on Tru64. [Burkhard Schmidt]
+* FIX: megatron: Fixed an uninitialized variable. [Olaf]
+* FIX: installation: Don't overwrite PAM file if --enable-overwrite configure
+       option is not set. [Sam, Ryan Cleary]
+* FIX: installation: Fixed BSD installation. [Toru TAKAMIZU]
+* FIX: docs: Removed ssl-dir/ssl-dirs confusion from doc/INSTALL. [Björn]
+
+Changes in 1.6.3
+================
+
+* UPD: afpd: Infrastructural support for an upcoming Kerberos 5 UAM.
+       [Sam Noble]
+* UPD: uams_dhx_passwd: Better random seed in Tru64. [Burkhard Schmidt]
+* FIX: afpd: Bug in AFP connection negotiation stage. [Sam]
+* FIX: afpd: Catsearch, when Mac and unix name differ, search on attributes.
+* FIX: afpd: Files could be opened for writing on read-only filesystems.
+* FIX: afpd: Debugging using SIGUSR1 was broken. [Stefan Muenkner]
+* FIX: afpd: Segfault after login. [Robby Griffin, Sean Bolton]
+* FIX: psf: Correct path to etc2ps.sh.
+* FIX: shell_utils: Don't distribute generated files.
+* FIX: aecho: -A option didn't work. [Chris Shiels]
+* FIX: configure: Berkeley DB path detection could be wrong. [Stefan]
+* FIX: Automake build fixes.
+
+Changes in 1.6.2
+================
+
+* FIX: atalkd: Fixes for reading long configuration file lines. [Dan Wilga]
+* FIX: afpd: CNID id allocation in a multiuser environment.
+* FIX: papd: Fix PSSP support when PAM is enabled.
+* FIX: macusers: Can now cope with IP addresses as well as host names.
+* FIX: etc2ps.sh: Install correctly.
+
 Changes in 1.6.1
 ================
 
