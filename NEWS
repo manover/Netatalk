@@ -3,7 +3,7 @@ Changes in 1.6.2
 
 * FIX: atalkd: Fixes for reading long configuration file lines. [Dan Wilga]
 * FIX: afpd: CNID id allocation in a multiuser environment.
-* FIX: macusers: Can now cope with IP addresses instead of host names.
+* FIX: macusers: Can now cope with IP addresses as well as host names.
 * FIX: etc2ps.sh: Install correctly.
 
 Changes in 1.6.1
