@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.6 2003-10-21 12:11:08 rlewczuk Exp $
+ * $Id: file.c,v 1.92.2.2.2.7 2003-10-26 20:13:02 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -862,6 +862,19 @@ int setfilparams(struct vol *vol,
             buf += 32;
             break;
 
+        case FILPBIT_UNIXPR :
+	    /* Skip the UIG/GID, no way to set them from OSX clients */
+            buf += sizeof( aint );
+            buf += sizeof( aint );
+
+            change_mdate = 1;
+            change_parent_mdate = 1;
+            memcpy( &aint, buf, sizeof( aint ));
+            buf += sizeof( aint );
+            aint = ntohl (aint);
+
+            setfilemode(path, aint);
+            break;
             /* Client needs to set the ProDOS file info for this file.
                Use a defined string for TEXT to support crlf
                translations and convert all else into pXYY per Inside
@@ -887,19 +900,6 @@ int setfilparams(struct vol *vol,
                 break;
             }
             /* fallthrough */
-        case FILPBIT_UNIXPR :
-	    /* Skip the UIG/GID, no way to set them from OSX clients */
-            buf += sizeof( aint );
-            buf += sizeof( aint );
-
-            change_mdate = 1;
-            change_parent_mdate = 1;
-            memcpy( &aint, buf, sizeof( aint ));
-            buf += sizeof( aint );
-            aint = ntohl (aint);
-
-            setfilemode(path, aint);
-            break;
         default :
             err = AFPERR_BITMAP;
             goto setfilparam_done;
