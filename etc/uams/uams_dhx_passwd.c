@@ -1,5 +1,5 @@
 /*
- * $Id: uams_dhx_passwd.c,v 1.18.6.3 2003-10-30 00:21:47 bfernhomberg Exp $
+ * $Id: uams_dhx_passwd.c,v 1.18.6.4 2003-10-30 06:43:44 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -9,7 +9,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
-#define _XOPEN_SOURCE /* for crypt() */
+#define _XOPEN_SOURCE 500 /* for crypt() */
 
 #include <stdio.h>
 #include <stdlib.h>

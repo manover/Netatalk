@@ -1,12 +1,12 @@
 /*
- * $Id: uams_passwd.c,v 1.19.2.1.2.3 2003-10-30 00:21:47 bfernhomberg Exp $
+ * $Id: uams_passwd.c,v 1.19.2.1.2.4 2003-10-30 06:43:45 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
  * All Rights Reserved.  See COPYRIGHT.
  */
 
-#define _XOPEN_SOURCE /* for crypt() */
+#define _XOPEN_SOURCE 500 /* for crypt() */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -41,15 +41,12 @@ char *strchr (), *strrchr ();
 #ifdef HAVE_TIME_H
 #include <time.h>
 #endif
-#ifdef SOLARIS
-#define SHADOWPW
-#endif /* SOLARIS */
 #ifdef SHADOWPW
 #include <shadow.h>
 #endif /* SHADOWPW */
 
-#include <atalk/logger.h>
 #include <atalk/afp.h>
+#include <atalk/logger.h>
 #include <atalk/uam.h>
 
 #define PASSWDLEN 8
