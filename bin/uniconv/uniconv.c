@@ -1,6 +1,6 @@
 /*
    uniconv - convert volume encodings
-   Copyright (C) Bjoern Fernhomberg 2002,2003
+   Copyright (C) Bjoern Fernhomberg 2004
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,25 +27,23 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
-#include <fcntl.h>
-#include <time.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <ctype.h>
-#include <signal.h>
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
+#include <sys/param.h>
 #include <pwd.h>
 #include <dirent.h>
 #include <atalk/afp.h>
 #include <atalk/unicode.h>
+#include <atalk/util.h>
+#include <atalk/logger.h>
 
 #include "atalk/cnid.h"
+#ifndef MAXPATHLEN
 #define MAXPATHLEN 4096
+#endif
 
 static struct _cnid_db *cdb;
 static char curpath[MAXPATHLEN];
@@ -383,6 +381,47 @@ static int init(char* path)
 	return (0);
 }
 
+static void usage( char * name )
+{
+    fprintf( stderr, "usage:\t%s [-ndv] -c cnid -f fromcode -t tocode [-m maccode] path\n", name );
+    fprintf( stderr, "Try `%s -h' for more information.\n", name );
+    exit( 1 );
+}
+
+static void print_version ()
+{
+    fprintf( stderr, "uniconv - Netatalk %s\n", VERSION );
+}
+
+static void help ()
+{
+    fprintf (stdout, "\nuniconv, a tool to convert between various Netatalk volume encodings\n");
+    fprintf (stdout, "\nUsage:  uniconv [-ndv] -c cnid -f fromcode -t tocode [-m maccode] path\n\n");
+    fprintf (stdout, "Examples:\n");
+    fprintf (stdout, "     uniconv -c dbd -f ASCII -t UTF8 -m MAC_ROMAN /path/to/share\n");
+    fprintf (stdout, "     uniconv -c cdb -f ISO-8859-1 -t UTF8 -m MAC_ROMAN /path/to/share\n");
+    fprintf (stdout, "     uniconv -c cdb -f ISO-8859-ADAPTED -t ASCII -m MAC_ROMAN /path/to/share\n");
+    fprintf (stdout, "     uniconv -f UTF8 -t ASCII -m MAC_ROMAN /path/to/share\n\n");
+    fprintf (stdout, "Options:\n");
+    fprintf (stdout, "\t-f\tencoding to convert from, use ASCII for CAP encoded volumes\n");
+    fprintf (stdout, "\t-t\tvolume encoding to convert to, e.g. UTF8.\n");
+    fprintf (stdout, "\t-m\tMacintosh client codepage, required for CAP encoded volumes.\n");
+    fprintf (stdout, "\t\tDefaults to `MAC_ROMAN'\n");
+    fprintf (stdout, "\t-n\t`dry run', don't change anything.\n");
+    fprintf (stdout, "\t-d\tDon't CAP encode leading dots (:2e).\n");
+    fprintf (stdout, "\t-c\tCNID backend used on this volume, usually cdb or dbd.\n");
+    fprintf (stdout, "\t\tIf not specified, the default cnid backend `%s' is used\n", DEFAULT_CNID_SCHEME);
+    fprintf (stdout, "\t-v\tVerbose output, use twice for maximum logging.\n");
+    fprintf (stdout, "\t-V\tPrint version and exit\n");
+    fprintf (stdout, "\t-h\tThis help screen\n\n");
+    fprintf (stdout, "WARNING:\n");
+    fprintf (stdout, "     Setting the wrong options might render your data unusable!!!\n");
+    fprintf (stdout, "     Make sure you know what you are doing. Always backup your data first.\n\n");
+    fprintf (stdout, "     It is *strongly* recommended to do a `dry run' first and to check the\n");
+    fprintf (stdout, "     output for conversion errors.\n");
+    fprintf (stdout, "     USE AT YOUR OWN RISK!!!\n\n");
+
+}
 
 
 int main(int argc, char *argv[])
@@ -393,7 +432,7 @@ int main(int argc, char *argv[])
 	path[0]= 0;
         conv_flags = CONV_UNESCAPEHEX | CONV_ESCAPEHEX | CONV_ESCAPEDOTS;
 
-        while ((c = getopt (argc, argv, "f:m:p:t:nc:v")) != -1)
+        while ((c = getopt (argc, argv, "f:m:t:c:nvVh")) != -1)
         switch (c)
         {
 	case 'f':
@@ -402,9 +441,6 @@ int main(int argc, char *argv[])
 	case 't':
 		to_charset = strdup(optarg);
 		break;
-        case 'p':
-		strncpy(path, optarg, MAXPATHLEN);
-                break;
 	case 'm':
 		mac_charset = strdup(optarg);
 		break;
@@ -423,14 +459,28 @@ int main(int argc, char *argv[])
 	case 'v':
 		verbose++;
 		break;
+	case 'V':
+		print_version();
+		exit (1);
+		break;
         case 'h':
+		help();
+		exit(1);
                 break;
         default:
 		break;
         }
 
+        if ( argc - optind != 1 ) {
+            usage( argv[0] );
+            exit( 1 );
+        }
+        set_processname("uniconv");
+
+	strlcpy(path, argv[optind], MAXPATHLEN);
+
 	if ( from_charset == NULL || to_charset == NULL) {
-		fprintf (stderr, "charsets not specified\n");
+		fprintf (stderr, "required charsets not specified\n");
 		exit(-1);
 	}
 
