@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.17.8.2 2004-01-15 06:34:15 bfernhomberg Exp $
+ * $Id: main.c,v 1.17.8.3 2004-01-21 00:20:57 lenneis Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -1183,7 +1183,7 @@ int main( ac, av )
 			    LOG(log_error, logtype_atalkd, "recvfrom: %s", strerror(errno) );
 			    continue;
 			}
-#ifdef DEBUG
+#ifdef DEBUG1
 			if ( debug ) {
 			    printf( "packet from %u.%u on %s (%x) %d (%d)\n",
 				    ntohs( sat.sat_addr.s_net ),
