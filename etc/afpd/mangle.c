@@ -1,5 +1,5 @@
 /* 
- * $Id: mangle.c,v 1.16.2.1.2.5 2003-10-14 00:28:26 bfernhomberg Exp $ 
+ * $Id: mangle.c,v 1.16.2.1.2.6 2003-11-01 02:14:56 bfernhomberg Exp $ 
  *
  * Copyright (c) 2002. Joe Marcus Clarke (marcus@marcuscom.com)
  * All Rights Reserved.  See COPYRIGHT.
@@ -235,7 +235,9 @@ mangle(const struct vol *vol, char *filename, char *uname, cnid_t id, int flags)
         strcat(m, "???");
     }
     strcat(m, mangle_suffix);
-    strncat(m, ext, ext_len);
+    if (ext) {
+	strncat(m, ext, ext_len);
+    }
 
     return m;
 }
