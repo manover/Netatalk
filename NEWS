@@ -3,6 +3,7 @@ Changes from 1.5.0
 
 * NEW: Added a program called cnid_didname_verify that can be used to
        verify the consistency of the CNID database.
+* NEW: New afpd option: -timeout. See afpd.conf for more information.
 * UPD: Code cleanups and compatibility fixes to macusers.
 * UPD: AppleVolumes.system was cleaned up.
 * FIX: Really fix Tru64 compilation (see last entry).

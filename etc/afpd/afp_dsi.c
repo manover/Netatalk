@@ -1,5 +1,5 @@
 /*
- * $Id: afp_dsi.c,v 1.9.2.2 2002-01-14 02:53:24 srittau Exp $
+ * $Id: afp_dsi.c,v 1.9.2.3 2002-01-14 02:56:08 srittau Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -45,7 +45,8 @@ extern struct oforks	*writtenfork;
 
 static struct {
     AFPObj *obj;
-    unsigned char tickle, flags;
+    unsigned char flags;
+    int tickle;
 } child;
 
 
@@ -123,8 +124,8 @@ static void afp_dsi_getmesg (int sig)
 static void alarm_handler()
 {
     /* if we're in the midst of processing something,
-       don't die. we'll allow 3 missed tickles before we die (2 minutes) */
-    if ((child.flags & CHILD_RUNNING) || (child.tickle++ < 4)) {
+       don't die. */
+    if ((child.flags & CHILD_RUNNING) || (child.tickle++ < child.obj->options.timeout)) {
         dsi_tickle(child.obj->handle);
     } else { /* didn't receive a tickle. close connection */
         syslog(LOG_ERR, "afp_alarm: child timed out");
