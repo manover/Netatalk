@@ -1,5 +1,5 @@
 /*
- * $Id: aarp.c,v 1.2 2001-06-29 14:14:47 rufustfirefly Exp $
+ * $Id: aarp.c,v 1.2.2.1 2002-03-12 16:24:50 srittau Exp $
  *
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
@@ -11,7 +11,7 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/syslog.h>
+#include <syslog.h>
 #include <sys/param.h>
 #include <sys/mbuf.h>
 #include <sys/time.h>
