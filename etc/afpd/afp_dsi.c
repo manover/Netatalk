@@ -1,5 +1,5 @@
 /*
- * $Id: afp_dsi.c,v 1.9.2.3 2002-01-14 02:56:08 srittau Exp $
+ * $Id: afp_dsi.c,v 1.9.2.4 2002-01-23 18:34:14 jmarcus Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -57,12 +57,12 @@ static __inline__ void afp_dsi_close(AFPObj *obj)
     if (obj->logout)
         (*obj->logout)();
 
-    dsi_close(dsi);
-
     /* UAM had syslog control; afpd needs to reassert itself */
     openlog( "afpd", LOG_NDELAY|LOG_PID, LOG_DAEMON);
     syslog(LOG_INFO, "%.2fKB read, %.2fKB written",
            dsi->read_count/1024.0, dsi->write_count/1024.0);
+
+    dsi_close(dsi);
 }
 
 /* a little bit of code duplication. */

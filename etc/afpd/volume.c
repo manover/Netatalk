@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.14.2.2 2002-01-14 02:50:34 srittau Exp $
+ * $Id: volume.c,v 1.14.2.3 2002-01-23 18:34:14 jmarcus Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -462,7 +462,7 @@ static int creatvol(const char *path, char *name, struct vol_option *options)
     volume->v_qfd = -1;
 #endif /* __svr4__ */
     volume->v_vid = lastvid++;
-    volume->v_lastdid = 3;
+    volume->v_lastdid = 17;
 
     /* handle options */
     if (options) {
@@ -1196,7 +1196,7 @@ int		ibuflen, *rbuflen;
      * the desk-top.  That's because the Mac remembers the DID for the
      * trash (even for volumes in different zones, on different servers).
      * Just so this works better, we prime the DID cache with the trash,
-     * fixing the trash at DID 3.
+     * fixing the trash at DID 17.
      */
     p = Trash;
     cname( volume, volume->v_dir, &p );
