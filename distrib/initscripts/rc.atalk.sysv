@@ -40,6 +40,10 @@ case "$1" in
 		:SBINDIR:/papd;			echo ' papd\c'
 	fi
 
+	if [ -x :SBINDIR:/cnid_metad ]; then
+		:SBINDIR:/cnid_metad;			echo ' cnid_metad\c'
+	fi
+
 	if [ -x :SBINDIR:/afpd ]; then
 		:SBINDIR:/afpd;			echo ' afpd\c'
 	fi
@@ -66,6 +70,10 @@ case "$1" in
 
 	if [ -x :SBINDIR:/afpd ]; then
 		killproc afpd;			echo ' afpd\c'
+	fi
+
+	if [ -x :SBINDIR:/cnid_metad ]; then
+		killproc cnid_metad;			echo ' cnid_metad\c'
 	fi
 
 	if [ -x :SBINDIR:/timelord ]; then
