@@ -1,5 +1,5 @@
 /*
- * $Id: status.c,v 1.13.6.5 2004-06-09 01:31:14 bfernhomberg Exp $
+ * $Id: status.c,v 1.13.6.6 2004-06-09 02:07:15 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -230,7 +230,7 @@ server_signature_done:
 
 static int status_netaddress(char *data, int *servoffset,
                              const ASP asp, const DSI *dsi,
-                             const char *fqdn)
+                             const struct afp_options *options)
 {
     char               *begin;
     u_int16_t          offset;
@@ -252,7 +252,8 @@ static int status_netaddress(char *data, int *servoffset,
     /* number of addresses. this currently screws up if we have a dsi
        connection, but we don't have the ip address. to get around this,
        we turn off the status flag for tcp/ip. */
-    *data++ = ((fqdn && dsi)? 1 : 0) + (dsi ? 1 : 0) + (asp ? 1 : 0);
+    *data++ = ((options->fqdn && dsi)? 1 : 0) + (dsi ? 1 : 0) + (asp ? 1 : 0) +
+              (((options->flags & OPTION_ANNOUNCESSH) && options->fqdn && dsi)? 1 : 0);
 
     /* ip address */
     if (dsi) {
@@ -277,12 +278,25 @@ static int status_netaddress(char *data, int *servoffset,
     }
 
     /* handle DNS names */
-    if (fqdn && dsi) {
-        int len = strlen(fqdn);
+    if (options->fqdn && dsi) {
+        int len = strlen(options->fqdn);
         *data++ = len +2;
         *data++ = 0x04;
-        memcpy(data, fqdn, len);
+        memcpy(data, options->fqdn, len);
         data += len;
+
+        /* Annouce support for SSH tunneled AFP session, 
+         * this feature is available since 10.3.2.
+         * According to the specs (AFP 3.1 p.225) this should
+         * be an IP+Port style value, but it only works with 
+         * a FQDN. OSX Server uses FQDN as well.
+         */
+        if (options->flags & OPTION_ANNOUNCESSH) {
+            *data++ = len +2;
+            *data++ = 0x05;
+            memcpy(data, options->fqdn, len);
+            data += len;
+        }
     }
 
 #ifndef NO_DDP
@@ -515,7 +529,7 @@ void status_init(AFPConfig *aspconfig, AFPConfig *dsiconfig,
     sigoff = status_signature(status, &c, dsi, options);
     /* c now contains the offset where the netaddress offset lives */
 
-    status_netaddress(status, &c, asp, dsi, options->fqdn);
+    status_netaddress(status, &c, asp, dsi, options);
     /* c now contains the offset where the Directory Names Count offset lives */
 
     statuslen = status_directorynames(status, &c, dsi, options);

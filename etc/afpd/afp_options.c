@@ -1,5 +1,5 @@
 /*
- * $Id: afp_options.c,v 1.30.2.2.2.7 2004-05-12 21:21:48 didg Exp $
+ * $Id: afp_options.c,v 1.30.2.2.2.8 2004-06-09 02:07:15 bfernhomberg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -221,6 +221,8 @@ int afp_options_parseline(char *buf, struct afp_options *options)
         options->flags &= ~OPTION_CUSTOMICON;
     if (strstr(buf, " -icon"))
         options->flags |= OPTION_CUSTOMICON;
+    if (strstr(buf, " -advertise_ssh"))
+        options->flags |= OPTION_ANNOUNCESSH;
 
     /* passwd bits */
     if (strstr(buf, " -nosavepassword"))
