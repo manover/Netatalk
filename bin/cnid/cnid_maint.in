@@ -3,7 +3,7 @@
 #
 # cnid_maint: A script to maintain the consistency of CNID databases.
 #
-# $Id: cnid_maint.in,v 1.4.2.2 2002-02-09 20:27:45 jmarcus Exp $
+# $Id: cnid_maint.in,v 1.4.2.3 2002-02-11 21:21:30 jmarcus Exp $
 #
 
 use strict;
@@ -72,6 +72,10 @@ if ( $opts->{'V'} ) {
 }
 if ( $opts->{'l'} ) {
     $remove_logs = 1;
+}
+
+if ( $< != 0 ) {
+    die "You must be root to run this script.\n";
 }
 
 print "Beginning run of CNID DB Maintanence script at "
@@ -166,6 +170,10 @@ close(VOLS);
 my $path = "";
 foreach $path (@paths) {
     my $dbpath = $path . "/.AppleDB";
+    if ( !-d $dbpath ) {
+        error( 1, "Database environment $dbpath does not exist" );
+        next;
+    }
     if ($extra_safe) {
         error( 0,
             "Checking database environment $dbpath for open connections..." );
@@ -300,11 +308,11 @@ sub end {
 }
 
 sub version {
-    print "cnid_maint.pl version $VERSION\n";
+    print "$0 version $VERSION\n";
 }
 
 sub help {
-    print "usage: cnid_maint.pl [-hlsvV]\n";
+    print "usage: $0 [-hlsvV]\n";
     print "\t-h   view this message\n";
     print "\t-l   remove transaction logs after running recovery\n";
     print
