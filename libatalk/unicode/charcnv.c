@@ -46,6 +46,7 @@
 #include <netatalk/endian.h>
 #include <atalk/logger.h>
 #include <atalk/unicode.h>
+#include <atalk/util.h>
 #include "byteorder.h"
 
 
@@ -75,18 +76,65 @@ static struct charset_functions* charsets[MAX_CHARSETS];
 static char hexdig[] = "0123456789abcdef";
 #define hextoint( c )   ( isdigit( c ) ? c - '0' : c + 10 - 'a' )
 
+static char* read_charsets_from_env(charset_t ch) 
+{
+	char *name;
+
+	switch (ch) {
+	    case CH_MAC:
+                if (( name = getenv( "ATALK_MAC_CHARSET" )) != NULL ) 
+		    return name;
+		else
+		    return "MAC_ROMAN";
+		break;
+            case CH_UNIX:
+                if (( name = getenv( "ATALK_UNIX_CHARSET" )) != NULL ) 
+		    return name;
+		else
+		    return "LOCALE";
+		break;
+	    default:
+		break;
+        }
+        return "ASCII";
+} 
+           
+
 /**
  * Return the name of a charset to give to iconv().
  **/
 static const char *charset_name(charset_t ch)
 {
 	const char *ret = NULL;
+	static int first = 1;
+	static char macname[128];
+	static char unixname[128];
+
+	if (first) {
+		memset(macname, 0, sizeof(macname));
+		memset(unixname, 0, sizeof(unixname));
+		first = 0;
+	}
 
 	if (ch == CH_UCS2) ret = "UCS-2";
-	else if (ch == CH_UNIX) ret = "LOCALE"; /*lp_unix_charset();*/
-	else if (ch == CH_MAC) ret = "MAC_ROMAN"; /*lp_display_charset();*/
 	else if (ch == CH_UTF8) ret = "UTF8";
 	else if (ch == CH_UTF8_MAC) ret = "UTF8-MAC";
+	else if (ch == CH_UNIX) {
+		if (unixname[0] == '\0') {
+			ret = read_charsets_from_env(CH_UNIX);
+			strlcpy(unixname, ret, sizeof(unixname));
+		}
+		else
+			ret = unixname;
+	}
+	else if (ch == CH_MAC) {
+		if (macname[0] == '\0') {
+			ret = read_charsets_from_env(CH_MAC);
+			strlcpy(macname, ret, sizeof(macname));
+		}
+		else
+			ret = unixname;
+	}
 
 	if (!ret)
 		ret = charset_names[ch];
@@ -108,6 +156,8 @@ static const char *charset_name(charset_t ch)
 				ln = NULL;
 			} else {
 				atalk_iconv_close(handle);
+				if (ch==CH_UNIX)
+					strlcpy(unixname, ln, sizeof(unixname));
 			}
 		}
 		ret = ln;
@@ -409,6 +459,7 @@ convert:
 				break;
 		}
 		LOG(log_debug, logtype_default,"Conversion error: %s(%s)",reason,inbuf);
+		SAFE_FREE(outbuf);
 		return (size_t)-1;
 	}
 
