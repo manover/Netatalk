@@ -1,5 +1,5 @@
 /*
- * $Id: quota.c,v 1.22.8.3 2003-09-24 09:23:21 bfernhomberg Exp $
+ * $Id: quota.c,v 1.22.8.4 2003-09-24 11:29:13 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -181,28 +181,28 @@ static int get_linux_quota(int what, char *path, uid_t euser_id, struct dqblk *d
  Abstract out the XFS Quota Manager quota get call.
 ****************************************************************************/
 
-static int get_linux_xfs_quota(what, path, euser_id, dp)
+static int get_linux_xfs_quota(what, path, euser_id, dqb)
 int what;
 char *path;
 uid_t euser_id;
-struct dqblk *dp;
+struct dqblk *dqb;
 {
 	int ret = -1;
-#if 0
+#ifdef HAVE_LINUX_XQM_H
 	struct fs_disk_quota D;
 	
-	memset (&D, 0, sizeof(fs_disk_quota));
+	memset (&D, 0, sizeof(D));
 
 	if ((ret = quotactl(QCMD(Q_XGETQUOTA,USRQUOTA), path, euser_id, (caddr_t)&D)))
                return ret;
 
-	dp->bsize = (u_int64_t)512;
-	dp->softlimit  = (u_int64_t)D.d_blk_softlimit;
-	dp->hardlimit  = (u_int64_t)D.d_blk_hardlimit;
-	dp->ihardlimit = (u_int64_t)D.d_ino_hardlimit;
-	dp->isoftlimit = (u_int64_t)D.d_ino_softlimit;
-	dp->curinodes  = (u_int64_t)D.d_icount;
-	dp->curblocks  = (u_int64_t)D.d_bcount;
+	dqb->bsize = (u_int64_t)512;
+        dqb->dqb_bsoftlimit  = (u_int64_t)D.d_blk_softlimit;
+        dqb->dqb_bhardlimit  = (u_int64_t)D.d_blk_hardlimit;
+        dqb->dqb_ihardlimit  = (u_int64_t)D.d_ino_hardlimit;
+        dqb->dqb_isoftlimit  = (u_int64_t)D.d_ino_softlimit;
+        dqb->dqb_curinodes   = (u_int64_t)D.d_icount;
+        dqb->dqb_curblocks   = (u_int64_t)D.d_bcount; 
 #endif
        return ret;
 }
