@@ -9,10 +9,11 @@ SUFFIXES= .tmpl .
 	    -e s@:BINDIR:@${bindir}@ \
 	    -e s@:ETCDIR:@${pkgconfdir}@ \
 	    -e s@:LIBDIR:@${libdir}@ \
+	    -e s@:DEFAULT_CNID_SCHEME:@${DEFAULT_CNID_SCHEME}@ \
 	    <$< >$@
 
-GENERATED_MANS	= apple_cp.1 apple_mv.1 apple_rm.1
-TEMPLATE_FILES	= apple_cp.1.tmpl apple_mv.1.tmpl apple_rm.1.tmpl
+GENERATED_MANS	= apple_cp.1 apple_mv.1 apple_rm.1 uniconv.1
+TEMPLATE_FILES	= apple_cp.1.tmpl apple_mv.1.tmpl apple_rm.1.tmpl uniconv.1.tmpl
 NONGENERATED_MANS	=	achfile.1  \
 				acleandir.1 \
 				aecho.1 \
