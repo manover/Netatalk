@@ -1,5 +1,5 @@
 /*
- * $Id: lp.c,v 1.10 2001-08-03 22:13:28 srittau Exp $
+ * $Id: lp.c,v 1.10.2.1 2002-03-12 15:44:38 srittau Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -46,7 +46,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include <sys/param.h>
-#include <sys/syslog.h>
+#include <syslog.h>
 #include <sys/time.h>
 #include <sys/socket.h>
 #include <sys/stat.h>

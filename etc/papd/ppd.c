@@ -1,5 +1,5 @@
 /*
- * $Id: ppd.c,v 1.6 2001-06-25 20:13:45 rufustfirefly Exp $
+ * $Id: ppd.c,v 1.6.2.1 2002-03-12 15:44:38 srittau Exp $
  *
  * Copyright (c) 1995 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/syslog.h>
+#include <syslog.h>
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/time.h>
