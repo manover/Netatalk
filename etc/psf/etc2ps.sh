@@ -26,9 +26,10 @@ case $1 in
 #
 df*)
     if [ -x "$DVIPS" ]; then
-	cat > /tmp/psfilter.$$
-	$DVIPS $DVIPSARGS < /tmp/psfilter.$$
-	rm -f /tmp/psfilter.$$
+	TEMPFILE=`mktemp -t psfilter.XXXXXX` || exit 1
+	cat > $TEMPFILE
+	$DVIPS $DVIPSARGS < $TEMPFILE
+	rm -f $TEMPFILE
     else
 	echo "$0: filter dvips uninstalled" 1>&2
 	exit 2
