@@ -1,22 +1,23 @@
 Changes in 1.6.4
 ================
 
-* UPD: afpd.8: Updated the option documentation. [Thomas Kaiser, Sebastian
-  Rittau]
-* FIX: megatron: Fixed an uninitialized variable. [Olaf Hering]
-* FIX: Compilation issues. [Olaf Hering, Sebastian Rittau]
-* FIX: Don't overwrite PAM file if --enable-overwrite configure option is
-       not set. [Sam Noble, Ryan Cleary]
-* FIX: afpd: Catsearch, fix possible SIGSEGV
+* NEW: afpd: Using the mswindows option now implicitly specifies usedots.
+  [Sam Noble]
+* UPD: afpd.8: Updated the option documentation.
+  [Thomas Kaiser, Sebastian Rittau]
+* FIX: configure: Removed broken --with-flock-locks option. [Björn Fernhomberg]
+* FIX: libatalk: Do not log network probe (OSX 10.3). [Didier Gautheron]
+* FIX: libatalk: Deadlock in signal handlers. [Didier]
+* FIX: afpd: Solaris compile issues. [Björn]
+* FIX: afpd: If connection broke in dsi_tickle the child did never die. [Björn]
+* FIX: afpd: Catsearch, fixes a possible segmentation fault. [Björn]
+* FIX: afpd: Compilation issues. [Olaf Hering, Sebastian]
 * FIX: cnid: Fix compile problems on Tru64. [Burkhard Schmidt]
-* FIX: deadlock in signal handlers (Redhat 9)
-* FIX: don't log network probe (OSX 10.3)
-* FIX: BSD install fix [Toru TAKAMIZU]
-* UPD: remove ssl-dir/ssl-dirs confusion from doc/INSTALL
-* FIX: afpd: Solaris compile issues
-* FIX: afpd: If connection broke in dsi_tickle the child did never die
-* NEW: afpd: Using the mswindows option now impictly specifies usedots [Sam Noble]
-* FIX: removed broken --with-flock-locks
+* FIX: megatron: Fixed an uninitialized variable. [Olaf]
+* FIX: installation: Don't overwrite PAM file if --enable-overwrite configure
+       option is not set. [Sam, Ryan Cleary]
+* FIX: installation: Fixed BSD installation. [Toru TAKAMIZU]
+* FIX: docs: Removed ssl-dir/ssl-dirs confusion from doc/INSTALL. [Björn]
 
 Changes in 1.6.3
 ================
