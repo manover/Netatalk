@@ -1,5 +1,5 @@
 /*
- * $Id: adv1tov2.c,v 1.3 2001-06-29 14:14:46 rufustfirefly Exp $
+ * $Id: adv1tov2.c,v 1.3.14.1 2004-01-10 06:40:58 didg Exp $
  * v1tov2: given a root directory, run down and convert all the
  * files/directories into appledouble v2.
  */
@@ -26,7 +26,7 @@
 
 #if AD_VERSION == AD_VERSION2
 /* translate characters */
-static int xlate(char *name, int flags) {
+static void xlate(char *name, int flags) {
   static const char hexdig[] = "0123456789abcdef";
   char upath[MAXPATHLEN + 1];
   char *m, *u;
@@ -61,7 +61,6 @@ void descend(DIR *dp)
 {
   DIR *dpnew;
   struct dirent *de;
-  unsigned char *m, *u;
   struct stat st;
   struct adouble ad;
   int flags;

@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.6 2003-10-30 03:39:09 bfernhomberg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.7 2004-01-10 06:40:58 didg Exp $
  *
  * See COPYRIGHT.
  *
@@ -615,7 +615,6 @@ char *dtfile(const struct vol *vol, u_char creator[], char *ext )
 */
 static char  upath[ MAXPATHLEN + 1];
 static char  mpath[ MAXPATHLEN + 1];
-static char  ucs2[ MAXPATHLEN + 1];
 
 char *mtoupath(const struct vol *vol, char *mpath, cnid_t did, int utf8)
 {

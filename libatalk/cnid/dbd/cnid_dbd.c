@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_dbd.c,v 1.1.4.12 2004-01-09 21:05:50 lenneis Exp $
+ * $Id: cnid_dbd.c,v 1.1.4.13 2004-01-10 06:40:58 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -33,7 +33,8 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netdb.h>
-
+#include <time.h>    
+ 
 #include <netatalk/endian.h>
 #include <atalk/logger.h>
 #include <atalk/adouble.h>
@@ -207,7 +208,7 @@ static int dbd_reply_stamp(struct cnid_dbd_rply *rply)
  * if no answer after sometime (at least MAX_DELAY secondes) return an error
 */
 #define MAX_DELAY 40
-static dbd_rpc(CNID_private *db, struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
+static int dbd_rpc(CNID_private *db, struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
 {
     int  ret;
     char *nametmp;
