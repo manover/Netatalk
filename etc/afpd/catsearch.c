@@ -398,6 +398,7 @@ static int crit_check(struct vol *vol, struct path *path, int cidx) {
 			attrs = finfo->attrs;
 		}
 		else if (*path->u_name == '.') {
+			/* FIXME 0x4000 becomes 0x00 on bigendian */
 			attrs = htons(FINDERINFO_INVISIBLE);
 		}
 

@@ -39,7 +39,8 @@ struct charset_functions charset_iso8859_adapted =
 	0,
 	iso8859_adapted_pull,
 	iso8859_adapted_push,
-	CHARSET_MULTIBYTE | CHARSET_PRECOMPOSED
+	CHARSET_MULTIBYTE | CHARSET_PRECOMPOSED,
+	NULL, NULL
 };
 
 

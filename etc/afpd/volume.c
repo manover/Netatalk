@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.33.2.2 2004-12-10 13:33:34 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.33.2.3 2005-02-06 10:16:01 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1407,7 +1407,7 @@ int		*buflen;
 }
 
 /* ------------------------- */
-int static stat_vol(u_int16_t bitmap, struct vol *vol, char *rbuf, int *rbuflen)
+static int stat_vol(u_int16_t bitmap, struct vol *vol, char *rbuf, int *rbuflen)
 {
     struct stat	st;
     int		buflen, ret;

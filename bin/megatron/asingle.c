@@ -1,5 +1,5 @@
 /*
- * $Id: asingle.c,v 1.8.6.1 2003-09-03 20:40:50 didg Exp $
+ * $Id: asingle.c,v 1.8.6.1.4.1 2005-02-06 10:16:00 didg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -418,9 +418,9 @@ int single_read( fork, buffer, length )
 	    break;
     }
 
-    if ( single.entry[ entry_id ].ade_len < 0 ) {
-	fprintf( stderr, "single_read: Trying to read past end of fork!\n" );
-	return( single.entry[ entry_id ].ade_len );
+    if (single.entry[entry_id].ade_len > length) {
+	fprintf(stderr, "single_read: Trying to read past end of fork!, length %d, ade_len == %u\n", length, single.entry[entry_id].ade_len);
+	return single.entry[entry_id].ade_len;
     }
     if ( single.entry[ entry_id ].ade_len == 0 ) {
 	if ( fork == DATA ) {

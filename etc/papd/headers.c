@@ -1,5 +1,5 @@
 /*
- * $Id: headers.c,v 1.9.10.1 2004-06-09 01:25:53 bfernhomberg Exp $
+ * $Id: headers.c,v 1.9.10.1.2.1 2005-02-06 10:16:02 didg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -297,24 +297,24 @@ int ch_translateone(in,out)
  * "Header" comments.
  */
 struct papd_comment	headers[] = {
-    { "%%Title:",			0,		ch_title,	0 },
-    { "%%For:",				0,		ch_for,		0 },
-    { "%%Creator:",			0,		ch_creator,	0 },
-    { "%%EndComments",			0,		ch_endcomm,	0 },
-    { "%%BeginFeature",			0,		ch_starttranslate,  0 },
-    { "%%EndFeature",			0,		ch_endtranslate,  0 },
-    { "%%BeginPageSetup",		0,		ch_starttranslate, 0 },
-    { "%%EndPageSetup",			0,		ch_endtranslate, 0 },
+    { "%%Title:",			NULL,		ch_title,	0 },
+    { "%%For:",				NULL,		ch_for,		0 },
+    { "%%Creator:",			NULL,		ch_creator,	0 },
+    { "%%EndComments",			NULL,		ch_endcomm,	0 },
+    { "%%BeginFeature",			NULL,		ch_starttranslate,  0 },
+    { "%%EndFeature",			NULL,		ch_endtranslate,  0 },
+    { "%%BeginPageSetup",		NULL,		ch_starttranslate, 0 },
+    { "%%EndPageSetup",			NULL,		ch_endtranslate, 0 },
 #if 0
-    { "%%BeginSetup",			0,		ch_translateone,  0 },
-    { "%%EndSetup",			0,		ch_translateone,  0 },
-    { "%%BeginProlog",			0,		ch_translateone,  0 },
-    { "%%EndProlog",			0,		ch_translateone,  0 },
-    { "%%Page:",			0,		ch_translateone, 0 },
-    { "%%PageTrailer",			0,		ch_translateone, 0 },
-    { "%%Trailer",			0,		ch_translateone, 0 },
-    { "%%EOF",				0,		ch_translateone, 0 },
+    { "%%BeginSetup",			NULL,		ch_translateone,  0 },
+    { "%%EndSetup",			NULL,		ch_translateone,  0 },
+    { "%%BeginProlog",			NULL,		ch_translateone,  0 },
+    { "%%EndProlog",			NULL,		ch_translateone,  0 },
+    { "%%Page:",			NULL,		ch_translateone, 0 },
+    { "%%PageTrailer",			NULL,		ch_translateone, 0 },
+    { "%%Trailer",			NULL,		ch_translateone, 0 },
+    { "%%EOF",				NULL,		ch_translateone, 0 },
 #endif
-    { "%%",				0,		ch_translateone, 0 },
-    { 0 },
+    { "%%",				NULL,		ch_translateone, 0 },
+    { NULL,				NULL,		NULL,		0 },
 };

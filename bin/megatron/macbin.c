@@ -1,5 +1,5 @@
 /*
- * $Id: macbin.c,v 1.10.10.1 2004-08-10 13:37:18 bfernhomberg Exp $
+ * $Id: macbin.c,v 1.10.10.1.2.1 2005-02-06 10:16:00 didg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -185,9 +185,9 @@ int bin_read( fork, buffer, length )
     fprintf( stderr, "bin_read: remaining length is %d\n", bin.forklen[fork] );
 #endif /* DEBUG >= 3 */
 
-    if ( bin.forklen[ fork ] < 0 ) {
-	fprintf( stderr, "This should never happen, dude!\n" );
-	return( bin.forklen[ fork ] );
+    if (bin.forklen[fork] > length) {
+	fprintf(stderr, "This should never happen, dude! length %d, fork length == %u\n", length, bin.forklen[fork]);
+	return bin.forklen[fork];
     }
 
     if ( bin.forklen[ fork ] == 0 ) {
@@ -286,12 +286,13 @@ int bin_write( fork, buffer, length )
 	perror( "Couldn't write to macbinary file:" );
 	return( cc );
     }
-    bin.forklen[ fork ] -= length;
 
-    if ( bin.forklen[ fork ] < 0 ) {
-	fprintf( stderr, "This should never happen, dude!\n" );
-	return( bin.forklen[ fork ] );
+    if (length > bin.forklen[fork]) {
+	fprintf(stderr, "This should never happen, dude! length %d, fork length %u\n", length, bin.forklen[fork]);
+	return bin.forklen[fork];
     }
+
+    bin.forklen[fork] -= length;
 
 /*
  * add the padding at end of data and resource forks

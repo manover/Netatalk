@@ -1,5 +1,5 @@
 /*
- * $Id: magics.c,v 1.11.6.2 2004-08-23 22:31:58 bfernhomberg Exp $
+ * $Id: magics.c,v 1.11.6.2.2.1 2005-02-06 10:16:02 didg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -208,8 +208,8 @@ int cm_psswitch( in, out, sat )
 
 
 struct papd_comment	magics[] = {
-    { "%!PS-Adobe-3.0 Query",	0,			cm_psquery, C_FULL },
-    { "%!PS-Adobe-3.0",		0,			cm_psadobe, C_FULL },
-    { "%!PS-Adobe-",		0,			cm_psswitch,	0 },
-    { 0 },
+    { "%!PS-Adobe-3.0 Query",	NULL,			cm_psquery, C_FULL },
+    { "%!PS-Adobe-3.0",		NULL,			cm_psadobe, C_FULL },
+    { "%!PS-Adobe-",		NULL,			cm_psswitch,	0 },
+    { NULL,			NULL,			NULL,		0 },
 };

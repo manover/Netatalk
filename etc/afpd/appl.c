@@ -1,5 +1,5 @@
 /*
- * $Id: appl.c,v 1.12.2.1.2.2 2004-02-20 21:22:57 didg Exp $
+ * $Id: appl.c,v 1.12.2.1.2.2.2.1 2005-02-06 10:16:00 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -27,7 +27,7 @@
 #include "file.h"
 #include "desktop.h"
 
-static struct savedt	sa = { { 0, 0, 0, 0 }, -1, 0 };
+static struct savedt	sa = { { 0, 0, 0, 0 }, -1, 0, 0};
 
 static __inline__ int pathcmp( p, plen, q, qlen )
 char	*p;
@@ -41,6 +41,8 @@ int	qlen;
 static int applopen( vol, creator, flags, mode )
 struct vol	*vol;
 u_char	creator[ 4 ];
+int flags;
+int mode;
 {
     char	*dtf, *adt, *adts;
 

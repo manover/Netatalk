@@ -1,5 +1,5 @@
 /*
- * $Id: hqx.c,v 1.12.4.1 2003-09-03 20:40:50 didg Exp $
+ * $Id: hqx.c,v 1.12.4.1.4.1 2005-02-06 10:16:00 didg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -207,9 +207,9 @@ int hqx_read( fork, buffer, length )
     fprintf( stderr, "hqx_read: remaining length is %d\n", hqx.forklen[fork] );
 #endif /* DEBUG >= 3 */
 
-    if ( hqx.forklen[ fork ] < 0 ) {
-	fprintf( stderr, "This should never happen, dude!\n" );
-	return( hqx.forklen[ fork ] );
+    if (hqx.forklen[fork] > length) {
+	fprintf(stderr, "This should never happen, dude! length %d, fork length == %u\n", length, hqx.forklen[fork]);
+	return hqx.forklen[fork];
     }
 
     if ( hqx.forklen[ fork ] == 0 ) {

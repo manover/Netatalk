@@ -98,10 +98,10 @@ extern  struct charset_functions charset_utf8_mac;
 
 
 static struct charset_functions builtin_functions[] = {
-	{"UCS-2",   0, iconv_copy, iconv_copy, CHARSET_WIDECHAR | CHARSET_PRECOMPOSED},
-	{"ASCII",     0, ascii_pull, ascii_push, CHARSET_MULTIBYTE | CHARSET_PRECOMPOSED},
-	{"SHIFT_JIS", 1568, NULL, NULL, CHARSET_ICONV | CHARSET_PRECOMPOSED | CHARSET_CLIENT},
-	{NULL, 0, NULL, NULL, 0}
+	{"UCS-2",   0, iconv_copy, iconv_copy, CHARSET_WIDECHAR | CHARSET_PRECOMPOSED, NULL, NULL},
+	{"ASCII",     0, ascii_pull, ascii_push, CHARSET_MULTIBYTE | CHARSET_PRECOMPOSED, NULL, NULL},
+	{"SHIFT_JIS", 1568, NULL, NULL, CHARSET_ICONV | CHARSET_PRECOMPOSED | CHARSET_CLIENT, NULL, NULL},
+	{NULL, 0, NULL, NULL, 0, NULL, NULL}
 };
 
 

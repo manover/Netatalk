@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_dbd.c,v 1.1.4.18.2.1 2005-01-30 20:56:22 didg Exp $
+ * $Id: cnid_dbd.c,v 1.1.4.18.2.2 2005-02-06 10:16:03 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -794,6 +794,7 @@ struct _cnid_module cnid_dbd_module = {
     "dbd",
     {NULL, NULL},
     cnid_dbd_open,
+    0
 };
 
 #endif /* CNID_DBD */

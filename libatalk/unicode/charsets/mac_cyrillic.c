@@ -44,7 +44,8 @@ struct charset_functions charset_mac_cyrillic =
 	7,
 	mac_cyrillic_pull,
 	mac_cyrillic_push,
-	CHARSET_CLIENT | CHARSET_MULTIBYTE	
+	CHARSET_CLIENT | CHARSET_MULTIBYTE,
+	NULL, NULL
 };
 
 

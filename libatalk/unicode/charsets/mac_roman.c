@@ -44,7 +44,8 @@ struct charset_functions charset_mac_roman =
 	0,
 	mac_roman_pull,
 	mac_roman_push,
-	CHARSET_CLIENT | CHARSET_MULTIBYTE | CHARSET_PRECOMPOSED
+	CHARSET_CLIENT | CHARSET_MULTIBYTE | CHARSET_PRECOMPOSED,
+	NULL, NULL
 };
 
 /* ------------------------ */

@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.18 2004-10-09 12:48:21 didg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.18.2.1 2005-02-06 10:16:01 didg Exp $
  *
  * See COPYRIGHT.
  *
@@ -70,7 +70,7 @@ int		ibuflen, *rbuflen;
     return( AFP_OK );
 }
 
-struct savedt	si = { { 0, 0, 0, 0 }, -1, 0 };
+struct savedt	si = { { 0, 0, 0, 0 }, -1, 0, 0 };
 
 static char *icon_dtfile(struct vol *vol, u_char creator[ 4 ])
 {
@@ -80,6 +80,8 @@ static char *icon_dtfile(struct vol *vol, u_char creator[ 4 ])
 static int iconopen( vol, creator, flags, mode )
 struct vol	*vol;
 u_char	creator[ 4 ];
+int flags;
+int mode;
 {
     char	*dtf, *adt, *adts;
 

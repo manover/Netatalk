@@ -43,7 +43,8 @@ struct charset_functions charset_mac_turkish =
 	35,
 	mac_turkish_pull,
 	mac_turkish_push,
-	CHARSET_CLIENT | CHARSET_MULTIBYTE	
+	CHARSET_CLIENT | CHARSET_MULTIBYTE,
+	NULL, NULL
 };
 
 static size_t mac_turkish_push( void *cd, char **inbuf, size_t *inbytesleft,

@@ -46,7 +46,8 @@ struct charset_functions charset_utf8 =
 	0x08000103,
 	utf8_pull,
 	utf8_push,
-	CHARSET_VOLUME | CHARSET_MULTIBYTE | CHARSET_PRECOMPOSED
+	CHARSET_VOLUME | CHARSET_MULTIBYTE | CHARSET_PRECOMPOSED,
+	NULL, NULL
 };
 
 struct charset_functions charset_utf8_mac =
@@ -55,7 +56,8 @@ struct charset_functions charset_utf8_mac =
 	0x08000103,
 	utf8_pull,
 	utf8_push,
-	CHARSET_VOLUME | CHARSET_CLIENT | CHARSET_MULTIBYTE | CHARSET_DECOMPOSED
+	CHARSET_VOLUME | CHARSET_CLIENT | CHARSET_MULTIBYTE | CHARSET_DECOMPOSED,
+	NULL, NULL
 };
 
 /* ------------------------ */

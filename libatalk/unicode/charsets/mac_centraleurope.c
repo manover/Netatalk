@@ -43,7 +43,8 @@ struct charset_functions charset_mac_centraleurope =
 	29,
 	mac_centraleurope_pull,
 	mac_centraleurope_push,
-	CHARSET_CLIENT | CHARSET_MULTIBYTE	
+	CHARSET_CLIENT | CHARSET_MULTIBYTE,
+	NULL, NULL
 };
 
 

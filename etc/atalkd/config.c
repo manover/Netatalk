@@ -1,5 +1,5 @@
 /*
- * $Id: config.c,v 1.13.6.5.2.2 2005-01-31 19:50:40 didg Exp $
+ * $Id: config.c,v 1.13.6.5.2.3 2005-02-06 10:16:02 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -328,7 +328,7 @@ int readconf( cf )
     struct interface	*iface, *niface;
     char		line[ MAXLINELEN ], **argv, *p;
     unsigned int	i, j;
-    int			s, cc;
+    int			s, cc = 0;
     FILE		*conf;
 
     if ( cf == NULL ) {

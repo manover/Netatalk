@@ -1,6 +1,6 @@
 
 /*
- * $Id: cnid_last.c,v 1.1.4.1.2.1 2005-01-30 20:56:23 didg Exp $
+ * $Id: cnid_last.c,v 1.1.4.1.2.2 2005-02-06 10:16:03 didg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -163,6 +163,7 @@ struct _cnid_module cnid_last_module = {
     "last",
     {NULL, NULL},
     cnid_last_open,
+    0
 };
 
 /* Return the did/name pair corresponding to a CNID. */
