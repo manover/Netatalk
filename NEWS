@@ -1,3 +1,20 @@
+Changes in 2.0-beta1
+=====================
+
+* NEW: OSX style adouble scheme
+* NEW: japanese SHIFT_JIS codepage (iconv supplied)
+* NEW: Solaris kernel module build integrated with configure
+* NEW: Gentoo start scripts
+* NEW: cnid_dbd doesn't use transactions by default
+* FIX: afpd: the volume casefold option was broken
+* FIX: afpd: update AD2 headers and keep owner on file exchange
+* FIX: Solaris 9 and FreeBSD 4.9/5.2 compilation
+* FIX: free space reported with groups quotas on Linux
+* FIX: OS9/OS X didn't update free space
+* FIX: finder crash if folder opened got deleted by another process
+* FIX: randnum UAM wasn't AFP3 ready
+* FIX: numerous small bugfixes.
+
 Changes in 2.0-alpha2
 =====================
 
