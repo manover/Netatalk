@@ -1,5 +1,5 @@
 /*
- * $Id: dbif.c,v 1.1.4.12 2004-01-10 06:54:01 didg Exp $
+ * $Id: dbif.c,v 1.1.4.13 2004-01-10 07:00:59 bfernhomberg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -159,7 +159,7 @@ int dbif_env_init(struct db_param *dbp)
         db_env->set_errfile(db_env, db_errlog); 
     db_env->set_verbose(db_env, DB_VERB_RECOVERY, 1);
     db_env->set_verbose(db_env, DB_VERB_CHKPOINT, 1);
-    if (ret = db_env->open(db_env, ".", DBOPTIONS | DB_PRIVATE | DB_RECOVER, 0)) {
+    if ((ret = db_env->open(db_env, ".", DBOPTIONS | DB_PRIVATE | DB_RECOVER, 0))) {
         LOG(log_error, logtype_cnid, "error opening DB environment: %s", 
             db_strerror(ret));
         db_env->close(db_env, 0);
@@ -170,7 +170,7 @@ int dbif_env_init(struct db_param *dbp)
     if (db_errlog != NULL)
         fflush(db_errlog);
 
-    if (ret = db_env->close(db_env, 0)) {
+    if ((ret = db_env->close(db_env, 0))) {
         LOG(log_error, logtype_cnid, "error closing DB environment after recovery: %s", 
             db_strerror(ret));
         db_env = NULL;
