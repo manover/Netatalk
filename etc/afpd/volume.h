@@ -1,5 +1,5 @@
 /*
- * $Id: volume.h,v 1.19.2.2 2003-05-26 11:17:25 didg Exp $
+ * $Id: volume.h,v 1.19.2.3 2003-05-26 17:02:48 didg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -119,6 +119,7 @@ this is going away. */
 #define AFPVOL_DROPBOX   (1 << 14)  /* dropkludge dropbox support */
 #define AFPVOL_NOFILEID  (1 << 15)  /* don't advertise createid resolveid and deleteid calls */
 #define AFPVOL_UTF8      (1 << 16)  /* unix name are in UTF8 */
+#define AFPVOL_NOSTAT    (1 << 17)  /* unix name are in UTF8 */
 
 /* FPGetSrvrParms options */
 #define AFPSRVR_CONFIGINFO     (1 << 0)

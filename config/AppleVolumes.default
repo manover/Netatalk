@@ -76,16 +76,18 @@
 # limitsize           -> limit disk size reporting to 2GB. this is
 #                        here for older macintoshes using newer
 #                        appleshare clients. yucko.
-#
-# codepage:filename   -> load filename from nls directory.
-# dbpath:path         -> store the database stuff in the following path.
-# password:password   -> set a volume password (8 characters max)
 # nofileid            -> don't advertise createfileid, resolveid, deleteid 
 #                        calls
 # root_preexec_close  -> a non-zero return code from root_preexec close the 
                          volume being mounted.
 # preexec_close       -> a non-zero return code from preexec close the 
                          volume being mounted.
+# nostat              -> don't stat volume path when enumerating volumes list
+#
+#
+# codepage:filename   -> load filename from nls directory.
+# dbpath:path         -> store the database stuff in the following path.
+# password:password   -> set a volume password (8 characters max)
 #
 # The "~" below indicates that Home directories are visible by default.
 # If you do not wish to have people accessing their Home directories,
