@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.17.8.4 2004-02-14 00:30:51 didg Exp $
+ * $Id: main.c,v 1.17.8.5 2004-02-28 10:56:26 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -1029,6 +1029,12 @@ int main( ac, av )
 	exit( 1 );
     }
 
+    /*
+     * Set process name for logging
+     */
+
+    set_processname("atalkd");
+
     /* do this here so that we can use ifconfig */
 #ifdef __svr4__
     if ( plumb() < 0 ) {
@@ -1346,7 +1352,8 @@ smaller net range.", iface->i_name, ntohs(first), ntohs(last), strerror(errno));
 
     /* open ports */
     i = 1; /* enable broadcasts */
-#ifdef __svr4__ 
+#if 0
+    /* useless message, no? */
     LOG(log_info, logtype_atalkd, "setsockopt incompatible w/ Solaris STREAMS module.");
 #endif /* __svr4__ */
     for ( ap = iface->i_ports; ap; ap = ap->ap_next ) {
