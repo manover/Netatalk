@@ -1,5 +1,5 @@
 /*
- * $Id: uam.c,v 1.15.2.4 2002-03-12 15:21:12 srittau Exp $
+ * $Id: uam.c,v 1.15.2.5 2002-03-18 19:39:13 jmarcus Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -453,28 +453,28 @@ int uam_sia_validate_user(sia_collect_func_t * collect, int argc, char **argv,
 
        if ((rc=sia_ses_init(&entity, argc, argv, hostname, username, tty,
                             colinput, gssapi)) != SIASUCCESS) {
-               LOG(log_error, logtype_default, "cannot initialise SIA");
+               syslog(LOG_ERR, "cannot initialise SIA");
                return SIAFAIL;
        }
 
        /* save old action for restoration later */
        if (sigaction(SIGALRM, NULL, &act))
-               LOG(log_error, logtype_default, "cannot save SIGALRM handler");
+               syslog(LOG_ERR, "cannot save SIGALRM handler");
 
        if ((rc=sia_ses_authent(collect, passphrase, entity)) != SIASUCCESS) {
                /* restore old action after clobbering by sia_ses_authent() */
                if (sigaction(SIGALRM, &act, NULL))
-                       LOG(log_error, logtype_default, "cannot restore SIGALRM +
-               LOG(log_info, logtype_default, "unsuccessful login for %s",
+                       syslog(LOG_ERR, "cannot restore SIGALRM");
+               syslog(LOG_ERR, "unsuccessful login for %s",
 (hostname?hostname:"(null)"));
                return SIAFAIL;
        }
-       LOG(log_info, logtype_default, "successful login for %s",
+       syslog(LOG_ERR, "successful login for %s",
 (hostname?hostname:"(null)"));
 
        /* restore old action after clobbering by sia_ses_authent() */   
        if (sigaction(SIGALRM, &act, NULL))
-               LOG(log_error, logtype_default, "cannot restore SIGALRM handler"+
+               syslog(LOG_ERR, "cannot restore SIGALRM handler"); 
        sia_ses_release(&entity);
 
        return SIASUCCESS;
