@@ -1,5 +1,5 @@
 /*
- * $Id: pack.c,v 1.1.4.4 2003-11-25 00:41:31 lenneis Exp $
+ * $Id: pack.c,v 1.1.4.5 2003-11-25 19:13:26 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -22,6 +22,10 @@
 #include "pack.h"
 
 /* --------------- */
+/*
+ *  This implementation is portable, but could probably be faster by using htonl
+ *  where appropriate. Also, this again doubles code from the cdb backend.
+ */
 static void pack_devino(unsigned char *buf, dev_t dev, ino_t ino)
 {
     buf[CNID_DEV_LEN - 1] = dev; dev >>= 8;

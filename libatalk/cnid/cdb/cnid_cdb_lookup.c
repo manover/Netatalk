@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_cdb_lookup.c,v 1.1.4.3 2003-10-21 16:23:54 didg Exp $
+ * $Id: cnid_cdb_lookup.c,v 1.1.4.4 2003-11-25 19:13:27 lenneis Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -20,8 +20,8 @@ cnid_t cnid_cdb_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t
     char *buf;
     CNID_private *db;
     DBT key, devdata, diddata;
-    dev_t dev;
-    ino_t ino;  
+    char dev[CNID_DEV_LEN];
+    char ino[CNID_INO_LEN];  
     int devino = 1, didname = 1; 
     u_int32_t type_devino  = (unsigned)-1;
     u_int32_t type_didname = (unsigned)-1;
@@ -50,8 +50,8 @@ cnid_t cnid_cdb_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t
     key.data = buf +CNID_DEVINO_OFS;
     key.size = CNID_DEVINO_LEN;
 
-    memcpy(&dev, buf + CNID_DEV_OFS, sizeof(dev));
-    memcpy(&ino, buf + CNID_INO_OFS, sizeof(ino));
+    memcpy(dev, buf + CNID_DEV_OFS, CNID_DEV_LEN);
+    memcpy(ino, buf + CNID_INO_OFS, CNID_INO_LEN);
     
     if (0 != (rc = db->db_didname->get(db->db_devino, NULL, &key, &devdata, 0 )) ) {
         if (rc != DB_NOTFOUND) {
@@ -100,7 +100,7 @@ cnid_t cnid_cdb_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t
          * if it's the same dev or not the same type
          * just delete it
         */
-        if (!memcmp(&dev, (char *)diddata.data + CNID_DEV_OFS, sizeof(dev)) ||
+        if (!memcmp(dev, (char *)diddata.data + CNID_DEV_OFS, CNID_DEV_LEN) ||
                    type_didname != type) {
             if (cnid_cdb_delete(cdb, id) < 0) {
                 return 0;

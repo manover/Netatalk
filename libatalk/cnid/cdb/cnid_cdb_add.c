@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_cdb_add.c,v 1.1.4.2 2003-10-21 16:23:54 didg Exp $
+ * $Id: cnid_cdb_add.c,v 1.1.4.3 2003-11-25 19:13:27 lenneis Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -19,6 +19,27 @@
 #define tid    NULL
 
 #ifdef ATACC
+static void make_devino_data(unsigned char *buf, dev_t dev, ino_t ino)
+{
+    buf[CNID_DEV_LEN - 1] = dev; dev >>= 8;
+    buf[CNID_DEV_LEN - 2] = dev; dev >>= 8;
+    buf[CNID_DEV_LEN - 3] = dev; dev >>= 8;
+    buf[CNID_DEV_LEN - 4] = dev; dev >>= 8;
+    buf[CNID_DEV_LEN - 5] = dev; dev >>= 8;
+    buf[CNID_DEV_LEN - 6] = dev; dev >>= 8;
+    buf[CNID_DEV_LEN - 7] = dev; dev >>= 8;
+    buf[CNID_DEV_LEN - 8] = dev;
+
+    buf[CNID_DEV_LEN + CNID_INO_LEN - 1] = ino; ino >>= 8;
+    buf[CNID_DEV_LEN + CNID_INO_LEN - 2] = ino; ino >>= 8;
+    buf[CNID_DEV_LEN + CNID_INO_LEN - 3] = ino; ino >>= 8;
+    buf[CNID_DEV_LEN + CNID_INO_LEN - 4] = ino; ino >>= 8;
+    buf[CNID_DEV_LEN + CNID_INO_LEN - 5] = ino; ino >>= 8;
+    buf[CNID_DEV_LEN + CNID_INO_LEN - 6] = ino; ino >>= 8;
+    buf[CNID_DEV_LEN + CNID_INO_LEN - 7] = ino; ino >>= 8;
+    buf[CNID_DEV_LEN + CNID_INO_LEN - 8] = ino;    
+}
+
 char *make_cnid_data(const struct stat *st,const cnid_t did,
                      const char *name, const int len)
 {
@@ -29,12 +50,8 @@ char *make_cnid_data(const struct stat *st,const cnid_t did,
     if (len > MAXPATHLEN)
         return NULL;
 
-    memcpy(buf, &st->st_dev, sizeof(st->st_dev));
-    buf += sizeof(st->st_dev);
-
-    i = htonl(st->st_ino);
-    memcpy(buf , &st->st_ino, sizeof(st->st_ino));
-    buf += sizeof(st->st_ino);
+    make_devino_data(buf, st->st_dev, st->st_ino);
+    buf += CNID_DEVINO_LEN;
 
     i = S_ISDIR(st->st_mode)?1:0;
     i = htonl(i);
