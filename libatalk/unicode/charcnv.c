@@ -153,12 +153,12 @@ static const char *charset_name(charset_t ch)
 			atalk_iconv_t handle = atalk_iconv_open(ln,"UCS-2");
 			if (handle == (atalk_iconv_t) -1) {
 				LOG(log_debug, logtype_default, "Locale charset '%s' unsupported, using ASCII instead", ln);
-				ln = NULL;
+				ln = "ASCII";
 			} else {
 				atalk_iconv_close(handle);
-				if (ch==CH_UNIX)
-					strlcpy(unixname, ln, sizeof(unixname));
 			}
+			if (ch==CH_UNIX)
+				strlcpy(unixname, ln, sizeof(unixname));
 		}
 		ret = ln;
 	}
