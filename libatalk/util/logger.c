@@ -522,6 +522,7 @@ void make_log_entry(enum loglevels loglevel, enum logtypes logtype,
   char log_details_buffer[MAXLOGSIZE];
 
   log_file_data_pair *logs;
+#endif
   
   /* fn is not reentrant but is used in signal handler 
    * with LOGGER it's a little late source name and line number
@@ -533,6 +534,7 @@ void make_log_entry(enum loglevels loglevel, enum logtypes logtype,
      return;
   inlog = 1;
 
+#ifndef DISABLE_LOGGER
   log_init();
 
   logs = log_file_arr[logtype];
