@@ -1,5 +1,5 @@
 /*
- * $Id: afp_options.c,v 1.27.2.3 2003-06-09 15:09:06 srittau Exp $
+ * $Id: afp_options.c,v 1.27.2.4 2003-11-18 21:48:44 bfernhomberg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -126,6 +126,8 @@ void afp_options_free(struct afp_options *opt,
         free(opt->k5service);
     if (opt->k5realm && (opt->k5realm != save->k5realm))
         free(opt->k5realm);
+    if (opt->k5keytab && (opt->k5realm != save->k5keytab))
+        free(opt->k5keytab);
 }
 
 /* initialize options */
@@ -154,6 +156,7 @@ void afp_options_init(struct afp_options *options)
 #endif /* ADMIN_GRP */
     options->k5service = NULL;
     options->k5realm = NULL;
+    options->k5keytab = NULL;
 }
 
 /* parse an afpd.conf line. i'm doing it this way because it's
@@ -384,8 +387,14 @@ int afp_options_parseline(char *buf, struct afp_options *options)
         options->k5service = opt;
     if ((c = getoption(buf, "-k5realm")) && (opt = strdup(c)))
         options->k5realm = opt;
-    if ((c = getoption(buf, "-k5keytab")))
-        setenv( "KRB5_KTNAME", c, 1 );
+    if ((c = getoption(buf, "-k5keytab"))) {
+        if ( NULL == (options->k5keytab = (char *) malloc(sizeof(char)*(strlen(c)+14)) )) {
+                LOG(log_error, logtype_afpd, "malloc failed");
+                exit(-1);
+        }
+        snprintf(options->k5keytab, strlen(c)+14, "KRB5_KTNAME=%s", c);
+        putenv(options->k5keytab);
+    }
     if ((c = getoption(buf, "-authprintdir")) && (opt = strdup(c)))
         options->authprintdir = opt;
     if ((c = getoption(buf, "-uampath")) && (opt = strdup(c)))
