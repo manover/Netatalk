@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.5 2004-01-25 00:04:53 bfernhomberg Exp $
+ * $Id: adouble.h,v 1.21.6.6 2004-01-31 14:26:24 bfernhomberg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -144,8 +144,8 @@
 #define ADEDLEN_PRIVINO         8
 #define ADEDLEN_PRIVSYN         8
 
-#define ADEID_NUM_V1         5 
-#define ADEID_NUM_V2         12  
+#define ADEID_NUM_V1         5
+#define ADEID_NUM_V2         12
 
 /* 589 */
 #define AD_DATASZ1      (AD_HEADER_LEN + ADEDLEN_NAME + ADEDLEN_COMMENT +ADEDLEN_FILEI +ADEDLEN_FINDERI+\
@@ -159,12 +159,7 @@ ADEID_NUM_V1*AD_ENTRY_LEN)
 +ADEDLEN_PRIVDEV +ADEDLEN_PRIVINO +ADEDLEN_PRIVSYN)
 
 /* 725 */
-/*
-#define AD_DATASZ2      (AD_DATASZ1 + (ADEID_NUM_V2 -ADEID_NUM_V1)*AD_ENTRY_LEN)
-FIXME I give up,
-for our adouble version 2 size *is* 725 
-*/
-#define AD_DATASZ2 725
+#define AD_DATASZ2      (AD_DATASZ1 + AD_NEWSZ2 + (ADEID_NUM_V2 -ADEID_NUM_V1)*AD_ENTRY_LEN)
 
 #if AD_DATASZ2 != 725
 #error bad size for AD_DATASZ2
