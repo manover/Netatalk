@@ -1,5 +1,5 @@
 /*
- * $Id: afp_config.c,v 1.22.6.9 2004-06-14 20:58:56 bfernhomberg Exp $
+ * $Id: afp_config.c,v 1.22.6.9.2.1 2005-01-03 15:24:05 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -425,7 +425,7 @@ static AFPConfig *DSIConfigInit(const struct afp_options *options,
 	err = SLPReg(hslp,
 		     dsi->srvloc_url,
 		     SLP_LIFETIME_MAXIMUM,
-		     "",
+		     "afp",
 		     "",
 		     SLP_TRUE,
 		     SRVLOC_callback,
