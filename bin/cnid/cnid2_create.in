@@ -3,7 +3,7 @@
 #
 # Upgrade version 1 CNID databases to version 2
 #
-# $Id: cnid2_create.in,v 1.1.2.2 2004-01-02 17:20:57 lenneis Exp $
+# $Id: cnid2_create.in,v 1.1.2.3 2004-01-10 08:49:56 bfernhomberg Exp $
 #
 # Copyright (C) Joerg Lenneis 2003
 # All Rights Reserved.  See COPYRIGHT.
@@ -200,7 +200,7 @@ sub output_header($$$)
     my $n      = shift;
     
     printf $handle "VERSION=3\nformat=bytevalue\ndatabase=%s\n", $dbname;
-    printf $handle "type=hash\nh_nelem=%i\nHEADER=END\n", $n;
+    printf $handle "type=btree\nh_nelem=%i\nHEADER=END\n", $n;
 }
 
 sub expand_did_table($$)
