@@ -1,5 +1,5 @@
 /*
- * $Id: config.c,v 1.13.6.5.2.1 2005-01-31 17:01:01 didg Exp $
+ * $Id: config.c,v 1.13.6.5.2.2 2005-01-31 19:50:40 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -276,7 +276,7 @@ int writeconf( cf )
                     }
                     len = ((struct ziptab *)l->l_data)->zt_len;
                 } 
-		fprintf( newconf, " -zone \"%.*s\"", len, zonename);
+		fprintf( newconf, " -zone \"%.*s\"", (int)len, zonename);
                 free(zonename);
 	    }
 	    fprintf( newconf, "\n" );

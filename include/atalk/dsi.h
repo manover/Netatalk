@@ -129,7 +129,7 @@ typedef struct DSI {
 
 /* server and client quanta */
 #define DSI_DEFQUANT        2           /* default attention quantum size */
-#define DSI_SERVQUANT_MAX   0xffffffffL /* server quantum */
+#define DSI_SERVQUANT_MAX   0xffffffff  /* server quantum */
 #define DSI_SERVQUANT_MIN   32000       /* minimum server quantum */
 #define DSI_SERVQUANT_DEF   0x0004A2E0L /* default server quantum */
 

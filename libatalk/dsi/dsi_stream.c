@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_stream.c,v 1.11.6.5 2004-05-04 14:26:14 didg Exp $
+ * $Id: dsi_stream.c,v 1.11.6.5.2.1 2005-01-31 19:50:53 didg Exp $
  *
  * Copyright (c) 1998 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -51,7 +51,7 @@
 /* ------------------------- 
  * we don't use a circular buffer.
 */
-const void dsi_buffer(DSI *dsi)
+void dsi_buffer(DSI *dsi)
 {
     fd_set readfds, writefds;
     int    len;

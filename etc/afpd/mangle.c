@@ -1,5 +1,5 @@
 /* 
- * $Id: mangle.c,v 1.16.2.1.2.12 2004-09-02 20:48:52 didg Exp $ 
+ * $Id: mangle.c,v 1.16.2.1.2.12.2.1 2005-01-31 19:50:37 didg Exp $ 
  *
  * Copyright (c) 2002. Joe Marcus Clarke (marcus@marcuscom.com)
  * All Rights Reserved.  See COPYRIGHT.
@@ -205,8 +205,8 @@ demangle_osx(const struct vol *vol, char *mfilename, cnid_t did, cnid_t *fileid)
 /* -------------------------------------------------------
  * find the start of a utf8 character
  */
-static char *
-utf8_mangle_validate(char *path, size_t len)
+static unsigned char *
+utf8_mangle_validate(unsigned char *path, size_t len)
 {
     unsigned char *p = path + len;
     int           dec = 0;
@@ -230,12 +230,12 @@ utf8_mangle_validate(char *path, size_t len)
    id         file/folder ID or 0
    
 */
-char *
-mangle(const struct vol *vol, char *filename, size_t filenamelen, char *uname, cnid_t id, int flags) {
-    char *ext = NULL;
-    char *m = NULL;
-    static char mfilename[MAXPATHLEN + 1];
-    char mangle_suffix[MANGLE_LENGTH + 1];
+unsigned char *
+mangle(const struct vol *vol, unsigned char *filename, size_t filenamelen, unsigned char *uname, cnid_t id, int flags) {
+    unsigned char *ext = NULL;
+    unsigned char *m = NULL;
+    static unsigned char mfilename[MAXPATHLEN + 1];
+    unsigned char mangle_suffix[MANGLE_LENGTH + 1];
     size_t ext_len = 0;
     size_t maxlen;
     int k;

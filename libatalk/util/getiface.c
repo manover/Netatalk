@@ -119,7 +119,7 @@ static int getifaces(const int sockfd, char ***list)
  */
 char **getifacelist()
 {
-  char **list;
+  char **list = NULL; /* FIXME */
   int  i, fd;
 
   if ((fd = socket(PF_INET, SOCK_STREAM, 0)) < 0)

@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.h,v 1.3.6.3 2004-03-11 02:01:59 didg Exp $
+ * $Id: desktop.h,v 1.3.6.3.2.1 2005-01-31 19:50:35 didg Exp $
  *
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
@@ -48,7 +48,6 @@ typedef unsigned char CreatorType[4];
 extern char	*dtfile __P((const struct vol *, u_char [], char *));
 extern char	*mtoupath __P((const struct vol *, char *, cnid_t, int utf8));
 extern char	*utompath __P((const struct vol *, char *, cnid_t, int utf8));
-extern u_char	ucreator[];
 
 /* FP functions */
 extern int	afp_opendt __P((AFPObj *, char *, int, char *, int *));

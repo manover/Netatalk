@@ -1,5 +1,5 @@
 /*
- * $Id: nbplkup.c,v 1.4.14.2 2004-06-15 00:44:02 bfernhomberg Exp $
+ * $Id: nbplkup.c,v 1.4.14.2.2.1 2005-01-31 19:50:35 didg Exp $
  *
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
@@ -176,7 +176,7 @@ int main( ac, av )
         }
 
 	printf( "%31.*s:%-34.*s %u.%u:%u\n",
-		obj_len, obj,
+		(int)obj_len, obj,
 		nn[ i ].nn_typelen, nn[ i ].nn_type,
 		ntohs( nn[ i ].nn_sat.sat_addr.s_net ),
 		nn[ i ].nn_sat.sat_addr.s_node,

@@ -1,5 +1,5 @@
 /*
- * $Id: getzones.c,v 1.6.14.1 2004-06-09 01:07:17 bfernhomberg Exp $
+ * $Id: getzones.c,v 1.6.14.1.2.1 2005-01-31 19:50:34 didg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -166,7 +166,7 @@ void print_zones( short n, char *buf )
             }
         }
 
-	printf( "%.*s\n", zone_len, zone );
+	printf( "%.*s\n", (int)zone_len, zone );
 
 	free(zone);
     }
