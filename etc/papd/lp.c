@@ -1,5 +1,5 @@
 /*
- * $Id: lp.c,v 1.14.8.3 2004-06-09 01:25:53 bfernhomberg Exp $
+ * $Id: lp.c,v 1.14.8.4 2004-06-09 02:24:47 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -844,7 +844,7 @@ int lp_print()
         }
 
 	/*LOG(log_info, logtype_papd, "lp_print unlink %s", lp.lp_spoolfile );*/
-        //unlink ( lp.lp_spoolfile );
+        unlink ( lp.lp_spoolfile );
 	return 0;
 #endif /* HAVE_CUPS*/
     }
