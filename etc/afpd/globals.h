@@ -1,5 +1,5 @@
 /*
- * $Id: globals.h,v 1.18.2.2.2.4 2004-06-09 02:07:15 bfernhomberg Exp $
+ * $Id: globals.h,v 1.18.2.2.2.5 2004-06-15 00:35:06 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -24,6 +24,7 @@
 #include <atalk/afp.h>
 #include <atalk/compat.h>
 #include <atalk/unicode.h>
+#include <atalk/uam.h>
 
 /* test for inline */
 #ifndef __inline__
@@ -97,6 +98,7 @@ typedef struct AFPObj {
     /* to prevent confusion, only use these in afp_* calls */
     char oldtmp[AFPOBJ_TMPSIZ + 1], newtmp[AFPOBJ_TMPSIZ + 1];
     void *uam_cookie; /* cookie for uams */
+    struct session_info  sinfo;
 
 #ifdef FORCE_UIDGID
     int                 force_uid;

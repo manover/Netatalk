@@ -1,5 +1,5 @@
 /*
- * $Id: uams_gss.c,v 1.2.2.2 2003-09-11 23:49:30 bfernhomberg Exp $
+ * $Id: uams_gss.c,v 1.2.2.3 2004-06-15 00:35:06 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -118,13 +118,14 @@ void log_ctx_flags( OM_uint32 flags )
 
 /* return 0 on success */
 static int do_gss_auth( char *service, char *ibuf, int ticket_len,
-	       	 char *rbuf, int *rbuflen, char *username, int ulen ) 
+	       	 char *rbuf, int *rbuflen, char *username, int ulen,
+		 struct session_info *sinfo ) 
 {
     OM_uint32 major_status = 0, minor_status = 0;
     gss_name_t server_name;
     gss_cred_id_t server_creds;
     gss_ctx_id_t context_handle = GSS_C_NO_CONTEXT;
-    gss_buffer_desc ticket_buffer, authenticator_buff;
+    gss_buffer_desc ticket_buffer, authenticator_buff, sesskey_buff, wrap_buff;
     gss_name_t client_name;
     OM_uint32	ret_flags;
     int ret = 0;
@@ -144,7 +145,7 @@ static int do_gss_auth( char *service, char *ibuf, int ticket_len,
      * gss_accept_sec_context
      * ...
      */
-    LOG(log_info, logtype_uams, "uams_gss.c :do_gss_auth: importing name" );
+    LOG(log_debug, logtype_uams, "uams_gss.c :do_gss_auth: importing name" );
     major_status = gss_import_name( &minor_status, 
 		    &s_princ_buffer, 
 		    GSS_C_NT_HOSTBASED_SERVICE,
@@ -155,7 +156,7 @@ static int do_gss_auth( char *service, char *ibuf, int ticket_len,
 	goto cleanup_vars;
     }
     
-    LOG(log_info, logtype_uams, 
+    LOG(log_debug, logtype_uams, 
 	"uams_gss.c :do_gss_auth: acquiring credentials (uid = %d, keytab = %s)",
         (int)geteuid(), getenv( "KRB5_KTNAME") );
 
@@ -175,7 +176,7 @@ static int do_gss_auth( char *service, char *ibuf, int ticket_len,
     ticket_buffer.value = ibuf;
     authenticator_buff.length = 0;
     authenticator_buff.value = NULL;
-    LOG(log_info, logtype_uams, "uams_gss.c :do_gss_auth: accepting context (ticketlen: %u, value: %X)", ticket_buffer.length, ticket_buffer.value );
+    LOG(log_debug, logtype_uams, "uams_gss.c :do_gss_auth: accepting context (ticketlen: %u, value: %X)", ticket_buffer.length, ticket_buffer.value );
     major_status = gss_accept_sec_context( &minor_status, &context_handle,
 		    	server_creds, &ticket_buffer, GSS_C_NO_CHANNEL_BINDINGS,
 			&client_name, NULL, &authenticator_buff,
@@ -184,11 +185,30 @@ static int do_gss_auth( char *service, char *ibuf, int ticket_len,
     if (major_status == GSS_S_COMPLETE) {
 	gss_buffer_desc client_name_buffer;
 
+#ifdef DEBUG1
 	log_ctx_flags( ret_flags );
+#endif
 	/* use gss_display_name on client_name */
 	major_status = gss_display_name( &minor_status, client_name,
 				&client_name_buffer, (gss_OID *)NULL );
 	if (major_status == GSS_S_COMPLETE) {
+
+	    sesskey_buff.value = sinfo->sessionkey;
+	    sesskey_buff.length = sinfo->sessionkey_len;
+
+	    gss_wrap (&minor_status, context_handle, 1, GSS_C_QOP_DEFAULT, &sesskey_buff, NULL, &wrap_buff); 
+	    if ( minor_status == GSS_S_COMPLETE) {
+		sinfo->cryptedkey = malloc ( wrap_buff.length );
+		memcpy (sinfo->cryptedkey, wrap_buff.value, wrap_buff.length);
+		sinfo->cryptedkey_len = wrap_buff.length;
+ 	    }
+	    else {
+	    	log_status( "GSS wrap", major_status, minor_status );
+	    }
+
+	    if (wrap_buff.value)
+	        gss_release_buffer( &minor_status, &wrap_buff );
+
 	    u_int16_t auth_len = htons( authenticator_buff.length );
 	    /* save the username... note that doing it this way is
 	     * not the best idea: if a principal is truncated, a user could be
@@ -198,7 +218,7 @@ static int do_gss_auth( char *service, char *ibuf, int ticket_len,
 		MIN(client_name_buffer.length, ulen - 1));
 	    username[MIN(client_name_buffer.length, ulen - 1)] = 0;
 	
-            LOG(log_info, logtype_uams, "uams_gss.c :do_gss_auth: user is %s!", username );
+            LOG(log_debug, logtype_uams, "uams_gss.c :do_gss_auth: user is %s!", username );
 	    /* copy the authenticator length into the reply buffer */
 	    memcpy( rbuf, &auth_len, sizeof(auth_len) );
 	    *rbuflen += sizeof(auth_len), rbuf += sizeof(auth_len);
@@ -212,6 +232,8 @@ static int do_gss_auth( char *service, char *ibuf, int ticket_len,
 	    log_status( "display_name", major_status, minor_status );
 	    ret = 1;
 	}
+
+	
 
 
 	/* Clean up after ourselves */
@@ -268,6 +290,7 @@ static int gss_logincont(void *obj, struct passwd **uam_pwd,
     int rblen;
     char *service;
     int userlen, servicelen;
+    struct session_info *sinfo;
 
     /* Apple's AFP 3.1 documentation specifies that this command
      * takes the following format:
@@ -311,6 +334,14 @@ static int gss_logincont(void *obj, struct passwd **uam_pwd,
     if (service == NULL) 
 	return AFPERR_MISC;
 
+    if (uam_afpserver_option(obj, UAM_OPTION_SESSIONINFO, (void *)&sinfo, NULL) < 0)
+	return AFPERR_MISC;
+
+    if (sinfo->sessionkey == NULL || sinfo->sessionkey_len == 0) {
+        LOG(log_info, logtype_uams, "internal error: sessionkey not set");
+        return AFPERR_PARAM;
+    }
+
     /* We skip past the 'username' parameter because all that matters is the ticket */
     p = ibuf;
     while( *ibuf && ibuflen ) { ibuf++, ibuflen--; }
@@ -334,7 +365,7 @@ static int gss_logincont(void *obj, struct passwd **uam_pwd,
 	return AFPERR_PARAM;
     }
 
-    if (!do_gss_auth(service, ibuf, ticket_len, rbuf, &rblen, username, userlen)) {
+    if (!do_gss_auth(service, ibuf, ticket_len, rbuf, &rblen, username, userlen, sinfo)) {
 	char *at = strchr( username, '@' );
 
 	// Chop off the realm name

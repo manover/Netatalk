@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.44.2.3.2.12 2004-05-04 15:38:24 didg Exp $
+ * $Id: auth.c,v 1.44.2.3.2.13 2004-06-15 00:35:06 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -387,6 +387,41 @@ unsigned int ibuflen, *rbuflen;
     rbuf += sizeof(retdata);
     return AFP_OK;
 }
+
+/* ---------------------- */
+static int create_session_token(AFPObj *obj)
+{
+    pid_t pid;
+
+    /* use 8 bytes for token as OSX, don't know if it helps */
+    if ( sizeof(pid_t) > SESSIONTOKEN_LEN) {
+       LOG(log_error, logtype_afpd, "sizeof(pid_t) > %u", SESSIONTOKEN_LEN );
+       return AFPERR_MISC;
+    }
+
+    if ( NULL == (obj->sinfo.sessiontoken = malloc(SESSIONTOKEN_LEN)) )
+       return AFPERR_MISC;
+
+    memset(obj->sinfo.sessiontoken, 0, SESSIONTOKEN_LEN);
+    obj->sinfo.sessiontoken_len = SESSIONTOKEN_LEN;
+    pid = getpid();
+    memcpy(obj->sinfo.sessiontoken, &pid, sizeof(pid_t));
+
+    return 0;
+}
+
+static int create_session_key(AFPObj *obj)
+{
+    /* create session key */
+    if (obj->sinfo.sessionkey == NULL) {
+        if (NULL == (obj->sinfo.sessionkey = malloc(SESSIONKEY_LEN)) )
+            return AFPERR_MISC;   
+        uam_random_string(obj, obj->sinfo.sessionkey, SESSIONKEY_LEN);
+        obj->sinfo.sessionkey_len = SESSIONKEY_LEN;
+    }
+    return AFP_OK;
+}
+
    
 /* ---------------------- */
 int afp_getsession(obj, ibuf, ibuflen, rbuf, rbuflen )
@@ -397,20 +432,26 @@ unsigned int ibuflen, *rbuflen;
     u_int16_t           type;
     u_int32_t           idlen = 0;
     u_int32_t		boottime;
-
-    u_int16_t           tklen, tp; /* FIXME: spec  u_int32_t? */
-    pid_t               token;
-    char 		*p;
+    u_int32_t           tklen, tp;
+    char                *token;
+    char                *p;
 
     *rbuflen = 0;
+    tklen = 0;
 
     ibuf += 2;
     ibuflen -= 2;
 
-    memcpy(&type, ibuf, sizeof(type));    
+    memcpy(&type, ibuf, sizeof(type));
     type = ntohs(type);
     ibuf += sizeof(type);
     ibuflen -= sizeof(type);
+
+    if ( obj->sinfo.sessiontoken == NULL ) {
+        if ( create_session_token( obj ) )
+            return AFPERR_MISC;
+    }
+
     /*
      * 
     */
@@ -428,6 +469,8 @@ unsigned int ibuflen, *rbuflen;
                 return AFPERR_PARAM;
             }
             /* memcpy (id, ibuf, idlen) */
+            tklen = obj->sinfo.sessiontoken_len;
+            token = obj->sinfo.sessiontoken;
         }
         break;
     case 3: /* Jaguar */
@@ -443,33 +486,33 @@ unsigned int ibuflen, *rbuflen;
 	    if (ibuflen < idlen || idlen > (90-10)) {
 		return AFPERR_PARAM;
 	    }
-	    server_ipc_write(IPC_GETSESSION, idlen+8, p ); 
+	    server_ipc_write(IPC_GETSESSION, idlen+8, p );
+	    tklen = obj->sinfo.sessiontoken_len;
+	    token = obj->sinfo.sessiontoken;
 	}
 	type = 0;
 	break;
+     case 8: /* Panther Kerberos Token */
+            tklen = obj->sinfo.cryptedkey_len;
+            token = obj->sinfo.cryptedkey;
+        break;
+     default:
+            return AFPERR_NOOP;
+        break;
+
     }
-    *rbuflen = sizeof(type);
-    type = htons(type);
-    memcpy(rbuf, &type, sizeof(type));
-    rbuf += sizeof(type);
 
-    *rbuflen += sizeof(tklen);
+    if (tklen == 0)
+        return AFPERR_MISC;
 
-    /* use 8 bytes for token as OSX, don't know if it helps */
-    if ( sizeof(pid_t) > 8) {
-         LOG(log_error, logtype_afpd, "sizeof(pid_t) > 8" );
-         return AFPERR_MISC;
-    }
-    tklen = 8;
-
-    tp = htons(tklen);
+    tp = htonl(tklen);
     memcpy(rbuf, &tp, sizeof(tklen));
     rbuf += sizeof(tklen);
+    *rbuflen += sizeof(tklen);
 
+    memcpy(rbuf, token, tklen);
     *rbuflen += tklen;
-    memset(rbuf, 0, tklen);
-    token = getpid();
-    memcpy(rbuf, &token, sizeof(pid_t));
+
     return AFP_OK;
 }
 
@@ -488,6 +531,11 @@ int		ibuflen, *rbuflen;
     *rbuflen = 0;
     ibuf += 2;
 
+    /* check for guest user */
+    if ( 0 == (strcasecmp(obj->username, obj->options.guest)) ) {
+        return AFPERR_MISC;
+    }
+
     memcpy(&type, ibuf, sizeof(type));
     type = ntohs(type);
     ibuf += sizeof(type);
@@ -496,11 +544,11 @@ int		ibuflen, *rbuflen;
     tklen = ntohl(tklen);
     ibuf += sizeof(tklen);
 
-    if ( sizeof(pid_t) > 8) {
-         LOG(log_error, logtype_afpd, "sizeof(pid_t) > 8" );
+    if ( sizeof(pid_t) > SESSIONTOKEN_LEN) {
+         LOG(log_error, logtype_afpd, "sizeof(pid_t) > %u", SESSIONTOKEN_LEN );
          return AFPERR_MISC;
     }
-    if (tklen != 8) {
+    if (tklen != SESSIONTOKEN_LEN) {
         return AFPERR_MISC;
     }   
     tklen = sizeof(pid_t);
@@ -508,7 +556,7 @@ int		ibuflen, *rbuflen;
 
     /* our stuff is pid + zero pad */
     ibuf += tklen;
-    for (i = tklen; i < 8; i++, ibuf++) {
+    for (i = tklen; i < SESSIONTOKEN_LEN; i++, ibuf++) {
          if (*ibuf != 0) {
              return AFPERR_MISC;
          }
@@ -597,6 +645,9 @@ int		ibuflen, *rbuflen;
         return send_reply(obj, AFPERR_BADUAM);
     ibuf += len;
     ibuflen -= len;
+
+    if (AFP_OK != (i = create_session_key(obj)) )
+        return send_reply(obj, i);
 
     i = afp_uam->u.uam_login.login(obj, &pwd, ibuf, ibuflen, rbuf, rbuflen);
 
@@ -721,6 +772,10 @@ unsigned int	ibuflen, *rbuflen;
     if (ibuflen && ((unsigned long) ibuf & 1)) { /* pad character */
         ibuf++;
         ibuflen--;
+    }
+
+    if (AFP_OK != (i = create_session_key(obj)) ) {
+        return send_reply(obj, i);
     }
 
     /* FIXME user name are in UTF8 */    

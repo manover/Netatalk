@@ -43,6 +43,7 @@
 #define UAM_OPTION_KRB5SERVICE  (1 << 9) /* service name for krb5 principal */
 #define UAM_OPTION_MACCHARSET   (1 << 10) /* mac charset handle */
 #define UAM_OPTION_UNIXCHARSET  (1 << 11) /* unix charset handle */
+#define UAM_OPTION_SESSIONINFO  (1 << 12) /* unix charset handle */
 
 /* some password options. you pass these in the length parameter and
  * get back the corresponding option. not all of these are implemented. */
@@ -60,6 +61,18 @@ struct uam_export {
   int uam_type, uam_version;
   int (*uam_setup)(const char *);
   void (*uam_cleanup)(void);
+};
+
+#define SESSIONKEY_LEN  64
+#define SESSIONTOKEN_LEN 8
+
+struct session_info {
+  void    *sessionkey;          /* random session key */
+  size_t  sessionkey_len;
+  void    *cryptedkey;		/* kerberos/gssapi crypted key */
+  size_t  cryptedkey_len;
+  void    *sessiontoken;        /* session token sent to the client on FPGetSessionToken*/
+  size_t  sessiontoken_len;
 };
 
 /* register and unregister uams with these functions */

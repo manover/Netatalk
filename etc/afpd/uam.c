@@ -1,5 +1,5 @@
 /*
- * $Id: uam.c,v 1.24.6.5 2004-02-20 22:27:16 bfernhomberg Exp $
+ * $Id: uam.c,v 1.24.6.6 2004-06-15 00:35:06 bfernhomberg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -370,14 +370,44 @@ int uam_checkuser(const struct passwd *pwd)
     return 0;
 }
 
+int uam_random_string (AFPObj *obj, char *buf, int len)
+{
+    u_int32_t result;
+    int fd;
+
+    if ( (len < 0) || (len % sizeof(result)))
+            return -1;
+
+    /* construct a random number */
+    if ((fd = open("/dev/urandom", O_RDONLY)) < 0) {
+        struct timeval tv;
+        struct timezone tz;
+        int i;
+
+        if (gettimeofday(&tv, &tz) < 0)
+            return -1;
+        srandom(tv.tv_sec + (unsigned long) obj + (unsigned long) obj->handle);
+        for (i = 0; i < len; i += sizeof(result)) {
+            result = random();
+            memcpy(buf + i, &result, sizeof(result));
+        }
+    } else {
+        result = read(fd, buf, len);
+        close(fd);
+        if (result < 0)
+            return -1;
+    }
+    return 0;
+}
+
 /* afp-specific functions */
 int uam_afpserver_option(void *private, const int what, void *option,
                          int *len)
 {
 AFPObj *obj = private;
     char **buf = (char **) option; /* most of the options are this */
+    struct session_info **sinfo = (struct session_info **) option;
     int32_t result;
-    int fd;
 
     if (!obj || !option)
         return -1;
@@ -432,26 +462,7 @@ AFPObj *obj = private;
         if (!len || (*len < 0) || (*len % sizeof(result)))
             return -1;
 
-        /* construct a random number */
-        if ((fd = open("/dev/urandom", O_RDONLY)) < 0) {
-            struct timeval tv;
-            struct timezone tz;
-            char *randnum = (char *) option;
-            int i;
-
-            if (gettimeofday(&tv, &tz) < 0)
-                return -1;
-            srandom(tv.tv_sec + (unsigned long) obj + (unsigned long) obj->handle);
-            for (i = 0; i < *len; i += sizeof(result)) {
-                result = random();
-                memcpy(randnum + i, &result, sizeof(result));
-            }
-        } else {
-            result = read(fd, option, *len);
-            close(fd);
-            if (result < 0)
-                return -1;
-        }
+        return uam_random_string(obj, *buf, *len);
         break;
 
     case UAM_OPTION_HOSTNAME:
@@ -496,6 +507,9 @@ AFPObj *obj = private;
     case UAM_OPTION_UNIXCHARSET:
         *((int *) option) = obj->options.unixcharset;
         *len = sizeof(obj->options.unixcharset);
+        break;
+    case UAM_OPTION_SESSIONINFO:
+        *sinfo = &(obj->sinfo);
         break;
     default:
         return -1;
