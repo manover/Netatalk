@@ -11,6 +11,11 @@ Changes in 1.6.4
 * FIX: cnid: Fix compile problems on Tru64. [Burkhard Schmidt]
 * FIX: deadlock in signal handlers (Redhat 9)
 * FIX: don't log network probe (OSX 10.3)
+* FIX: BSD install fix [Toru TAKAMIZU]
+* UPD: remove ssl-dir/ssl-dirs confusion from doc/INSTALL
+* FIX: afpd: Solaris compile issues
+* FIX: afpd: If connection broke in dsi_tickle the child did never die
+* NEW: afpd: Using the mswindows option now impictly specifies usedots [Sam Noble] 
 
 Changes in 1.6.3
 ================
