@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.15 2004-06-01 06:33:10 bfernhomberg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.15.2.1 2004-10-20 21:43:33 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -2274,7 +2274,7 @@ int		ibuflen, *rbuflen;
             if (( pw = getpwuid( id )) == NULL ) {
                 return( AFPERR_NOITEM );
             }
-	    len = convert_string_allocate( obj->options.unixcharset, ((sfunc == 1)?obj->options.maccharset:CH_UTF8_MAC),
+	    len = convert_string_allocate( obj->options.unixcharset, ((!utf8)?obj->options.maccharset:CH_UTF8_MAC),
                                             pw->pw_name, strlen(pw->pw_name), &name);
             break;
 
@@ -2283,7 +2283,7 @@ int		ibuflen, *rbuflen;
             if (NULL == ( gr = (struct group *)getgrgid( id ))) {
                 return( AFPERR_NOITEM );
             }
-	    len = convert_string_allocate( obj->options.unixcharset, (sfunc == 1)?obj->options.maccharset:CH_UTF8_MAC,
+	    len = convert_string_allocate( obj->options.unixcharset, (!utf8)?obj->options.maccharset:CH_UTF8_MAC,
                                             gr->gr_name, strlen(gr->gr_name), &name);
             break;
 
