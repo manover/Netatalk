@@ -1,3 +1,8 @@
+/* $Id: dlpi.c,v 1.1.1.1.2.1 2002-02-07 23:49:02 srittau Exp $
+ */
+
+#include <config.h>
+
 #include <sys/types.h>
 #include <sys/kmem.h>
 #include <sys/stream.h>

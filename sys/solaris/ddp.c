@@ -1,5 +1,5 @@
 /*
- * $Id: ddp.c,v 1.2 2001-06-29 14:14:47 rufustfirefly Exp $
+ * $Id: ddp.c,v 1.2.2.1 2002-02-07 23:49:02 srittau Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -16,7 +16,11 @@
 #include <sys/ethernet.h>
 #include <net/if.h>
 
+#ifdef STDC_HEADERS
+#include <strings.h>
+#else
 #include <string.h>
+#endif
 
 #include <netatalk/endian.h>
 #include <netatalk/ddp.h>
