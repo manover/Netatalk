@@ -1,5 +1,5 @@
 /*
- * $Id: psf.c,v 1.5.2.1 2001-12-31 20:05:20 srittau Exp $
+ * $Id: psf.c,v 1.5.2.2 2002-03-12 16:04:25 srittau Exp $
  *
  * Copyright (c) 1990,1995 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -41,7 +41,7 @@
 #endif /* ! WIFEXITED */
 
 #include <sys/file.h>
-#include <sys/syslog.h>
+#include <syslog.h>
 #include <atalk/paths.h>
 #include <stdio.h>
 #include <stdlib.h>
