@@ -43,6 +43,11 @@ TEMPLATES = \
 CLEANFILES = $(GENERATED_FILES) atalk afpd atalkd papd timelord
 EXTRA_DIST = $(TEMPLATES) rc.atalk.cobalt
 
+# overwrite automake uninstall
+# not beautiful, but this way we can call the OS specific init script
+# tools, like chkconfig, insserv or rc-update
+
+uninstall: uninstall-startup
 
 #
 # checking for "redhat" style sysv scripts:
@@ -60,7 +65,7 @@ atalk: rc.atalk.redhat
 install-data-hook:
 	-chkconfig --add atalk
 
-uninstall:
+uninstall-startup:
 	-chkconfig --del atalk
 	rm -f /etc/rc.d/init.d/atalk
 
@@ -82,13 +87,12 @@ atalk: rc.atalk.suse
 install-data-hook:
 	-insserv atalk
 
-uninstall:
+uninstall-startup:
 	-insserv -d atalk
 	rm -f /etc/init.d/atalk
 
 endif
 
-#
 #
 # checking for "cobalt" style sysv scripts:
 #
@@ -105,6 +109,8 @@ atalk: rc.atalk.cobalt
 install-data-hook:
 
 uninstall-hook:
+
+uninstall-startup: uninstall-am
 
 endif
 
@@ -124,6 +130,8 @@ atalk: rc.atalk.tru64
 install-data-hook:
 
 uninstall-hook:
+
+uninstall-startup: uninstall-am
 
 endif
 
@@ -155,6 +163,8 @@ install-data-hook:
 
 uninstall-hook:
 
+uninstall-startup: uninstall-am
+
 endif
 
 #
@@ -176,10 +186,14 @@ install-data-hook:
 	rm -f /etc/rc0.d/K04atalk
 	-ln -s ../init.d/atalk /etc/rc0.d/K04atalk
 
-uninstall-hook:
-	rm -f /etc/rc2.d/S90atalk /etc/rc0.d/K04atalk
+uninstall-startup:
+	rm -f /etc/init.d/atalk /etc/rc2.d/S90atalk /etc/rc0.d/K04atalk
 
 endif
+
+#
+# checking for "Gentoo" style sysv scripts:
+#
 
 if USE_GENTOO
 
@@ -193,12 +207,15 @@ atalk: rc.atalk.gentoo
 install-data-hook:
 	-rc-update add atalk default
 
-uninstall:
+uninstall-startup:
 	-rc-update del atalk default
 	rm -f /etc/init.d/atalk
 
 endif
 
+#
+# defaults, no init scripts installed
+#
 
 if USE_UNDEF
 
@@ -206,4 +223,7 @@ install-data-hook:
 
 uninstall-hook:
 
+uninstall-startup: uninstall-am
+
 endif
+
