@@ -1,5 +1,5 @@
 /*
- * $Id: route.c,v 1.6 2002-01-17 06:10:12 srittau Exp $
+ * $Id: route.c,v 1.6.10.1 2004-06-15 01:10:07 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1996 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -9,13 +9,15 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #include <string.h>
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <net/route.h>
 #include <sys/ioctl.h>
-
 #include <netatalk/at.h>
 
 #include "rtmp.h"
