@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_update.c,v 1.1.4.7 2003-12-12 19:27:57 didg Exp $
+ * $Id: dbd_update.c,v 1.1.4.8 2004-01-04 21:36:20 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -55,9 +55,12 @@ int dbd_update(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
     if ((rc = dbif_pget(DBIF_IDX_DEVINO, &key, &pkey, &data, 0)) < 0 ) {
         goto err_db;
     }
-    else if  (rc > 0) { 
+    else if  (rc > 0) {
         if ((rc = dbif_del(DBIF_IDX_CNID, &pkey, 0)) < 0 ) {
             goto err_db;
+        }
+        else if (!rc) {
+    		LOG(log_error, logtype_cnid, "dbd_update: delete DEVINO %u %s", ntohl(rqst->cnid), db_strerror(errno));
         }
     }
     if (!rc) {
@@ -75,6 +78,9 @@ int dbd_update(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
     else if  (rc > 0) {
         if ((rc = dbif_del(DBIF_IDX_CNID, &pkey, 0)) < 0) {
             goto err_db;
+        }
+        else if (!rc) {
+    		LOG(log_error, logtype_cnid, "dbd_update: delete DIDNAME %u %s",ntohl(rqst->cnid), db_strerror(errno));
         }
     }
     if (!rc) {
@@ -98,8 +104,8 @@ int dbd_update(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
     return 1;
 
 err_db:
-    LOG(log_error, logtype_cnid, "dbd_update: Unable to update CNID %u",
-        ntohl(rqst->cnid));
+    LOG(log_error, logtype_cnid, "dbd_update: Unable to update CNID %u inode %llx, DID %x:%s",
+        ntohl(rqst->cnid), rqst->ino, rqst->did, rqst->name);
     rply->result = CNID_DBD_RES_ERR_DB;
     return -1;
 }

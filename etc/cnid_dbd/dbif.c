@@ -1,5 +1,5 @@
 /*
- * $Id: dbif.c,v 1.1.4.8 2003-12-16 23:06:32 lenneis Exp $
+ * $Id: dbif.c,v 1.1.4.9 2004-01-04 21:36:20 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -162,6 +162,7 @@ int dbif_env_init(struct db_param *dbp)
         LOG(log_error, logtype_cnid, "error opening DB environment: %s", 
             db_strerror(ret));
         db_env->close(db_env, 0);
+        db_env = NULL;
         return -1;
     }
 
@@ -171,6 +172,7 @@ int dbif_env_init(struct db_param *dbp)
     if (ret = db_env->close(db_env, 0)) {
         LOG(log_error, logtype_cnid, "error closing DB environment after recovery: %s", 
             db_strerror(ret));
+        db_env = NULL;
         return -1;
     }
 #endif
@@ -183,6 +185,7 @@ int dbif_env_init(struct db_param *dbp)
         LOG(log_error, logtype_cnid, "error setting DB environment cachesize to %i: %s",
             dbp->cachesize, db_strerror(ret));
         db_env->close(db_env, 0);
+        db_env = NULL;
         return -1;
     }
     
@@ -192,6 +195,7 @@ int dbif_env_init(struct db_param *dbp)
         LOG(log_error, logtype_cnid, "error opening DB environment after recovery: %s",
             db_strerror(ret));
         db_env->close(db_env, 0);
+        db_env = NULL;
         return -1;      
     }
 
@@ -200,6 +204,7 @@ int dbif_env_init(struct db_param *dbp)
         LOG(log_error, logtype_cnid, "error setting TXN_NOSYNC flag: %s",
             db_strerror(ret));
         db_env->close(db_env, 0);
+        db_env = NULL;
         return -1;      
     }
 #endif

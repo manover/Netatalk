@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_metad.c,v 1.1.4.8 2004-01-03 23:01:40 lenneis Exp $
+ * $Id: cnid_metad.c,v 1.1.4.9 2004-01-04 21:36:20 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -96,16 +96,19 @@ static int rqstfd;
 #define MAXSRV 128
 
 #define MAXSPAWN   3                   /* Max times respawned in.. */
-#define TESTTIME   20                  /* this much seconds */
 
 #define DEFAULTHOST  "localhost"
 #define DEFAULTPORT  4700
+#define TESTTIME   22                  /* this much seconds apfd client tries to
+                                        * to reconnect every 5 secondes, catch it
+                                        */
 
 struct server {
     char  *name;
     pid_t pid;
     time_t tm;                    /* When respawned last */
     int count;                    /* Times respawned in the last TESTTIME secondes */
+    int toofast; 
     int   sv[2];
 };
 
@@ -194,6 +197,7 @@ static int maybe_start_dbd(char *dbdpn, char *dbdir, char *usockfn)
                 free(up->name);
                 up->tm = t;
                 up->count = 0;
+                up->toofast = 0;
                 /* copy name */
                 up->name = strdup(dbdir);
                 break;
@@ -207,12 +211,18 @@ static int maybe_start_dbd(char *dbdpn, char *dbdir, char *usockfn)
     else {
         /* we have a slot but no process, check for respawn too fast */
         if (up->tm + TESTTIME > t) {
+            if (up->toofast) {
+                /* silently exit */
+                return -1;
+            }
             up->count++;
         } else {
             up->count = 0;
+	    up->toofast = 0;
             up->tm = t;
         }
-        if (up->count >= MAXSPAWN) {
+        if (up->count > MAXSPAWN) {
+	    up->toofast = 1;
             up->tm = t;
 	    LOG(log_error, logtype_cnid, "respawn too fast %s", up->name);
 	    /* FIXME should we sleep a little ? */
@@ -233,6 +243,7 @@ static int maybe_start_dbd(char *dbdpn, char *dbdir, char *usockfn)
 	return -1;
     }    
     if (pid == 0) {
+        int ret;
 	/*
 	 *  Child. Close descriptors and start the daemon. If it fails
 	 *  just log it. The client process will fail connecting
@@ -252,7 +263,17 @@ static int maybe_start_dbd(char *dbdpn, char *dbdir, char *usockfn)
 	sprintf(buf1, "%i", up->sv[1]);
 	sprintf(buf2, "%i", rqstfd);
 	
-	if (execlp(dbdpn, dbdpn, dbdir, buf1, buf2, NULL) < 0) {
+	if (up->count == MAXSPAWN) {
+	    /* there's a pb with the db inform child 
+	     * it will run recover, delete the db whatever
+	    */
+	    LOG(log_error, logtype_cnid, "try with -d %s", up->name);
+	    ret = execlp(dbdpn, dbdpn, "-d", dbdir, buf1, buf2, NULL);
+	}
+	else {
+	    ret = execlp(dbdpn, dbdpn, dbdir, buf1, buf2, NULL);
+	}
+	if (ret < 0) {
 	    LOG(log_error, logtype_cnid, "Fatal error in exec: %s", strerror(errno));
 	    exit(0);
 	}
@@ -441,6 +462,7 @@ int main(int argc, char *argv[])
     signal(SIGPIPE, SIG_IGN);
 
     while (1) {
+        rqstfd = usockfd_check(srvfd, 10000000);
 	/* Collect zombie processes and log what happened to them */       
         while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
            for (i = 1; i <= MAXSRV; i++) {
@@ -465,7 +487,7 @@ int main(int argc, char *argv[])
 	    /* FIXME should */
 	    
 	}
-        if ((rqstfd = usockfd_check(srvfd, 10000000)) <= 0)
+        if (rqstfd <= 0)
             continue;
         /* TODO: Check out read errors, broken pipe etc. in libatalk. Is
            SIGIPE ignored there? Answer: Ignored for dsi, but not for asp ... */
