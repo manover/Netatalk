@@ -394,7 +394,8 @@ size_t precompose_w (ucs2_t *name, size_t inplen, ucs2_t *comp, size_t *outlen)
         	i += 2;
 	        in++;
         	if (i == inplen) {
-           		*out++ = base;
+           		*out = base;
+			out++;
 			*out = 0;
            		*outlen -= 2;
            		return o_len - *outlen;
@@ -450,10 +451,10 @@ size_t decompose_w (ucs2_t *name, size_t inplen, ucs2_t *comp, size_t *outlen)
 			/* exclude these ranges from decomposition according to AFP 3.1 spec */
 			/* page 97 */
 			*out = base;
-			*out++;
+			out++;
 			*outlen -= 2;
 		}
-        	if ((result = do_decomposition(base))) {
+        	else if ((result = do_decomposition(base))) {
 			if ( *outlen < 4 ) {
 				errno = E2BIG;
 				return (size_t)-1;

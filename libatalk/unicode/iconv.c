@@ -33,17 +33,16 @@
 #include <unistd.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
 #include <sys/param.h>
 #include <sys/stat.h>
-#include <atalk/logger.h>
-#include <errno.h>
-
-#include <netatalk/endian.h>
-#include <atalk/unicode.h>
-
 #ifdef HAVE_USABLE_ICONV
 #include <iconv.h>
 #endif
+
+#include <netatalk/endian.h>
+#include <atalk/unicode.h>
+#include <atalk/logger.h>
 #include "byteorder.h"
 
 
@@ -92,7 +91,7 @@ struct charset_functions charset_ucs2 =
         0,
         iconv_copy,
         iconv_copy,
-        CHARSET_WIDECHAR
+        CHARSET_WIDECHAR | CHARSET_PRECOMPOSED
 };
 
 struct charset_functions charset_ascii =

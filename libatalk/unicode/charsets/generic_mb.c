@@ -30,11 +30,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 
 #include <netatalk/endian.h>
 #include <atalk/unicode.h>
 #include <atalk/logger.h>
-#include <errno.h>
 
 #include "generic_mb.h"
 #include "../byteorder.h"

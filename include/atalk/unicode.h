@@ -123,6 +123,7 @@ extern size_t 	charset_to_ucs2_allocate __P((charset_t, ucs2_t **dest, const cha
 extern size_t 	charset_to_utf8_allocate __P((charset_t, char **dest, const char *src));
 extern size_t	ucs2_to_charset_allocate __P((charset_t, char **dest, const ucs2_t *src));
 extern size_t 	utf8_to_charset_allocate __P((charset_t, char **dest, const char *src));
+extern size_t	ucs2_to_charset __P((charset_t, const ucs2_t *src, char *dest, size_t));
 
 extern size_t 	convert_charset __P((charset_t, charset_t, charset_t, char *, size_t, char *, size_t, u_int16_t *));
 

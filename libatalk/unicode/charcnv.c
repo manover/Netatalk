@@ -29,26 +29,23 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/param.h>
 #include <ctype.h>
-#include <sys/stat.h>
-#include <atalk/logger.h>
 #include <errno.h>
-
-#include <netatalk/endian.h>
-#include <atalk/unicode.h>
-
+#include <sys/stat.h>
+#include <sys/param.h>
 #ifdef HAVE_USABLE_ICONV
 #include <iconv.h>
 #endif
-
 #if HAVE_LOCALE_H
 #include <locale.h>
 #endif
-
 #if HAVE_LANGINFO_H
 #include <langinfo.h>
 #endif
+
+#include <netatalk/endian.h>
+#include <atalk/logger.h>
+#include <atalk/unicode.h>
 #include "byteorder.h"
 
 
@@ -206,11 +203,13 @@ void init_iconv(void)
 
 	/* so that charset_name() works we need to get the UNIX<->UCS2 going
 	   first */
+#if 0
 	if (!conv_handles[CH_UNIX][CH_UCS2])
 		conv_handles[CH_UNIX][CH_UCS2] = atalk_iconv_open("UCS-2", "ASCII");
 
 	if (!conv_handles[CH_UCS2][CH_UNIX])
 		conv_handles[CH_UCS2][CH_UNIX] = atalk_iconv_open("ASCII", "UCS-2");
+#endif
 
 	for (c1=0;c1<NUM_CHARSETS;c1++) {
 		const char *name = charset_name((charset_t)c1);
@@ -280,7 +279,7 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 			       reason="Illegal multibyte sequence";
 			       break;
 		}
-		LOG(log_debug, logtype_default,"Conversion error: %s(%s)\n",reason,inbuf);
+		LOG(log_debug, logtype_default,"Conversion error: %s",reason);
 		return (size_t)-1;
 	}
 
@@ -289,8 +288,11 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 		o_save[destlen-o_len]   = 0;
 		o_save[destlen-o_len+1] = 0;
 	}
-	else if ( destlen-o_len > 0)
+	else if ( to != CH_UCS2 && destlen-o_len > 0 )
 		o_save[destlen-o_len] = 0;
+	else {
+		/* FIXME: what should we do here, string *might* be unterminated. E2BIG? */
+	}
 
 	return destlen-o_len;
 }
@@ -301,15 +303,16 @@ size_t convert_string(charset_t from, charset_t to,
 		      void *dest, size_t destlen)
 {
 	size_t i_len, o_len;
-	char *u;
- 	char buffer[MAXPATHLEN];
- 	char buffer2[MAXPATHLEN];
+	ucs2_t *u;
+ 	ucs2_t buffer[MAXPATHLEN];
+ 	ucs2_t buffer2[MAXPATHLEN];
 	int composition = 0;
 
 	lazy_initialize_conv();
 
 	/* convert from_set to UCS2 */
- 	if ((size_t)(-1) == ( o_len = convert_string_internal( from, CH_UCS2, src, srclen, buffer, MAXPATHLEN)) ) {
+ 	if ((size_t)(-1) == ( o_len = convert_string_internal( from, CH_UCS2, src, srclen, 
+                                                               (char*) buffer, sizeof(buffer))) ) {
 		LOG(log_error, logtype_default, "Conversion failed ( %s to CH_UCS2 )", charset_name(from));
 		return (size_t) -1;
 	}
@@ -321,7 +324,7 @@ size_t convert_string(charset_t from, charset_t to,
  	if ((charsets[to] && charsets[to]->flags & CHARSET_DECOMPOSED) )
  	    composition = 2;
  
-	i_len = MAXPATHLEN;
+	i_len = sizeof(buffer2);
 	u = buffer2;
 
 	switch (composition) {
@@ -330,17 +333,17 @@ size_t convert_string(charset_t from, charset_t to,
  	    i_len = o_len;
 	    break;
 	case 1:
-            if ( (size_t)-1 == (i_len = precompose_w((ucs2_t *)buffer, o_len, (ucs2_t *)u, &i_len)) )
+            if ( (size_t)-1 == (i_len = precompose_w(buffer, o_len, u, &i_len)) )
  	        return (size_t)(-1);
 	    break;
 	case 2:
-            if ( (size_t)-1 == (i_len = decompose_w((ucs2_t *)buffer, o_len, (ucs2_t *)u, &i_len)) )
+            if ( (size_t)-1 == (i_len = decompose_w(buffer, o_len, u, &i_len)) )
  	        return (size_t)(-1);
 	    break;
 	}
 		
 	/* Convert UCS2 to to_set */
-	if ((size_t)(-1) == ( o_len = convert_string_internal( CH_UCS2, to, u, i_len, dest, destlen)) ) {
+	if ((size_t)(-1) == ( o_len = convert_string_internal( CH_UCS2, to, (char*) u, i_len, dest, destlen)) ) {
 		LOG(log_error, logtype_default, "Conversion failed (CH_UCS2 to %s):%s", charset_name(to), strerror(errno));
 		return (size_t) -1;
 	}
@@ -366,7 +369,7 @@ static size_t convert_string_allocate_internal(charset_t from, charset_t to,
 	size_t i_len, o_len, destlen;
 	size_t retval;
 	const char *inbuf = (const char *)src;
-	char *outbuf, *ob;
+	char *outbuf = NULL, *ob = NULL;
 	atalk_iconv_t descriptor;
 
 	*dest = NULL;
@@ -385,10 +388,9 @@ static size_t convert_string_allocate_internal(charset_t from, charset_t to,
 	}
 
 	destlen = MAX(srclen, 512);
-	outbuf = NULL;
 convert:
 	destlen = destlen * 2;
-	ob = (char *)realloc(outbuf, destlen);
+	ob = (char *)realloc(ob, destlen);
 	if (!ob) {
 		LOG(log_debug, logtype_default,"convert_string_allocate: realloc failed!\n");
 		SAFE_FREE(outbuf);
@@ -396,6 +398,7 @@ convert:
 	} else {
 		outbuf = ob;
 	}
+	inbuf = src;   /* this restarts the whole conversion if buffer needed to be increased */
 	i_len = srclen;
 	o_len = destlen;
 	retval = atalk_iconv(descriptor,
@@ -413,8 +416,7 @@ convert:
 				reason="Illegal multibyte sequence";
 				break;
 		}
-		LOG(log_debug, logtype_default,"Conversion error: %s(%s)\n",reason,inbuf);
-		/* smb_panic(reason); */
+		LOG(log_debug, logtype_default,"Conversion error: %s(%s)",reason,inbuf);
 		return (size_t)-1;
 	}
 
@@ -422,14 +424,17 @@ convert:
 	destlen = destlen - o_len;
 
 	/* Terminate the string */
-	if (to == CH_UCS2 && destlen-o_len >= 2) {
+	if (to == CH_UCS2 && o_len >= 2) {
 		ob[destlen] = 0;
 		ob[destlen+1] = 0;
 		*dest = (char *)realloc(ob,destlen+2);
 	}
-	else if ( destlen-o_len > 0) {
+	else if ( to != CH_UCS2 && o_len > 0 ) {
 		ob[destlen] = 0;
 		*dest = (char *)realloc(ob,destlen+1);
+	}
+	else {
+		goto convert; /* realloc */
 	}
 
 	if (destlen && !*dest) {
@@ -447,15 +452,18 @@ size_t convert_string_allocate(charset_t from, charset_t to,
 		      char ** dest)
 {
 	size_t i_len, o_len;
-	char *u;
- 	char buffer[MAXPATHLEN];
- 	char buffer2[MAXPATHLEN];
+	ucs2_t *u;
+ 	ucs2_t buffer[MAXPATHLEN];
+ 	ucs2_t buffer2[MAXPATHLEN];
 	int composition = 0;
 
 	lazy_initialize_conv();
 
+	*dest = NULL;
+
 	/* convert from_set to UCS2 */
- 	if ((size_t)(-1) == ( o_len = convert_string_internal( from, CH_UCS2, src, srclen, buffer, MAXPATHLEN)) ) {
+ 	if ((size_t)(-1) == ( o_len = convert_string_internal( from, CH_UCS2, src, srclen, 
+                                                               buffer, sizeof(buffer))) ) {
 		LOG(log_error, logtype_default, "Conversion failed ( %s to CH_UCS2 )", charset_name(from));
 		return (size_t) -1;
 	}
@@ -467,7 +475,7 @@ size_t convert_string_allocate(charset_t from, charset_t to,
  	if ((charsets[to] && charsets[to]->flags & CHARSET_DECOMPOSED) )
  	    composition = 2;
  
-	i_len = MAXPATHLEN;
+	i_len = sizeof(buffer2);
 	u = buffer2;
 
 	switch (composition) {
@@ -476,17 +484,17 @@ size_t convert_string_allocate(charset_t from, charset_t to,
  	    i_len = o_len;
 	    break;
 	case 1:
-            if ( (size_t)-1 == (i_len = precompose_w((ucs2_t *)buffer, o_len, (ucs2_t *)u, &i_len)) )
+            if ( (size_t)-1 == (i_len = precompose_w(buffer, o_len, u, &i_len)) )
  	        return (size_t)(-1);
 	    break;
 	case 2:
-            if ( (size_t)-1 == (i_len = decompose_w((ucs2_t *)buffer, o_len, (ucs2_t *)u, &i_len)) )
+            if ( (size_t)-1 == (i_len = decompose_w(buffer, o_len, u, &i_len)) )
  	        return (size_t)(-1);
 	    break;
 	}
 		
 	/* Convert UCS2 to to_set */
-	if ((size_t)(-1) == ( o_len = convert_string_allocate_internal( CH_UCS2, to, u, i_len, dest)) ) 
+	if ((size_t)(-1) == ( o_len = convert_string_allocate_internal( CH_UCS2, to, (char*)u, i_len, dest)) ) 
 		LOG(log_error, logtype_default, "Conversion failed (CH_UCS2 to %s):%s", charset_name(to), strerror(errno));
 		
 	return o_len;
@@ -501,7 +509,7 @@ size_t charset_strupper(charset_t ch, const char *src, size_t srclen, char *dest
 	size = convert_string_allocate_internal(ch, CH_UCS2, src, srclen,
 				       (char**) &buffer);
 	if (size == (size_t)-1) {
-		free(buffer);
+		SAFE_FREE(buffer);
 		return size;
 	}
 	if (!strupper_w((ucs2_t *)buffer) && (dest == src)) {
@@ -522,7 +530,7 @@ size_t charset_strlower(charset_t ch, const char *src, size_t srclen, char *dest
 	size = convert_string_allocate_internal(ch, CH_UCS2, src, srclen,
 				       (char **) &buffer);
 	if (size == (size_t)-1) {
-		free(buffer);
+		SAFE_FREE(buffer);
 		return size;
 	}
 	if (!strlower_w((ucs2_t *)buffer) && (dest == src)) {
@@ -567,7 +575,7 @@ size_t utf8_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 
 size_t charset_to_ucs2_allocate(charset_t ch, ucs2_t **dest, const char *src)
 {
-	size_t src_len = strlen(src)+1;
+	size_t src_len = strlen(src);
 
 	*dest = NULL;
 	return convert_string_allocate(ch, CH_UCS2, src, src_len, (char**) dest);	
@@ -583,7 +591,7 @@ size_t charset_to_ucs2_allocate(charset_t ch, ucs2_t **dest, const char *src)
 
 size_t charset_to_utf8_allocate(charset_t ch, char **dest, const char *src)
 {
-	size_t src_len = strlen(src)+1;
+	size_t src_len = strlen(src);
 
 	*dest = NULL;
 	return convert_string_allocate(ch, CH_UTF8, src, src_len, dest);	
@@ -597,9 +605,16 @@ size_t charset_to_utf8_allocate(charset_t ch, char **dest, const char *src)
  * @returns The number of bytes occupied by the string in the destination
  **/
 
+size_t ucs2_to_charset(charset_t ch, const ucs2_t *src, char *dest, size_t destlen)
+{
+	size_t src_len = (strlen_w(src)) * sizeof(ucs2_t);
+	return convert_string(CH_UCS2, ch, src, src_len, dest, destlen);	
+}
+
+
 size_t ucs2_to_charset_allocate(charset_t ch, char **dest, const ucs2_t *src)
 {
-	size_t src_len = (strlen_w(src)+1) * sizeof(ucs2_t);
+	size_t src_len = (strlen_w(src)) * sizeof(ucs2_t);
 	*dest = NULL;
 	return convert_string_allocate(CH_UCS2, ch, src, src_len, dest);	
 }
@@ -614,7 +629,7 @@ size_t ucs2_to_charset_allocate(charset_t ch, char **dest, const ucs2_t *src)
 
 size_t utf8_to_charset_allocate(charset_t ch, char **dest, const char *src)
 {
-	size_t src_len = strlen(src)+1;
+	size_t src_len = strlen(src);
 	*dest = NULL;
 	return convert_string_allocate(CH_UTF8, ch, src, src_len, dest);	
 }
@@ -622,21 +637,21 @@ size_t utf8_to_charset_allocate(charset_t ch, char **dest, const char *src)
 size_t charset_precompose ( charset_t ch, char * src, size_t inlen, char * dst, size_t outlen)
 {
 	char *buffer;
-	char u[MAXPATHLEN];
+	ucs2_t u[MAXPATHLEN];
 	size_t len;
 	size_t ilen;
 
         if ((size_t)(-1) == (len = convert_string_allocate_internal(ch, CH_UCS2, src, inlen, &buffer)) )
             return len;
 
-	ilen=MAXPATHLEN;
+	ilen=sizeof(u);
 
-	if ( (size_t)-1 == (ilen = precompose_w((ucs2_t *)buffer, len, (ucs2_t *)u, &ilen)) ) {
+	if ( (size_t)-1 == (ilen = precompose_w((ucs2_t *)buffer, len, u, &ilen)) ) {
 	    free (buffer);
 	    return (size_t)(-1);
 	}
 
-        if ((size_t)(-1) == (len = convert_string_internal( CH_UCS2, ch, u, ilen, dst, outlen)) ) {
+        if ((size_t)(-1) == (len = convert_string_internal( CH_UCS2, ch, (char*)u, ilen, dst, outlen)) ) {
 	    free (buffer);
 	    return (size_t)(-1);
 	}
@@ -649,21 +664,21 @@ size_t charset_precompose ( charset_t ch, char * src, size_t inlen, char * dst, 
 size_t charset_decompose ( charset_t ch, char * src, size_t inlen, char * dst, size_t outlen)
 {
 	char *buffer;
-	char u[MAXPATHLEN];
+	ucs2_t u[MAXPATHLEN];
 	size_t len;
 	size_t ilen;
 
         if ((size_t)(-1) == (len = convert_string_allocate_internal(ch, CH_UCS2, src, inlen, &buffer)) )
             return len;
 
-	ilen=MAXPATHLEN;
+	ilen=sizeof(u);
 
-	if ( (size_t)-1 == (ilen = decompose_w((ucs2_t *)buffer, len, (ucs2_t *)u, &ilen)) ) {
+	if ( (size_t)-1 == (ilen = decompose_w((ucs2_t *)buffer, len, u, &ilen)) ) {
 	    free (buffer);
 	    return (size_t)(-1);
 	}
 
-        if ((size_t)(-1) == (len = convert_string_internal( CH_UCS2, ch, u, ilen, dst, outlen)) ) {
+        if ((size_t)(-1) == (len = convert_string_internal( CH_UCS2, ch, (char*)u, ilen, dst, outlen)) ) {
 	    free (buffer);
 	    return (size_t)(-1);
 	}
@@ -942,15 +957,16 @@ escape_slash:
 size_t convert_charset ( charset_t from_set, charset_t to_set, charset_t cap_charset, char* src, size_t src_len, char* dest, size_t dest_len, u_int16_t *flags)
 {
 	size_t i_len, o_len;
-	char *u;
- 	char buffer[MAXPATHLEN];
- 	char buffer2[MAXPATHLEN];
+	ucs2_t *u;
+	ucs2_t buffer[MAXPATHLEN];
+	ucs2_t buffer2[MAXPATHLEN];
  	int composition = 0;
 	
 	lazy_initialize_conv();
 
 	/* convert from_set to UCS2 */
- 	if ((size_t)(-1) == ( o_len = pull_charset_flags( from_set, cap_charset, src, src_len, buffer, MAXPATHLEN, flags)) ) {
+ 	if ((size_t)(-1) == ( o_len = pull_charset_flags( from_set, cap_charset, src, src_len, 
+                                                          (char *) buffer, sizeof(buffer), flags)) ) {
 		LOG(log_error, logtype_default, "Conversion failed ( %s to CH_UCS2 )", charset_name(from_set));
 		return (size_t) -1;
 	}
@@ -966,7 +982,7 @@ size_t convert_charset ( charset_t from_set, charset_t to_set, charset_t cap_cha
  	if (CHECK_FLAGS(flags, CONV_DECOMPOSE) || (charsets[to_set] && charsets[to_set]->flags & CHARSET_DECOMPOSED) )
  	    composition = 2;
  
-	i_len = MAXPATHLEN;
+	i_len = sizeof(buffer2);
 	u = buffer2;
 
 	switch (composition) {
@@ -975,27 +991,27 @@ size_t convert_charset ( charset_t from_set, charset_t to_set, charset_t cap_cha
  	    i_len = o_len;
 	    break;
 	case 1:
-            if ( (size_t)-1 == (i_len = precompose_w((ucs2_t *)buffer, o_len, (ucs2_t *)u, &i_len)) )
+            if ( (size_t)-1 == (i_len = precompose_w(buffer, o_len, u, &i_len)) )
  	        return (size_t)(-1);
 	    break;
 	case 2:
-            if ( (size_t)-1 == (i_len = decompose_w((ucs2_t *)buffer, o_len, (ucs2_t *)u, &i_len)) )
+            if ( (size_t)-1 == (i_len = decompose_w(buffer, o_len, u, &i_len)) )
  	        return (size_t)(-1);
 	    break;
 	}
 		
   	/* Do case conversions */	
  	if (CHECK_FLAGS(flags, CONV_TOUPPER)) {
- 	    if (!strupper_w((ucs2_t *) u)) 
+ 	    if (!strupper_w(u)) 
  	        return (size_t)(-1);
   	}
  	if (CHECK_FLAGS(flags, CONV_TOLOWER)) {
- 	    if (!strlower_w((ucs2_t *) u)) 
+ 	    if (!strlower_w(u)) 
  	        return (size_t)(-1);
   	}
 
 	/* Convert UCS2 to to_set */
-	if ((size_t)(-1) == ( o_len = push_charset_flags( to_set, cap_charset, u, i_len, dest, dest_len, flags )) ) {
+	if ((size_t)(-1) == ( o_len = push_charset_flags( to_set, cap_charset, (char *)u, i_len, dest, dest_len, flags )) ) {
 		LOG(log_error, logtype_default, 
 		       "Conversion failed (CH_UCS2 to %s):%s", charset_name(to_set), strerror(errno));
 		return (size_t) -1;
