@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.h,v 1.3.6.2 2003-09-28 13:58:56 didg Exp $
+ * $Id: desktop.h,v 1.3.6.3 2004-03-11 02:01:59 didg Exp $
  *
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
@@ -49,10 +49,6 @@ extern char	*dtfile __P((const struct vol *, u_char [], char *));
 extern char	*mtoupath __P((const struct vol *, char *, cnid_t, int utf8));
 extern char	*utompath __P((const struct vol *, char *, cnid_t, int utf8));
 extern u_char	ucreator[];
-
-#define validupath(vol, name) ((((vol)->v_flags & AFPVOL_USEDOTS) ? \
-   (strncasecmp((name),".Apple", 6) && \
-    strcasecmp((name), ".Parent")) : (name)[0] != '.'))
 
 /* FP functions */
 extern int	afp_opendt __P((AFPObj *, char *, int, char *, int *));

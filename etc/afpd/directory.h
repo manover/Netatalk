@@ -1,5 +1,5 @@
 /*
- * $Id: directory.h,v 1.13.2.4 2003-07-21 05:50:54 didg Exp $
+ * $Id: directory.h,v 1.13.2.4.2.1 2004-03-11 02:01:59 didg Exp $
  *
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
@@ -204,8 +204,8 @@ extern void             utommode __P((struct stat *, struct maccess *));
 extern int getdirparams __P((const struct vol *, u_int16_t, struct path *,
                                  struct dir *, char *, int *));
 extern int setdirparams __P((const struct vol *, struct path *, u_int16_t, char *));
-extern int renamedir __P((char *, char *, struct dir *,
-                              struct dir *, char *, const int));
+extern int renamedir __P((const struct vol *, char *, char *, struct dir *,
+                              struct dir *, char *));
 extern int path_error __P((struct path *, int error));
 
 typedef int (*dir_loop)(struct dirent *, char *, void *);

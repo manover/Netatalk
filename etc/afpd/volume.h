@@ -1,5 +1,5 @@
 /*
- * $Id: volume.h,v 1.19.2.5.2.5 2004-01-03 22:21:09 didg Exp $
+ * $Id: volume.h,v 1.19.2.5.2.6 2004-03-11 02:02:04 didg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -77,6 +77,10 @@ struct vol {
 
     int                 v_root_preexec_close;
     int                 v_preexec_close;
+    
+    /* adouble indirection */
+    int                 (*validupath)(const struct vol *, const char *);
+    char                *(*ad_path)(const char *, int);
 };
 
 #ifdef NO_LARGE_VOL_SUPPORT

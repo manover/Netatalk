@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.8 2004-02-20 19:57:14 didg Exp $
+ * $Id: ad_open.c,v 1.30.6.9 2004-03-11 02:02:05 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -111,6 +111,10 @@
 
 #define ADEDOFF_RFORK_V2     (ADEDOFF_PRIVID + ADEDLEN_PRIVID)
 
+#define ADEID_NUM_OSX        2
+#define ADEDOFF_FINDERI_OSX  (AD_HEADER_LEN + ADEID_NUM_OSX*AD_ENTRY_LEN)
+#define ADEDOFF_RFORK_OSX    (ADEDOFF_FINDERI_OSX + ADEDLEN_FINDERI)
+
 /* we keep local copies of a bunch of stuff so that we can initialize things 
  * correctly. */
 
@@ -191,6 +195,16 @@ static const struct entry entry_order2[ADEID_NUM_V2 +1] = {
 
   {0, 0, 0}
 };
+
+/* OS X adouble finder info and resource fork only
+*/
+static const struct entry entry_order_osx[ADEID_NUM_OSX +1] = {
+  {ADEID_FINDERI, ADEDOFF_FINDERI_OSX, ADEDLEN_FINDERI},
+  {ADEID_RFORK, ADEDOFF_RFORK_OSX, ADEDLEN_INIT},
+
+  {0, 0, 0}
+};
+
 #endif /* AD_VERSION == AD_VERSION2 */
 
 #if AD_VERSION == AD_VERSION2
@@ -206,7 +220,7 @@ static int ad_update(struct adouble *ad, const char *path)
   int fd;
 
   /* check to see if we should convert this header. */
-  if (!path || (ad->ad_version != AD_VERSION2))
+  if (!path || (ad->ad_flags != AD_VERSION2))
     return 0;
   
   if (ad->ad_eid[ADEID_RFORK].ade_off)  
@@ -315,7 +329,7 @@ static int ad_v1tov2(struct adouble *ad, const char *path)
     return 0;
 
   /* we want version1 anyway */
-  if (ad->ad_flags == AD_VERSION1)
+  if (ad->ad_flags != AD_VERSION2)
       return 0;
 
 
@@ -622,8 +636,7 @@ static int ad_header_read(struct adouble *ad, struct stat *hst)
     return 0;
 }
 
-
-/*
+/* ---------------------------------------
  * Put the .AppleDouble where it needs to be:
  *
  *	    /	a/.AppleDouble/b
@@ -664,6 +677,39 @@ ad_path( path, adflags )
     strlcat( pathbuf, slash, MAXPATHLEN +1);
 
     return( pathbuf );
+}
+
+/* ---------------------------------------
+ * Put the resource fork where it needs to be:
+ * ._name
+ */
+char *
+ad_path_osx( path, adflags )
+    const char	*path;
+    int		adflags;
+{
+    static char	pathbuf[ MAXPATHLEN + 1];
+    char	c, *slash, buf[MAXPATHLEN + 1];
+    
+    if (!strcmp(path,".")) {
+            /* fixme */
+        getcwd(buf, MAXPATHLEN);
+    }
+    else {
+        strncpy(buf, path, MAXPATHLEN);
+    }
+    if (NULL != ( slash = strrchr( buf, '/' )) ) {
+	c = *++slash;
+	*slash = '\0';
+	strncpy( pathbuf, buf, MAXPATHLEN);
+	*slash = c;
+    } else {
+	pathbuf[ 0 ] = '\0';
+	slash = buf;
+    }
+    strncat( pathbuf, "._", MAXPATHLEN - strlen(pathbuf));  
+    strncat( pathbuf, slash, MAXPATHLEN - strlen(pathbuf));
+    return pathbuf;
 }
 
 /*
@@ -847,6 +893,12 @@ void ad_init(struct adouble *ad, int flags)
 {
     memset( ad, 0, sizeof( struct adouble ) );
     ad->ad_flags = flags;
+    if (flags == AD_VERSION2_OSX) {
+        ad->ad_path     = ad_path_osx;
+    }
+    else {
+        ad->ad_path     = ad_path;
+    }
 }
 
 /* -------------------
@@ -933,7 +985,7 @@ int ad_open( path, adflags, oflags, mode, ad )
 	return 0;
     }
 
-    ad_p = ad_path( path, adflags );
+    ad_p = ad->ad_path( path, adflags );
 
     hoflags = oflags & ~O_CREAT;
     hoflags = (hoflags & ~(O_RDONLY | O_WRONLY)) | O_RDWR;
@@ -957,7 +1009,7 @@ int ad_open( path, adflags, oflags, mode, ad )
 	    admode = ad_hf_mode(admode); 
 	    errno = 0;
 	    ad->ad_hf.adf_fd = open( ad_p, oflags,admode );
-	    if ( ad->ad_hf.adf_fd < 0 ) {
+	    if ( ad->ad_hf.adf_fd < 0 && ad->ad_flags != AD_VERSION2_OSX) {
 		/*
 		 * Probably .AppleDouble doesn't exist, try to
 		 * mkdir it.
@@ -976,12 +1028,10 @@ int ad_open( path, adflags, oflags, mode, ad )
 		    st_invalid = ad_mode_st(ad_p, &admode, &st);
 		    admode = ad_hf_mode(admode); 
 		    ad->ad_hf.adf_fd = open( ad_p, oflags, admode);
-		    if ( ad->ad_hf.adf_fd < 0 ) {
-		        return ad_error(ad, adflags);
-		    }
-		} else {
-		     return ad_error(ad, adflags);
 		}
+	    }
+	    if ( ad->ad_hf.adf_fd < 0 ) {
+	        return ad_error(ad, adflags);
 	    }
 	    ad->ad_hf.adf_flags = oflags;
 	    /* just created, set owner if admin owner (root) */
@@ -1029,24 +1079,24 @@ int ad_open( path, adflags, oflags, mode, ad )
 /* ----------------------------------- */
 static int new_rfork(const char *path, struct adouble *ad, int adflags)
 {
-#if 0
-    struct timeval      tv;
-#endif    
     const struct entry  *eid;
     u_int16_t           ashort;
     struct stat         st;
 
     ad->ad_magic = AD_MAGIC;
-    ad->ad_version = ad->ad_flags;
-    if (!ad->ad_version)
-    ad->ad_version = AD_VERSION;
+    ad->ad_version = ad->ad_flags & 0x0f0000;
+    if (!ad->ad_version) {
+        ad->ad_version = AD_VERSION;
+    }
 
     memset(ad->ad_filler, 0, sizeof( ad->ad_filler ));
     memset(ad->ad_data, 0, sizeof(ad->ad_data));
 
 #if AD_VERSION == AD_VERSION2
-    if (ad->ad_version == AD_VERSION2)
+    if (ad->ad_flags == AD_VERSION2)
        eid = entry_order2;
+    else if (ad->ad_flags == AD_VERSION2_OSX)
+       eid = entry_order_osx;
     else
 #endif
        eid = entry_order1;
@@ -1078,12 +1128,6 @@ static int new_rfork(const char *path, struct adouble *ad, int adflags)
 		     &ashort, sizeof(ashort));
     }
 
-#if 0
-    if (gettimeofday(&tv, NULL) < 0) {
-	return -1;
-    } 
-#endif
-    
     if (stat(path, &st) < 0) {
 	return -1;
     }

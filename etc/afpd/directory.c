@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.10 2004-02-20 21:22:57 didg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.11 2004-03-11 02:01:59 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -730,7 +730,7 @@ static int deletedir(char *dir)
 }
 
 /* do a recursive copy. */
-static int copydir(char *src, char *dst, int noadouble)
+static int copydir(const struct vol *vol, char *src, char *dst)
 {
     char spath[MAXPATHLEN + 1], dpath[MAXPATHLEN + 1];
     DIR *dp;
@@ -739,7 +739,6 @@ static int copydir(char *src, char *dst, int noadouble)
     struct utimbuf      ut;
     size_t slen, dlen;
     size_t srem, drem;
-    
     int err;
 
     /* doesn't exist or the path is too long. */
@@ -785,9 +784,9 @@ static int copydir(char *src, char *dst, int noadouble)
             strcpy(dpath + dlen, de->d_name);
 
             if (S_ISDIR(st.st_mode)) {
-                if (AFP_OK != (err = copydir(spath, dpath, noadouble)))
+                if (AFP_OK != (err = copydir(vol, spath, dpath)))
                     goto copydir_done;
-            } else if (AFP_OK != (err = copyfile(spath, dpath, NULL, noadouble))) {
+            } else if (AFP_OK != (err = copyfile(vol, vol, spath, dpath, NULL))) {
                 goto copydir_done;
 
             } else {
@@ -1029,6 +1028,10 @@ char	**cpath;
                     if ( movecwd( vol, dir->d_parent ) < 0 ) {
             	         return NULL;    		
             	    }
+            	    /* FIXME should we set, don't need to call stat() after:
+            	      ret.st_valid = 1;
+            	      ret.st_errno = EACCES;
+            	    */
             	    ret.m_name = dir->d_m_name;
             	    ret.u_name = dir->d_u_name;
             	    ret.dir = dir;
@@ -1048,6 +1051,11 @@ char	**cpath;
             	        ret.u_name =  path +tp;
             	        
             	    }
+            	    /* FIXME should we set :
+            	      ret.st_valid = 1;
+            	      ret.st_errno = ENOENT;
+            	    */
+            	    
             	    dir_invalidate(vol, dir);
             	    return &ret;
             	}
@@ -1630,7 +1638,7 @@ int setdirparams(const struct vol *vol,
          * Check to see if a create was necessary. If it was, we'll want
          * to set our name, etc.
          */
-        if ( ad_get_HF_flags( &ad ) & O_CREAT ) {
+        if ( (ad_get_HF_flags( &ad ) & O_CREAT) && ad_getentryoff(&ad, ADEID_NAME)) {
             ad_setentrylen( &ad, ADEID_NAME, strlen( curdir->d_m_name ));
             memcpy( ad_entry( &ad, ADEID_NAME ), curdir->d_m_name,
                     ad_getentrylen( &ad, ADEID_NAME ));
@@ -1731,7 +1739,7 @@ int setdirparams(const struct vol *vol,
                     break;
                 }
             }
-            if ( setdirowner( ntohl(aint), -1, vol_noadouble(vol) ) < 0 ) {
+            if ( setdirowner(vol,  ntohl(aint), -1 ) < 0 ) {
                 switch ( errno ) {
                 case EPERM :
                 case EACCES :
@@ -1777,7 +1785,7 @@ int setdirparams(const struct vol *vol,
             }
 #endif /* 0 */
 
-            if ( setdirowner( -1, ntohl(aint), vol_noadouble(vol) ) < 0 ) {
+            if ( setdirowner(vol, -1, ntohl(aint) ) < 0 ) {
                 switch ( errno ) {
                 case EPERM :
                 case EACCES :
@@ -1824,8 +1832,7 @@ int setdirparams(const struct vol *vol,
             }
 #endif /* 0 */
 
-            if ( setdirmode( mtoumode( &ma ), vol_noadouble(vol),
-                         (vol->v_flags & AFPVOL_DROPBOX)) < 0 ) {
+            if ( setdirmode( vol, mtoumode( &ma )) < 0 ) {
                 switch ( errno ) {
                 case EPERM :
                 case EACCES :
@@ -1882,8 +1889,7 @@ int setdirparams(const struct vol *vol,
             }
 #endif /* 0 */
 
-            if ( setdirunixmode( aint, vol_noadouble(vol),
-                         (vol->v_flags & AFPVOL_DROPBOX)) < 0 ) {
+            if ( setdirunixmode(vol, aint) < 0 ) {
                 switch ( errno ) {
                 case EPERM :
                 case EACCES :
@@ -2021,10 +2027,11 @@ int		ibuflen, *rbuflen;
         return( AFPERR_ACCESS );
     }
 
-    ad_setentrylen( &ad, ADEID_NAME, strlen( s_path->m_name ));
-    memcpy( ad_entry( &ad, ADEID_NAME ), s_path->m_name,
+    if (ad_getentryoff(&ad, ADEID_NAME)) {
+        ad_setentrylen( &ad, ADEID_NAME, strlen( s_path->m_name ));
+        memcpy( ad_entry( &ad, ADEID_NAME ), s_path->m_name,
             ad_getentrylen( &ad, ADEID_NAME ));
-
+    }
     ad_setid( &ad, (vol->v_flags & AFPVOL_NODEV)?0:s_path->st.st_dev,
                    s_path->st.st_ino, dir->d_did, did, vol->v_stamp);
 
@@ -2044,10 +2051,10 @@ createdir_done:
  * newparent curdir
  *
 */
-int renamedir(src, dst, dir, newparent, newname, noadouble)
+int renamedir(vol, src, dst, dir, newparent, newname)
+const struct vol *vol;
 char	*src, *dst, *newname;
 struct dir	*dir, *newparent;
-const int noadouble;
 {
     struct adouble	ad;
     struct dir		*parent;
@@ -2069,7 +2076,7 @@ const int noadouble;
         case EXDEV:
             /* this needs to copy and delete. bleah. that means we have
              * to deal with entire directory hierarchies. */
-            if ((err = copydir(src, dst, noadouble)) < 0) {
+            if ((err = copydir(vol, src, dst)) < 0) {
                 deletedir(dst);
                 return err;
             }
@@ -2081,19 +2088,28 @@ const int noadouble;
         }
     }
 
-    ad_init(&ad, 0);    /* FIXME */
+    if (vol->v_adouble == AD_VERSION2_OSX) {
+        /* We simply move the corresponding ad file as well */
+        char   tempbuf[258]="._";
+        rename(vol->ad_path(src,0),strcat(tempbuf,dst));
+    }
 
     len = strlen( newname );
     /* rename() succeeded so we need to update our tree even if we can't open
      * .Parent
     */
-    if ( !ad_open( dst, ADFLAGS_HF|ADFLAGS_DIR, O_RDWR, 0, &ad)) {
-        ad_setentrylen( &ad, ADEID_NAME, len );
-        memcpy( ad_entry( &ad, ADEID_NAME ), newname, len );
+    
+    ad_init(&ad, vol->v_adouble);
+
+    if (!ad_open( dst, ADFLAGS_HF|ADFLAGS_DIR, O_RDWR, 0, &ad)) {
+        if (ad_getentryoff(&ad, ADEID_NAME)) {
+            ad_setentrylen( &ad, ADEID_NAME, len );
+            memcpy( ad_entry( &ad, ADEID_NAME ), newname, len );
+        }
         ad_flush( &ad, ADFLAGS_HF );
         ad_close( &ad, ADFLAGS_HF );
     }
-    
+
     if (dir->d_m_name == dir->d_u_name)
         dir->d_u_name = NULL;
 
@@ -2164,33 +2180,41 @@ int pathlen;
         }
     }
 
-    /* delete stray .AppleDouble files. this happens to get .Parent files
-       as well. */
-    if ((dp = opendir(".AppleDouble"))) {
-        strcpy(path, ".AppleDouble/");
-        while ((de = readdir(dp))) {
-            /* skip this and previous directory */
-            if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, ".."))
-                continue;
-
-            /* bail if the file exists in the current directory.
-             * note: this will not fail with dangling symlinks */
-            if (stat(de->d_name, &st) == 0) {
-                closedir(dp);
-                return AFPERR_DIRNEMPT;
-            }
-
-            strcpy(path + DOT_APPLEDOUBLE_LEN, de->d_name);
-            if ((err = netatalk_unlink(path))) {
-                closedir(dp);
-                return err;
-            }
+    if (vol->v_adouble == AD_VERSION2_OSX) {
+       
+        if ((err = netatalk_unlink(vol->ad_path(".",0) )) ) {
+            return err;
         }
-        closedir(dp);
     }
+    else {
+        /* delete stray .AppleDouble files. this happens to get .Parent files
+           as well. */
+        if ((dp = opendir(".AppleDouble"))) {
+            strcpy(path, ".AppleDouble/");
+            while ((de = readdir(dp))) {
+                /* skip this and previous directory */
+                if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, ".."))
+                    continue;
 
-    if ( (err = netatalk_rmdir( ".AppleDouble" ))  ) {
-    	return err;
+                /* bail if the file exists in the current directory.
+                 * note: this will not fail with dangling symlinks */
+                if (stat(de->d_name, &st) == 0) {
+                    closedir(dp);
+                    return AFPERR_DIRNEMPT;
+                }
+
+                strcpy(path + DOT_APPLEDOUBLE_LEN, de->d_name);
+                if ((err = netatalk_unlink(path))) {
+                    closedir(dp);
+                    return err;
+                }
+            }
+            closedir(dp);
+        }
+
+        if ( (err = netatalk_rmdir( ".AppleDouble" ))  ) {
+            return err;
+        }
     }
 
     /* now get rid of dangling symlinks */

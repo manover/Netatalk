@@ -1,5 +1,5 @@
 /*
- * $Id: fork.c,v 1.51.2.2.2.6 2004-02-20 21:23:13 didg Exp $
+ * $Id: fork.c,v 1.51.2.2.2.7 2004-03-11 02:02:01 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -459,10 +459,12 @@ int		ibuflen, *rbuflen;
     }
 
     if ((adflags & ADFLAGS_HF) && (ad_get_HF_flags( ofork->of_ad) & O_CREAT)) {
-        ad_setentrylen( ofork->of_ad, ADEID_NAME, strlen( path ));
-        memcpy(ad_entry( ofork->of_ad, ADEID_NAME ), path,
+        if (ad_getentryoff(ofork->of_ad, ADEID_NAME)) {
+            ad_setentrylen( ofork->of_ad, ADEID_NAME, strlen( path ));
+            memcpy(ad_entry( ofork->of_ad, ADEID_NAME ), path,
                ad_getentrylen( ofork->of_ad, ADEID_NAME ));
-        ad_flush( ofork->of_ad, adflags );
+            ad_flush( ofork->of_ad, adflags );
+        }
     }
 
     if (( ret = getforkparams(ofork, bitmap, rbuf + 2 * sizeof( u_int16_t ),

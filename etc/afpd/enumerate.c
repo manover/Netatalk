@@ -1,5 +1,5 @@
 /*
- * $Id: enumerate.c,v 1.39.2.2.2.3 2004-02-20 21:22:58 didg Exp $
+ * $Id: enumerate.c,v 1.39.2.2.2.4 2004-03-11 02:01:59 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -166,7 +166,7 @@ char *check_dirent(const struct vol *vol, char *name)
     if (!strcmp(name, "..") || !strcmp(name, "."))
         return NULL;
 
-    if (!(validupath(vol, name)))
+    if (!vol->validupath(vol, name))
         return NULL;
 
     /* check for vetoed filenames */

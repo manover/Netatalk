@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.45.2.2.2.8 2004-03-02 13:27:07 didg Exp $
+ * $Id: filedir.c,v 1.45.2.2.2.9 2004-03-11 02:02:01 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -73,7 +73,7 @@ more information */
         return AFPERR_NOOBJ ;
     }
 
-    adpath = ad_path( upath, ADFLAGS_HF );
+    adpath = vol->ad_path( upath, ADFLAGS_HF );
     /* FIXME dirsearch doesn't move cwd to did ! */
     if (( dir = dirlookup( vol, did )) == NULL ) {
         LOG(log_error, logtype_afpd, "matchfile2dirperms: Unable to get directory info.");
@@ -302,7 +302,7 @@ int		ibuflen, *rbuflen;
 }
 
 /* -------------------------------------------- 
-   Factorise some check on a pathname
+   Factorise some checks on a pathname
 */
 int check_name(const struct vol *vol, char *name)
 {
@@ -313,7 +313,7 @@ int check_name(const struct vol *vol, char *name)
     if ((vol->v_flags & AFPVOL_NOHEX) && strchr(name, '/'))
         return AFPERR_PARAM;
 
-    if (!validupath(vol, name))
+    if (!vol->validupath(vol, name))
         return AFPERR_EXIST;
 
     /* check for vetoed filenames */
@@ -432,12 +432,12 @@ int         isdir;
         if (of_findname(&path)) {
             rc = AFPERR_EXIST; /* was AFPERR_BUSY; */
         } else {
-            rc = renamefile( p, upath, newname,vol_noadouble(vol), adp );
+            rc = renamefile(vol, p, upath, newname, adp );
             if (rc == AFP_OK)
                 of_rename(vol, opened, sdir, oldname, curdir, newname);
         }
     } else {
-        rc = renamedir(p, upath, sdir, curdir, newname, vol_noadouble(vol));
+        rc = renamedir(vol, p, upath, sdir, curdir, newname);
     }
     if ( rc == AFP_OK && id ) {
         /* renaming may have moved the file/dir across a filesystem */
@@ -764,7 +764,7 @@ int		ibuflen, *rbuflen;
                 int  admode = ad_mode("", 0777);
 
                 setfilmode(upath, admode, NULL);
-                setfilmode(ad_path( upath, ADFLAGS_HF ), ad_hf_mode(admode), NULL);
+                setfilmode(vol->ad_path( upath, ADFLAGS_HF ), ad_hf_mode(admode), NULL);
             }
         setvoltime(obj, vol );
     }

@@ -1,5 +1,5 @@
 /*
- * $Id: unix.h,v 1.12.2.1.2.2 2004-01-07 13:33:03 lenneis Exp $
+ * $Id: unix.h,v 1.12.2.1.2.3 2004-03-11 02:02:03 didg Exp $
  */
 
 #ifndef AFPD_UNIX_H
@@ -217,12 +217,12 @@ extern struct afp_options default_options;
 
 extern int gmem            __P((const gid_t));
 extern int setdeskmode      __P((const mode_t));
-extern int setdirunixmode   __P((const mode_t, const int, const int));
-extern int setdirmode       __P((const mode_t, const int, const int));
+extern int setdirunixmode   __P((const struct vol *, const mode_t));
+extern int setdirmode       __P((const struct vol *, const mode_t));
 extern int setdeskowner     __P((const uid_t, const gid_t));
-extern int setdirowner      __P((const uid_t, const gid_t, const int));
+extern int setdirowner      __P((const struct vol *, const uid_t, const gid_t));
 extern int setfilmode       __P((char *, mode_t , struct stat *));
-extern int setfilemode      __P((struct path*, const mode_t));
+extern int setfilunixmode   __P((const struct vol *, struct path*, const mode_t));
 extern int unix_rename      __P((const char *oldpath, const char *newpath));
 
 extern void accessmode      __P((char *, struct maccess *, struct dir *, struct stat *));

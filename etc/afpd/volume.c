@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.24 2004-03-02 13:27:08 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.25 2004-03-11 02:02:03 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -391,6 +391,8 @@ static void volset(struct vol_option *options, struct vol_option *save,
 #if AD_VERSION == AD_VERSION2            
         else if (strcasecmp(val + 1, "v2") == 0)
             options[VOLOPT_ADOUBLE].i_value = AD_VERSION2;
+        else if (strcasecmp(val + 1, "osx") == 0)
+            options[VOLOPT_ADOUBLE].i_value = AD_VERSION2_OSX;
 #endif
     } else if (optionok(tmp, "options:", val)) {
         char *p;
@@ -484,6 +486,34 @@ static void showvol(const ucs2_t *name)
             volume->v_hide = 0;
             return;
         }
+    }
+}
+
+/* ----------------- 
+ * FIXME should be define elsewhere
+*/
+static int validupath_adouble(const struct vol *vol, const char *name) 
+{
+    return (vol->v_flags & AFPVOL_USEDOTS) ? strncasecmp(name,".Apple", 6) && strcasecmp(name, ".Parent")
+                                           : name[0] != '.';
+}                                           
+
+/* ----------------- */
+static int validupath_osx(const struct vol *vol, const char *name) 
+{
+    return strncasecmp(name,".Apple", 6) && strncasecmp(name,"._", 2);
+}             
+
+/* ---------------- */
+static void initvoladouble(struct vol *vol)
+{
+    if (vol->v_adouble == AD_VERSION2_OSX) {
+        vol->validupath  = validupath_osx;
+        vol->ad_path     = ad_path_osx;
+    }
+    else {
+        vol->validupath  = validupath_adouble;
+        vol->ad_path     = ad_path;
     }
 }
 
@@ -589,6 +619,7 @@ static int creatvol(AFPObj *obj, struct passwd *pwd,
 	    volume->v_adouble = options[VOLOPT_ADOUBLE].i_value;
 	else 
 	    volume->v_adouble = AD_VERSION;
+	initvoladouble(volume);
 #ifdef FORCE_UIDGID
         if (options[VOLOPT_FORCEUID].c_value) {
             volume->v_forceuid = strdup(options[VOLOPT_FORCEUID].c_value);
@@ -1170,10 +1201,11 @@ int		*buflen;
             slash++;
         else
             slash = vol->v_path;
-
-        ad_setentrylen( &ad, ADEID_NAME, strlen( slash ));
-        memcpy(ad_entry( &ad, ADEID_NAME ), slash,
+        if (ad_getentryoff(&ad, ADEID_NAME)) {
+            ad_setentrylen( &ad, ADEID_NAME, strlen( slash ));
+            memcpy(ad_entry( &ad, ADEID_NAME ), slash,
                ad_getentrylen( &ad, ADEID_NAME ));
+        }
         vol_setdate(vol->v_vid, &ad, st->st_mtime);
         ad_flush(&ad, ADFLAGS_HF);
     }
@@ -2066,9 +2098,11 @@ static int create_special_folder (const struct vol *vol, const struct _special_f
 			return (-1);
 		}
     		if ((ad_get_HF_flags( &ad ) & O_CREAT) ) {
-        		ad_setentrylen( &ad, ADEID_NAME, strlen(folder->name));
-	        	memcpy(ad_entry( &ad, ADEID_NAME ), folder->name,
-        	       	ad_getentrylen( &ad, ADEID_NAME ));
+    		    if (ad_getentryoff(&ad, ADEID_NAME)) {
+    		        ad_setentrylen( &ad, ADEID_NAME, strlen(folder->name));
+    		        memcpy(ad_entry( &ad, ADEID_NAME ), folder->name,
+    		               ad_getentrylen( &ad, ADEID_NAME ));
+    		    }
 		}
  
 		ad_getattr(&ad, &attr);

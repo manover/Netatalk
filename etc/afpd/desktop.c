@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.9 2004-03-04 23:57:14 bfernhomberg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.10 2004-03-11 02:01:59 didg Exp $
  *
  * See COPYRIGHT.
  *
@@ -696,22 +696,70 @@ utompath_error:
     return(m);
 }
 
+/* ------------------------- */
+static int ad_addcomment(struct vol *vol, struct path *path, char *ibuf)
+{
+    struct ofork        *of;
+    char                *name, *upath;
+    int                 isadir;
+    int			clen;
+    struct adouble	ad, *adp;
+
+    clen = (u_char)*ibuf++;
+    clen = min( clen, 199 );
+
+    upath = path->u_name;
+    if (!vol_unix_priv(vol) && check_access(upath, OPENACC_WR ) < 0) {
+        return AFPERR_ACCESS;
+    }
+    
+    isadir = path_isadir(path);
+    if (isadir || !(of = of_findname(path))) {
+        ad_init(&ad, vol->v_adouble);
+        adp = &ad;
+    } else
+        adp = of->of_ad;
+
+    if (ad_open( upath , vol_noadouble(vol) |
+                 (( isadir) ? ADFLAGS_HF|ADFLAGS_DIR : ADFLAGS_HF),
+                 O_RDWR|O_CREAT, 0666, adp) < 0 ) {
+        return( AFPERR_ACCESS );
+    }
+
+    if (!ad_getentryoff(adp, ADEID_COMMENT)) {
+        /* not defined, save nothing but return success */
+        return AFP_OK;
+    }
+
+    if ( (ad_getoflags( adp, ADFLAGS_HF ) & O_CREAT) ) {
+        if ( *path->m_name == '\0' ) {
+            name = curdir->d_m_name;
+        } else {
+            name = path->m_name;
+        }
+        ad_setentrylen( adp, ADEID_NAME, strlen( name ));
+        memcpy( ad_entry( adp, ADEID_NAME ), name,
+                ad_getentrylen( adp, ADEID_NAME ));
+    }
+
+    ad_setentrylen( adp, ADEID_COMMENT, clen );
+    memcpy( ad_entry( adp, ADEID_COMMENT ), ibuf, clen );
+    ad_flush( adp, ADFLAGS_HF );
+    ad_close( adp, ADFLAGS_HF );
+    return( AFP_OK );
+}
+
 /* ----------------------------- */
 int afp_addcomment(obj, ibuf, ibuflen, rbuf, rbuflen )
 AFPObj      *obj;
 char	*ibuf, *rbuf;
 int		ibuflen, *rbuflen;
 {
-    struct adouble	ad, *adp;
     struct vol		*vol;
     struct dir		*dir;
-    struct ofork        *of;
     struct path         *path;
-    char                *name, *upath;
-    int			clen;
     u_int32_t           did;
     u_int16_t		vid;
-    int                 isadir;
 
     *rbuflen = 0;
     ibuf += 2;
@@ -736,59 +784,65 @@ int		ibuflen, *rbuflen;
         ibuf++;
     }
 
-    clen = (u_char)*ibuf++;
-    clen = min( clen, 199 );
+    return ad_addcomment(vol, path, ibuf);
+}
+
+/* -------------------- */
+static int ad_getcomment(struct vol *vol, struct path *path, char *rbuf, int *rbuflen)
+{
+    struct adouble	ad, *adp;
+    struct ofork        *of;
+    char		*upath;
+    int                 isadir;
+
 
     upath = path->u_name;
-    if (!vol_unix_priv(vol) && check_access(upath, OPENACC_WR ) < 0) {
-        return AFPERR_ACCESS;
-    }
-
     isadir = path_isadir(path);
     if (isadir || !(of = of_findname(path))) {
         ad_init(&ad, vol->v_adouble);
         adp = &ad;
     } else
         adp = of->of_ad;
-
-    if (ad_open( upath , vol_noadouble(vol) |
-                 (( isadir) ? ADFLAGS_HF|ADFLAGS_DIR : ADFLAGS_HF),
-                 O_RDWR|O_CREAT, 0666, adp) < 0 ) {
-        return( AFPERR_ACCESS );
+        
+    if ( ad_open( upath,
+                  ( isadir) ? ADFLAGS_HF|ADFLAGS_DIR : ADFLAGS_HF,
+                  O_RDONLY, 0666, adp) < 0 ) {
+        return( AFPERR_NOITEM );
     }
 
-    if ( (ad_getoflags( adp, ADFLAGS_HF ) & O_CREAT) ) {
-        if ( *path->m_name == '\0' ) {
-            name = curdir->d_m_name;
-        } else {
-            name = path->m_name;
-        }
-        ad_setentrylen( adp, ADEID_NAME, strlen( name ));
-        memcpy( ad_entry( adp, ADEID_NAME ), name,
-                ad_getentrylen( adp, ADEID_NAME ));
+    if (!ad_getentryoff(adp, ADEID_COMMENT)) {
+        return AFPERR_NOITEM;
+    }
+    /*
+     * Make sure the AD file is not bogus.
+     */
+    if ( ad_getentrylen( adp, ADEID_COMMENT ) < 0 ||
+            ad_getentrylen( adp, ADEID_COMMENT ) > 199 ) {
+        ad_close( adp, ADFLAGS_HF );
+        return( AFPERR_NOITEM );
     }
 
-    ad_setentrylen( adp, ADEID_COMMENT, clen );
-    memcpy( ad_entry( adp, ADEID_COMMENT ), ibuf, clen );
-    ad_flush( adp, ADFLAGS_HF );
+    *rbuf++ = ad_getentrylen( adp, ADEID_COMMENT );
+    memcpy( rbuf, ad_entry( adp, ADEID_COMMENT ),
+            ad_getentrylen( adp, ADEID_COMMENT ));
+    *rbuflen = ad_getentrylen( adp, ADEID_COMMENT ) + 1;
     ad_close( adp, ADFLAGS_HF );
+
+    /* return AFPERR_NOITEM if len == 0 ? */
     return( AFP_OK );
 }
 
+/* -------------------- */
 int afp_getcomment(obj, ibuf, ibuflen, rbuf, rbuflen )
 AFPObj      *obj;
 char	*ibuf, *rbuf;
 int		ibuflen, *rbuflen;
 {
-    struct adouble	ad, *adp;
     struct vol		*vol;
     struct dir		*dir;
-    struct ofork        *of;
     struct path         *s_path;
-    char		*upath;
     u_int32_t		did;
     u_int16_t		vid;
-    int                 isadir;
     
     *rbuflen = 0;
     ibuf += 2;
@@ -809,52 +863,63 @@ int		ibuflen, *rbuflen;
 	return get_afp_errno(AFPERR_NOOBJ);
     }
 
-    upath = s_path->u_name;
-    isadir = path_isadir(s_path);
-    if (isadir || !(of = of_findname(s_path))) {
+    return ad_getcomment(vol, s_path, rbuf, rbuflen);
+}
+
+/* ----------------------- */
+static int ad_rmvcomment(struct vol *vol, struct path *path)
+{
+    struct adouble	ad, *adp;
+    struct ofork        *of;
+    int                 isadir;
+    char		*upath;
+
+    upath = path->u_name;
+    if (!vol_unix_priv(vol) && check_access(upath, OPENACC_WR ) < 0) {
+        return AFPERR_ACCESS;
+    }
+
+    isadir = path_isadir(path);
+    if (isadir || !(of = of_findname(path))) {
         ad_init(&ad, vol->v_adouble);
         adp = &ad;
     } else
         adp = of->of_ad;
+
     if ( ad_open( upath,
-                  ( isadir) ? ADFLAGS_HF|ADFLAGS_DIR : ADFLAGS_HF,
-                  O_RDONLY, 0666, adp) < 0 ) {
-        return( AFPERR_NOITEM );
+                   (isadir) ? ADFLAGS_HF|ADFLAGS_DIR : ADFLAGS_HF,
+                  O_RDWR, 0, adp) < 0 ) {
+        switch ( errno ) {
+        case ENOENT :
+            return( AFPERR_NOITEM );
+        case EACCES :
+            return( AFPERR_ACCESS );
+        default :
+            return( AFPERR_PARAM );
+        }
     }
 
-    /*
-     * Make sure the AD file is not bogus.
-     */
-    if ( ad_getentrylen( adp, ADEID_COMMENT ) < 0 ||
-            ad_getentrylen( adp, ADEID_COMMENT ) > 199 ) {
-        ad_close( adp, ADFLAGS_HF );
-        return( AFPERR_NOITEM );
+    if (!ad_getentryoff(adp, ADEID_COMMENT)) {
+        return AFP_OK;
     }
 
-    *rbuf++ = ad_getentrylen( adp, ADEID_COMMENT );
-    memcpy( rbuf, ad_entry( adp, ADEID_COMMENT ),
-            ad_getentrylen( adp, ADEID_COMMENT ));
-    *rbuflen = ad_getentrylen( adp, ADEID_COMMENT ) + 1;
+    ad_setentrylen( adp, ADEID_COMMENT, 0 );
+    ad_flush( adp, ADFLAGS_HF );
     ad_close( adp, ADFLAGS_HF );
-
-    /* return AFPERR_NOITEM if len == 0 ? */
     return( AFP_OK );
 }
 
+/* ----------------------- */
 int afp_rmvcomment(obj, ibuf, ibuflen, rbuf, rbuflen )
 AFPObj      *obj;
 char	*ibuf, *rbuf;
 int		ibuflen, *rbuflen;
 {
-    struct adouble	ad, *adp;
     struct vol		*vol;
     struct dir		*dir;
-    struct ofork        *of;
     struct path         *s_path;
-    char		*upath;
     u_int32_t		did;
     u_int16_t		vid;
-    int                 isadir;
 
     *rbuflen = 0;
     ibuf += 2;
@@ -874,34 +939,6 @@ int		ibuflen, *rbuflen;
     if (NULL == ( s_path = cname( vol, dir, &ibuf ))) {
 	return get_afp_errno(AFPERR_NOOBJ);
     }
-
-    upath = s_path->u_name;
-    if (!vol_unix_priv(vol) && check_access(upath, OPENACC_WR ) < 0) {
-        return AFPERR_ACCESS;
-    }
-
-    isadir = path_isadir(s_path);
-    if (isadir || !(of = of_findname(s_path))) {
-        ad_init(&ad, vol->v_adouble);
-        adp = &ad;
-    } else
-        adp = of->of_ad;
-
-    if ( ad_open( upath,
-                   (isadir) ? ADFLAGS_HF|ADFLAGS_DIR : ADFLAGS_HF,
-                  O_RDWR, 0, adp) < 0 ) {
-        switch ( errno ) {
-        case ENOENT :
-            return( AFPERR_NOITEM );
-        case EACCES :
-            return( AFPERR_ACCESS );
-        default :
-            return( AFPERR_PARAM );
-        }
-    }
-
-    ad_setentrylen( adp, ADEID_COMMENT, 0 );
-    ad_flush( adp, ADFLAGS_HF );
-    ad_close( adp, ADFLAGS_HF );
-    return( AFP_OK );
+    
+    return ad_rmvcomment(vol, s_path);
 }

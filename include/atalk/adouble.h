@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.12 2004-02-20 20:53:14 bfernhomberg Exp $
+ * $Id: adouble.h,v 1.21.6.13 2004-03-11 02:02:04 didg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -77,6 +77,7 @@
 /* version info */
 #define AD_VERSION1	0x00010000
 #define AD_VERSION2	0x00020000
+#define AD_VERSION2_OSX	0x00020001
 #define AD_VERSION	AD_VERSION2
 
 /*
@@ -246,6 +247,8 @@ struct adouble {
     off_t               ad_rlen;     /* ressource fork len with AFP 3.0
                                         the header parameter size is too small.
                                      */
+    char                *(*ad_path)(const char *, int);
+                           
 #ifdef USE_MMAPPED_HEADERS
     char                *ad_data;
 #else
@@ -350,18 +353,20 @@ extern int ad_excl_lock     __P((struct adouble * /*adp*/, const u_int32_t /*eid
 #define ad_unlock ad_fcntl_unlock
 
 /* ad_open.c */
-extern int ad_setfuid __P((const uid_t ));
-extern uid_t ad_getfuid __P((void ));
+extern int ad_setfuid     __P((const uid_t ));
+extern uid_t ad_getfuid   __P((void ));
 
-extern char *ad_dir   __P((const char *));
-extern char *ad_path  __P((const char *, int));
-extern int ad_mode    __P((const char *, int));
-extern int ad_mkdir   __P((const char *, int));
-extern void ad_init   __P((struct adouble *, int ));
+extern char *ad_dir       __P((const char *));
+extern char *ad_path      __P((const char *, int));
+extern char *ad_path_osx  __P((const char *, int));
 
-extern int ad_open    __P((const char *, int, int, int, struct adouble *)); 
-extern int ad_refresh __P((struct adouble *));
-extern int ad_stat    __P((const char *, struct stat *));
+extern int ad_mode        __P((const char *, int));
+extern int ad_mkdir       __P((const char *, int));
+extern void ad_init       __P((struct adouble *, int ));
+
+extern int ad_open        __P((const char *, int, int, int, struct adouble *)); 
+extern int ad_refresh     __P((struct adouble *));
+extern int ad_stat        __P((const char *, struct stat *));
 
 /* extend header to RW if R or W (W if R for locking),
  */ 
