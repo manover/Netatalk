@@ -3,6 +3,7 @@ Changes in 1.6.3
 
 * UPD: afpd: Infrastructural support for an upcoming Kerberos 5 UAM.
        [Sam Noble]
+* UPD: uams_dhx_passwd: Better random seed in Tru64. [Burkhard Schmidt]
 * FIX: afpd: Bug in AFP connection negotiation stage. [Sam]
 * FIX: afpd: Catsearch, when Mac and unix name differ, search on attributes.
 * FIX: afpd: Files could be opened for writing on read-only filesystems.
@@ -11,7 +12,7 @@ Changes in 1.6.3
 * FIX: psf: Correct path to etc2ps.sh.
 * FIX: shell_utils: Don't distribute generated files.
 * FIX: aecho: -A option didn't work. [Chris Shiels]
-* FIX: configure: Berkeley DB path detection could be wrong. [Stefan Muenkner]
+* FIX: configure: Berkeley DB path detection could be wrong. [Stefan]
 * FIX: Automake build fixes.
 
 Changes in 1.6.2

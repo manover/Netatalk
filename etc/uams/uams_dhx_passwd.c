@@ -1,5 +1,5 @@
 /*
- * $Id: uams_dhx_passwd.c,v 1.16 2002-09-29 23:30:20 sibaz Exp $
+ * $Id: uams_dhx_passwd.c,v 1.16.2.1 2003-06-14 17:12:17 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -79,8 +79,10 @@ static int passwd_login(void *obj, struct passwd **uam_pwd,
     DH *dh;
 
 #ifdef TRU64
-    static const char rnd_seed[] = "string to make the random number generator think it has entropy";
-    RAND_seed(rnd_seed, sizeof rnd_seed);
+    int rnd_seed[256];
+    for (i = 0; i < 256; i++)
+        rnd_seed[i] = random();
+    RAND_seed(rnd_seed, sizeof(rnd_seed));
 #endif /* TRU64 */
 
     *rbuflen = 0;
