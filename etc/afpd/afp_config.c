@@ -1,5 +1,5 @@
 /*
- * $Id: afp_config.c,v 1.22.6.1 2003-10-30 03:48:12 didg Exp $
+ * $Id: afp_config.c,v 1.22.6.2 2003-11-18 12:37:02 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -468,6 +468,7 @@ AFPConfig *configinit(struct afp_options *cmdline)
     struct afp_options options;
     AFPConfig *config, *first = NULL;
 
+    status_reset();
     /* if config file doesn't exist, load defaults */
     if ((fp = fopen(cmdline->configfile, "r")) == NULL)
     {

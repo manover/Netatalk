@@ -1,5 +1,5 @@
 /*
- * $Id: status.c,v 1.13.6.2 2003-09-27 02:55:44 bfernhomberg Exp $
+ * $Id: status.c,v 1.13.6.3 2003-11-18 12:37:02 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -138,6 +138,14 @@ static void status_machine(char *data)
     memcpy(start + AFPSTATUS_VERSOFF, &status, sizeof(status));
 }
 
+/* -------------------------------- 
+ * it turns out that a server signature screws up separate
+ * servers running on the same machine. to work around that, 
+ * i add in an increment.
+ * Not great, server signature are config dependent but well.
+ */
+ 
+static int           Id = 0;
 
 /* server signature is a 16-byte quantity */
 static u_int16_t status_signature(char *data, int *servoffset, DSI *dsi,
@@ -148,7 +156,6 @@ static u_int16_t status_signature(char *data, int *servoffset, DSI *dsi,
     int                  i;
     u_int16_t            offset, sigoff;
     long                 hostid;
-    static int           id = 0;
 #ifdef BSD4_4
     int                  mib[2];
     size_t               len;
@@ -206,8 +213,8 @@ server_signature_hostid:
     /* it turns out that a server signature screws up separate
      * servers running on the same machine. to work around that, 
      * i add in an increment */
-    hostid += id;
-    id++;
+    hostid += Id;
+    Id++;
     for (i = 0; i < 16; i += sizeof(hostid)) {
         memcpy(data, &hostid, sizeof(hostid));
         data += sizeof(hostid);
@@ -435,6 +442,15 @@ static void status_icon(char *data, const unsigned char *icondata,
         memcpy(sigdata, &ret, sizeof(ret));
 }
 
+/* ---------------------
+*/
+void status_reset()
+{
+    Id = 0;
+}
+
+/* ---------------------
+*/
 void status_init(AFPConfig *aspconfig, AFPConfig *dsiconfig,
                  const struct afp_options *options)
 {
