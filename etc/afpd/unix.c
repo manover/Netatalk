@@ -1,5 +1,5 @@
 /*
- * $Id: unix.c,v 1.43.2.1.2.9 2004-06-15 00:46:01 bfernhomberg Exp $
+ * $Id: unix.c,v 1.43.2.1.2.10 2004-06-15 22:53:55 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -150,15 +150,15 @@ mode_t mode;
      * the "owner" bit set, even tho you can do these things on unix wiht
      * only write permission.  What were the things?
      * 
-     * FIXME and so what ?
+     * FIXME 
+     * ditto seems to care if st_uid is 0 ?
+     * was ma->ma_user & AR_UWRITE
+     * but 0 as owner is a can of worms.
      */
-#if 0
-    if ( ma->ma_user & AR_UWRITE ) {
+    if ( !stat->st_uid ) {
         ma->ma_user |= AR_UOWN;
     }
-#endif    
 }
-
 
 #ifdef accessmode
 #undef accessmode

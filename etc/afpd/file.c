@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.27 2004-06-01 06:33:09 bfernhomberg Exp $
+ * $Id: file.c,v 1.92.2.2.2.28 2004-06-15 22:53:54 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1785,6 +1785,12 @@ retry:
     }
 
     if ( of_stat(&path) < 0 ) {
+#ifdef ESTALE
+        /* with nfs and our working directory is deleted */
+	if (errno == ESTALE) {
+	    errno = ENOENT;
+	}
+#endif	
 	if ( errno == ENOENT && !retry) {
 	    /* cnid db is out of sync, reenumerate the directory and updated ids */
 	    reenumerate_id(vol, ".", id);
@@ -1882,6 +1888,9 @@ int		ibuflen, *rbuflen;
         case EACCES:
         case EPERM:
             return AFPERR_ACCESS;
+#ifdef ESTALE
+	case ESTALE:
+#endif	
         case ENOENT:
             /* still try to delete the id */
             err = AFPERR_NOOBJ;
@@ -1915,6 +1924,8 @@ int		ibuflen, *rbuflen;
 /* ------------------------------ */
 static struct adouble *find_adouble(struct path *path, struct ofork **of, struct adouble *adp)
 {
+    int             ret;
+
     if (path->st_errno) {
         switch (path->st_errno) {
         case ENOENT:
@@ -1930,24 +1941,28 @@ static struct adouble *find_adouble(struct path *path, struct ofork **of, struct
         }
         return NULL;
     }
-
-    if ((*of = of_findname(path))) {
-            /* reuse struct adouble so it won't break locks */
-            adp = (*of)->of_ad;
-    }
-    else {
-        ad_open( path->u_name, ADFLAGS_HF, O_RDONLY, 0, adp);
-    }
-    if ( ad_hfileno( adp ) != -1 
-        && !(adp->ad_hf.adf_flags & ( O_RDWR | O_WRONLY))
-        && sizeof(dev_t) == ad_getentrylen(adp, ADEID_PRIVDEV)
-        && sizeof(ino_t) == ad_getentrylen(adp,ADEID_PRIVINO)
-    ) {
-        /* it's an adouble version 2 with cached resource fork 
-         * but the file is not open RW so we can't update cnid
-         */
+    /* we use file_access both for legacy Mac perm and
+     * for unix privilege, rename will take care of folder perms
+    */
+    if (file_access(path, OPENACC_WR ) < 0) {
         afp_errno = AFPERR_ACCESS;
         return NULL;
+    }
+    
+    if ((*of = of_findname(path))) {
+        /* reuse struct adouble so it won't break locks */
+        adp = (*of)->of_ad;
+    }
+    else {
+        ret = ad_open( path->u_name, ADFLAGS_HF, O_RDONLY, 0, adp);
+        if ( !ret && ad_hfileno(adp) != -1 && !(adp->ad_hf.adf_flags & ( O_RDWR | O_WRONLY))) {
+            /* from AFP spec.
+             * The user must have the Read & Write privilege for both files in order to use this command.
+             */
+            ad_close(adp, ADFLAGS_HF);
+            afp_errno = AFPERR_ACCESS;
+            return NULL;
+        }
     }
     return adp;
 }
@@ -1968,10 +1983,10 @@ int		ibuflen, *rbuflen;
     int                 err;
     struct adouble	ads;
     struct adouble	add;
-    struct adouble	*adsp;
-    struct adouble	*addp;
-    struct ofork	*s_of;
-    struct ofork	*d_of;
+    struct adouble	*adsp = NULL;
+    struct adouble	*addp = NULL;
+    struct ofork	*s_of = NULL;
+    struct ofork	*d_of = NULL;
     int                 crossdev;
     
     int                 slen, dlen;
@@ -2017,61 +2032,68 @@ int		ibuflen, *rbuflen;
         return AFPERR_BADTYPE;   /* it's a dir */
     }
 
-    /* XXX 
-     * here do we need to switch to root ?
-    */
-
-    ad_init(&ads, vol->v_adouble);
-    if (!(adsp = find_adouble( path, &s_of, &ads))) {
-        return afp_errno;
-    }
-    
     /* save some stuff */
     srcst = path->st;
     sdir = curdir;
     spath = obj->oldtmp;
     supath = obj->newtmp;
     strcpy(spath, path->m_name);
-    upath = path->u_name;
-    strcpy(supath, upath); /* this is for the cnid changing */
-    p = absupath( vol, sdir, upath);
+    strcpy(supath, path->u_name); /* this is for the cnid changing */
+    p = absupath( vol, sdir, supath);
     if (!p) {
         /* pathname too long */
         return AFPERR_PARAM ;
     }
+    
+    ad_init(&ads, vol->v_adouble);
+    if (!(adsp = find_adouble( path, &s_of, &ads))) {
+        return afp_errno;
+    }
 
+    /* ***** from here we may have resource fork open **** */
+    
     /* look for the source cnid. if it doesn't exist, don't worry about
      * it. */
     sid = cnid_lookup(vol->v_cdb, &srcst, sdir->d_did, supath,slen = strlen(supath));
 
     if (NULL == ( dir = dirlookup( vol, did )) ) {
-        return afp_errno; /* was AFPERR_PARAM */
+        err = afp_errno; /* was AFPERR_PARAM */
+        goto err_exchangefile;
     }
 
     if (NULL == ( path = cname( vol, dir, &ibuf )) ) {
-        return get_afp_errno(AFPERR_NOOBJ); 
+        err = get_afp_errno(AFPERR_NOOBJ); 
+        goto err_exchangefile;
     }
 
     if ( path_isadir(path) ) {
-        return AFPERR_BADTYPE;
+        err = AFPERR_BADTYPE;
+        goto err_exchangefile;
     }
 
     /* FPExchangeFiles is the only call that can return the SameObj
      * error */
-    if ((curdir == sdir) && strcmp(spath, path->m_name) == 0)
-        return AFPERR_SAMEOBJ;
+    if ((curdir == sdir) && strcmp(spath, path->m_name) == 0) {
+        err = AFPERR_SAMEOBJ;
+        goto err_exchangefile;
+    }
 
     ad_init(&add, vol->v_adouble);
     if (!(addp = find_adouble( path, &d_of, &add))) {
-        return afp_errno;
+        err = afp_errno;
+        goto err_exchangefile;
     }
     destst = path->st;
 
     /* they are not on the same device and at least one is open
+     * FIXME broken for for crossdev and adouble v2
+     * return an error 
     */
     crossdev = (srcst.st_dev != destst.st_dev);
-    if ((d_of || s_of)  && crossdev)
-        return AFPERR_MISC;
+    if (/* (d_of || s_of)  && */ crossdev) {
+        err = AFPERR_MISC;
+        goto err_exchangefile;
+    }
 
     /* look for destination id. */
     upath = path->u_name;
@@ -2081,8 +2103,16 @@ int		ibuflen, *rbuflen;
      * NOTE: the temp file will be in the dest file's directory. it
      * will also be inaccessible from AFP. */
     memcpy(temp, APPLETEMP, sizeof(APPLETEMP));
-    if (!mktemp(temp))
-        return AFPERR_MISC;
+    if (!mktemp(temp)) {
+        err = AFPERR_MISC;
+        goto err_exchangefile;
+    }
+    
+    if (crossdev) {
+        /* we need to close fork for copy, both s_of and d_of are null */
+       ad_close(adsp, ADFLAGS_HF);
+       ad_close(addp, ADFLAGS_HF);
+    }
 
     /* now, quickly rename the file. we error if we can't. */
     if ((err = renamefile(vol, p, temp, temp, adsp)) != AFP_OK)
@@ -2124,19 +2154,12 @@ int		ibuflen, *rbuflen;
         }
         goto err_temp_to_dest;
     }
+    
+    /* here we need to reopen if crossdev */
     if (sid)
         ad_setid(addp,(vol->v_flags & AFPVOL_NODEV)?0:destst.st_dev, destst.st_ino,  sid, sdir->d_did, vol->v_stamp);
     if (did)
         ad_setid(adsp,(vol->v_flags & AFPVOL_NODEV)?0:srcst.st_dev, srcst.st_ino,  did, curdir->d_did, vol->v_stamp);
-
-    if ( !s_of ) {
-       ad_flush( adsp, ADFLAGS_HF );
-       ad_close(adsp, ADFLAGS_HF);
-    }
-    if ( !d_of ) {
-       ad_flush( addp, ADFLAGS_HF );
-       ad_close(addp, ADFLAGS_HF);
-    }
 
     /* change perms, src gets dest perm and vice versa */
 
@@ -2144,7 +2167,8 @@ int		ibuflen, *rbuflen;
     gid = getegid();
     if (seteuid(0)) {
         LOG(log_error, logtype_afpd, "seteuid failed %s", strerror(errno));
-        return AFP_OK; /* ignore error */
+        err = AFP_OK; /* ignore error */
+        goto err_temp_to_dest;
     }
 
     /*
@@ -2178,7 +2202,8 @@ int		ibuflen, *rbuflen;
     LOG(log_info, logtype_afpd, "ending afp_exchangefiles:");
 #endif /* DEBUG */
 
-    return AFP_OK;
+    err = AFP_OK;
+    goto err_exchangefile;
 
     /* all this stuff is so that we can unwind a failed operation
      * properly. */
@@ -2198,5 +2223,14 @@ err_src_to_tmp:
     of_rename(vol, s_of, curdir, temp, sdir, spath);
 
 err_exchangefile:
+    if ( !s_of && adsp && ad_hfileno(adsp) != -1 ) {
+       ad_flush( adsp, ADFLAGS_HF );
+       ad_close(adsp, ADFLAGS_HF);
+    }
+    if ( !d_of && addp && ad_hfileno(addp) != -1 ) {
+       ad_flush( addp, ADFLAGS_HF );
+       ad_close(addp, ADFLAGS_HF);
+    }
+
     return err;
 }
