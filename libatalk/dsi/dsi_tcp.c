@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_tcp.c,v 1.9.10.5 2004-02-14 00:30:52 didg Exp $
+ * $Id: dsi_tcp.c,v 1.9.10.6 2004-04-25 23:17:56 didg Exp $
  *
  * Copyright (c) 1997, 1998 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -127,7 +127,7 @@ static int dsi_tcp_open(DSI *dsi)
 
   getitimer(ITIMER_PROF, &itimer);
   if (0 == (pid = fork()) ) { /* child */
-    static const struct itimerval timer = {{0, 0}, {DSI_TCPTIMEOUT, 0}};
+    static struct itimerval timer = {{0, 0}, {DSI_TCPTIMEOUT, 0}};
     struct sigaction newact, oldact;
     u_int8_t block[DSI_BLOCKSIZ];
     size_t stored;
@@ -200,7 +200,9 @@ static int dsi_tcp_open(DSI *dsi)
       }
     }
     
-    /* restore signal */
+    /* stop timer and restore signal handler */
+    memset(&timer, 0, sizeof(timer));
+    setitimer(ITIMER_REAL, &timer, NULL);
     sigaction(SIGALRM, &oldact, NULL);
 
     LOG(log_info, logtype_default,"ASIP session:%u(%d) from %s:%u(%d)", 
