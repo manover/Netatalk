@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_tcp.c,v 1.9.10.3 2003-11-13 15:39:02 didg Exp $
+ * $Id: dsi_tcp.c,v 1.9.10.4 2004-02-11 16:06:15 didg Exp $
  *
  * Copyright (c) 1997, 1998 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -253,12 +253,14 @@ int dsi_tcp_init(DSI *dsi, const char *hostname, const char *address,
 #ifdef SO_REUSEADDR
     port = 1;
     setsockopt(dsi->serversock, SOL_SOCKET, SO_REUSEADDR, &port, sizeof(port));
-#endif /* SO_REUSEADDR */
+#endif
 
 #ifdef USE_TCP_NODELAY 
+
 #ifndef SOL_TCP
 #define SOL_TCP IPPROTO_TCP
-#endif /* ! SOL_TCP */
+#endif 
+
     port = 1;
     setsockopt(dsi->serversock, SOL_TCP, TCP_NODELAY, &port, sizeof(port));
 #endif /* USE_TCP_NODELAY */
@@ -272,43 +274,65 @@ int dsi_tcp_init(DSI *dsi, const char *hostname, const char *address,
     }
   }
 
+  /* Point protocol specific functions to tcp versions */
+  dsi->proto_open = dsi_tcp_open;
+  dsi->proto_close = dsi_tcp_close;
+
   /* get real address for GetStatus. we'll go through the list of 
    * interfaces if necessary. */
-  if (!address) {
-    if ((host = gethostbyname(hostname))) /* we can resolve the name */
-      dsi->server.sin_addr.s_addr = ((struct in_addr *) host->h_addr)->s_addr;
-    else {
+
+  if (address) {
+      /* address is a parameter, use it 'as is' */
+      return 1;
+  }
+  
+  if (!(host = gethostbyname(hostname)) ) { /* we can't resolve the name */
+
+      LOG(log_info, logtype_default, "dsi_tcp: cannot resolve hostname '%s'", hostname);
+      if (proxy) {
+         /* give up we have nothing to advertise */
+         return 0;
+      }
+  }
+  else {
+      if (((struct in_addr *) host->h_addr)->s_addr != 0x100007F) { /* FIXME ugly check */
+          dsi->server.sin_addr.s_addr = ((struct in_addr *) host->h_addr)->s_addr;
+          return 1;
+      }
+      LOG(log_info, logtype_default, "dsi_tcp: hostname '%s' resolves to loopback address", hostname);
+  }
+  {
       char **start, **list;
       struct ifreq ifr;
 
       /* get it from the interface list */
       start = list = getifacelist();
       while (list && *list) {
-	strncpy(ifr.ifr_name, *list, sizeof(ifr.ifr_name));
-	list++;
+          strncpy(ifr.ifr_name, *list, sizeof(ifr.ifr_name));
+          ifr.ifr_name[sizeof(ifr.ifr_name) -1] = 0;          
+	  list++;
 
 #ifndef IFF_SLAVE
 #define IFF_SLAVE 0
-#endif /* ! IFF_SLAVE */
-	if (ioctl(dsi->serversock, SIOCGIFFLAGS, &ifr) < 0)
-	  continue;
+#endif
 
-	if (ifr.ifr_flags & (IFF_LOOPBACK | IFF_POINTOPOINT | IFF_SLAVE))
-	  continue;
+	  if (ioctl(dsi->serversock, SIOCGIFFLAGS, &ifr) < 0)
+	    continue;
 
-	if ((ifr.ifr_flags & IFF_UP) == 0)
-	  continue;
+	  if (ifr.ifr_flags & (IFF_LOOPBACK | IFF_POINTOPOINT | IFF_SLAVE))
+	    continue;
 
-	if (ioctl(dsi->serversock, SIOCGIFADDR, &ifr) < 0)
-	  continue;
+	  if (!(ifr.ifr_flags & (IFF_UP | IFF_RUNNING)) )
+	    continue;
+
+	  if (ioctl(dsi->serversock, SIOCGIFADDR, &ifr) < 0)
+	    continue;
 	
-	dsi->server.sin_addr.s_addr = 
-	  ((struct sockaddr_in *) &ifr.ifr_addr)->sin_addr.s_addr;
-	LOG(log_info, logtype_default, "dsi_tcp: Can't resolve hostname (%s).\n"
-	       "%s on interface %s will be used instead.", hostname,
+	  dsi->server.sin_addr.s_addr = 
+	    ((struct sockaddr_in *) &ifr.ifr_addr)->sin_addr.s_addr;
+	  LOG(log_info, logtype_default, "dsi_tcp: '%s' on interface '%s' will be used instead.",
 	       inet_ntoa(dsi->server.sin_addr), ifr.ifr_name);
-	goto iflist_done;
-
+	  goto iflist_done;
       }
       LOG(log_info, logtype_default, "dsi_tcp (Chooser will not select afp/tcp)\n\
 Check to make sure %s is in /etc/hosts and the correct domain is in\n\
@@ -316,14 +340,9 @@ Check to make sure %s is in /etc/hosts and the correct domain is in\n\
 
 iflist_done:
       if (start)
-	freeifacelist(start);
-    }
+          freeifacelist(start);
   }
 
-  /* everything's set up. now point protocol specific functions to 
-   * tcp versions */
-  dsi->proto_open = dsi_tcp_open;
-  dsi->proto_close = dsi_tcp_close;
   return 1;
 
 }
