@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.44.2.3.2.5 2003-09-30 14:52:45 didg Exp $
+ * $Id: auth.c,v 1.44.2.3.2.6 2003-10-30 00:21:46 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -25,11 +25,7 @@
 #include <limits.h>
 #include <string.h>
 #include <ctype.h>
-
-#ifdef SHADOWPW
-#include <shadow.h>
-#endif /* SHADOWPW */
-
+#include <time.h>
 #include <pwd.h>
 #include <grp.h>
 #include <atalk/logger.h>
@@ -157,7 +153,61 @@ static int send_reply(const AFPObj *obj, const int err)
     return AFP_OK;
 }
 
-static int login(AFPObj *obj, struct passwd *pwd, void (*logout)(void))
+
+static int afp_errpwdexpired(obj, ibuf, ibuflen, rbuf, rbuflen )
+AFPObj      *obj;
+char	*ibuf, *rbuf;
+int		ibuflen, *rbuflen;
+{
+    *rbuflen = 0;
+    return AFPERR_PWDEXPR;
+}
+
+
+static int set_auth_switch(AFPObj *obj, int expired)
+{
+    int i;
+
+    if (expired) {
+	/* 
+	 * BF: expired password handling
+	 * to allow the user to change his/her password we have to allow login
+	 * but every following call except for FPChangePassword will be thrown
+	 * away with an AFPERR_PWDEXPR error. (thanks to Leland Wallace from Apple
+	 * for clarifying this)
+         */
+
+	for (i=0; i<=0xff; i++) {
+	    uam_afpserver_action(i, UAM_AFPSERVER_PREAUTH, afp_errpwdexpired, NULL); 
+	}
+        uam_afpserver_action(AFP_LOGOUT, UAM_AFPSERVER_PREAUTH, afp_logout, NULL); 
+	uam_afpserver_action(AFP_CHANGEPW, UAM_AFPSERVER_PREAUTH, afp_changepw, NULL);
+    }
+    else {
+        afp_switch = postauth_switch;
+        switch (afp_version) {
+        case 31:
+	    uam_afpserver_action(AFP_ENUMERATE_EXT2, UAM_AFPSERVER_POSTAUTH, afp_enumerate_ext2, NULL); 
+        case 30:
+	    uam_afpserver_action(AFP_ENUMERATE_EXT, UAM_AFPSERVER_POSTAUTH, afp_enumerate_ext, NULL); 
+	    uam_afpserver_action(AFP_BYTELOCK_EXT,  UAM_AFPSERVER_POSTAUTH, afp_bytelock_ext, NULL); 
+            /* catsearch_ext uses the same packet as catsearch FIXME double check this, it wasn't true for enue
+               enumerate_ext */
+	    uam_afpserver_action(AFP_CATSEARCH_EXT, UAM_AFPSERVER_POSTAUTH, afp_catsearch_ext, NULL); 
+	    uam_afpserver_action(AFP_GETSESSTOKEN,  UAM_AFPSERVER_POSTAUTH, afp_getsession, NULL); 
+	    uam_afpserver_action(AFP_READ_EXT,      UAM_AFPSERVER_POSTAUTH, afp_read_ext, NULL); 
+	    uam_afpserver_action(AFP_WRITE_EXT,     UAM_AFPSERVER_POSTAUTH, afp_write_ext, NULL); 
+	    uam_afpserver_action(AFP_DISCTOLDSESS,  UAM_AFPSERVER_POSTAUTH, afp_disconnect, NULL); 
+	    uam_afpserver_action(AFP_ZZZ,  UAM_AFPSERVER_POSTAUTH, afp_zzz, NULL); 
+
+	    break;
+        }
+    }
+
+    return AFP_OK;
+}
+
+static int login(AFPObj *obj, struct passwd *pwd, void (*logout)(void), int expired)
 {
 #ifdef ADMIN_GRP
     int admin = 0;
@@ -230,6 +280,7 @@ static int login(AFPObj *obj, struct passwd *pwd, void (*logout)(void))
         LOG(log_error, logtype_afpd, "login: getgroups: %s", strerror(errno) );
         return AFPERR_BADUAM;
     }
+
 #ifdef ADMIN_GRP
 #ifdef DEBUG
     LOG(log_info, logtype_afpd, "obj->options.admingid == %d", obj->options.admingid);
@@ -297,31 +348,15 @@ static int login(AFPObj *obj, struct passwd *pwd, void (*logout)(void))
 #endif /* ADMIN_GRP */
         uuid = pwd->pw_uid;
 
-    afp_switch = postauth_switch;
-    switch (afp_version) {
-    case 31:
-	uam_afpserver_action(AFP_ENUMERATE_EXT2, UAM_AFPSERVER_POSTAUTH, afp_enumerate_ext2, NULL); 
-    case 30:
-	uam_afpserver_action(AFP_ENUMERATE_EXT, UAM_AFPSERVER_POSTAUTH, afp_enumerate_ext, NULL); 
-	uam_afpserver_action(AFP_BYTELOCK_EXT,  UAM_AFPSERVER_POSTAUTH, afp_bytelock_ext, NULL); 
-        /* catsearch_ext uses the same packet as catsearch FIXME double check this, it wasn't true for enue
-           enumerate_ext */
-	uam_afpserver_action(AFP_CATSEARCH_EXT, UAM_AFPSERVER_POSTAUTH, afp_catsearch_ext, NULL); 
-	uam_afpserver_action(AFP_GETSESSTOKEN,  UAM_AFPSERVER_POSTAUTH, afp_getsession, NULL); 
-	uam_afpserver_action(AFP_READ_EXT,      UAM_AFPSERVER_POSTAUTH, afp_read_ext, NULL); 
-	uam_afpserver_action(AFP_WRITE_EXT,     UAM_AFPSERVER_POSTAUTH, afp_write_ext, NULL); 
-	uam_afpserver_action(AFP_DISCTOLDSESS,  UAM_AFPSERVER_POSTAUTH, afp_disconnect, NULL); 
-	uam_afpserver_action(AFP_ZZZ,  UAM_AFPSERVER_POSTAUTH, afp_zzz, NULL); 
+    set_auth_switch(obj, expired);
 
-	break;
-    }
     obj->logout = logout;
 
 #ifdef FORCE_UIDGID
     obj->force_uid = 1;
     save_uidgid ( &obj->uidgid );
-#endif    		
-
+#endif 
+    	
     return( AFP_OK );
 }
 
@@ -559,10 +594,11 @@ int		ibuflen, *rbuflen;
     ibuflen -= len;
 
     i = afp_uam->u.uam_login.login(obj, &pwd, ibuf, ibuflen, rbuf, rbuflen);
-    if (i || !pwd)
+
+    if (!pwd || ( i != AFP_OK && i != AFPERR_PWDEXPR))
         return send_reply(obj, i);
 
-    return send_reply(obj, login(obj, pwd, afp_uam->u.uam_login.logout));
+    return send_reply(obj, login(obj, pwd, afp_uam->u.uam_login.logout, ((i==AFPERR_PWDEXPR)?1:0)));
 }
 
 /* ---------------------- */
@@ -684,10 +720,11 @@ unsigned int	ibuflen, *rbuflen;
 
     /* FIXME user name are in UTF8 */    
     i = afp_uam->u.uam_login.login_ext(obj, username, &pwd, ibuf, ibuflen, rbuf, rbuflen);
-    if (i || !pwd)
+
+    if (!pwd || ( i != AFP_OK && i != AFPERR_PWDEXPR))
         return send_reply(obj, i);
 
-    return send_reply(obj, login(obj, pwd, afp_uam->u.uam_login.logout));
+    return send_reply(obj, login(obj, pwd, afp_uam->u.uam_login.logout, ((i==AFPERR_PWDEXPR)?1:0)));
 }
 
 /* ---------------------- */
@@ -707,10 +744,10 @@ int		ibuflen, *rbuflen;
     ibuf += 2;
     err = afp_uam->u.uam_login.logincont(obj, &pwd, ibuf, ibuflen,
                                          rbuf, rbuflen);
-    if (err || !pwd)
+    if (!pwd || ( err != AFP_OK && err != AFPERR_PWDEXPR))
         return send_reply(obj, err);
 
-    return send_reply(obj, login(obj, pwd, afp_uam->u.uam_login.logout));
+    return send_reply(obj, login(obj, pwd, afp_uam->u.uam_login.logout, ((err==AFPERR_PWDEXPR)?1:0)));
 }
 
 
@@ -788,6 +825,9 @@ int		ibuflen, *rbuflen;
     LOG(log_info, logtype_afpd, "password change %s.",
         (ret == AFPERR_AUTHCONT) ? "continued" :
         (ret ? "failed" : "succeeded"));
+    if ( ret == AFP_OK )
+	set_auth_switch(obj, 0);
+	
     return ret;
 }
 

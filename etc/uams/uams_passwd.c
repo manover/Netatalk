@@ -1,5 +1,5 @@
 /*
- * $Id: uams_passwd.c,v 1.19.2.1.2.2 2003-10-29 23:53:24 bfernhomberg Exp $
+ * $Id: uams_passwd.c,v 1.19.2.1.2.3 2003-10-30 00:21:47 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -35,11 +35,15 @@ char *strchr (), *strrchr ();
 #include <crypt.h>
 #endif /* ! HAVE_CRYPT_H */
 #include <pwd.h>
-
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+#ifdef HAVE_TIME_H
+#include <time.h>
+#endif
 #ifdef SOLARIS
 #define SHADOWPW
 #endif /* SOLARIS */
-
 #ifdef SHADOWPW
 #include <shadow.h>
 #endif /* SHADOWPW */
@@ -68,6 +72,7 @@ static int pwd_login(void *obj, char *username, int ulen, struct passwd **uam_pw
 {
     char  *p;
     struct passwd *pwd;
+    int err = AFP_OK;
 #ifdef SHADOWPW
     struct spwd *sp;
 #endif /* SHADOWPW */
@@ -100,6 +105,15 @@ static int pwd_login(void *obj, char *username, int ulen, struct passwd **uam_pw
         return AFPERR_NOTAUTH;
     }
     pwd->pw_passwd = sp->sp_pwdp;
+
+    if (sp && sp->sp_max != -1 && sp->sp_lstchg) {
+        time_t now = time(NULL) / (60*60*24);
+        int32_t expire_days = sp->sp_lstchg - now + sp->sp_max;
+        if ( expire_days < 0 ) {
+                LOG(log_info, logtype_uams, "Password for user %s expired", username);
+		err = AFPERR_PWDEXPR;
+        }
+    }
 #endif /* SHADOWPW */
 
     if (!pwd->pw_passwd) {
@@ -121,12 +135,12 @@ static int pwd_login(void *obj, char *username, int ulen, struct passwd **uam_pw
                                    NULL, FALSE, NULL, ibuf ) != SIASUCCESS )
             return AFPERR_NOTAUTH;
 
-        return AFP_OK;
+        return err;
     }
 #else /* TRU64 */
     p = crypt( ibuf, pwd->pw_passwd );
     if ( strcmp( p, pwd->pw_passwd ) == 0 )
-        return AFP_OK;
+        return err;
 #endif /* TRU64 */
 
     return AFPERR_NOTAUTH;
@@ -327,6 +341,16 @@ struct papfile	*out;
         return(-1);
     }
     pwd->pw_passwd = sp->sp_pwdp;
+
+    if (sp && sp->sp_max != -1 && sp->sp_lstchg) {
+        time_t now = time(NULL) / (60*60*24);
+        int32_t expire_days = sp->sp_lstchg - now + sp->sp_max;
+        if ( expire_days < 0 ) {
+                LOG(log_info, logtype_uams, "Password for user %s expired", username);
+		return (-1);
+        }
+    }
+
 #endif /* SHADOWPW */
 
     if (!pwd->pw_passwd) {

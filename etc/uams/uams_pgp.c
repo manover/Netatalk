@@ -1,5 +1,5 @@
 /*
- * $Id: uams_pgp.c,v 1.9.6.1 2003-09-11 23:49:30 bfernhomberg Exp $
+ * $Id: uams_pgp.c,v 1.9.6.2 2003-10-30 00:21:47 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -20,6 +20,9 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
+#ifdef HAVE_CRYPT_H
+#include <crypt.h>
+#endif /* HAVE_CRYPT_H */
 #include <pwd.h>
 #include <atalk/logger.h>
 

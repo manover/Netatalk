@@ -1,5 +1,5 @@
 /*
- * $Id: uams_pam.c,v 1.15.2.1.2.2 2003-09-11 23:49:30 bfernhomberg Exp $
+ * $Id: uams_pam.c,v 1.15.2.1.2.3 2003-10-30 00:21:47 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -174,13 +174,14 @@ static int login(void *obj, char *username, int ulen,  struct passwd **uam_pwd,
 
     PAM_error = pam_acct_mgmt(pamh, 0);
     if (PAM_error != PAM_SUCCESS) {
-      if (PAM_error == PAM_ACCT_EXPIRED)
+      if (PAM_error == PAM_NEW_AUTHTOK_REQD) /* Password change required */
 	err = AFPERR_PWDEXPR;
 #ifdef PAM_AUTHTOKEN_REQD
       else if (PAM_error == PAM_AUTHTOKEN_REQD) 
 	err = AFPERR_PWDCHNG;
 #endif /* PAM_AUTHTOKEN_REQD */
-      goto login_err;
+      else
+        goto login_err;
     }
 
 #ifndef PAM_CRED_ESTABLISH
@@ -195,6 +196,10 @@ static int login(void *obj, char *username, int ulen,  struct passwd **uam_pwd,
       goto login_err;
 
     *uam_pwd = pwd;
+
+    if (err == AFPERR_PWDEXPR)
+	return err;
+
     return AFP_OK;
 
 login_err:

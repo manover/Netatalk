@@ -1,5 +1,5 @@
 /*
- * $Id: uams_dhx_passwd.c,v 1.18.6.2 2003-10-29 23:53:24 bfernhomberg Exp $
+ * $Id: uams_dhx_passwd.c,v 1.18.6.3 2003-10-30 00:21:47 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -20,6 +20,12 @@
 #ifdef HAVE_CRYPT_H
 #include <crypt.h>
 #endif /* ! HAVE_CRYPT_H */
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+#ifdef HAVE_TIME_H
+#include <time.h>
+#endif
 #include <pwd.h>
 #ifdef SHADOWPW
 #include <shadow.h>
@@ -75,8 +81,7 @@ static int pwd_login(void *obj, char *username, int ulen, struct passwd **uam_pw
 #endif /* SHADOWPW */
     BIGNUM *bn, *gbn, *pbn;
     u_int16_t sessid;
-    int len, i;
-    char *name;
+    int i;
     DH *dh;
 
 #ifdef TRU64
@@ -267,10 +272,14 @@ static int passwd_logincont(void *obj, struct passwd **uam_pwd,
 			    char *ibuf, int ibuflen, 
 			    char *rbuf, int *rbuflen)
 {
+#ifdef SHADOWPW
+    struct spwd *sp;
+#endif /* SHADOWPW */
     unsigned char iv[] = "LWallace";
     BIGNUM *bn1, *bn2, *bn3;
     u_int16_t sessid;
     char *p;
+    int err = AFPERR_NOTAUTH;
 
     *rbuflen = 0;
 
@@ -339,8 +348,25 @@ static int passwd_logincont(void *obj, struct passwd **uam_pwd,
     memset(rbuf, 0, PASSWDLEN);
     if ( strcmp( p, dhxpwd->pw_passwd ) == 0 ) {
       *uam_pwd = dhxpwd;
-      return AFP_OK;
+      err = AFP_OK;
     }
+#ifdef SHADOWPW
+    if (( sp = getspnam( dhxpwd->pw_name )) == NULL ) {
+	LOG(log_info, logtype_uams, "no shadow passwd entry for %s", dhxpwd->pw_name);
+	return (AFPERR_NOTAUTH);
+    }
+
+    /* check for expired password */
+    if (sp && sp->sp_max != -1 && sp->sp_lstchg) {
+        time_t now = time(NULL) / (60*60*24);
+        int32_t expire_days = sp->sp_lstchg - now + sp->sp_max;
+        if ( expire_days < 0 ) {
+                LOG(log_info, logtype_uams, "password for user %s expired", dhxpwd->pw_name);
+		err = AFPERR_PWDEXPR;
+        }
+    }
+#endif /* SHADOWPW */
+    return err;
 #endif /* TRU64 */
 
     return AFPERR_NOTAUTH;
