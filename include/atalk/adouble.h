@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.20.2.2 2005-02-10 01:23:16 didg Exp $
+ * $Id: adouble.h,v 1.21.6.20.2.3 2005-02-12 11:22:05 didg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -324,6 +324,29 @@ struct adouble {
 #define AD_DATE_DELTA         946684800
 #define AD_DATE_FROM_UNIX(x)  htonl((x) - AD_DATE_DELTA)
 #define AD_DATE_TO_UNIX(x)    (ntohl(x) + AD_DATE_DELTA)
+
+/* various finder offset and info bits */
+#define FINDERINFO_FRTYPEOFF   0
+#define FINDERINFO_FRCREATOFF  4
+
+#define FINDERINFO_FRFLAGOFF   8
+/* finderinfo flags */
+#define FINDERINFO_ISONDESK      (1)
+#define FINDERINFO_COLOR         (0x0e)
+#define FINDERINFO_ISHARED       (1<<6)
+#define FINDERINFO_HASNOINITS    (1<<7)
+#define FINDERINFO_HASBEENINITED (1<<8)
+#define FINDERINFO_HASCUSTOMICON (1<<10)
+#define FINDERINFO_ISSTATIONNERY (1<<11)
+#define FINDERINFO_NAMELOCKED    (1<<12)
+#define FINDERINFO_HASBUNDLE     (1<<13)
+#define FINDERINFO_INVISIBLE     (1<<14)
+#define FINDERINFO_ISALIAS       (1<<15)
+
+#define FINDERINFO_FRVIEWOFF  14 
+#define FINDERINFO_CUSTOMICON 0x4
+#define FINDERINFO_CLOSEDVIEW 0x100   
+
  
 /* private AFPFileInfo bits */
 #define AD_AFPFILEI_OWNER       (1 << 0) /* any owner */

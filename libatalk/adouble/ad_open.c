@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.18.2.3 2005-02-10 01:23:18 didg Exp $
+ * $Id: ad_open.c,v 1.30.6.18.2.4 2005-02-12 11:22:05 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -119,21 +119,8 @@
 /* we keep local copies of a bunch of stuff so that we can initialize things 
  * correctly. */
 
-/* Bits in the finderinfo data. 
- * see etc/afpd/{directory.c,file.c} for the finderinfo structure
- * layout. */
-#define FINDERINFO_CUSTOMICON 0x4
-#define FINDERINFO_CLOSEDVIEW 0x100
-
-/* offsets in finderinfo */
-#define FINDERINFO_FRTYPEOFF   0
-#define FINDERINFO_FRCREATOFF  4
-#define FINDERINFO_FRFLAGOFF   8
-#define FINDERINFO_FRVIEWOFF  14
-
 /* invisible bit for dot files */
 #define ATTRBIT_INVISIBLE     (1 << 0)
-#define FINDERINFO_INVISIBLE  (1 << 14)
 
 /* this is to prevent changing timezones from causing problems with
    localtime volumes. the screw-up is 30 years. we use a delta of 5

@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.h,v 1.3.6.3.2.1 2005-01-31 19:50:35 didg Exp $
+ * $Id: desktop.h,v 1.3.6.3.2.2 2005-02-12 11:22:04 didg Exp $
  *
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
@@ -29,12 +29,6 @@
 #include <sys/cdefs.h>
 #include "globals.h"
 #include "volume.h"
-
-/* various finder info bits */
-#define FINDERINFO_FRFLAGOFF   8
-#define FINDERINFO_FRVIEWOFF  14 
-#define FINDERINFO_INVISIBLE  (1<<14)
-#define FINDERINFO_CLOSEDVIEW 0x100   
 
 struct savedt {
     u_char	sdt_creator[ 4 ];

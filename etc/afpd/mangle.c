@@ -1,5 +1,5 @@
 /* 
- * $Id: mangle.c,v 1.16.2.1.2.12.2.1 2005-01-31 19:50:37 didg Exp $ 
+ * $Id: mangle.c,v 1.16.2.1.2.12.2.2 2005-02-12 11:22:05 didg Exp $ 
  *
  * Copyright (c) 2002. Joe Marcus Clarke (marcus@marcuscom.com)
  * All Rights Reserved.  See COPYRIGHT.
@@ -244,6 +244,11 @@ mangle(const struct vol *vol, unsigned char *filename, size_t filenamelen, unsig
     /* Do we really need to mangle this filename? */
     if (!(flags & 1) && filenamelen <= maxlen) {
 	return filename;
+    }
+
+    if (!id) {
+        /* we don't have the file id! only catsearch call mangle with id == 0 */
+        return NULL;
     }
     /* First, attempt to locate a file extension. */
     if (NULL != (ext = strrchr(uname, '.')) ) {

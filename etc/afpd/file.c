@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.31.2.10 2005-02-10 01:23:12 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.31.2.11 2005-02-12 11:22:04 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -68,15 +68,15 @@ char *strchr (), *strrchr ();
  *                           putawayID    4  home directory id
  */
 
-const u_char ufinderi[] = {
+const u_char ufinderi[ADEDLEN_FINDERI] = {
                               0, 0, 0, 0, 0, 0, 0, 0,
                               1, 0, 0, 0, 0, 0, 0, 0,
                               0, 0, 0, 0, 0, 0, 0, 0,
                               0, 0, 0, 0, 0, 0, 0, 0
                           };
 
-/* FIXME mpath : unix or mac name ? (for now it's mac name ) */
-void *get_finderinfo(const char *mpath, struct adouble *adp, void *data)
+/* FIXME path : unix or mac name ? (for now it's unix name ) */
+void *get_finderinfo(const char *upath, struct adouble *adp, void *data)
 {
     struct extmap	*em;
     void                *ad_finder = NULL;
@@ -85,18 +85,24 @@ void *get_finderinfo(const char *mpath, struct adouble *adp, void *data)
     if (adp)
         ad_finder = ad_entry(adp, ADEID_FINDERI);
 
-    if ((ad_finder != NULL)) {
-        memcpy(data, ad_finder, 32);
+    if (ad_finder) {
+        memcpy(data, ad_finder, ADEDLEN_FINDERI);
         /* default type ? */
         if (!memcmp(ad_finder, ufinderi, 8))
             chk_ext = 1;
     }
     else {
-        memcpy(data, ufinderi, 32);
+        memcpy(data, ufinderi, ADEDLEN_FINDERI);
         chk_ext = 1;
+        if (*upath == '.') { /* make it invisible */
+            u_int16_t ashort;
+            
+            ashort = htons(FINDERINFO_INVISIBLE);
+            memcpy(data + FINDERINFO_FRFLAGOFF, &ashort, sizeof(ashort));
+        }
     }
     /** Only enter if no appledouble information and no finder information found. */
-    if (chk_ext && (em = getextmap( mpath ))) {
+    if (chk_ext && (em = getextmap( upath ))) {
         memcpy(data, em->em_type, sizeof( em->em_type ));
         memcpy((char *)data + 4, em->em_creator, sizeof(em->em_creator));
     }
@@ -316,14 +322,8 @@ int getmetadata(struct vol *vol,
             break;
 
         case FILPBIT_FINFO :
-	    get_finderinfo(path->m_name, adp, (char *)data);
-            if (!adp) {
-                if (*upath == '.') { /* make it invisible */
-                    ashort = htons(FINDERINFO_INVISIBLE);
-                    memcpy(data + FINDERINFO_FRFLAGOFF, &ashort, sizeof(ashort));
-                }
-            }
-            data += 32;
+	    get_finderinfo(upath, adp, (char *)data);
+            data += ADEDLEN_FINDERI;
             break;
 
         case FILPBIT_LNAME :
@@ -1131,7 +1131,7 @@ u_int32_t   hint;
             if (afp_version >= 30) {
                 /* convert it to UTF8 
                 */
-                if ((plen = mtoUTF8(vol, ibuf, plen, newname, AFPOBJ_TMPSIZ)) == -1)
+                if ((plen = mtoUTF8(vol, ibuf, plen, newname, AFPOBJ_TMPSIZ)) == (size_t)-1)
                    return -1;
             }
             else {
@@ -1782,7 +1782,11 @@ int		ibuflen, *rbuflen;
     memcpy(&id, ibuf, sizeof( id ));
     ibuf += sizeof(id);
     cnid = id;
-
+    
+    if (!id) {
+        /* some MacOS versions after a catsearch do a *lot* of afp_resolveid with 0 */
+        return AFPERR_NOID;
+    }
 retry:
     if (NULL == (upath = cnid_resolve(vol->v_cdb, &id, buffer, len)) ) {
         return AFPERR_NOID; /* was AFPERR_BADID, but help older Macs */
