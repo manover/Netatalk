@@ -1,5 +1,5 @@
-dnl Autoconf macro to check for the existence of Perl
-dnl $Id: grep-check.m4,v 1.1.2.1 2002-02-08 16:30:17 jmarcus Exp $
+dnl Autoconf macro to check for the existence of grep
+dnl $Id: grep-check.m4,v 1.1.2.2 2002-03-12 16:22:33 srittau Exp $
 
 AC_DEFUN([AC_PROG_GREP], [
 AC_REQUIRE([AC_EXEEXT])dnl
