@@ -1,5 +1,5 @@
 /*
- * $Id: fork.c,v 1.11.2.2 2002-01-23 18:34:14 jmarcus Exp $
+ * $Id: fork.c,v 1.11.2.3 2002-02-07 23:56:58 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -58,6 +58,11 @@ char		*buf;
 int			*buflen;
 const u_int16_t     attrbits;
 {
+#ifndef USE_LASTDID
+    struct stat		hst, lst, *lstp;
+#else /* USE_LASTDID */
+    struct stat     hst;
+#endif
     struct stat		st;
     struct extmap	*em;
     char		*data, *nameoff = NULL, *upath;
@@ -190,13 +195,13 @@ const u_int16_t     attrbits;
 
             if (aint == 0) {
 #ifdef USE_LASTDID
-				aint = htonl(( st.st_dev << 16 ) | ( st.st_ino & 0x0000ffff ));
+                aint = htonl(( st.st_dev << 16 ) | ( st.st_ino & 0x0000ffff ));
 #else /* USE_LASTDID */
-				lstp = lstat(upath, &lst) < 0 ? &st : &lst;
+                lstp = lstat(upath, &lst) < 0 ? &st : &lst;
 #ifdef DID_MTAB
-				aint = htonl( afpd_st_cnid ( lstp ) );
+                aint = htonl( afpd_st_cnid ( lstp ) );
 #else /* DID_MTAB */
-				aint = htonl(CNID(lstp, 1));
+                aint = htonl(CNID(lstp, 1));
 #endif /* DID_MTAB */
 #endif /* USE_LASTDID */
             }
@@ -773,8 +778,8 @@ int		ibuflen, *rbuflen;
 {
     struct ofork	*ofork;
     off_t 		size;
-    int32_t		offset, saveoff, reqcount;
-    int			cc, err, eid, xlate = 0;
+    int32_t		offset, saveoff, reqcount, savereqcount;
+    int			cc, err, saveerr, eid, xlate = 0;
     u_int16_t		ofrefnum;
     u_char		nlmask, nlchar;
 
@@ -822,41 +827,49 @@ int		ibuflen, *rbuflen;
     }
 
     /* zero request count */
+    err = AFP_OK;
     if (!reqcount) {
-        err = AFP_OK;
         goto afp_read_err;
     }
 
     /* reqcount isn't always truthful. we need to deal with that. */
-    if ((size = ad_size(ofork->of_ad, eid)) == 0) {
+    size = ad_size(ofork->of_ad, eid);
+
+    if (offset >= size) {
         err = AFPERR_EOF;
         goto afp_read_err;
     }
 
+    /* subtract off the offset */
+    size -= offset;
+    savereqcount = reqcount;
+    if (reqcount > size) {
+    	reqcount = size;
+        err = AFPERR_EOF;
+    }
+
     saveoff = offset;
-    if (ad_tmplock(ofork->of_ad, eid, ADLOCK_RD, saveoff, reqcount) < 0) {
+    /* if EOF lock on the old reqcount, some prg may need it */
+    if (ad_tmplock(ofork->of_ad, eid, ADLOCK_RD, saveoff, savereqcount) < 0) {
         err = AFPERR_LOCK;
         goto afp_read_err;
     }
 
 #define min(a,b)	((a)<(b)?(a):(b))
     *rbuflen = min( reqcount, *rbuflen );
+    saveerr = err;
     err = read_file(ofork, eid, offset, nlmask, nlchar, rbuf, rbuflen,
                     xlate);
     if (err < 0)
         goto afp_read_done;
-
+    if (saveerr < 0) {
+       err = saveerr;
+       goto afp_read_done;
+    }
     /* dsi can stream requests. we can only do this if we're not checking
      * for an end-of-line character. oh well. */
     if ((obj->proto == AFPPROTO_DSI) && (*rbuflen < reqcount) && !nlmask) {
         DSI *dsi = obj->handle;
-
-        /* subtract off the offset */
-        size -= offset;
-        if (reqcount > size) {
-            reqcount = size;
-            err = AFPERR_EOF;
-        }
 
         if (obj->options.flags & OPTION_DEBUG) {
             printf( "(read) reply: %d/%d, %d\n", *rbuflen,
@@ -918,12 +931,12 @@ afp_read_loop:
 afp_read_exit:
         syslog(LOG_ERR, "afp_read: %s", strerror(errno));
         dsi_readdone(dsi);
-        ad_tmplock(ofork->of_ad, eid, ADLOCK_CLR, saveoff, reqcount);
+        ad_tmplock(ofork->of_ad, eid, ADLOCK_CLR, saveoff, savereqcount);
         obj->exit(1);
     }
 
 afp_read_done:
-    ad_tmplock(ofork->of_ad, eid, ADLOCK_CLR, saveoff, reqcount);
+    ad_tmplock(ofork->of_ad, eid, ADLOCK_CLR, saveoff, savereqcount);
     return err;
 
 afp_read_err:
