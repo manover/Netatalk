@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.4 2003-12-12 19:34:27 didg Exp $
+ * $Id: ad_open.c,v 1.30.6.5 2004-01-03 22:16:32 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -209,6 +209,8 @@ static int ad_v1tov2(struct adouble *ad, const char *path)
   u_int16_t attr;
   char *buf;
   int fd, off;
+  /* use resource fork offset from file */
+  int shiftdata;
   
   /* check to see if we should convert this header. */
   if (!path || (ad->ad_version != AD_VERSION1))
@@ -230,19 +232,25 @@ static int ad_v1tov2(struct adouble *ad, const char *path)
    *  2) create space for SHORTNAME, AFPFILEI, DID, and PRODOSI
    *  3) move FILEI attributes into AFPFILEI
    *  4) initialize ACCESS field of FILEDATESI.
+   *  5) move the resource fork
    */
-   
-#define SHIFTDATA (AD_DATASZ2 - AD_DATASZ1)
-
+  
   /* bail if we can't get a lock */
   if (ad_tmplock(ad, ADEID_RFORK, ADLOCK_WR, 0, 0, 0) < 0) 
     goto bail_err;
   
   if ((fd = open(path, O_RDWR)) < 0) 
     goto bail_lock;
-  
+
+  if (ad->ad_eid[ADEID_RFORK].ade_off) {
+      shiftdata = ADEDOFF_RFORK_V2 -ad->ad_eid[ADEID_RFORK].ade_off;
+  }
+  else {
+      shiftdata = ADEDOFF_RFORK_V2 -ADEDOFF_RFORK_V1; /* 136 */
+  }
+
   if (fstat(fd, &st) ||
-      sys_ftruncate(fd, st.st_size + SHIFTDATA) < 0) {
+      sys_ftruncate(fd, st.st_size + shiftdata) < 0) {
     goto bail_open;
   }
   if (st.st_size > 0x7fffffff) {
@@ -252,7 +260,7 @@ static int ad_v1tov2(struct adouble *ad, const char *path)
   
   /* last place for failure. */
   if ((void *) (buf = (char *) 
-		mmap(NULL, st.st_size + SHIFTDATA,
+		mmap(NULL, st.st_size + shiftdata,
 		     PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) == 
 	  MAP_FAILED) {
     goto bail_truncate;
@@ -261,10 +269,11 @@ static int ad_v1tov2(struct adouble *ad, const char *path)
   off = ad->ad_eid[ADEID_RFORK].ade_off;
 
   /* move the RFORK. this assumes that the RFORK is at the end */
-  memmove(buf + off + SHIFTDATA, buf + off, 
-	  ad->ad_eid[ADEID_RFORK].ade_len);
-  
-  munmap(buf, st.st_size + SHIFTDATA);
+  if (off) {
+      memmove(buf + ADEDOFF_RFORK_V2, buf + off, ad->ad_eid[ADEID_RFORK].ade_len);
+  }
+
+  munmap(buf, st.st_size + shiftdata);
   close(fd);
 
   /* now, fix up our copy of the header */
