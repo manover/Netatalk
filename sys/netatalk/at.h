@@ -1,5 +1,5 @@
 /*
- * $Id: at.h,v 1.3.4.1 2003-11-30 14:54:56 srittau Exp $
+ * $Id: at.h,v 1.3.4.2 2003-11-30 15:07:50 srittau Exp $
  *
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  *
@@ -17,6 +17,7 @@
 
 #ifdef HAVE_ATALK_ADDR
 #define at_addr atalk_addr
+#define netrange atalk_netrange
 #endif /* HAVE_ATALK_ADDR */
 
 #else /* linux */
