@@ -7,6 +7,7 @@ Changes in 1.6.4
 * FIX: Compilation issues. [Olaf Hering, Sebastian Rittau]
 * FIX: Don't overwrite PAM file if --enable-overwrite configure option is
        not set. [Sam Noble]
+* FIX: afpd: Catsearch, fix possible SIGSEGV
 
 Changes in 1.6.3
 ================
