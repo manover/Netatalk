@@ -31,6 +31,10 @@ authentication is compiled in) to use.
 
 \fIExample:\fR \fIAFPD_UAMLIST\fR=\fI"\-U uams_guest.so,uams_randnum.so"\fR
 .TP 
+\fICNID_METAD_RUN\fR
+Enables the cnid_metad daemon if set to "yes". This should
+be enabled if you are going to use the dbd CNID backend.
+.TP 
 \fIATALK_BGROUND\fR
 "yes" will set netatalk to initialize in the
 background, and "no" will cause normal initialization.
@@ -51,4 +55,3 @@ be enabled if you are planning on using netatalk as a print server.
 .SH SEE\ ALSO
 \fBatalkd\fR(8),
 \fBatalkd.conf\fR(5)
-

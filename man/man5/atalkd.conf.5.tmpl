@@ -9,7 +9,7 @@ and their behavior
 Any line not prefixed with \fI#\fR is
 interpreted. The configuration lines are composed like:
 .PP
-\fInterface\fR \fI[\fR
+\fIInterface\fR \fI[\fR
 \fIoptions\fR \fI]\fR
 .PP
 The simplest case is to have either no atalkd.conf, or to have one
@@ -34,6 +34,13 @@ Disables Appletalk routing. It is the opposite of
 \fB\-net first[\-last]\fR
 Allows the available net to be set, optionally as a range.
 .TP 
+\fB\-noallmulti\fR (linux only)
+On linux the interfaces, atalkd uses, are set to ALLMULTI by default
+caused by countless NICs having problems without being forced into this mode
+(some even don't work with allmulti set). In case, you've a NIC known to 
+support multicasts properly, you might want to set this option causing less
+packets to be processed
+.TP 
 \fB\-phase ( 1 | 2 )\fR
 Specifies the Appletalk phase that this interface is to use
 (either Phase 1 or Phase 2).
@@ -54,4 +61,3 @@ that zones with spaces and other special characters should be
 enclosed in parentheses.
 .SH SEE\ ALSO
 \fBatalkd\fR(8)
-
