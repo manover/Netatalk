@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.17.8.1 2004-01-10 08:09:12 bfernhomberg Exp $
+ * $Id: main.c,v 1.17.8.2 2004-01-15 06:34:15 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -156,6 +156,10 @@ static void atalkd_exit(const int i)
 	      ntohs(iface->i_addr.sat_addr.s_net), 
 	      iface->i_addr.sat_addr.s_node, strerror(errno));
     }
+#ifdef linux
+    if (!(iface->i_flags & IFACE_WASALLMULTI) && (iface->i_flags & IFACE_ALLMULTI))
+        ifsetallmulti(iface->i_name, 0);
+#endif /* linux */
   }
 #endif /* SOPCDOFADDR */
 
@@ -1395,6 +1399,43 @@ smaller net range.", iface->i_name, ntohs(first), ntohs(last), strerror(errno));
 	}
     }
     nfds++;
+}
+
+int ifsetallmulti ( iname, set )
+const char		*iname;
+int set;
+{
+    int sock;
+    struct ifreq ifr;
+
+    memset(&ifr, 0, sizeof(ifr));
+
+    if (( sock = socket( AF_APPLETALK, SOCK_DGRAM, 0 )) < 0 ) {
+        return( -1 );
+    }
+
+    /* get interface config */
+    strncpy(ifr.ifr_name, iname, sizeof(ifr.ifr_name));
+    if (ioctl(sock, SIOCGIFFLAGS, &ifr) < 0) {
+        close(sock);
+        return (-1);
+    }
+
+    /* should we set or unset IFF_ALLMULTI */
+    if (set)
+	    ifr.ifr_flags |= IFF_ALLMULTI;
+    else
+	    ifr.ifr_flags &= ~IFF_ALLMULTI;
+
+    /* set interface config */
+    strncpy(ifr.ifr_name, iname, sizeof(ifr.ifr_name));
+    if (ioctl(sock, SIOCSIFFLAGS, &ifr) < 0) {
+        close(sock);	
+        return -1;
+    }
+
+    close(sock);
+    return (0);
 }
 
 int ifconfig( iname, cmd, sa )

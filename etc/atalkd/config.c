@@ -1,5 +1,5 @@
 /*
- * $Id: config.c,v 1.13.6.1 2004-01-10 08:09:12 bfernhomberg Exp $
+ * $Id: config.c,v 1.13.6.2 2004-01-15 06:34:15 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -60,12 +60,13 @@ char *strchr (), *strrchr ();
 #include "rtmp.h"
 #include "zip.h"
 #include "list.h"
+#include "main.h"
 
 #ifndef IFF_SLAVE /* a little backward compatibility */
 #define IFF_SLAVE 0
 #endif /* IFF_SLAVE */
 
-int	router(), dontroute(), seed(), phase(), net(), addr(), zone();
+int	router(), dontroute(), seed(), phase(), net(), addr(), zone(), noallmulti();
 
 static struct param {
     char	*p_name;
@@ -78,6 +79,7 @@ static struct param {
     { "net",	net },
     { "addr",	addr },
     { "zone",	zone },
+    { "noallmulti", noallmulti }
 };
 
 #define ARGV_CHUNK_SIZE 128
@@ -243,6 +245,9 @@ int writeconf( cf )
 	    if ( iface->i_flags & IFACE_DONTROUTE) {
 	        fprintf( newconf, " -dontroute");
 	    }
+            if ( !(iface->i_flags & IFACE_ALLMULTI)) {
+	        fprintf( newconf, " -noallmulti");
+            }
 
 	    fprintf( newconf, " -phase %d",
 		    ( iface->i_flags & IFACE_PHASE1 ) ? 1 : 2 );
@@ -368,6 +373,7 @@ int readconf( cf )
 	  fprintf(stderr, "Can't configure multicast.\n");
 	  goto read_conf_err;
 	}
+
 #endif /* __svr4__ */
 
 	if (( niface = newiface( argv[ 0 ] )) == NULL ) {
@@ -408,6 +414,15 @@ int readconf( cf )
 	    goto read_conf_err;
 	}
 
+#ifdef	linux
+	/* Don't set interface to allmulti if it already is, or -noallmulti was given */
+	if ((ifr.ifr_flags & IFF_ALLMULTI))
+		niface->i_flags |= IFACE_WASALLMULTI; 
+
+	if ((niface->i_flags & IFACE_ALLMULTI) && !(niface->i_flags & IFACE_WASALLMULTI))
+		ifsetallmulti(ifr.ifr_name, 1);
+#endif
+
 	if ( interfaces == NULL ) {
 	    interfaces = niface;
 	} else {
@@ -444,6 +459,16 @@ read_conf_err:
     return -1;
 }
 
+int noallmulti( iface, av )
+    struct interface	*iface;
+    char		**av;
+{
+    /* Linux specific, no effect on other platforms */
+    iface->i_flags &= !IFACE_ALLMULTI;
+
+    return (1);
+}
+	
 /*ARGSUSED*/
 int router( iface, av )
     struct interface	*iface;
@@ -774,6 +799,9 @@ struct interface *newiface( name )
     niface->i_caddr.sat_len = sizeof( struct sockaddr_at );
 #endif /* BSD4_4 */
     niface->i_caddr.sat_family = AF_APPLETALK;
+#ifdef linux
+    niface->i_flags = IFACE_ALLMULTI;
+#endif
     return( niface );
 }
 
