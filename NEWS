@@ -1,6 +1,11 @@
 Changes in 2.0.1
 ================
 
+* NEW: --enable-debian configure option. Will install /etc/init.d/atalk
+       to get not in conflict with standard debian /etc/init.d/netatalk.
+       Reads netatalk.conf from $ETCDIR and not from /etc/default/
+* UPD: changed netatalk.conf default settings to prevent problems with
+       AppleTalk zone names containing spaces
 * FIX: insecure tempfile handling bug in etc2ps.sh,
        found by Trustix, CAN-2004-0974.
 * REM: remove add_netatalk_printer and netatalk.template from stable 
