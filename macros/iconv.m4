@@ -33,11 +33,14 @@ dnl	# check for libiconv support
 
 dnl	############
 dnl	# check for iconv usability
+
+	saved_CPPFLAGS="$CPPFLAGS"
+	CPPFLAGS="$CFLAGS $ICONV_CFLAGS $ICONV_LIBS"
 	AC_CACHE_CHECK([for working iconv],netatalk_cv_HAVE_USABLE_ICONV,[
 		AC_TRY_RUN([\
 #include <iconv.h>
 main() {
-       iconv_t cd = iconv_open("MAC", "UTF8");
+       iconv_t cd = iconv_open("ASCII", "UTF-8");
        if (cd == 0 || cd == (iconv_t)-1) return -1;
        return 0;
 }
@@ -49,7 +52,7 @@ main() {
 
 dnl	###########
 dnl	# check if iconv needs const
-  	if test x"$cv_HAVE_USABLE_ICONV" = x"yes"; then
+  	if test x"$netatalk_cv_HAVE_USABLE_ICONV" = x"yes"; then
     		AC_CACHE_VAL(am_cv_proto_iconv, [
       		AC_TRY_COMPILE([\
 #include <stdlib.h>
@@ -70,5 +73,6 @@ size_t iconv();
   	fi
         CFLAGS="$savedcflags"
         LDFLAGS="$savedldflags"
+	CPPFLAGS="$saved_CPPFLAGS"
 	
 ])
