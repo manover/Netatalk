@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.44.2.3.2.3 2003-09-25 12:23:53 didg Exp $
+ * $Id: auth.c,v 1.44.2.3.2.4 2003-09-25 12:54:45 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -416,10 +416,12 @@ unsigned int ibuflen, *rbuflen;
 
     *rbuflen += sizeof(tklen);
 
-    /* use at least 8 bytes for token as OSX, don't know if it helps */
-    tklen = sizeof(pid_t);
-    if (tklen < 8)
-        tklen = 8;
+    /* use 8 bytes for token as OSX, don't know if it helps */
+    if ( sizeof(pid_t) > 8) {
+         LOG(log_error, logtype_afpd, "sizeof(pid_t) > 8" );
+         return AFPERR_MISC;
+    }
+    tklen = 8;
 
     tp = htons(tklen);
     memcpy(rbuf, &tp, sizeof(tklen));
@@ -442,6 +444,7 @@ int		ibuflen, *rbuflen;
 
     u_int32_t           tklen;
     pid_t               token;
+    int                 i;
 
     *rbuflen = 0;
     ibuf += 2;
@@ -454,10 +457,24 @@ int		ibuflen, *rbuflen;
     tklen = ntohl(tklen);
     ibuf += sizeof(tklen);
 
-    if (tklen != sizeof(pid_t)) {
+    if ( sizeof(pid_t) > 8) {
+         LOG(log_error, logtype_afpd, "sizeof(pid_t) > 8" );
+         return AFPERR_MISC;
+    }
+    if (tklen != 8) {
         return AFPERR_MISC;
     }   
+    tklen = sizeof(pid_t);
     memcpy(&token, ibuf, tklen);
+
+    /* our stuff is pid + zero pad */
+    ibuf += tklen;
+    for (i = tklen; i < 8; i++, ibuf++) {
+         if (*ibuf != 0) {
+             return AFPERR_MISC;
+         }
+    }
+    
     /* killed old session, not easy */
     server_ipc_write(IPC_KILLTOKEN, tklen, &token);
     sleep(1);
