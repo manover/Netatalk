@@ -1,5 +1,5 @@
 /*
- * $Id: afp_config.c,v 1.22.6.2 2003-11-18 12:37:02 didg Exp $
+ * $Id: afp_config.c,v 1.22.6.3 2004-01-23 14:00:15 bfernhomberg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -97,6 +97,59 @@ void configfree(AFPConfig *configs, const AFPConfig *config)
 #ifdef USE_SRVLOC
 static void SRVLOC_callback(SLPHandle hslp, SLPError errcode, void *cookie) {
     *(SLPError*)cookie = errcode;
+}
+
+static char hex[17] = "0123456789abcdef";
+
+static char * srvloc_encode(const struct afp_options *options, const char *name)
+{
+	static char buf[512];
+	char *conv_name;
+	unsigned char *p;
+	unsigned int i = 0;
+#ifndef NO_DDP
+	char *Obj, *Type = "", *Zone = "";
+#endif
+
+	/* Convert name to maccharset */
+        if ((size_t)-1 ==(convert_string_allocate( options->unixcharset, options->maccharset,
+			 name, strlen(name), &conv_name)) )
+		return (char*)name;
+
+	/* Escape characters */
+	p = conv_name;
+	while (*p && i<(sizeof(buf)-4)) {
+	    if (*p == '@')
+		break;
+	    else if (isspace(*p)) {
+	        buf[i++] = '%';
+           	buf[i++] = '2';
+           	buf[i++] = '0';
+		p++;
+	    }	
+	    else if ((!isascii(*p)) || *p <= 0x2f || *p == 0x3f ) {
+	        buf[i++] = '%';
+           	buf[i++] = hex[*p >> 4];
+           	buf[i++] = hex[*p++ & 15];
+	    }
+	    else {
+		buf[i++] = *p++;
+	    }
+	}
+	buf[i] = '\0';
+
+#ifndef NO_DDP
+	/* Add ZONE,  */
+        if (nbp_name(options->server, &Obj, &Type, &Zone )) {
+        	LOG(log_error, logtype_afpd, "srvloc_encode: can't parse %s", options->server );
+    	}
+	else {
+		snprintf( buf+i, sizeof(buf)-i-1 ,"&ZONE=%s", Zone);
+	}
+#endif
+	free (conv_name);
+
+	return buf;
 }
 #endif /* USE_SRVLOC */
 
@@ -287,8 +340,7 @@ static AFPConfig *DSIConfigInit(const struct afp_options *options,
     SLPHandle hslp;
     struct servent *afpovertcp;
     int afp_port = 548;
-    const char *srvloc_hostname, *hostname;
-    struct hostent *h;
+    char *srvloc_hostname, *hostname;
 #endif /* USE_SRVLOC */
 
     if ((config = (AFPConfig *) calloc(1, sizeof(AFPConfig))) == NULL) {
@@ -334,19 +386,22 @@ static AFPConfig *DSIConfigInit(const struct afp_options *options,
 	if (afpovertcp != NULL) {
 	    afp_port = afpovertcp->s_port;
 	}
-	/* Try to use the FQDN to register with srvloc. */
-	h = gethostbyaddr((char*)&dsi->server.sin_addr, sizeof(dsi->server.sin_addr), AF_INET);
-	if (h) 
-	    hostname = h->h_name;
+	/* If specified use the FQDN to register with srvloc, otherwise use IP. */
+	p = NULL;
+	if (options->fqdn) {
+	    hostname = strdup(options->fqdn);
+	    p = strchr(hostname, ':');
+	}	
 	else 
 	    hostname = inet_ntoa(dsi->server.sin_addr);
-	srvloc_hostname = (options->server ? options->server : options->hostname);
+	srvloc_hostname = srvloc_encode(options, (options->server ? options->server : options->hostname));
+
 	if (strlen(srvloc_hostname) > (sizeof(dsi->srvloc_url) - strlen(hostname) - 21)) {
 	    LOG(log_error, logtype_afpd, "DSIConfigInit: Hostname is too long for SRVLOC");
 	    dsi->srvloc_url[0] = '\0';
 	    goto srvloc_reg_err;
 	}
-	if (dsi->server.sin_port == afp_port) {
+	if ((p) || dsi->server.sin_port == afp_port) {
 	    sprintf(dsi->srvloc_url, "afp://%s/?NAME=%s", hostname, srvloc_hostname);
 	}
 	else {
