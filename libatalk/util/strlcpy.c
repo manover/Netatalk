@@ -58,7 +58,10 @@
         size_t len1 = strlen(d);
         size_t len2 = strlen(s);
         size_t ret = len1 + len2;
- 
+
+	if (len1 >= bufsize) {
+		return 0;
+	} 
         if (len1+len2 >= bufsize) {
                 len2 = bufsize - (len1+1);
         }
