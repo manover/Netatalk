@@ -70,16 +70,19 @@
  **/
 #define CHARSET_WIDECHAR    32
 
-#if defined(WITH_LIBICONV) && defined(HAVE_UCS2INTERNAL)
+#ifdef HAVE_USABLE_ICONV
+#ifdef HAVE_UCS2INTERNAL
 #define UCS2ICONV "UCS-2-INTERNAL"
-#else
+#else /* !HAVE_UCS2INTERNAL */
 #if BYTE_ORDER==LITTLE_ENDIAN
 #define UCS2ICONV "UCS-2LE"
-#else
+#else /* !LITTLE_ENDIAN */
 #define UCS2ICONV "UCS-2BE"
-#endif
-#endif
-
+#endif /* BYTE_ORDER */
+#endif /* HAVE_UCS2INTERNAL */
+#else /* !HAVE_USABLE_ICONV */
+#define UCS2ICONV "UCS-2"
+#endif /* HAVE_USABLE_ICONV */
 
 static size_t ascii_pull(void *,char **, size_t *, char **, size_t *);
 static size_t ascii_push(void *,char **, size_t *, char **, size_t *);

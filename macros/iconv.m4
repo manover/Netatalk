@@ -3,32 +3,52 @@ AC_DEFUN([AC_CHECK_ICONV],
 
 dnl	#################################################
 dnl	# check for libiconv support
-	AC_MSG_CHECKING(whether to use libiconv)
         savedcflags="$CFLAGS"
         savedldflags="$LDFLAGS"
-	netatalk_cv_libiconv=no
+	ICONV_CFLAGS=""
+	ICONV_LIBS=""
+
 	AC_ARG_WITH(libiconv,
 	[  --with-libiconv=BASEDIR Use libiconv in BASEDIR/lib and BASEDIR/include [[default=auto]]],
 	[ case "$withval" in
 	  no)
-	    AC_MSG_RESULT(no)
+	    ;;
+	  yes)
 	    ;;
 	  *)
-	    AC_MSG_RESULT(yes)
-	    CFLAGS="$CFLAGS -I$withval/include"
-	    LDFLAGS="$LDFLAGS -L$withval/$atalk_libname"
-	    AC_CHECK_LIB(iconv, iconv_open, [
-			ICONV_CFLAGS="-I$withval/include"
-			ICONV_LIBS="-L$withval/$atalk_libname -liconv"
-			netatalk_cv_libiconv=yes
-			AC_DEFINE_UNQUOTED(WITH_LIBICONV, "${withval}",[Path to iconv])
-            		], [
-			AC_MSG_ERROR([libiconv not found in specified path: $withval])
-	    ])
+	    ICONV_CFLAGS="-I$withval/include"
+	    ICONV_LIBS="-L$withval/$atalk_libname"
 	    ;;
 	  esac ],
-	  AC_MSG_RESULT(no)
-	)
+	  withval="no"
+	)	
+
+	CFLAGS="$ICONV_CFLAGS $CFLAGS"
+        LDFLAGS="$LDFLAGS $ICONV_LIBS -liconv"
+
+	AC_CACHE_CHECK([for libiconv],netatalk_cv_iconv,[
+          AC_TRY_LINK([
+#include <stdlib.h>
+#include <iconv.h>
+],[
+	iconv_t cd = iconv_open("","");
+        iconv(cd,NULL,NULL,NULL,NULL);
+        iconv_close(cd);
+], netatalk_cv_iconv=yes, netatalk_cv_iconv=no, netatalk_cv_iconv=cross)])
+
+	if test x"$netatalk_cv_iconv" = x"yes"; then
+	    ICONV_LIBS="$ICONV_LIBS -liconv"
+        else
+dnl	    # unset C-/LDFLAGS so we can detect glibc iconv, if available
+	    CFLAGS="$savedcflags"
+	    LDFLAGS="$savedldflags"
+	    ICONV_LIBS=""
+	    ICONV_CFLAGS=""
+	    if test x"$withval" != x"no"; then
+	        AC_MSG_ERROR([libiconv not found])
+	    fi
+	fi
+
 
 	CFLAGS_REMOVE_USR_INCLUDE(ICONV_CFLAGS)
 	LIB_REMOVE_USR_LIB(ICONV_LIBS)
@@ -38,8 +58,6 @@ dnl	# check for libiconv support
 dnl	############
 dnl	# check for iconv usability
 
-	saved_CPPFLAGS="$CPPFLAGS"
-	CPPFLAGS="$CFLAGS $ICONV_CFLAGS $ICONV_LIBS"
 	AC_CACHE_CHECK([for working iconv],netatalk_cv_HAVE_USABLE_ICONV,[
 		AC_TRY_RUN([\
 #include <iconv.h>
@@ -77,8 +95,8 @@ size_t iconv();
   	fi
 
 dnl     ###########
-dnl     # check if libiconv supports UCS-2-INTERNAL
-	if test x"$netatalk_cv_libiconv" = x"yes"; then
+dnl     # check if (lib)iconv supports UCS-2-INTERNAL
+	if test x"$netatalk_cv_HAVE_USABLE_ICONV" = x"yes"; then
 	    AC_CACHE_CHECK([whether iconv supports UCS-2-INTERNAL],netatalk_cv_HAVE_UCS2INTERNAL,[
 		AC_TRY_RUN([\
 #include <iconv.h>
@@ -93,6 +111,7 @@ int main() {
 		AC_DEFINE(HAVE_UCS2INTERNAL,1,[Whether UCS-2-INTERNAL is supported])
 	fi
 	fi
+
         CFLAGS="$savedcflags"
         LDFLAGS="$savedldflags"
 	CPPFLAGS="$saved_CPPFLAGS"
