@@ -1,5 +1,5 @@
 /*
- * $Id: nbp.c,v 1.10 2002-09-29 23:24:47 sibaz Exp $
+ * $Id: nbp.c,v 1.10.8.1 2004-01-10 08:09:12 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -79,7 +79,7 @@ int nbp_packet( ap, from, data, len )
     struct nbpnve	nn;
     struct sockaddr_at	sat;
     struct nbptab	*ntab;
-    struct ziptab	*zt;
+    struct ziptab	*zt=NULL;
     struct interface	*iface;
     struct list		*l;
     struct rtmptab	*rtmp;

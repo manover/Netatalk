@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.17 2002-10-05 13:20:13 didg Exp $
+ * $Id: main.c,v 1.17.8.1 2004-01-10 08:09:12 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -178,6 +178,8 @@ static void as_timer(int sig)
     char		*data, *end, packet[ ATP_BUFSIZ ];
     int			sentzipq = 0;
     int			n, cc;
+
+    ap=zap=rap=NULL;
 
     memset(&sat, 0, sizeof( struct sockaddr_at ));
     for ( iface = interfaces; iface; iface = iface->i_next ) {

@@ -1,5 +1,5 @@
 /*
- * $Id: zip.c,v 1.11 2002-09-29 23:24:47 sibaz Exp $
+ * $Id: zip.c,v 1.11.8.1 2004-01-10 08:09:12 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -98,7 +98,7 @@ int zip_packet( ap, from, data, len )
     struct atphdr	ah;
     struct interface	*iface;
     struct gate		*gate;
-    struct rtmptab	*rtmp;
+    struct rtmptab	*rtmp = NULL;
     struct list		*l;
     struct ziptab	*zt;
     u_short		firstnet, lastnet, index, nz;
