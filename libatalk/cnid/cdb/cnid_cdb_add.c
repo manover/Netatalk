@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_cdb_add.c,v 1.1.4.5 2004-04-14 21:52:08 bfernhomberg Exp $
+ * $Id: cnid_cdb_add.c,v 1.1.4.6 2004-06-30 01:27:15 didg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -75,11 +75,13 @@ extern int cnid_cdb_update(struct _cnid_db *cdb, const cnid_t id, const struct s
 /* --------------- */
 int db_stamp(void *buffer, size_t size)
 {
+time_t t;
     memset(buffer, 0, size);
     /* return the current time. */
     if (size < sizeof(time_t))
         return -1;
-    time(buffer);
+    t = time(NULL);
+    memcpy(buffer,&t, sizeof(time_t));
     return 0;
 
 }
