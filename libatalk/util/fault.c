@@ -85,8 +85,10 @@ static void (*CatchSignal(int signum,void (*handler)(int )))(int)
 
 static void smb_panic(const char *why)
 {
+#if 0
 	char *cmd;
 	int result;
+#endif
 #ifdef HAVE_BACKTRACE_SYMBOLS
 	void *backtrace_stack[BACKTRACE_STACK_SIZE];
 	size_t backtrace_size;

@@ -815,7 +815,7 @@ void generate_message_details(char *message_details_buffer,
   if (what_to_print.print_srcfile || what_to_print.print_srcline)
   {
     char sprintf_buffer[8];
-    char *buff_ptr;
+    char *buff_ptr=NULL;
 
     sprintf_buffer[0] = '[';
     if (what_to_print.print_srcfile)

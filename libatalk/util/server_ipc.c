@@ -1,5 +1,5 @@
 /*
- * $Id: server_ipc.c,v 1.1.4.1 2003-07-21 05:50:55 didg Exp $
+ * $Id: server_ipc.c,v 1.1.4.1.2.1 2004-01-10 08:29:16 bfernhomberg Exp $
  *
  * All rights reserved. See COPYRIGHT.
  *
@@ -134,7 +134,7 @@ int server_ipc_read(server_child *children)
 
     memset (buf, 0, IPC_MAXMSGSIZE);
     if ( ipc.len != 0) {
-	    if ((ret = read(pipe_fd[0], buf, ipc.len)) != ipc.len) {
+	    if ((ret = read(pipe_fd[0], buf, ipc.len)) != (int) ipc.len) {
 		LOG (log_info, logtype_afpd, "Reading IPC message failed (%u of %u  bytes read)", ret, ipc.len);
 		return -1;
     	}	 
