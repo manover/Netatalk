@@ -122,8 +122,14 @@ char_ucs2_to_mac_cyrillic(unsigned char *r, ucs2_t wc)
     c = 0xc4;
   else if (wc >= 0x0400 && wc < 0x0460)
     c = mac_cyrillic_page04[wc-0x0400];
+  else if (wc == 0x0490)
+    c = 0xa2;
+  else if (wc == 0x0491)
+    c = 0xb6;
   else if (wc >= 0x2010 && wc < 0x2028)
     c = mac_cyrillic_page20[wc-0x2010];
+  else if (wc == 0x20ac)
+    c = 0xff;
   else if (wc >= 0x2110 && wc < 0x2128)
     c = mac_cyrillic_page21[wc-0x2110];
   else if (wc >= 0x2200 && wc < 0x2268)
