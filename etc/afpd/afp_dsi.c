@@ -1,5 +1,5 @@
 /*
- * $Id: afp_dsi.c,v 1.9.2.4 2002-01-23 18:34:14 jmarcus Exp $
+ * $Id: afp_dsi.c,v 1.9.2.5 2002-08-05 18:45:24 jmarcus Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -133,6 +133,23 @@ static void alarm_handler()
     }
 }
 
+
+/*
+ *  Signal handler for SIGUSR1 - set the debug flag and 
+ *  redirect stdout to <tmpdir>/afpd-debug-<pid>.
+ */
+void afp_set_debug (int sig)
+{
+    char	fname[MAXPATHLEN];
+
+    snprintf(fname, MAXPATHLEN-1, "%safpd-debug-%d", P_tmpdir, getpid());
+    freopen(fname, "w", stdout);
+    child.obj->options.flags |= OPTION_DEBUG;
+
+    return;
+}
+
+
 /* afp over dsi. this never returns. */
 void afp_over_dsi(AFPObj *obj)
 {
@@ -181,6 +198,16 @@ void afp_over_dsi(AFPObj *obj)
         afp_dsi_die(1);
     }
 #endif /* SERVERTEXT */
+
+    /*  SIGUSR1 - set "debug" flag on this process.  */
+    action.sa_handler = afp_set_debug;
+    sigemptyset( &action.sa_mask );
+    sigaddset(&action.sa_mask, SIGUSR1);
+    action.sa_flags = SA_RESTART;
+    if ( sigaction( SIGUSR1, &action, 0) < 0 ) {
+        syslog( LOG_ERR, "afp_over_dsi: sigaction: %s", strerror(errno) );
+        afp_dsi_die(1);
+    }
 
     /* tickle handler */
     action.sa_handler = alarm_handler;

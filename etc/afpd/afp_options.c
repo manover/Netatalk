@@ -1,5 +1,5 @@
 /*
- * $Id: afp_options.c,v 1.13.2.7 2002-03-12 14:21:18 srittau Exp $
+ * $Id: afp_options.c,v 1.13.2.8 2002-08-05 18:45:24 jmarcus Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -169,7 +169,10 @@ int afp_options_parseline(char *buf, struct afp_options *options)
     /* parse toggles */
     if (strstr(buf, " -nodebug"))
         options->flags &= ~OPTION_DEBUG;
-
+#ifdef USE_SRVLOC
+    if (strstr(buf, " -noslp"))
+	options->flags |= OPTION_NOSLP;
+#endif /* USE_SRVLOC */
     if (strstr(buf, " -nouservolfirst"))
         options->flags &= ~OPTION_USERVOLFIRST;
     if (strstr(buf, " -uservolfirst"))

@@ -1,5 +1,5 @@
 /*
- * $Id: afp_config.c,v 1.7.2.4 2002-03-12 14:19:46 srittau Exp $
+ * $Id: afp_config.c,v 1.7.2.5 2002-08-05 18:45:24 jmarcus Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -107,6 +107,11 @@ static void dsi_cleanup(const AFPConfig *config)
     SLPError err;
     SLPError callbackerr;
     SLPHandle hslp;
+
+    /*  Do nothing if we didn't register.  */
+    if (srvloc_url[0] == '\0')
+	return;
+
     err = SLPOpen("en", SLP_FALSE, &hslp);
     if (err != SLP_OK) {
         syslog(LOG_ERR, "dsi_cleanup: Error opening SRVLOC handle");
@@ -281,6 +286,7 @@ static AFPConfig *DSIConfigInit(const struct afp_options *options,
     SLPHandle hslp;
     struct servent *afpovertcp;
     int afp_port = 548;
+    char *srvloc_hostname;
 #endif /* USE_SRVLOC */
 
     if ((config = (AFPConfig *) calloc(1, sizeof(AFPConfig))) == NULL) {
@@ -308,53 +314,61 @@ static AFPConfig *DSIConfigInit(const struct afp_options *options,
     }
 
 #ifdef USE_SRVLOC
-    err = SLPOpen("en", SLP_FALSE, &hslp);
-    if (err != SLP_OK) {
-        syslog(LOG_ERR, "DSIConfigInit: Error opening SRVLOC handle");
-        goto srvloc_reg_err;
-    }
+    srvloc_url[0] = '\0';      /*  Mark that we haven't registered.  */
+    if (!(options->flags & OPTION_NOSLP)) {
+	err = SLPOpen("en", SLP_FALSE, &hslp);
+    	if (err != SLP_OK) {
+	    syslog( LOG_ERR, "DSIConfigInit: Error opening SRVLOC handle");
+	    goto srvloc_reg_err;
+	}
+    	/* XXX We don't want to tack on the port number if we don't have to.
+     	 * Why?
+     	 * Well, this seems to break MacOS < 10.  If the user _really_ wants to
+     	 * use a non-default port, they can, but be aware, this server might
+     	 * not show up int the Network Browser.
+    	 */
+    	afpovertcp = getservbyname("afpovertcp", "tcp");
+	srvloc_hostname = (options->server ? options->server : (char *)options->hostname);
+    	if (afpovertcp != NULL) {
+	    afp_port = afpovertcp->s_port;
+	}
+	if (strlen(srvloc_hostname) > (sizeof(srvloc_url) - strlen(inet_ntoa(dsi->server.sin_addr)) - 21)) {
+	    syslog( LOG_ERR, "DSIConfigInit: Hostname is too long for SRVLOC");
+	    srvloc_url[0] = '\0';
+	    goto srvloc_reg_err;
+	}
+	if (dsi->server.sin_port == afp_port) {
+	    sprintf(srvloc_url, "afp://%s/?NAME=%s", inet_ntoa(dsi->server.sin_addr), srvloc_hostname);
+	}
+	else {
+	    sprintf(srvloc_url, "afp://%s:%d/?NAME=%s", inet_ntoa(dsi->server.sin_addr), ntohs(dsi->server.sin_port), srvloc_hostname);
+	}
 
-    /* XXX We don't want to tack on the port number if we don't have to.  Why?
-     * Well, this seems to break MacOS < 10.  If the user _really_ wants to
-     * use a non-default port, they can, but be aware, this server might not
-     * show up int the Network Browser. */
-    afpovertcp = getservbyname("afpovertcp", "tcp");
-    if (afpovertcp != NULL) {
-	afp_port = afpovertcp->s_port;
-    }
-    if (strlen(options->hostname) > (sizeof(srvloc_url) - strlen(inet_ntoa(dsi->server.sin_addr)) - 21)) {
-        syslog(LOG_ERR, "DSIConfigInit: Hostname is too long for SRVLOC");
-        goto srvloc_reg_err;
-    }
-    if (dsi->server.sin_port == afp_port) {
-        sprintf(srvloc_url, "afp://%s/?NAME=%s", inet_ntoa(dsi->server.sin_addr), options->hostname);
-    }
-    else {
-        sprintf(srvloc_url, "afp://%s:%d/?NAME=%s", inet_ntoa(dsi->server.sin_addr), ntohs(dsi->server.sin_port), options->hostname);
-    }
+	err = SLPReg(hslp,
+		srvloc_url,
+		SLP_LIFETIME_MAXIMUM,
+		"",
+		"",
+		SLP_TRUE,
+		SRVLOC_callback,
+		&callbackerr);
+	if (err != SLP_OK) {
+	    syslog( LOG_ERR, "DSIConfigInit: Error registering %s with SRVLOC", srvloc_url);
+	    srvloc_url[0] = '\0';
+	    goto srvloc_reg_err;
+	}
 
-    err = SLPReg(hslp,
-                 srvloc_url,
-                 SLP_LIFETIME_MAXIMUM,
-                 "",
-                 "",
-                 SLP_TRUE,
-                 SRVLOC_callback,
-                 &callbackerr);
-    if (err != SLP_OK) {
-        syslog(LOG_ERR, "DSIConfigInit: Error registering %s with SRVLOC", srvloc_url);
-        goto srvloc_reg_err;
-    }
+	if (callbackerr != SLP_OK) {
+	    syslog( LOG_ERR, "DSIConfigInit: Error in callback trying to register %s with SRVLOC", srvloc_url);
+	    srvloc_url[0] = '\0';
+	    goto srvloc_reg_err;
+	}
 
-    if (callbackerr != SLP_OK) {
-        syslog(LOG_ERR, "DSIConfigInit: Error in callback trying to register %s with SRVLOC", srvloc_url);
-        goto srvloc_reg_err;
-    }
-
-    syslog(LOG_INFO, "Sucessfully registered %s with SRVLOC", srvloc_url);
+    	syslog(LOG_INFO, "Sucessfully registered %s with SRVLOC", srvloc_url);
 
 srvloc_reg_err:
-    SLPClose(hslp);
+    	SLPClose(hslp);
+    }
 #endif /* USE_SRVLOC */
 
 
