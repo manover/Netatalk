@@ -1,5 +1,5 @@
 /*
- * $Id: macbin.c,v 1.10 2002-02-16 17:12:53 srittau Exp $
+ * $Id: macbin.c,v 1.10.10.1 2004-08-10 13:37:18 bfernhomberg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -595,13 +595,14 @@ int test_header(void)
         return -1;
 
     /* macbinary forks aren't larger than 0x7FFFFF */
+    /* we allow forks to be larger, breaking the specs */
     memcpy(&cc, head_buf + 83, sizeof(cc));
     cc = ntohl(cc);
-    if (cc > 0x7FFFFF)
+    if (cc > 0x7FFFFFFF)
         return -1;
     memcpy(&cc, head_buf + 87, sizeof(cc));
     cc = ntohl(cc);
-    if (cc > 0x7FFFFF)
+    if (cc > 0x7FFFFFFF)
         return -1;
 
 
