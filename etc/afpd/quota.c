@@ -1,5 +1,5 @@
 /*
- * $Id: quota.c,v 1.22.8.8 2004-03-22 22:46:29 bfernhomberg Exp $
+ * $Id: quota.c,v 1.22.8.9 2004-04-06 23:05:15 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -57,6 +57,8 @@ int quotactl(int cmd, const char *special, int id, caddr_t addr)
 }
 #endif /* NEED_QUOTACTL_WRAPPER */
 
+static int overquota( struct dqblk *);
+
 #ifdef linux
 
 #ifdef HAVE_LINUX_XQM_H
@@ -74,7 +76,6 @@ static int is_xfs = 0;
 
 static int get_linux_xfs_quota(int, char*, uid_t, struct dqblk *);
 static int get_linux_fs_quota(int, char*, uid_t, struct dqblk *);
-static int overquota( struct dqblk *);
 
 /* format supported by current kernel */
 static int kernel_iface = IFACE_UNSET;
@@ -524,12 +525,12 @@ struct dqblk		*dq;
     if( 
         /* if overquota, free space is 0 otherwise hard-current */
         ( overquota( dq ) ? 0 : ( dq->dqb_bhardlimit ? dq->dqb_bhardlimit - 
-                                  dq->dqb_curblocks : ~((qsize_t) 0) ) )
+                                  dq->dqb_curblocks : ~((u_int64_t) 0) ) )
 
       >
         
         ( overquota( &dqg ) ? 0 : ( dqg.dqb_bhardlimit ? dqg.dqb_bhardlimit - 
-                                    dqg.dqb_curblocks : ~((qsize_t) 0) ) )
+                                    dqg.dqb_curblocks : ~((u_int64_t) 0) ) )
 
       ) /* if */
     {
