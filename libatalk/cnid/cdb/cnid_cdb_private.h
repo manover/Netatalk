@@ -1,20 +1,40 @@
 /*
- * $Id: cnid_cdb_private.h,v 1.1.4.1 2003-09-09 16:42:21 didg Exp $
+ * $Id: cnid_cdb_private.h,v 1.1.4.2 2003-10-21 16:23:54 didg Exp $
  */
 
 #ifndef LIBATALK_CDB_PRIVATE_H
 #define LIBATALK_CDB_PRIVATE_H 1
 
-#include <string.h>
-#include <sys/param.h>
-#include <sys/stat.h>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif /* HAVE_FCNTL_H */
+#include <sys/param.h>
+#include <sys/stat.h>
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif /* HAVE_SYS_TIME_H */
 
+#ifdef HAVE_DB4_DB_H
+#include <db4/db.h>
+#else
 #include <db.h>
+#endif
 
+#include <netatalk/endian.h>
+#include <atalk/logger.h>
 #include <atalk/adouble.h>
+#include <atalk/cnid.h>
+#include <atalk/util.h>
 #include "cnid_cdb.h"
 
 #define CNID_DB_MAGIC   0x434E4944U  /* CNID */

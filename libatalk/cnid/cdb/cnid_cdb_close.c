@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_cdb_close.c,v 1.1.4.1 2003-09-09 16:42:21 didg Exp $
+ * $Id: cnid_cdb_close.c,v 1.1.4.2 2003-10-21 16:23:54 didg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -7,21 +7,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #ifdef CNID_BACKEND_CDB
-
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif /* HAVE_UNISTD_H */
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif /* HAVE_FCNTL_H */
-#include <stdlib.h>
-#include <atalk/logger.h>
-#include <db.h>
-#include <errno.h>
-#include <string.h>
-
 #include "cnid_cdb_private.h"
-#include "cnid_cdb.h"
 
 void cnid_cdb_close(struct _cnid_db *cdb) {
     CNID_private *db;

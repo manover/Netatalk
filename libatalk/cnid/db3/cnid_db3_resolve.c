@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_db3_resolve.c,v 1.1.4.1 2003-09-09 16:42:21 didg Exp $
+ * $Id: cnid_db3_resolve.c,v 1.1.4.2 2003-10-21 16:23:54 didg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -15,7 +15,11 @@
 #include <atalk/logger.h>
 #include <errno.h>
 
+#ifdef HAVE_DB4_DB_H
+#include <db4/db.h>
+#else
 #include <db.h>
+#endif
 #include <netatalk/endian.h>
 #include <atalk/adouble.h>
 #include "cnid_db3.h"

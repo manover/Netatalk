@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_cdb_update.c,v 1.1.4.3 2003-10-06 15:17:08 didg Exp $
+ * $Id: cnid_cdb_update.c,v 1.1.4.4 2003-10-21 16:23:54 didg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -7,19 +7,6 @@
 #endif /* HAVE_CONFIG_H */
 
 #ifdef CNID_BACKEND_CDB
-
-#include <stdio.h>
-#include <string.h>
-#include <sys/param.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <atalk/logger.h>
-
-#include <db.h>
-#include <netatalk/endian.h>
-#include <atalk/adouble.h>
-#include "cnid_cdb.h"
-
 #include "cnid_cdb_private.h"
 
 #define tid    NULL

@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_cdb_add.c,v 1.1.4.1 2003-09-09 16:42:21 didg Exp $
+ * $Id: cnid_cdb_add.c,v 1.1.4.2 2003-10-21 16:23:54 didg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -14,33 +14,9 @@
 #endif /* HAVE_CONFIG_H */
 
 #ifdef CNID_BACKEND_CDB
-
-#include <stdio.h>
-#include <sys/param.h>
-#include <sys/stat.h>
-#include <string.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif /* HAVE_UNISTD_H */
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif /* HAVE_FCNTL_H */
-#include <errno.h>
-#include <atalk/logger.h>
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif /* HAVE_SYS_TIME_H */
-
-#include <db.h>
-#include <netatalk/endian.h>
-
-#include <atalk/adouble.h>
-#include "cnid_cdb.h"
-#include <atalk/util.h>
-
 #include "cnid_cdb_private.h"
 
-    #define tid    NULL
+#define tid    NULL
 
 #ifdef ATACC
 char *make_cnid_data(const struct stat *st,const cnid_t did,

@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_add.c,v 1.1.4.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: dbd_add.c,v 1.1.4.2 2003-10-21 16:24:58 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -24,7 +24,11 @@
 #include <atalk/logger.h>
 #include <atalk/cnid_dbd_private.h>
 #include <atalk/cnid.h>
+#ifdef HAVE_DB4_DB_H
+#include <db4/db.h>
+#else
 #include <db.h>
+#endif
 
 #include "dbif.h"
 #include "pack.h"

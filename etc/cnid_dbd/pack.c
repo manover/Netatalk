@@ -1,5 +1,5 @@
 /*
- * $Id: pack.c,v 1.1.4.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: pack.c,v 1.1.4.2 2003-10-21 16:24:58 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -9,12 +9,16 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include <db.h>
 #include <string.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif /* HAVE_SYS_TYPES_H */
 #include <sys/param.h>
+#ifdef HAVE_DB4_DB_H
+#include <db4/db.h>
+#else
+#include <db.h>
+#endif
 
 #include <atalk/cnid_dbd_private.h>
 #include <netatalk/endian.h>

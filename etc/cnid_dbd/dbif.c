@@ -1,5 +1,5 @@
 /*
- * $Id: dbif.c,v 1.1.4.3 2003-10-06 15:17:08 didg Exp $
+ * $Id: dbif.c,v 1.1.4.4 2003-10-21 16:24:58 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -12,7 +12,11 @@
 #include <stdio.h>
 #include <errno.h>
 
+#ifdef HAVE_DB4_DB_H
+#include <db4/db.h>
+#else
 #include <db.h>
+#endif
 #include <atalk/logger.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>

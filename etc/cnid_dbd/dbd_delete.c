@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_delete.c,v 1.1.4.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: dbd_delete.c,v 1.1.4.2 2003-10-21 16:24:58 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -13,7 +13,11 @@
 #include <errno.h>
 #include <atalk/logger.h>
 
+#ifdef HAVE_DB4_DB_H
+#include <db4/db.h>
+#else
 #include <db.h>
+#endif
 #include <netatalk/endian.h>
 #include <atalk/cnid_dbd_private.h>
 

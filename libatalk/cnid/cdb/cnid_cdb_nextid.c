@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_cdb_nextid.c,v 1.1.4.1 2003-09-09 16:42:21 didg Exp $
+ * $Id: cnid_cdb_nextid.c,v 1.1.4.2 2003-10-21 16:23:54 didg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -9,14 +9,6 @@
 #ifdef CNID_BACKEND_CDB
 
 #ifdef unused
-
-#include <db.h>
-
-#include <atalk/adouble.h>
-#include "cnid_cdb.h"
-
-#include <atalk/logger.h>
-
 #include "cnid_cdb_private.h"
 
 /* return the next id. we use the fact that ad files are memory

@@ -1,6 +1,6 @@
 
 /*
- * $Id: cnid_cdb_open.c,v 1.1.4.3 2003-10-06 15:17:08 didg Exp $
+ * $Id: cnid_cdb_open.c,v 1.1.4.4 2003-10-21 16:23:54 didg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -40,30 +40,6 @@
 #endif /* HAVE_CONFIG_H */
 
 #ifdef CNID_BACKEND_CDB
-
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif /* HAVE_UNISTD_H */
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif /* HAVE_FCNTL_H */
-#include <sys/param.h>
-#include <sys/stat.h>
-#include <atalk/logger.h>
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif /* HAVE_SYS_TIME_H */
-
-#include <db.h>
-
-#include <atalk/adouble.h>
-#include <atalk/cnid.h>
-#include "cnid_cdb.h"
-#include <atalk/util.h>
-
 #include "cnid_cdb_private.h"
 
 #ifndef MIN
