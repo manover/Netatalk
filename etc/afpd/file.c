@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.9 2004-01-03 22:21:08 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.10 2004-02-06 02:32:15 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1325,6 +1325,7 @@ const int   noadouble;
     struct adouble	ads, add;
     int			len, err = AFP_OK;
     int                 adflags;
+    struct stat         st;
     
 #ifdef DEBUG
     LOG(log_info, logtype_afpd, "begin copyfile:");
@@ -1414,6 +1415,14 @@ const int   noadouble;
         default :
             return( AFPERR_PARAM );
         }
+    }
+
+    /* set dest modification date to src date */
+    if (!stat(src, &st)) {
+        struct utimbuf	ut;
+
+    	ut.actime = ut.modtime = st.st_mtime;
+    	utime(dst, &ut);
     }
 
 #ifdef DEBUG
