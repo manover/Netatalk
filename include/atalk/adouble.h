@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.4 2004-01-03 22:21:09 didg Exp $
+ * $Id: adouble.h,v 1.21.6.5 2004-01-25 00:04:53 bfernhomberg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -27,6 +27,9 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
 #endif
 
 /* ------------------- 
