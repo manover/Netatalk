@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.22 2004-03-12 13:03:18 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.23 2004-03-19 13:47:16 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1260,7 +1260,8 @@ static int copy_fd(int dfd, int sfd)
     int     err = 0;
     char    filebuf[8192];
     
-#ifdef SENDFILE_FLAVOR_LINUX
+#if 0 /* ifdef SENDFILE_FLAVOR_LINUX */
+    /* doesn't work With 2.6 FIXME, only check for EBADFD ? */
     off_t   offset = 0;
     size_t  size;
     struct stat         st;
