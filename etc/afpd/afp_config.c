@@ -1,5 +1,5 @@
 /*
- * $Id: afp_config.c,v 1.22.6.3 2004-01-23 14:00:15 bfernhomberg Exp $
+ * $Id: afp_config.c,v 1.22.6.4 2004-01-25 11:52:33 bfernhomberg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -389,7 +389,7 @@ static AFPConfig *DSIConfigInit(const struct afp_options *options,
 	/* If specified use the FQDN to register with srvloc, otherwise use IP. */
 	p = NULL;
 	if (options->fqdn) {
-	    hostname = strdup(options->fqdn);
+	    hostname = options->fqdn;
 	    p = strchr(hostname, ':');
 	}	
 	else 

@@ -1,5 +1,5 @@
 /*
- * $Id: afp_options.c,v 1.30.2.2.2.5 2004-01-24 18:05:26 bfernhomberg Exp $
+ * $Id: afp_options.c,v 1.30.2.2.2.6 2004-01-25 11:52:14 bfernhomberg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -481,8 +481,8 @@ int afp_options_parseline(char *buf, struct afp_options *options)
             LOG(log_warning, logtype_afpd, "setting Unix codepage to '%s' failed", c);
     	}
 	else {
-            if (opt = strdup(c))
-                options->unixcodepage = strdup(c);
+            if ((opt = strdup(c)))
+                options->unixcodepage = opt;
 	}
     }
 	
@@ -492,8 +492,8 @@ int afp_options_parseline(char *buf, struct afp_options *options)
             LOG(log_warning, logtype_afpd, "setting Mac codepage to '%s' failed", c);
     	}
 	else {
-            if (opt = strdup(c))
-                options->maccodepage = strdup(c);
+            if ((opt = strdup(c)))
+                options->maccodepage = opt;
 	}
     }
 
