@@ -29,7 +29,7 @@ noinst_HEADERS =	\
 
 CFLAGS = \
 	-I$(top_srcdir)/include -I$(top_srcdir)/sys \
-	@CFLAGS@ \
+	@CFLAGS@ @CUPS_CFLAGS@\
 	-D_PATH_PAPDCONF=\"$(pkgconfdir)/papd.conf\" \
 	-D_PATH_PAPDUAMPATH=\"$(UAMS_PATH)/\" \
  	-DSPOOLDIR=\"$(spooldir)/\"
