@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.10 2001-08-15 02:17:06 srittau Exp $
+ * $Id: ad_open.c,v 1.10.2.1 2002-03-12 16:12:03 srittau Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -528,7 +528,7 @@ ad_path( path, adflags )
  * and that value is returned.
  */
 
-#define DEFMASK 7700	/* be conservative */
+#define DEFMASK 07700	/* be conservative */
 
 int
 ad_mode( path, mode )
