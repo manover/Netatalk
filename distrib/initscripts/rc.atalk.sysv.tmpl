@@ -1,6 +1,6 @@
 #! /bin/sh
 #
-# Start/stop the AppleTalk daemons.
+# Start/stop the Netatalk daemons.
 #
 # AppleTalk daemons. Make sure not to start atalkd in the background:
 # its data structures must have time to stablize before running the
@@ -17,6 +17,9 @@ killproc() {
 	[ "$pid" != "" ] && kill $pid
 }
 
+# netatalk.conf expects hostname in $HOSTNAME by default
+HOSTNAME=`hostname`
+
 . :ETCDIR:/netatalk.conf
 
 
@@ -32,12 +35,9 @@ atalk_startup() {
 		fi
 
 		if [ -x :BINDIR:/nbprgstr ]; then
-#			:BINDIR:/nbprgstr -p 4 `hostname|sed 's/\..*$//'`:Workstation
-#			:BINDIR:/nbprgstr -p 4 `hostname|sed 's/\..*$//'`:netatalk
-			:BINDIR:/nbprgstr -p 4 ${ATALK_NAME}:Workstation@${ATALK_ZONE}
-			:BINDIR:/nbprgstr -p 4 ${ATALK_NAME}:netatalk@${ATALK_ZONE}
-
-						echo ' nbprgstr\c'
+			:BINDIR:/nbprgstr -p 4 "${ATALK_NAME}:Workstation${ATALK_ZONE}";
+			:BINDIR:/nbprgstr -p 4 "${ATALK_NAME}:netatalk${ATALK_ZONE}";
+							echo ' nbprgstr\c'
 		fi
 
 		if [ x"${PAPD_RUN}" = x"yes"  -a -x :SBINDIR:/papd ]; then
@@ -55,7 +55,7 @@ atalk_startup() {
 
 	if [  x"${AFPD_RUN}" = x"yes" -a -x :SBINDIR:/afpd ]; then
 		:SBINDIR:/afpd  ${AFPD_UAMLIST} -g ${AFPD_GUEST} \
-               -c ${AFPD_MAX_CLIENTS} -n ${ATALK_NAME}${ATALK_ZONE};	echo ' afpd\c'
+               -c ${AFPD_MAX_CLIENTS} -n "${ATALK_NAME}${ATALK_ZONE}";	echo ' afpd\c'
 	fi
 
 	echo '.'
@@ -69,7 +69,6 @@ case "$1" in
             echo "Starting netatalk in the background ... "
             atalk_startup > /dev/null &
         else
-#          echo "Starting netatalk (this may take a while) ..."
             atalk_startup
         fi
         ;;
