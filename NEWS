@@ -3,7 +3,11 @@ Changes in 1.6pre2
 
 * UPD: Removed --with-catsearch option from configure and enable FPCatSearch
        by default.
+* UPD: The dbpath argument does now support variable substitution.
 * FIX: Build fix for non-GNU-C compilers in libatalk/util/logger.c.
+* FIX: Two directories with the same name but different case confused the
+       Mac Finder.
+* FIX: The ROOT_PARENT directory could get invalidated.
 
 Changes in 1.6pre1
 ====================
