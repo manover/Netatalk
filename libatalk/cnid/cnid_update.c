@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_update.c,v 1.12.2.2 2001-12-03 15:53:39 jmarcus Exp $
+ * $Id: cnid_update.c,v 1.12.2.3 2001-12-15 06:35:28 jmarcus Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -56,6 +56,11 @@ retry:
         switch (rc) {
         case DB_LOCK_DEADLOCK:
             goto retry;
+        case DB_NOTFOUND:
+            /* Silently fail here.  We're allowed to do this since this CNID
+             * might have been deleted out from under us, or someone has
+             * called cnid_lookup then cnid_update (which is redundant). */
+            return 0;
         default:
             goto update_err;
         }
