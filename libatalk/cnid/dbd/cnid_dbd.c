@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_dbd.c,v 1.1.4.10 2004-01-03 22:42:55 didg Exp $
+ * $Id: cnid_dbd.c,v 1.1.4.11 2004-01-08 19:16:58 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -58,7 +58,7 @@ static void RQST_RESET(struct cnid_dbd_rqst  *r)
 }
 
 /* ----------- */
-extern char             *Cnid_srv;
+extern char             Cnid_srv[MAXHOSTNAMELEN + 1];
 extern int              Cnid_port;
 
 static int tsock_getfd(char *host, int port, int silent)

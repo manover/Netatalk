@@ -1,5 +1,5 @@
 /*
- * $Id: afp_options.c,v 1.30.2.2.2.3 2003-11-13 15:29:01 didg Exp $
+ * $Id: afp_options.c,v 1.30.2.2.2.4 2004-01-08 19:16:57 lenneis Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -62,8 +62,8 @@ char *strchr (), *strrchr ();
 #endif /* MIN */
 
 /* FIXME CNID */
-char             *Cnid_srv;
-int              Cnid_port;
+char             Cnid_srv[MAXHOSTNAMELEN + 1] = "localhost";
+int              Cnid_port = 4700;
 
 #define OPTIONS "dn:f:s:uc:g:P:ptDS:TL:F:U:Ivm:"
 #define LENGTH 512
@@ -443,15 +443,13 @@ int afp_options_parseline(char *buf, struct afp_options *options)
     /* FIXME CNID Cnid_srv is a server attribute */
     if ((c = getoption(buf, "-cnidserver"))) {
         char *p;
-
-        if (Cnid_srv) {
-            free(Cnid_srv);
-        }
-        
-        Cnid_srv = strdup(c);
-        p = strchr(Cnid_srv, ':');
-        *p = 0;
-        Cnid_port = atoi(p +1);
+	int len;        
+        p = strchr(c, ':');
+	if (p != NULL && (len = p - c) <= MAXHOSTNAMELEN) {
+	    memcpy(Cnid_srv, c, len);
+	    Cnid_srv[len] = 0;
+	    Cnid_port = atoi(p +1);
+	}
     }
 
     if ((c = getoption(buf, "-port")))

@@ -1,5 +1,5 @@
 /*
- * $Id: globals.h,v 1.18.2.2.2.2 2003-09-13 02:46:28 bfernhomberg Exp $
+ * $Id: globals.h,v 1.18.2.2.2.3 2004-01-08 19:16:57 lenneis Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -110,7 +110,7 @@ extern struct dir	*curdir;
 extern char		getwdbuf[];
 
 /* FIXME CNID */
-extern char             *Cnid_srv;
+extern char             Cnid_srv[MAXHOSTNAMELEN + 1];
 extern int              Cnid_port;
 
 extern int  get_afp_errno   __P((const int param));
