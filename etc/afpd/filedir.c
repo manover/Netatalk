@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.34 2002-10-13 06:18:13 didg Exp $
+ * $Id: filedir.c,v 1.32.2.1 2003-01-26 16:55:03 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -54,7 +54,6 @@ char *strchr (), *strrchr ();
 #include "file.h"
 #include "globals.h"
 #include "filedir.h"
-#include "unix.h"
 
 int matchfile2dirperms(upath, vol, did)
 /* Since it's kinda' big; I decided against an
@@ -69,7 +68,7 @@ more information */
     struct stat	st, sb;
     struct dir	*dir;
     char	*adpath;
-    uid_t       uid;
+    int		uid;
     int         ret = AFP_OK;
 #ifdef DEBUG
     LOG(log_info, logtype_afpd, "begin matchfile2dirperms:");
@@ -89,7 +88,7 @@ more information */
     else if (stat(".", &sb) < 0) {
         LOG(log_error, logtype_afpd,
             "matchfile2dirperms: Error checking directory \"%s\": %s",
-            dir->d_m_name, strerror(errno));
+            dir->d_name, strerror(errno));
         ret = AFPERR_NOOBJ;
     }
     else {
@@ -141,13 +140,13 @@ AFPObj      *obj;
 char	*ibuf, *rbuf;
 int		ibuflen, *rbuflen;
 {
-    struct stat		*st;
+    struct stat		st;
     struct vol		*vol;
     struct dir		*dir;
     u_int32_t           did;
     int			buflen, ret;
+    char		*path;
     u_int16_t		fbitmap, dbitmap, vid;
-    struct path         *s_path;
 
 #ifdef DEBUG
     LOG(log_info, logtype_afpd, "begin afp_getfildirparams:");
@@ -176,33 +175,26 @@ int		ibuflen, *rbuflen;
     dbitmap = ntohs( dbitmap );
     ibuf += sizeof( dbitmap );
 
-    if (( s_path = cname( vol, dir, &ibuf )) == NULL) {
+    if (( path = cname( vol, dir, &ibuf )) == NULL) {
         return( AFPERR_NOOBJ );
     }
 
-    st   = &s_path->st;
-    if (!s_path->st_valid) {
-        /* it's a dir and it should be there
-         * because we chdir in it in cname
-         */
-        of_stat(s_path);
-    }
-    if ( s_path->st_errno != 0 ) {
+    if ( stat( mtoupath(vol, path ), &st ) < 0 ) {
         return( AFPERR_NOOBJ );
     }
 
     buflen = 0;
-    if (S_ISDIR(st->st_mode)) {
+    if (S_ISDIR(st.st_mode)) {
         if (dbitmap) {
-            ret = getdirparams(vol, dbitmap, s_path, curdir,
-                                 rbuf + 3 * sizeof( u_int16_t ), &buflen );
+            ret = getdirparams(vol, dbitmap, ".", curdir,
+                               &st, rbuf + 3 * sizeof( u_int16_t ), &buflen );
             if (ret != AFP_OK )
                 return( ret );
         }
         /* this is a directory */
         *(rbuf + 2 * sizeof( u_int16_t )) = (char) FILDIRBIT_ISDIR;
     } else {
-        if (fbitmap && ( ret = getfilparams(vol, fbitmap, s_path, curdir, 
+        if (fbitmap && ( ret = getfilparams(vol, fbitmap, path, curdir, &st,
                                             rbuf + 3 * sizeof( u_int16_t ), &buflen )) != AFP_OK ) {
             return( ret );
         }
@@ -225,15 +217,41 @@ int		ibuflen, *rbuflen;
     return( AFP_OK );
 }
 
+/*
+ * We can't use unix file's perm to support Apple's inherited protection modes.
+ * If we aren't the file's owner we can't change its perms when moving it and smb
+ * nfs,... don't even try.
+*/
+#define AFP_CHECK_ACCESS 
+
+int check_access(char *path, int mode)
+{
+#ifdef AFP_CHECK_ACCESS
+struct maccess ma;
+char *p;
+
+    p = ad_dir(path);
+    if (!p)
+       return -1;
+
+    accessmode(p, &ma, curdir, NULL);
+    if ((mode & OPENACC_WR) && !(ma.ma_user & AR_UWRITE))
+        return -1;
+    if ((mode & OPENACC_RD) && !(ma.ma_user & AR_UREAD))
+        return -1;
+#endif
+    return 0;
+}
+
 int afp_setfildirparams(obj, ibuf, ibuflen, rbuf, rbuflen )
 AFPObj      *obj;
 char	*ibuf, *rbuf;
 int		ibuflen, *rbuflen;
 {
-    struct stat	*st;
+    struct stat	st;
     struct vol	*vol;
     struct dir	*dir;
-    struct path *path;
+    char	*path;
     u_int16_t	vid, bitmap;
     int		did, rc;
 
@@ -268,17 +286,10 @@ int		ibuflen, *rbuflen;
         return( AFPERR_NOOBJ );
     }
 
-    st   = &path->st;
-    if (!path->st_valid) {
-        /* it's a dir and it should be there
-         * because we chdir in it in cname
-         */
-        of_stat(path);
-    }
-
-    if ( path->st_errno != 0 ) {
+    if ( stat( mtoupath(vol, path ), &st ) < 0 ) {
         return( AFPERR_NOOBJ );
     }
+
     /*
      * If ibuf is odd, make it even.
      */
@@ -286,7 +297,7 @@ int		ibuflen, *rbuflen;
         ibuf++;
     }
 
-    if (S_ISDIR(st->st_mode)) {
+    if (S_ISDIR(st.st_mode)) {
         rc = setdirparams(vol, path, bitmap, ibuf );
     } else {
         rc = setfilparams(vol, path, bitmap, ibuf );
@@ -338,12 +349,12 @@ int         isdir;
     char            *p;
     char            *upath;
     int             rc;
-    struct stat     *st;
+    struct stat     st;
     int             adflags;
     struct adouble	ad;
     struct adouble	*adp;
-    struct ofork	*opened = NULL;
-    struct path         path;
+    struct ofork	*opened;
+
 #ifdef CNID_DB
     cnid_t      id;
 #endif /* CNID_DB */
@@ -358,9 +369,7 @@ int         isdir;
         id = cnid_get(vol->v_db, sdir->d_did, p, strlen(p));
 #endif /* CNID_DB */
         p = ctoupath( vol, sdir, oldname );
-        path.st_valid = 0;
-        path.u_name = p;
-        if ((opened = of_findname(&path))) {
+        if ((opened = of_findname(p, NULL))) {
             /* reuse struct adouble so it won't break locks */
             adp = opened->of_ad;
         }
@@ -388,8 +397,6 @@ int         isdir;
     }
 
     upath = mtoupath(vol, newname);
-    path.u_name = upath;
-    st = &path.st;    
     if (0 != (rc = check_name(vol, upath))) {
             return  rc;
     }
@@ -400,16 +407,14 @@ int         isdir;
             return AFP_OK;
 
         /* deal with case insensitive, case-preserving filesystems. */
-        if ((stat(upath, st) == 0) && strdiacasecmp(oldname, newname))
+        if ((stat(upath, &st) == 0) && strdiacasecmp(oldname, newname))
             return AFPERR_EXIST;
 
-    } else if (stat(upath, st ) == 0)
+    } else if (stat(upath, &st ) == 0)
         return AFPERR_EXIST;
 
     if ( !isdir ) {
-        path.st_valid = 1;
-        path.st_errno = errno;
-        if (of_findname(&path)) {
+        if (of_findname(upath, &st)) {
             rc = AFPERR_EXIST; /* was AFPERR_BUSY; */
         } else {
             rc = renamefile( p, upath, newname,vol_noadouble(vol), adp );
@@ -422,11 +427,11 @@ int         isdir;
     if ( rc == AFP_OK ) {
 #ifdef CNID_DB
         /* renaming may have moved the file/dir across a filesystem */
-        if (stat(upath, st) < 0)
+        if (stat(upath, &st) < 0)
             return AFPERR_MISC;
 
         /* fix up the catalog entry */
-        cnid_update(vol->v_db, id, st, curdir->d_did, upath, strlen(upath));
+        cnid_update(vol->v_db, id, &st, curdir->d_did, upath, strlen(upath));
 #endif /* CNID_DB */
     }
 
@@ -441,10 +446,9 @@ int		ibuflen, *rbuflen;
 {
     struct vol	*vol;
     struct dir	*sdir;
-    char        *oldname, *newname;
-    struct path *path;
+    char		*path, *oldname, *newname;
     u_int32_t	did;
-    int         plen;
+    int			plen;
     u_int16_t	vid;
     int         isdir = 0;
     int         rc;
@@ -478,8 +482,8 @@ int		ibuflen, *rbuflen;
     sdir = curdir;
     newname = obj->newtmp;
     oldname = obj->oldtmp;
-    if ( *path->m_name != '\0' ) {
-        strcpy(oldname, path->m_name); /* an extra copy for of_rename */
+    if ( *path != '\0' ) {
+        strcpy(oldname, path); /* an extra copy for of_rename */
     }
     else {
         if ( sdir->d_parent == NULL ) { /* root directory */
@@ -490,15 +494,22 @@ int		ibuflen, *rbuflen;
             return( AFPERR_NOOBJ );
         }
         isdir = 1;
-        strcpy(oldname, sdir->d_m_name);
+        strcpy(oldname, sdir->d_name);
     }
 
     /* another place where we know about the path type */
-    if ((plen = copy_path_name(newname, ibuf)) < 0) {
+    if ( *ibuf++ != 2 ) {
         return( AFPERR_PARAM );
     }
 
-    if (!plen) {
+    if (( plen = (unsigned char)*ibuf++ ) != 0 ) {
+        strncpy( newname, ibuf, plen );
+        newname[ plen ] = '\0';
+        if (strlen(newname) != plen) {
+            return( AFPERR_PARAM );
+        }
+    }
+    else {
         return AFP_OK; /* newname == oldname same dir */
     }
     
@@ -523,8 +534,7 @@ int		ibuflen, *rbuflen;
 {
     struct vol		*vol;
     struct dir		*dir;
-    struct path         *s_path;
-    char		*upath;
+    char		*path, *upath;
     int			did, rc;
     u_int16_t		vid;
 
@@ -550,14 +560,14 @@ int		ibuflen, *rbuflen;
         return( AFPERR_NOOBJ );
     }
 
-    if (( s_path = cname( vol, dir, &ibuf )) == NULL ) {
+    if (( path = cname( vol, dir, &ibuf )) == NULL ) {
         return( AFPERR_NOOBJ );
     }
 
-    upath = s_path->u_name;
-    if ( *s_path->m_name == '\0' ) {
+    upath = mtoupath(vol, path );
+    if ( *path == '\0' ) {
         rc = deletecurdir( vol, obj->oldtmp, AFPOBJ_TMPSIZ);
-    } else if (of_findname(s_path)) {
+    } else if (of_findname(upath, NULL)) {
         rc = AFPERR_BUSY;
     } else if ((rc = deletefile( upath, 1)) == AFP_OK) {
 #ifdef CNID_DB /* get rid of entry */
@@ -575,24 +585,26 @@ int		ibuflen, *rbuflen;
 
     return( rc );
 }
-char *absupath( vol, dir, u )
+
+char *ctoupath( vol, dir, name )
 const struct vol	*vol;
 struct dir	*dir;
-char	*u;
+char	*name;
 {
     struct dir	*d;
     static char	path[ MAXPATHLEN + 1];
-    char	*p;
+    char	*p, *u;
     int		len;
 
     p = path + sizeof( path ) - 1;
     *p = '\0';
+    u = mtoupath(vol, name );
     len = strlen( u );
     p -= len;
     strncpy( p, u, len );
     for ( d = dir; d->d_parent; d = d->d_parent ) {
         *--p = '/';
-        u = d->d_u_name;
+        u = mtoupath(vol, d->d_name );
         len = strlen( u );
         p -= len;
         strncpy( p, u, len );
@@ -605,14 +617,6 @@ char	*u;
     return( p );
 }
 
-char *ctoupath( vol, dir, name )
-const struct vol	*vol;
-struct dir	*dir;
-char	*name;
-{
-    return absupath(vol, dir, mtoupath(vol, name));
-}
-
 /* ------------------------- */
 int afp_moveandrename(obj, ibuf, ibuflen, rbuf, rbuflen )
 AFPObj      *obj;
@@ -622,10 +626,10 @@ int		ibuflen, *rbuflen;
     struct vol	*vol;
     struct dir	*sdir, *ddir;
     int         isdir = 0;
-    char	*oldname, *newname;
-    struct path *path;
+    char	    *oldname, *newname;
+    char        *path;
     int		did;
-    int         plen;
+    int		plen;
     u_int16_t	vid;
     int         rc;
 #ifdef DROPKLUDGE
@@ -666,12 +670,12 @@ int		ibuflen, *rbuflen;
     sdir = curdir;
     newname = obj->newtmp;
     oldname = obj->oldtmp;
-    if ( *path->m_name != '\0' ) {
+    if ( *path != '\0' ) {
         /* not a directory */
-        strcpy(oldname, path->m_name); /* an extra copy for of_rename */
+        strcpy(oldname, path); /* an extra copy for of_rename */
     } else {
         isdir = 1;
-        strcpy(oldname, sdir->d_m_name);
+        strcpy(oldname, sdir->d_name);
     }
 
     /* get the destination directory */
@@ -681,26 +685,33 @@ int		ibuflen, *rbuflen;
     if (( path = cname( vol, ddir, &ibuf )) == NULL ) {
         return( AFPERR_NOOBJ );
     }
-    if ( *path->m_name != '\0' ) {
+    if ( *path != '\0' ) {
         return( AFPERR_BADTYPE );
     }
 
     /* one more place where we know about path type */
-    if ((plen = copy_path_name(newname, ibuf)) < 0) {
+    if ( *ibuf++ != 2 ) {
         return( AFPERR_PARAM );
     }
 
-    if (!plen) {
+    if (( plen = (unsigned char)*ibuf++ ) != 0 ) {
+        strncpy( newname, ibuf, plen );
+        newname[ plen ] = '\0';
+        if (strlen(newname) != plen) {
+            return( AFPERR_PARAM );
+        }
+    }
+    else {
         strcpy(newname, oldname);
     }
-
+    
     rc = moveandrename(vol, sdir, oldname, newname, isdir);
 
     if ( rc == AFP_OK ) {
         char *upath = mtoupath(vol, newname);
 #ifdef DROPKLUDGE
         if (vol->v_flags & AFPVOL_DROPBOX) {
-            if ((retvalue=matchfile2dirperms (upath, vol, did)) != AFP_OK) {
+            if (retvalue=matchfile2dirperms (upath, vol, did) != AFP_OK) {
                 return retvalue;
             }
         }
