@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.27 2004-05-17 02:21:48 bfernhomberg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.28 2004-05-18 23:42:30 bfernhomberg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(etc/afpd/main.c)
@@ -114,6 +114,7 @@ dnl --------------------------------------------------------------------------
 dnl check if dlsym needs to add an underscore, uses libtool macros 
 dnl --------------------------------------------------------------------------
 AC_LTDL_DLLIB
+AC_CHECK_FUNCS(dlopen dlsym dlclose)
 AC_LTDL_DLSYM_USCORE
 if test x"$libltdl_cv_need_uscore" = xyes; then
     AC_DEFINE(DLSYM_PREPEND_UNDERSCORE, 1, [BSD compatibility macro])
@@ -133,7 +134,7 @@ AC_CHECK_FUNCS(getcwd gethostname gettimeofday getusershell mkdir rmdir select s
 AC_FUNC_SETPGRP
 AC_CHECK_FUNCS(backtrace_symbols)
 AC_CHECK_FUNCS(setlocale nl_langinfo)
-AC_CHECK_FUNCS(dlopen dlclose dlsym dlerror waitpid getcwd strdup strndup strnlen strtoul strerror chown fchown chmod fchmod chroot link mknod mknod64)
+AC_CHECK_FUNCS(waitpid getcwd strdup strndup strnlen strtoul strerror chown fchown chmod fchmod chroot link mknod mknod64)
 AC_CHECK_FUNCS(strlcpy strlcat)
 AC_CHECK_MEMBERS(struct tm.tm_gmtoff,,, [#include <time.h>])
 AC_CACHE_SAVE
