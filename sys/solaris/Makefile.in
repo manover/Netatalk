@@ -1,7 +1,7 @@
 # Solaris specific defines, passed to subdirectories.
 # To use Sun CC, uncomment the CC and KFLAGS variables.
 #
-# $Id: Makefile.in,v 1.1.2.2 2004-03-22 23:00:24 bfernhomberg Exp $
+# $Id: Makefile.in,v 1.1.2.3 2004-08-03 14:43:52 bfernhomberg Exp $
 
 
 CC	= @CC@
@@ -115,6 +115,8 @@ distclean: clean
 	 -rm -f Makefile
 
 depend :
+
+check:
 
 # DO NOT DELETE THIS LINE
 
