@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.44.2.3.2.15.2.1 2005-01-11 20:58:42 didg Exp $
+ * $Id: auth.c,v 1.44.2.3.2.15.2.2 2005-01-31 17:00:41 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -444,7 +444,7 @@ unsigned int ibuflen, *rbuflen;
     u_int32_t           idlen = 0;
     u_int32_t		boottime;
     u_int32_t           tklen, tp;
-    char                *token;
+    char                *token; 
     char                *p;
 
     *rbuflen = 0;
@@ -503,7 +503,6 @@ unsigned int ibuflen, *rbuflen;
 	    tklen = obj->sinfo.sessiontoken_len;
 	    token = obj->sinfo.sessiontoken;
 	}
-	type = 0;
 	break;
      case 8: /* Panther Kerberos Token */
             tklen = obj->sinfo.cryptedkey_len;

@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_tdb_add.c,v 1.1.2.1.2.1 2005-01-30 20:56:23 didg Exp $
+ * $Id: cnid_tdb_add.c,v 1.1.2.1.2.2 2005-01-31 17:01:16 didg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -24,7 +24,6 @@
 
 static int add_cnid (struct _cnid_tdb_private *db, TDB_DATA *key, TDB_DATA *data) {
     TDB_DATA altkey, altdata;
-    int rc;
 
     memset(&altkey, 0, sizeof(altkey));
     memset(&altdata, 0, sizeof(altdata));
@@ -53,7 +52,7 @@ static int add_cnid (struct _cnid_tdb_private *db, TDB_DATA *key, TDB_DATA *data
     return 0;
 
 abort:
-    return rc;
+    return -1;
 }
 
 /* ----------------------- */

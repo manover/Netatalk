@@ -1,5 +1,5 @@
 /*
- * $Id: nfsquota.c,v 1.10.8.3 2004-05-12 21:21:48 didg Exp $
+ * $Id: nfsquota.c,v 1.10.8.3.2.1 2005-01-31 17:00:59 didg Exp $
  *
  * parts of this are lifted from the bsd quota program and are
  * therefore under the following copyright:
@@ -105,7 +105,7 @@ char *in, *out;
 #define GQR_RQUOTA getquota_rslt_u.gqr_rquota
 #endif /* USE_OLD_RQUOTA */
 
-int getnfsquota(const struct vol *vol, const int uid, const u_int32_t bsize,
+int getnfsquota(struct vol *vol, const int uid, const u_int32_t bsize,
                 struct dqblk *dqp)
 {
 

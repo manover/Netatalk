@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.17.8.6 2004-05-12 21:21:48 didg Exp $
+ * $Id: main.c,v 1.17.8.6.2.1 2005-01-31 17:01:04 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -867,14 +867,15 @@ int main( ac, av )
     struct sockaddr_at	sat;
     struct sigaction	sv;
     struct itimerval	it;
+    sigset_t            signal_set, old_set;
+    
     struct interface	*iface;
     int			status;
     struct atport	*ap;
     fd_set		readfds;
-    int			i, mask, c;
+    int			i, c;
     SOCKLEN_T 		fromlen;
     char		*prog;
-;
 
     while (( c = getopt( ac, av, "12qsdtf:P:v" )) != EOF ) {
 	switch ( c ) {
@@ -1167,6 +1168,14 @@ int main( ac, av )
 	atalkd_exit( 1 );
     }
 
+    sigemptyset( &signal_set );
+    sigaddset(&signal_set, SIGALRM);
+#if 0
+    /* don't block SIGTERM */
+    sigaddset(&signal_set, SIGTERM);
+#endif
+    sigaddset(&signal_set, SIGUSR1);
+
     for (;;) {
 	readfds = fds;
 	if ( select( nfds, &readfds, NULL, NULL, NULL) < 0 ) {
@@ -1197,16 +1206,12 @@ int main( ac, av )
 				    iface->i_flags, ap->ap_port, ap->ap_fd );
 			    bprint( Packet, c );
 			}
-#endif /* DEBUG */
-#ifdef __svr4__
-			if ( sighold( SIGALRM ) || sighold( SIGUSR1 )) {
-			    LOG(log_error, logtype_atalkd, "sighold: %s", strerror(errno) );
+#endif 
+			if (sigprocmask(SIG_BLOCK, &signal_set, &old_set) < 0) {
+			    LOG(log_error, logtype_atalkd, "sigprocmask: %s", strerror(errno) );
 			    atalkd_exit( 1 );
 			}
-#else /* __svr4__ */
-			mask = sigsetmask( sigmask( SIGALRM ) |
-				sigmask( SIGUSR1 ));
-#endif /* __svr4__ */
+
 			if (( *ap->ap_packet )( ap, &sat, Packet, c ) < 0) {
 			  LOG(log_error, logtype_atalkd, "ap->ap_packet: %s", strerror(errno));
 			  atalkd_exit(1);
@@ -1214,15 +1219,12 @@ int main( ac, av )
 
 #ifdef DEBUG
 			consistency();
-#endif /* DEBUG */
-#ifdef __svr4__
-			if ( sigrelse( SIGUSR1 ) || sigrelse( SIGALRM )) {
-			    LOG(log_error, logtype_atalkd, "sigrelse: %s", strerror(errno) );
+#endif 
+			if (sigprocmask(SIG_SETMASK, &old_set, NULL) < 0) {
+			    LOG(log_error, logtype_atalkd, "sigprocmask old set: %s", strerror(errno) );
 			    atalkd_exit( 1 );
 			}
-#else /* __svr4__ */
-			sigsetmask( mask );
-#endif /* __svr4__ */
+
 		    }
 		}
 	    }

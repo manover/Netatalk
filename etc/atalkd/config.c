@@ -1,5 +1,5 @@
 /*
- * $Id: config.c,v 1.13.6.5 2004-06-09 01:10:07 bfernhomberg Exp $
+ * $Id: config.c,v 1.13.6.5.2.1 2005-01-31 17:01:01 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -69,7 +69,7 @@ char *strchr (), *strrchr ();
 
 int	router(), dontroute(), seed(), phase(), net(), addr(), zone(), noallmulti();
 
-static struct param {
+static const struct param {
     char	*p_name;
     int		(*p_func)();
 } params[] = {

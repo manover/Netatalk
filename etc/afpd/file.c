@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.31.2.7 2005-01-30 20:56:20 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.31.2.8 2005-01-31 17:00:55 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -781,7 +781,7 @@ int setfilparams(struct vol *vol,
     struct extmap	*em;
     int			bit, isad = 1, err = AFP_OK;
     char                *upath;
-    u_char              achar, *fdType, xyy[4];
+    u_char              achar, *fdType, xyy[4]; /* uninitialized, OK 310105 */
     u_int16_t		ashort, bshort;
     u_int32_t		aint;
     u_int32_t		upriv;

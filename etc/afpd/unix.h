@@ -1,5 +1,5 @@
 /*
- * $Id: unix.h,v 1.12.2.1.2.6 2004-05-10 18:40:33 didg Exp $
+ * $Id: unix.h,v 1.12.2.1.2.6.2.1 2005-01-31 17:01:00 didg Exp $
  */
 
 #ifndef AFPD_UNIX_H
@@ -206,10 +206,10 @@ extern long quotactl __P ((unsigned int, const char *, int, caddr_t));
 
 #endif /* linux */
 
-extern int getnfsquota __P((const struct vol *, const int, const u_int32_t,
+extern int getnfsquota __P((struct vol *, const int, const u_int32_t,
                                 struct dqblk *));
 
-extern int uquota_getvolspace __P((const struct vol *, VolSpace *, VolSpace *,
+extern int uquota_getvolspace __P((struct vol *, VolSpace *, VolSpace *,
                                        const u_int32_t));
 #endif /* NO_QUOTA_SUPPORT */
 

@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.1.4.10.2.2 2004-12-21 13:36:12 didg Exp $
+ * $Id: main.c,v 1.1.4.10.2.3 2005-01-31 17:01:05 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -167,6 +167,7 @@ static int loop(struct db_param *dbp)
             break;
         default:
             LOG(log_error, logtype_cnid, "loop: unknow op %d", rqst.op);
+            ret = -1;
             break;
         }       
 

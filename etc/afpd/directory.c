@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.15.2.3 2004-12-07 03:23:48 didg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.15.2.4 2005-01-31 17:00:43 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1650,7 +1650,7 @@ int setdirparams(const struct vol *vol,
     u_int16_t           bitmap = d_bitmap;
     u_char              finder_buf[32];
     u_int32_t		upriv;
-    mode_t              mpriv;
+    mode_t              mpriv;          /* uninitialized, OK 310105 */
     u_int16_t           upriv_bit = 0;
 
     bit = 0;

@@ -1,5 +1,5 @@
 /*
- * $Id: session.c,v 1.14.8.1 2004-02-07 19:46:08 didg Exp $
+ * $Id: session.c,v 1.14.8.1.2.1 2005-01-31 17:01:07 didg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -74,7 +74,7 @@ int session( atp, sat )
     char		cbuf[ 578 ];
     int			i, cc, timeout = 0, readpending = 0;
     u_int16_t		seq = 0, rseq = 1, netseq;
-    u_char		readport;
+    u_char		readport; /* uninitialized, OK 310105 */
 
     infile.pf_state = PF_BOT;
     infile.pf_bufsize = 0;

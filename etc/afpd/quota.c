@@ -1,5 +1,5 @@
 /*
- * $Id: quota.c,v 1.22.8.11 2004-06-28 22:46:28 didg Exp $
+ * $Id: quota.c,v 1.22.8.11.2.1 2005-01-31 17:01:00 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -695,7 +695,7 @@ struct dqblk	  *dqblk;
 #endif
 
 int uquota_getvolspace( vol, bfree, btotal, bsize)
-const struct vol	*vol;
+struct vol	*vol;
 VolSpace	*bfree, *btotal;
 const u_int32_t bsize;
 {
