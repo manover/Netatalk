@@ -1,5 +1,5 @@
 /*
- * $Id: asp_getsess.c,v 1.7.8.3 2004-04-27 22:47:32 didg Exp $
+ * $Id: asp_getsess.c,v 1.7.8.4 2004-07-01 01:53:21 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1996 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -119,15 +119,17 @@ static void set_asp_ac(int sid, struct asp_child *tmp);
 ASP asp_getsession(ASP asp, server_child *server_children, 
 		   const int tickleval)
 {
-    struct sigaction action;
-    struct itimerval timer;
-    struct sockaddr_at	sat;
-    struct atp_block	atpb;
+    struct sigaction    action;
+    struct itimerval    timer;
+    struct sockaddr_at  sat;
+    struct atp_block    atpb;
     ATP                 atp;
-    struct iovec	iov[ 8 ];
+    struct iovec        iov[ 8 ];
     pid_t               pid;
-    int			i, sid;
-    u_int16_t		asperr;
+    int                 i, iovcnt, sid;
+    u_int16_t           asperr;
+    char                *buf;
+    int                 buflen;
 
     if (!asp->inited) {
       if (!(children = server_children))
@@ -197,13 +199,45 @@ ASP asp_getsession(ASP asp, server_child *server_children,
       printf( "asp stat\n" );
 #endif /* EBUG */
       if ( asp->asp_slen > 0 ) {
-	asp->cmdbuf[0] = 0;
-	memcpy( asp->cmdbuf + 4, asp->asp_status, asp->asp_slen );
-	iov[ 0 ].iov_base = asp->cmdbuf;
-	iov[ 0 ].iov_len = 4 + asp->asp_slen;
-	atpb.atp_sresiov = iov;
-	atpb.atp_sresiovcnt = 1;
-	atp_sresp( asp->asp_atp, &atpb );
+        i = 0;
+        while(atpb.atp_bitmap) {
+            i++;
+            atpb.atp_bitmap >>= 1;
+        }
+
+	/* asp->data is big enough ... */
+        memcpy( asp->data, asp->asp_status, MIN(asp->asp_slen, i*ASP_CMDSIZ));
+	
+        buflen = MIN(asp->asp_slen, i*ASP_CMDSIZ);
+        buf = asp->data;
+        iovcnt = 0;
+
+        /* If status information is too big to fit into the available
+         * ASP packets, we simply send as much as we can.
+         * Older client versions will most likely not be able to use
+         * the additional information anyway, like directory services
+         * or UTF8 server name. A very long fqdn could be a problem,
+         * we could end up with an invalid address list.
+         */
+        do {
+            iov[ iovcnt ].iov_base = buf;
+            memmove(buf + ASP_HDRSIZ, buf, buflen);
+            memset( iov[ iovcnt ].iov_base, 0, ASP_HDRSIZ );
+
+           if ( buflen > ASP_CMDSIZ ) {
+                buf += ASP_CMDMAXSIZ;
+                buflen -= ASP_CMDSIZ;
+                iov[ iovcnt ].iov_len = ASP_CMDMAXSIZ;
+            } else {
+                iov[ iovcnt ].iov_len = buflen + ASP_HDRSIZ;
+                buflen = 0;
+            }
+            iovcnt++;
+        } while ( iovcnt < i && buflen > 0 );
+
+        atpb.atp_sresiovcnt = iovcnt;
+        atpb.atp_sresiov = iov;
+        atp_sresp( asp->asp_atp, &atpb );
       }
       break;
 

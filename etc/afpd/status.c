@@ -1,5 +1,5 @@
 /*
- * $Id: status.c,v 1.13.6.8 2004-06-24 01:22:36 bfernhomberg Exp $
+ * $Id: status.c,v 1.13.6.9 2004-07-01 01:53:21 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -419,7 +419,7 @@ static int status_utf8servername(char *data, int *nameoffset,
 
 	/* set offset to 0 */
 	memset(begin + *nameoffset, 0, sizeof(offset));
-        data = begin;
+        data = begin + offset;
     }
     else {
     	namelen = htons(len);
@@ -475,11 +475,9 @@ void status_reset()
 
 
 /* ---------------------
- * returns 1 if both packets (ASP and DSI) could be set
- * forceasp 1 enforces build of ASP packet
  */
-static int do_status_init(AFPConfig *aspconfig, AFPConfig *dsiconfig,
-                 const struct afp_options *options, int forceasp)
+void status_init(AFPConfig *aspconfig, AFPConfig *dsiconfig,
+                 const struct afp_options *options)
 {
     ASP asp;
     DSI *dsi;
@@ -488,28 +486,18 @@ static int do_status_init(AFPConfig *aspconfig, AFPConfig *dsiconfig,
     int ret = 0;
 
     if (!(aspconfig || dsiconfig) || !options)
-        return ret;
-
-    if (forceasp) {
-        if (!aspconfig)
-            return ret;
-        status = aspconfig->status;
-    	maxstatuslen=ATP_MAXDATA-4;
-    } 
-    else /* dsi */
-    {
-	if (!dsiconfig)
-            return ret;
-         status = dsiconfig->status;
-    	 maxstatuslen=sizeof(dsiconfig->status);
-    }
+        return;
 
     if (aspconfig) {
+        status = aspconfig->status;
+        maxstatuslen=sizeof(aspconfig->status);
         asp = aspconfig->obj.handle;
     } else
         asp = NULL;
-
+	
     if (dsiconfig) {
+        status = dsiconfig->status;
+        maxstatuslen=sizeof(dsiconfig->status);
         dsi = dsiconfig->obj.handle;
     } else
         dsi = NULL;
@@ -562,21 +550,16 @@ static int do_status_init(AFPConfig *aspconfig, AFPConfig *dsiconfig,
         statuslen = status_utf8servername(status, &c, dsi, options);
 
 #ifndef NO_DDP
-    if (forceasp) {
+    if (aspconfig) {
+        if (dsiconfig) /* status is dsiconfig->status */
+            memcpy(aspconfig->status, status, statuslen);
         asp_setstatus(asp, status, statuslen);
         aspconfig->signature = status + sigoff;
         aspconfig->statuslen = statuslen;
     }
 #endif /* ! NO_DDP */
 
-    if (!forceasp) {
-        if (aspconfig && statuslen <= ATP_MAXDATA-4) { /* set ASP as well, lenght matches */
-            memcpy(aspconfig->status, status, ATP_MAXDATA);
-            asp_setstatus(asp, aspconfig->status, statuslen);
-            aspconfig->signature = aspconfig->status + sigoff;
-            aspconfig->statuslen = statuslen;
-            ret=1;
-        }
+    if (dsiconfig) {
         if ((options->flags & OPTION_CUSTOMICON) == 0) {
             status_icon(status, apple_tcp_icon, sizeof(apple_tcp_icon), 0);
         }
@@ -584,22 +567,6 @@ static int do_status_init(AFPConfig *aspconfig, AFPConfig *dsiconfig,
         dsiconfig->signature = status + sigoff;
         dsiconfig->statuslen = statuslen;
     }
-
-    return ret;
-}
-
-void status_init(AFPConfig *aspconfig, AFPConfig *dsiconfig,
-                 const struct afp_options *options)
-{
-     int ret = 0;
-
-     if (dsiconfig) {
-         ret = do_status_init(aspconfig, dsiconfig, options, 0);
-         if (!ret)
-             LOG(log_warning, logtype_afpd, "status packet to long for ASP, buildling extra packet");
-     }
-     if (!ret && aspconfig)
-         do_status_init(aspconfig, dsiconfig, options, 1);
 }
 
 /* this is the same as asp/dsi_getstatus */
