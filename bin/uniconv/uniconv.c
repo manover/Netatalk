@@ -232,8 +232,8 @@ static int check_adouble(DIR *curdir, char * path)
 	struct dirent* ad_entry;
 	int found = 0;
 
-	strncat(curpath, "/", MAXPATHLEN);
-	strncat(curpath, ".AppleDouble", MAXPATHLEN);
+	strlcat(curpath, "/", sizeof(curpath));
+	strlcat(curpath, ".AppleDouble", sizeof(curpath));
 
 	if (NULL == (adouble = opendir(curpath))) {
 		return(-1);
@@ -340,8 +340,8 @@ static int checkdir(DIR *curdir, char *path, cnid_t cur_did)
                     id = add_dir_db(name, cur_did);
                     if ( id == 0)
                         continue;  /* skip, no ID */
-                    strncat(curpath, "/", MAXPATHLEN);
-                    strncat(curpath, name, MAXPATHLEN);
+                    strlcat(curpath, "/", sizeof(curpath));
+                    strlcat(curpath, name, sizeof(curpath));
                     cdir = opendir(curpath);
                     checkdir(cdir, curpath, id);
                     closedir(cdir);
@@ -372,7 +372,7 @@ static int init(char* path)
 	cdir_id = htonl(2);
 
 	startdir = opendir(path);
-	strncpy(curpath, path, MAXPATHLEN);
+	strlcpy(curpath, path, sizeof(curpath));
 	checkdir (startdir, path, cdir_id);
 	closedir(startdir);
 
@@ -477,8 +477,6 @@ int main(int argc, char *argv[])
         }
         set_processname("uniconv");
 
-	strlcpy(path, argv[optind], MAXPATHLEN);
-
 	if ( from_charset == NULL || to_charset == NULL) {
 		fprintf (stderr, "required charsets not specified\n");
 		exit(-1);
@@ -491,13 +489,27 @@ int main(int argc, char *argv[])
 		cnid_type = DEFAULT_CNID_SCHEME;
 	
 
-	if (path[0] == 0) {
-                if (NULL == (getcwd(path, MAXPATHLEN)) ) {
-                        fprintf (stderr, "ERROR: path == NULL\n");
+	/* check path */
+	strlcpy(path, argv[optind], sizeof(path));
+
+	if (path[0] != '/') {
+		/* deal with relative path */	
+		if (chdir(path)) {
+                        fprintf (stderr, "ERROR: cannot chdir to '%s'\n", path);
                         return (-1);
-                }
+		}
+		path[0] = 0;
 	}
 
+	if (path[0] == 0) {
+		/* no path or relative path specified */
+                if (NULL == (getcwd(path, sizeof(path))) ) {
+                        fprintf (stderr, "ERROR: getcwd failed\n");
+                        return (-1);
+                }
+	} 
+
+	/* set charsets */
 	atalk_register_charset(&charset_iso8859_adapted);
 
     	if ( (charset_t) -1 == ( ch_from = add_charset(from_charset)) ) {
