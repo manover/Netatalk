@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.168.2.8 2003-11-30 14:54:55 srittau Exp $
+dnl $Id: configure.in,v 1.168.2.9 2003-12-02 13:20:51 bfernhomberg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(bin/adv1tov2/adv1tov2.c)
@@ -501,6 +501,10 @@ int main() {
 		AC_MSG_RESULT([no])
 	])
 
+if test "x$ac_have_atalk_addr" = "xyes"; then
+	AC_DEFINE(HAVE_ATALK_ADDR, 1, [set if struct at_addr is called atalk_addr])
+fi
+
 	dnl ----- check if we need the quotactl wrapper
 	AC_CHECK_HEADERS(sys/quota.h linux/quota.h)
 	AC_CHECK_FUNC(quotactl,,
@@ -535,7 +539,6 @@ int main() {
 	fi
 	need_dash_r=no
 fi
-AC_DEFINE(HAVE_ATALK_ADDR, [test "x$ac_have_atalk_addr" = "xyes"], [set if struct at_addr is called atalk_addr])
 
 dnl ----- Mac OSX specific -----
 if test x"$this_os" = "xmacosx"; then 
