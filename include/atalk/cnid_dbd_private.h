@@ -73,8 +73,6 @@ struct cnid_dbd_rqst {
     cnid_t  did;
     char   *name;
     int     namelen;
-    char   *mname;
-    int     mnamelen;
 };
 
 struct cnid_dbd_rply {
@@ -87,10 +85,8 @@ struct cnid_dbd_rply {
 
 typedef struct CNID_private {
     u_int32_t magic;
-    char      db_dir[MAXPATHLEN + 1];
-    char      usock_file[MAXPATHLEN + 1];
-    char      mnamebuf[MAXPATHLEN + 1];
-    int       fd;
+    char      db_dir[MAXPATHLEN + 1]; /* Database directory without /.AppleDB appended */
+    int       fd;		/* File descriptor to cnid_dbd */
     char      stamp[ADEDLEN_PRIVSYN]; /* db timestamp */
     int       notfirst;   /* already open before */
     int       changed;  /* stamp differ */
