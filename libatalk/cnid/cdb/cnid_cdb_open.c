@@ -1,6 +1,6 @@
 
 /*
- * $Id: cnid_cdb_open.c,v 1.1.4.4 2003-10-21 16:23:54 didg Exp $
+ * $Id: cnid_cdb_open.c,v 1.1.4.5 2003-12-16 23:06:32 lenneis Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -67,6 +67,8 @@
 
 #define MAXITER     0xFFFF      /* maximum number of simultaneously open CNID
                                  * databases. */
+
+static char *old_dbfiles[] = {"cnid.db", NULL};
 
 /* -----------------------
  * bandaid for LanTest performance pb. for now not used, cf. ifdef 0 below
@@ -163,6 +165,36 @@ static struct _cnid_db *cnid_cdb_new(const char *volpath)
 }
 
 /* --------------- */
+static int upgrade_required(char *dbdir)
+{
+    char path[MAXPATHLEN + 1];
+    int len, i;
+    int found = 0;
+    struct stat st;
+    
+    strcpy(path, dbdir);
+
+    len = strlen(path);
+    if (path[len - 1] != '/') {
+        strcat(path, "/");
+        len++;
+    }
+    
+    for (i = 0; old_dbfiles[i] != NULL; i++) {
+	strcpy(path + len, old_dbfiles[i]);
+	if ( !(stat(path, &st) < 0) ) {
+	    found++;
+	    continue;
+	}
+	if (errno != ENOENT) {
+	    LOG(log_error, logtype_default, "cnid_open: Checking %s gave %s", path, strerror(errno));
+	    found++;
+	}
+    }
+    return found;
+}
+
+/* --------------- */
 struct _cnid_db *cnid_cdb_open(const char *dir, mode_t mask)
 {
     struct stat st;
@@ -177,8 +209,9 @@ struct _cnid_db *cnid_cdb_open(const char *dir, mode_t mask)
         return NULL;
     }
 
-    /* this checks .AppleDB */
-    if ((len = strlen(dir)) > (MAXPATHLEN - DBLEN - 1)) {
+    /* this checks .AppleDB.
+       We need space for dir + '/' + DBHOMELEN + '/' + DBLEN */
+    if ((len = strlen(dir)) > (MAXPATHLEN - DBHOMELEN - DBLEN - 2)) {
         LOG(log_error, logtype_default, "cnid_open: Pathname too large: %s", dir);
         return NULL;
     }
@@ -206,6 +239,11 @@ struct _cnid_db *cnid_cdb_open(const char *dir, mode_t mask)
     if ((stat(path, &st) < 0) && (ad_mkdir(path, 0777 & ~mask) < 0)) {
         LOG(log_error, logtype_default, "cnid_open: DBHOME mkdir failed for %s", path);
         goto fail_adouble;
+    }
+
+    if (upgrade_required(path)) {
+	LOG(log_error, logtype_default, "cnid_open: Found version 1 of the CNID database. Please upgrade to version 2");
+	goto fail_adouble;
     }
 
     open_flag = DB_CREATE;

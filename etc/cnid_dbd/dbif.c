@@ -1,5 +1,5 @@
 /*
- * $Id: dbif.c,v 1.1.4.7 2003-12-03 14:56:12 lenneis Exp $
+ * $Id: dbif.c,v 1.1.4.8 2003-12-16 23:06:32 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -49,6 +49,8 @@ static struct db_table {
      { "didname.db",     NULL,      0, DB_HASH},
 };
 
+static char *old_dbfiles[] = {"cnid.db", NULL};
+
 extern int didname(DB *dbp, const DBT *pkey, const DBT *pdata, DBT *skey);
 extern int devino(DB *dbp, const DBT *pkey, const DBT *pdata, DBT *skey);
 
@@ -90,16 +92,21 @@ static int db_compat_open(DB *db, char *file, char *name, DBTYPE type, int mode)
 /* --------------- */
 static int upgrade_required()
 {
+    int i;
+    int found = 0;
     struct stat st;
-
-    if ((stat("cnid.db", &st) < 0 && errno == ENOENT) &&
-	(stat("devino.db", &st) < 0 && errno == ENOENT) &&
-	(stat("didname.db", &st) < 0 && errno == ENOENT)) {
-	return 0;
-    } else {
-	LOG(log_error, logtype_cnid, "Found version 1 of the CNID database. Please upgrade to version 2");		
-	return 1;
+    
+    for (i = 0; old_dbfiles[i] != NULL; i++) {
+	if ( !(stat(old_dbfiles[i], &st) < 0) ) {
+	    found++;
+	    continue;
+	}
+	if (errno != ENOENT) {
+	    LOG(log_error, logtype_cnid, "cnid_open: Checking %s gave %s", old_dbfiles[i], strerror(errno));
+	    found++;
+	}
     }
+    return found;
 }
 
 /* --------------- */
@@ -133,8 +140,10 @@ int dbif_env_init(struct db_param *dbp)
     int ret;
 
     /* Refuse to do anything if this is an old version of the CNID database */
-    if (upgrade_required())
+    if (upgrade_required()) {
+	LOG(log_error, logtype_cnid, "Found version 1 of the CNID database. Please upgrade to version 2");
 	return -1;
+    }
 
     if ((db_errlog = fopen(DB_ERRLOGFILE, "a")) == NULL)
         LOG(log_warning, logtype_cnid, "error creating/opening DB errlogfile: %s", strerror(errno));
