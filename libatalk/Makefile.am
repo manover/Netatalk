@@ -9,7 +9,6 @@ LIBATALK_DEPS = \
 	asp/libasp.la		\
 	atp/libatp.la		\
 	compat/libcompat.la	\
-	cnid/libcnid.la \
 	dsi/libdsi.la		\
 	nbp/libnbp.la		\
 	netddp/libnetddp.la	\
