@@ -1,5 +1,5 @@
 /*
- * $Id: uam.c,v 1.24.6.6 2004-06-15 00:35:06 bfernhomberg Exp $
+ * $Id: uam.c,v 1.24.6.7 2004-10-08 00:16:09 bfernhomberg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -301,16 +301,15 @@ struct passwd *uam_getname(void *private, char *name, const int len)
     static char user[256];
     static char pwname[256];
     char *p;
-    size_t ulen;
-    u_int16_t flags = CONV_PRECOMPOSE;
+    size_t namelen, gecoslen = 0, pwnamelen = 0;
 
     if ((pwent = getpwnam(name)))
         return pwent;
 
 #ifndef NO_REAL_USER_NAME
 
-    if ( (size_t) -1 == (ulen = convert_charset((utf8_encoding())?CH_UTF8_MAC:obj->options.maccharset, 0, 
-				CH_UCS2, name, len, username, 256, &flags)))
+    if ( (size_t) -1 == (namelen = convert_string((utf8_encoding())?CH_UTF8_MAC:obj->options.maccharset,
+				CH_UCS2, name, strlen(name), username, sizeof(username))))
 	return NULL;
 
     setpwent();
@@ -318,19 +317,19 @@ struct passwd *uam_getname(void *private, char *name, const int len)
         if ((p = strchr(pwent->pw_gecos, ',')))
             *p = '\0';
 
-	if ((size_t)-1 == ( ulen = convert_string(obj->options.unixcharset, CH_UCS2, 
-				pwent->pw_gecos, strlen(pwent->pw_gecos), user, 256)) )
+	if ((size_t)-1 == ( gecoslen = convert_string(obj->options.unixcharset, CH_UCS2, 
+				pwent->pw_gecos, strlen(pwent->pw_gecos), user, sizeof(username))) )
 		continue;
-	if ((size_t)-1 == ( ulen = convert_string(obj->options.unixcharset, CH_UCS2, 
-				pwent->pw_name, strlen(pwent->pw_name), pwname, 256)) )
+	if ((size_t)-1 == ( pwnamelen = convert_string(obj->options.unixcharset, CH_UCS2, 
+				pwent->pw_name, strlen(pwent->pw_name), pwname, sizeof(username))) )
 		continue;
 
 
         /* check against both the gecos and the name fields. the user
          * might have just used a different capitalization. */
 
-	if ( (strncasecmp_w((ucs2_t*)user, (ucs2_t*)username, len) == 0) || 
-		( strncasecmp_w ( (ucs2_t*) pwname, (ucs2_t*) username, len) == 0)) {
+	if ( (namelen == gecoslen && strncasecmp_w((ucs2_t*)user, (ucs2_t*)username, len) == 0) || 
+		( namelen == pwnamelen && strncasecmp_w ( (ucs2_t*) pwname, (ucs2_t*) username, len) == 0)) {
             strlcpy(name, pwent->pw_name, len);
             break;
         }
