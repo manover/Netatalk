@@ -1,5 +1,5 @@
 /*
- * $Id: messages.c,v 1.16.6.1.2.4 2003-11-03 20:51:48 bfernhomberg Exp $
+ * $Id: messages.c,v 1.16.6.1.2.5 2003-11-11 12:16:48 bfernhomberg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -179,14 +179,14 @@ int ibuflen, *rbuflen;
 	msgsize = htons(outlen);
     	memcpy(rbuf, &msgsize, sizeof(msgsize));
     	rbuf += sizeof(msgsize);
-	*rbuflen += sizeof(msgsize); 
+	*rbuflen += sizeof(msgsize);
     }
     else {
-	*rbuflen = outlen;
         *rbuf++ = *rbuflen;
 	*rbuflen++;
     }
 
+    *rbuflen += outlen;
     *rbuflen += 4;
 
     return AFP_OK;
