@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.9 2004-03-11 02:02:05 didg Exp $
+ * $Id: ad_open.c,v 1.30.6.10 2004-05-03 14:04:35 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -1036,7 +1036,7 @@ int ad_open( path, adflags, oflags, mode, ad )
 	    ad->ad_hf.adf_flags = oflags;
 	    /* just created, set owner if admin owner (root) */
 	    if (!st_invalid) {
-	        ad_chown(path, &st);
+	        ad_chown(ad_p, &st);
 	    }
 	}
 	else {
