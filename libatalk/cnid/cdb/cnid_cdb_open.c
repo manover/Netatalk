@@ -1,6 +1,6 @@
 
 /*
- * $Id: cnid_cdb_open.c,v 1.1.4.6 2004-01-10 06:25:18 bfernhomberg Exp $
+ * $Id: cnid_cdb_open.c,v 1.1.4.7 2004-01-15 19:18:27 lenneis Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -269,6 +269,8 @@ struct _cnid_db *cnid_cdb_open(const char *dir, mode_t mask)
 
     /* Open the database environment. */
     if ((rc = db->dbenv->open(db->dbenv, path, DBOPTIONS, 0666 & ~mask)) != 0) {
+	LOG(log_error, logtype_default, "cnid_open: dbenv->open (rw) of %s failed: %s", path, db_strerror(rc));
+	/* FIXME: This should probably go. Even if it worked, any use for a read-only DB? Didier? */
         if (rc == DB_RUNRECOVERY) {
             /* This is the mother of all errors.  We _must_ fail here. */
             LOG(log_error, logtype_default,
