@@ -1,5 +1,5 @@
 /*
- * $Id: uams_dhx_passwd.c,v 1.13 2001-10-24 16:25:24 srittau Exp $
+ * $Id: uams_dhx_passwd.c,v 1.13.2.1 2002-03-12 16:08:49 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -270,8 +270,8 @@ static int passwd_logincont(void *obj, struct passwd **uam_pwd,
         uam_afp_getcmdline( &ac, &av );
         sprintf( hostname, "%s@%s", dhxpwd->pw_name, clientname );
 
-        if( sia_validate_user( NULL, ac, av, hostname, dhxpwd->pw_name,
-                               NULL, FALSE, NULL, rbuf ) != SIASUCCESS )
+        if( uam_sia_validate_user( NULL, ac, av, hostname, dhxpwd->pw_name,
+                                   NULL, FALSE, NULL, rbuf ) != SIASUCCESS )
             return AFPERR_NOTAUTH;
 
         memset( rbuf, 0, PASSWDLEN );
