@@ -1,5 +1,5 @@
 /*
- * $Id: status.c,v 1.13.6.10 2004-07-01 02:32:02 didg Exp $
+ * $Id: status.c,v 1.13.6.11 2004-09-18 23:20:19 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -125,7 +125,7 @@ static void status_machine(char *data)
 #ifdef AFS
     const char		*machine = "afs";
 #else /* !AFS */
-    const char		*machine = "Macintosh"; /* shot in the dark, let's see if this changes OSX behaviour, it shouldn't */
+    const char		*machine = "Netatalk";
 #endif /* AFS */
 
     memcpy(&status, start + AFPSTATUS_MACHOFF, sizeof(status));
