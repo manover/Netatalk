@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_dbd.c,v 1.1.4.16 2004-01-15 18:58:32 lenneis Exp $
+ * $Id: cnid_dbd.c,v 1.1.4.17 2004-02-07 19:46:09 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -569,7 +569,7 @@ char *cnid_dbd_resolve(struct _cnid_db *cdb, cnid_t *id, void *buffer, u_int32_t
     /* This mimicks the behaviour of the "regular" cnid_resolve. So far,
        nobody uses the content of buffer. It only provides space for the
        name in the caller. */
-    rply.name = buffer + CNID_HEADER_LEN;
+    rply.name = (char *)buffer + CNID_HEADER_LEN;
 
     if (transmit(db, &rqst, &rply) < 0) {
         errno = CNID_ERR_DB;

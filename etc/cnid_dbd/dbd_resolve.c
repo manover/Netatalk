@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_resolve.c,v 1.1.4.6 2004-01-21 21:28:42 lenneis Exp $
+ * $Id: dbd_resolve.c,v 1.1.4.7 2004-02-07 19:46:08 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -52,7 +52,7 @@ int dbd_resolve(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
     memcpy(&rply->did, (char *) data.data + CNID_DID_OFS, sizeof(cnid_t));
 
     rply->namelen = data.size - CNID_NAME_OFS;
-    rply->name = data.data + CNID_NAME_OFS;
+    rply->name = (char *)data.data + CNID_NAME_OFS;
 
 #ifdef DEBUG
     LOG(log_info, logtype_cnid, "dbd_resolve: Resolving CNID %u to did %u name %s",

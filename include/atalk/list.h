@@ -3,6 +3,12 @@
 
 #ifndef _ATALK_LIST_H
 #define _ATALK_LIST_H
+
+/* test for inline */
+#ifndef __inline__
+#define __inline__
+#endif
+
 /*
  * Simple doubly linked list implementation.
  *

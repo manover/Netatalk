@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.16 2004-01-13 12:38:20 bfernhomberg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.17 2004-02-07 19:46:07 didg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(etc/afpd/main.c)
@@ -761,6 +761,8 @@ if test x"$this_os" = "xtru64"; then
 	AC_DEFINE(USE_OLD_RQUOTA, 1, [Define to use old rquota])
 	dnl AC_DEFINE(USE_UFS_QUOTA_H)
 	AC_DEFINE(TRU64, 1, [Define on Tru64 platforms])
+	AC_DEFINE(_OSF_SOURCE, 1, [Define if the *passwd UAMs should be used])
+	AC_DEFINE(_XOPEN_SOURCE_EXTENDED, 1, [Define for Berkeley DB 4])
 	AC_CHECK_LIB(security,set_auth_parameters)
 	CFLAGS="-I\$(top_srcdir)/sys/tru64 $CFLAGS"
 	need_dash_r=no

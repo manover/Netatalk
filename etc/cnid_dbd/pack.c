@@ -1,5 +1,5 @@
 /*
- * $Id: pack.c,v 1.1.4.8 2004-01-21 21:28:42 lenneis Exp $
+ * $Id: pack.c,v 1.1.4.9 2004-02-07 19:46:08 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -8,6 +8,8 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
+
+#include <netatalk/endian.h>
 
 #include <string.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -18,7 +20,6 @@
 #include <db.h>
 
 #include <atalk/cnid_dbd_private.h>
-#include <netatalk/endian.h>
 #include "pack.h"
 
 #ifdef DEBUG
@@ -63,11 +64,11 @@ DBT *skey;
 int len;
  
     memset(skey, 0, sizeof(DBT));
-    skey->data = pdata->data + CNID_DID_OFS;
+    skey->data = (char *)pdata->data + CNID_DID_OFS;
     /* FIXME: At least DB 4.0.14 and 4.1.25 pass in the correct length of
        pdata.size. strlen is therefore not needed. Also, skey should be zeroed
        out already. */
-    len = strlen(skey->data + CNID_DID_LEN);
+    len = strlen((char *)skey->data + CNID_DID_LEN);
     skey->size = CNID_DID_LEN + len + 1;
     return (0);
 }
@@ -79,7 +80,7 @@ const DBT *pkey, *pdata;
 DBT *skey;
 {
     memset(skey, 0, sizeof(DBT));
-    skey->data = pdata->data + CNID_DEVINO_OFS;
+    skey->data = (char *)pdata->data + CNID_DEVINO_OFS;
     skey->size = CNID_DEVINO_LEN;
     return (0);
 }

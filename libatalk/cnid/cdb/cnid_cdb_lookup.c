@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_cdb_lookup.c,v 1.1.4.4 2003-11-25 19:13:27 lenneis Exp $
+ * $Id: cnid_cdb_lookup.c,v 1.1.4.5 2004-02-07 19:46:09 didg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -63,7 +63,7 @@ cnid_t cnid_cdb_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t
     }
     else {
         memcpy(&id_devino, devdata.data, sizeof(cnid_t));
-        memcpy(&type_devino, devdata.data +CNID_TYPE_OFS, sizeof(type_devino));
+        memcpy(&type_devino, (char *)devdata.data +CNID_TYPE_OFS, sizeof(type_devino));
         type_devino = ntohl(type_devino);
     }
 
@@ -81,7 +81,7 @@ cnid_t cnid_cdb_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t
     }
     else {
         memcpy(&id_didname, diddata.data, sizeof(cnid_t));
-        memcpy(&type_didname, diddata.data +CNID_TYPE_OFS, sizeof(type_didname));
+        memcpy(&type_didname, (char *)diddata.data +CNID_TYPE_OFS, sizeof(type_didname));
         type_didname = ntohl(type_didname);
     }
 

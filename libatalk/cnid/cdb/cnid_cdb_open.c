@@ -1,6 +1,6 @@
 
 /*
- * $Id: cnid_cdb_open.c,v 1.1.4.7 2004-01-15 19:18:27 lenneis Exp $
+ * $Id: cnid_cdb_open.c,v 1.1.4.8 2004-02-07 19:46:09 didg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -93,8 +93,8 @@ DBT *skey;
 int len;
  
     memset(skey, 0, sizeof(DBT));
-    skey->data = pdata->data + CNID_DID_OFS;
-    len = strlen(skey->data + CNID_DID_LEN);
+    skey->data = (char *)pdata->data + CNID_DID_OFS;
+    len = strlen((char *)skey->data + CNID_DID_LEN);
     skey->size = CNID_DID_LEN + len + 1;
     return (0);
 }
@@ -106,7 +106,7 @@ const DBT *pkey, *pdata;
 DBT *skey;
 {
     memset(skey, 0, sizeof(DBT));
-    skey->data = pdata->data + CNID_DEVINO_OFS;
+    skey->data = (char *)pdata->data + CNID_DEVINO_OFS;
     skey->size = CNID_DEVINO_LEN;
     return (0);
 }

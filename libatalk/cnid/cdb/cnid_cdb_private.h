@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_cdb_private.h,v 1.1.4.5 2003-12-03 14:56:12 lenneis Exp $
+ * $Id: cnid_cdb_private.h,v 1.1.4.6 2004-02-07 19:46:09 didg Exp $
  */
 
 #ifndef LIBATALK_CDB_PRIVATE_H
@@ -8,6 +8,8 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
+
+#include <netatalk/endian.h>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -26,7 +28,6 @@
 #include <sys/cdefs.h>
 #include <db.h>
 
-#include <netatalk/endian.h>
 #include <atalk/logger.h>
 #include <atalk/adouble.h>
 #include <atalk/cnid.h>

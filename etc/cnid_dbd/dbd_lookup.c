@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_lookup.c,v 1.1.4.6 2004-01-21 21:28:42 lenneis Exp $
+ * $Id: dbd_lookup.c,v 1.1.4.7 2004-02-07 19:46:08 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -69,7 +69,7 @@ int dbd_lookup(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
     }
     else {
         memcpy(&id_devino, devdata.data, sizeof(rply->cnid));
-        memcpy(&type_devino, devdata.data +CNID_TYPE_OFS, sizeof(type_devino));
+        memcpy(&type_devino, (char *)devdata.data +CNID_TYPE_OFS, sizeof(type_devino));
         type_devino = ntohl(type_devino);
     }
     
@@ -89,7 +89,7 @@ int dbd_lookup(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
     }
     else {
         memcpy(&id_didname, diddata.data, sizeof(rply->cnid));
-        memcpy(&type_didname, diddata.data +CNID_TYPE_OFS, sizeof(type_didname));
+        memcpy(&type_didname, (char *)diddata.data +CNID_TYPE_OFS, sizeof(type_didname));
         type_didname = ntohl(type_didname);
     }
     

@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.7 2004-02-06 13:39:52 bfernhomberg Exp $
+ * $Id: adouble.h,v 1.21.6.8 2004-02-07 19:46:08 didg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -52,7 +52,9 @@
 #endif
 
 #ifdef  HAVE_PREAD
+#ifndef _XOPEN_SOURCE
 #define _XOPEN_SOURCE 500
+#endif
 #endif
 
 #ifdef HAVE_UNISTD_H
@@ -363,6 +365,9 @@ extern int ad_stat    __P((const char *, struct stat *));
 /* extend header to RW if R or W (W if R for locking),
  */ 
 #ifndef ATACC
+#ifndef __inline__
+#define __inline__
+#endif
 static __inline__ mode_t ad_hf_mode (mode_t mode)
 {
     /* fnctl lock need write access */

@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_getstamp.c,v 1.1.2.2 2004-01-09 21:05:50 lenneis Exp $
+ * $Id: dbd_getstamp.c,v 1.1.2.3 2004-02-07 19:46:08 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -48,7 +48,7 @@ int dbd_getstamp(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
     }
     
     rply->namelen = CNID_DEV_LEN;
-    rply->name = data.data + CNID_DEV_OFS;    
+    rply->name = (char *)data.data + CNID_DEV_OFS;
     
 #ifdef DEBUG
     LOG(log_info, logtype_cnid, "cnid_getstamp: Returning stamp");

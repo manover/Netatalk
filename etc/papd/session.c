@@ -1,5 +1,5 @@
 /*
- * $Id: session.c,v 1.14 2002-09-29 23:29:14 sibaz Exp $
+ * $Id: session.c,v 1.14.8.1 2004-02-07 19:46:08 didg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -243,7 +243,7 @@ int session( atp, sat )
 
 	    for ( i = 0; i < atpb.atp_rresiovcnt; i++ ) {
 		append( &infile,
-			niov[ i ].iov_base + 4, niov[ i ].iov_len - 4 );
+			(char *)niov[ i ].iov_base + 4, niov[ i ].iov_len - 4 );
 		if (( infile.pf_state & PF_EOF ) == 0 &&
 			((char *)niov[ 0 ].iov_base)[ 2 ] ) {
 		    infile.pf_state |= PF_EOF;
@@ -304,7 +304,7 @@ int session( atp, sat )
 		}
 
 		niov[ i ].iov_len = 4 + cc;
-		memcpy( niov[ i ].iov_base + 4, outfile.pf_data, cc );
+		memcpy( (char *)niov[ i ].iov_base + 4, outfile.pf_data, cc );
 		CONSUME( &outfile, cc );
 		if ( outfile.pf_datalen == 0 ) {
 		    i++;

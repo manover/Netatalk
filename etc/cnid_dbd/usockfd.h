@@ -1,5 +1,5 @@
 /*
- * $Id: usockfd.h,v 1.1.4.3 2004-01-09 21:05:50 lenneis Exp $
+ * $Id: usockfd.h,v 1.1.4.4 2004-02-07 19:46:08 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -21,6 +21,9 @@ extern int      usockfd_check   __P((int, unsigned long));
 #define OSSH_ALIGNBYTES (sizeof(int) - 1)
 #endif
 #ifndef __CMSG_ALIGN
+#ifndef u_int
+#define u_int unsigned int
+#endif
 #define __CMSG_ALIGN(p) (((u_int)(p) + OSSH_ALIGNBYTES) &~ OSSH_ALIGNBYTES)
 #endif
 

@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_add.c,v 1.1.4.6 2004-01-21 21:28:42 lenneis Exp $
+ * $Id: dbd_add.c,v 1.1.4.7 2004-02-07 19:46:08 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -67,7 +67,7 @@ static int add_cnid(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
         case -1:
 	    /* FIXME: Should that not be logged for case 1:? */
             LOG(log_error, logtype_cnid, "add_cnid: duplicate %x %s", rply->cnid
-             , data.data + CNID_NAME_OFS);
+             , (char *)data.data + CNID_NAME_OFS);
             
             rqst->cnid = rply->cnid;
             rc = dbd_update(rqst, rply);

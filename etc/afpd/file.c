@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.11 2004-02-06 13:39:51 bfernhomberg Exp $
+ * $Id: file.c,v 1.92.2.2.2.12 2004-02-07 19:46:08 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -101,7 +101,7 @@ void *get_finderinfo(const char *mpath, struct adouble *adp, void *data)
             	&& (em = getextmap( mpath ))
     ) {
         memcpy(data, em->em_type, sizeof( em->em_type ));
-        memcpy(data + 4, em->em_creator, sizeof(em->em_creator));
+        memcpy((char *)data + 4, em->em_creator, sizeof(em->em_creator));
     }
     return data;
 }
