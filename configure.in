@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.26 2004-04-21 18:45:40 bfernhomberg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.27 2004-05-17 02:21:48 bfernhomberg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(etc/afpd/main.c)
@@ -85,11 +85,17 @@ dnl Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS(fcntl.h limits.h stdint.h strings.h time.h sys/fcntl.h sys/file.h sys/ioctl.h sys/time.h sys/mnttab.h sys/statvfs.h sys/stat.h sys/vfs.h mntent.h syslog.h unistd.h termios.h sys/termios.h netdb.h sgtty.h ufs/quota.h mount.h sys/mount.h statfs.h sys/types.h dlfcn.h errno.h sys/errno.h sys/uio.h)
+AC_CHECK_HEADERS(fcntl.h limits.h stdint.h strings.h time.h sys/param.h sys/fcntl.h sys/file.h sys/ioctl.h sys/time.h sys/mnttab.h sys/statvfs.h sys/stat.h sys/vfs.h mntent.h syslog.h unistd.h termios.h sys/termios.h netdb.h sgtty.h ufs/quota.h mount.h statfs.h sys/types.h dlfcn.h errno.h sys/errno.h sys/uio.h)
 AC_CHECK_HEADER(sys/cdefs.h,,
 	AC_MSG_RESULT([enabling generic cdefs.h from tree])
 	CFLAGS="-I\$(top_srcdir)/sys/generic $CFLAGS"
 )
+AC_CHECK_HEADERS([sys/mount.h], , , 
+[#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+])
+
 AC_CHECK_HEADERS(langinfo.h locale.h sys/filio.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
@@ -103,6 +109,16 @@ AC_TYPE_SIZE_T
 AC_STRUCT_ST_RDEV
 AC_HEADER_TIME
 AC_STRUCT_TM
+
+dnl --------------------------------------------------------------------------
+dnl check if dlsym needs to add an underscore, uses libtool macros 
+dnl --------------------------------------------------------------------------
+AC_LTDL_DLLIB
+AC_LTDL_DLSYM_USCORE
+if test x"$libltdl_cv_need_uscore" = xyes; then
+    AC_DEFINE(DLSYM_PREPEND_UNDERSCORE, 1, [BSD compatibility macro])
+fi
+
 
 dnl Checks for library functions.
 AC_TYPE_GETGROUPS
@@ -370,7 +386,7 @@ dnl Check for Berkeley DB library
 if test "x$bdb_required" = "xyes"; then
 	AC_PATH_BDB(, [
 		AC_MSG_RESULT([])
-		AC_MSG_RESULT([Make sure you have the Berkeley DB libraries AND headers installed.])
+		AC_MSG_RESULT([Make sure you have the required Berkeley DB libraries AND headers installed.])
 		AC_MSG_RESULT([You can download the latest version from http://www.sleepcat.com.])
 		AC_MSG_RESULT([If you have installed BDB in a non standard location use the])
 		AC_MSG_RESULT([--with-bdb=/path/to/bdb configure option.])
@@ -762,12 +778,6 @@ if test x"$this_os" = "xnetbsd"; then
 	AC_MSG_RESULT([ * NetBSD specific configuration])
 	AC_DEFINE(BSD4_4, 1, [BSD compatiblity macro])
 	AC_DEFINE(NETBSD, 1, [Define if OS is FreeBSD])
-	if echo __ELF__ | $CC -E - | grep __ELF__ > /dev/null; then
-		# NetBSD ELF machines don't have to have DLSYM_PREPEND_UNDERSCORE.
-		# If this test is true, it's not an ELF box.
-		# This REALLY should be a configure test.
-		AC_DEFINE(DLSYM_PREPEND_UNDERSCORE, 1, [BSD compatibility macro])
-	fi
 	CFLAGS="-I\$(top_srcdir)/sys/netbsd -I/usr/include/kerberosIV $CFLAGS"
 	need_dash_r=yes 
 
@@ -778,9 +788,6 @@ fi
 dnl ----- OpenBSD specific -----
 if test x"$this_os" = "xopenbsd"; then 
 	AC_MSG_RESULT([ * OpenBSD specific configuration])
-	AC_DEFINE(BSD4_4, 1, [BSD compatiblity macro])
-	AC_DEFINE(DLSYM_PREPEND_UNDERSCORE, 1, [BSD compatibility macro])
-
 	dnl ----- OpenBSD does not have crypt.h, uses unistd.h -----
 	AC_DEFINE(UAM_DHX, 1, [Define if the DHX UAM modules should be compiled])
 fi
