@@ -1,5 +1,5 @@
 /*
- * $Id: nbp.c,v 1.10.8.1 2004-01-10 08:09:12 bfernhomberg Exp $
+ * $Id: nbp.c,v 1.10.8.2 2004-06-20 15:54:03 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -563,7 +563,7 @@ Can't find route's interface!" );
 	     * Another tuple won't fit. Send what we've already
 	     * got, and start the next packet.
 	     */
-	    if ( data + SZ_NBPTUPLE + 3 + ntab->nt_nve.nn_objlen +
+	    if ( n > 9 || data + SZ_NBPTUPLE + 3 + ntab->nt_nve.nn_objlen +
 		    ntab->nt_nve.nn_typelen + ntab->nt_nve.nn_zonelen > end ) {
 		nh.nh_op = NBPOP_LKUPREPLY;
 		nh.nh_cnt = n;
