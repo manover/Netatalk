@@ -1,5 +1,5 @@
 /*
- * $Id: nbp.c,v 1.5.2.1 2001-12-31 20:05:20 srittau Exp $
+ * $Id: nbp.c,v 1.5.2.2 2002-02-07 23:58:46 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -85,6 +85,7 @@ int nbp_packet( ap, from, data, len )
     struct rtmptab	*rtmp;
     char		*end, *nbpop, *zonep, packet[ ATP_BUFSIZ ];
     int			n, i, cc, locallkup;
+    u_char		tmplen;
 
     end = data + len;
     if ( data >= end ) {
@@ -122,30 +123,36 @@ int nbp_packet( ap, from, data, len )
     nn.nn_sat.sat_port = nt.nt_port;
 
     /* object */
-    if ( data >= end || ( *data < 0 || *data > 32 ) || data + *data > end ) {
+    tmplen = (u_char) *data;
+    if ( data >= end || tmplen > 32 || data + tmplen > end ) {
 	syslog( LOG_INFO, "nbp_packet: malformed packet" );
 	return 1;
     }
-    nn.nn_objlen = *data++;
+    nn.nn_objlen = tmplen;
+    data++;
     memcpy( nn.nn_obj, data, nn.nn_objlen );
     data += nn.nn_objlen;
 
     /* type */
-    if ( data >= end || ( *data < 0 || *data > 32 ) || data + *data > end ) {
+    tmplen = (u_char) *data;
+    if ( data >= end || tmplen > 32 || data + tmplen > end ) {
 	syslog( LOG_INFO, "nbp_packet: malformed packet" );
 	return 1;
     }
-    nn.nn_typelen = *data++;
+    nn.nn_typelen = tmplen;
+    data++;
     memcpy( nn.nn_type, data, nn.nn_typelen );
     data += nn.nn_typelen;
 
     /* zone */
-    if ( data >= end || ( *data < 0 || *data > 32 ) || data + *data > end ) {
+    tmplen = (u_char) *data;
+    if ( data >= end || tmplen > 32 || data + tmplen > end ) {
 	syslog( LOG_INFO, "nbp_packet: malformed packet" );
 	return 1;
     }
     zonep = data;			/* remember for fwd */
-    nn.nn_zonelen = *data++;
+    nn.nn_zonelen = tmplen;
+    data++;
     memcpy( nn.nn_zone, data, nn.nn_zonelen );
     data += nn.nn_zonelen;
 

@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_stream.c,v 1.4 2001-08-15 02:18:57 srittau Exp $
+ * $Id: dsi_stream.c,v 1.4.2.1 2002-02-08 00:03:29 srittau Exp $
  *
  * Copyright (c) 1998 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -72,13 +72,13 @@ size_t dsi_stream_read(DSI *dsi, void *data, const size_t length)
   
   stored = 0;
   while (stored < length) {
-    if ((len = read(dsi->socket, (u_int8_t *) data + stored, 
-		    length - stored)) == -1 && errno == EINTR)
+    len = read(dsi->socket, (u_int8_t *) data + stored, length - stored);
+    if (len == -1 && errno == EINTR)
       continue;
 
-    if (len > 0)
+    else if (len > 0)
       stored += len;
-    else {/* eof or error */
+    else { /* eof or error */
       syslog(LOG_ERR, "dsi_stream_read(%d): %s", len, strerror(errno));
       break;
     }
