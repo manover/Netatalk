@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_cdb_update.c,v 1.1.4.1 2003-09-09 16:42:21 didg Exp $
+ * $Id: cnid_cdb_update.c,v 1.1.4.2 2003-09-16 12:20:38 rlewczuk Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -49,7 +49,11 @@ int cnid_cdb_update(struct _cnid_db *cdb, const cnid_t id, const struct stat *st
     key.size = CNID_DEVINO_LEN;
 
     if (0 != (rc = db->db_devino->del(db->db_devino, tid, &key, 0)) ) {
+#if DB_VERSION_MAJOR >= 4
         if (rc != DB_NOTFOUND && rc != DB_SECONDARY_BAD) {
+#else
+	if (rc != DB_NOTFOUND) {
+#endif
            LOG(log_error, logtype_default, "cnid_update: Unable to del devino CNID %u, name %s: %s",
                ntohl(did), name, db_strerror(rc));
            goto fin;
@@ -62,7 +66,11 @@ int cnid_cdb_update(struct _cnid_db *cdb, const cnid_t id, const struct stat *st
     key.size = CNID_DID_LEN + len + 1;
 
     if (0 != (rc = db->db_didname->del(db->db_didname, tid, &key, 0)) ) {
+#if DB_VERSION_MAJOR >= 4
         if (rc != DB_NOTFOUND && rc != DB_SECONDARY_BAD) {
+#else
+	if (rc != DB_NOTFOUND) {
+#endif
            LOG(log_error, logtype_default, "cnid_update: Unable to del didname CNID %u, name %s: %s",
                ntohl(did), name, db_strerror(rc));
            goto fin;
