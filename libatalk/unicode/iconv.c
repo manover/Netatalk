@@ -380,10 +380,11 @@ static size_t ascii_pull(void *cd, char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	ucs2_t curchar;
+
 	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
 		if ((unsigned char)(*inbuf)[0] < 0x80) {
 			curchar = (ucs2_t) (*inbuf)[0];
-			SSVAL((*outbuf),0,curchar);	
+			SSVAL((*outbuf),0,curchar);
 		}
 		else {
 			errno = EILSEQ;

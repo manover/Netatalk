@@ -15,6 +15,7 @@
 #include <atalk/unicode.h>
 #include "ucs2_casetable.h"
 #include "precompose.h"
+#include "byteorder.h"
 
 
 ucs2_t toupper_w(ucs2_t val)

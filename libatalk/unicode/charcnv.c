@@ -116,7 +116,7 @@ static const char *charset_name(charset_t ch)
 		ret = ln;
 	}
 #else /* system doesn't have LOCALE support */
-ret = NULL;
+if (ch == CH_UNIX) ret = NULL;
 #endif
 
 	if (!ret || !*ret) ret = "ASCII";
@@ -423,12 +423,12 @@ convert:
 
 	/* Terminate the string */
 	if (to == CH_UCS2 && destlen-o_len >= 2) {
-		*(++outbuf) = 0;
-		*outbuf = 0;
+		ob[destlen] = 0;
+		ob[destlen+1] = 0;
 		*dest = (char *)realloc(ob,destlen+2);
 	}
 	else if ( destlen-o_len > 0) {
-		*(++outbuf) = 0;
+		ob[destlen] = 0;
 		*dest = (char *)realloc(ob,destlen+1);
 	}
 
