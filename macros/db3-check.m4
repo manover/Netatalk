@@ -1,4 +1,4 @@
-dnl $Id: db3-check.m4,v 1.11.6.7 2004-05-17 02:24:32 bfernhomberg Exp $
+dnl $Id: db3-check.m4,v 1.11.6.8 2004-06-28 02:22:54 didg Exp $
 dnl Autoconf macros to check for the Berkeley DB library
 
 
@@ -13,13 +13,11 @@ AC_DEFUN([NETATALK_BDB_LINK_TRY],
 	AC_TRY_LINK([
 #include <db.h>
 ],[
-int main(void) {
 	char *version;
 	int major, minor, patch;
 
 	version = db_version( &major, &minor, &patch );
 	return (0);
-}
 ],[$1=yes],[$1=no])
 
 	LIBS="$atalk_LIBS"
