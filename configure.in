@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.126.2.6 2001-12-11 00:37:30 srittau Exp $
+dnl $Id: configure.in,v 1.126.2.7 2001-12-31 20:09:38 srittau Exp $
 dnl configure.in for netatalk
 
 AC_INIT(bin/adv1tov2/adv1tov2.c)
@@ -9,9 +9,6 @@ AC_SUBST(NETATALK_VERSION)
 AC_CANONICAL_SYSTEM
 AM_INIT_AUTOMAKE(netatalk, ${NETATALK_VERSION})
 AM_CONFIG_HEADER(config.h)
-
-dnl Reset locations to proper places
-AC_PREFIX_DEFAULT(/usr/local)
 
 dnl Checks for programs.
 AC_PROG_AWK
@@ -271,7 +268,7 @@ if test "x$srvloc" != "xno"; then
 	done
 fi
 
-# Check for PAM libs
+dnl Check for PAM libs
 AC_PATH_PAM([
 	PAPD_LIBS="$PAPD_LIBS $PAM_LIBS"
 	AFPD_LIBS="$AFPD_LIBS $PAM_LIBS"
@@ -370,7 +367,7 @@ AC_ARG_ENABLE(fhs,
 		sysconfdir="/etc"
 		PKGCONFDIR=${sysconfdir}/netatalk
 		use_pam_so=yes
-		mandir=/usr/share/man
+		mandir="/usr/share/man"
 		AC_DEFINE(FHS_COMPATIBILITY)
 	fi
 	AC_MSG_RESULT([enabling Filesystem Hierarchy Standard (FHS) compatibility])
