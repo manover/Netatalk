@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.25 2004-05-10 18:40:32 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.26 2004-05-11 08:31:17 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1670,11 +1670,10 @@ reenumerate_id(const struct vol *vol, char *name, cnid_t did)
     DIR             *dp;
     struct dirent   *de;
     int             ret;
-    struct stat     st;
     cnid_t	    aint;
-    struct adouble  ad;
-	
-
+    struct path     path;
+    
+    memset(&path, 0, sizeof(path));
     if (vol->v_cdb == NULL) {
 	return -1;
     }
@@ -1686,23 +1685,33 @@ reenumerate_id(const struct vol *vol, char *name, cnid_t did)
         if (NULL == check_dirent(vol, de->d_name))
             continue;
 
-        if ( stat(de->d_name, &st)<0 )
+        if ( stat(de->d_name, &path.st)<0 )
             continue;
 	
 	/* update or add to cnid */
-        aint = cnid_add(vol->v_cdb, &st, did, de->d_name, strlen(de->d_name), 0); /* ignore errors */
+        aint = cnid_add(vol->v_cdb, &path.st, did, de->d_name, strlen(de->d_name), 0); /* ignore errors */
 
 #if AD_VERSION > AD_VERSION1
-        if (aint != CNID_INVALID && !S_ISDIR(st.st_mode)) {
-            ad_init(&ad, 0);  /* OK */
-            if ( ad_open( de->d_name, ADFLAGS_HF, O_RDWR, 0, &ad ) < 0 ) {
+        if (aint != CNID_INVALID && !S_ISDIR(path.st.st_mode)) {
+            struct ofork    *of;
+            struct adouble  ad, *adp;
+
+            path.st_errno = 0;
+            path.st_valid = 1;
+            path.u_name = de->d_name;
+            
+            if (!(of = of_findname(&path))) {
+                ad_init(&ad, vol->v_adouble);
+                adp = &ad;
+            } else
+                adp = of->of_ad;
+            
+            if ( ad_open( de->d_name, ADFLAGS_HF, O_RDWR, 0, adp ) < 0 ) {
                 continue;
             }
-            else {
-                ad_setid(&ad,(vol->v_flags & AFPVOL_NODEV)?0:st.st_dev, st.st_ino, aint, did, vol->v_stamp);
-                ad_flush(&ad, ADFLAGS_HF);
-                ad_close(&ad, ADFLAGS_HF);
-           }
+            ad_setid(adp,(vol->v_flags & AFPVOL_NODEV)?0:path.st.st_dev, path.st.st_ino, aint, did, vol->v_stamp);
+            ad_flush(adp, ADFLAGS_HF);
+            ad_close(adp, ADFLAGS_HF);
         }
 #endif /* AD_VERSION > AD_VERSION1 */
 
