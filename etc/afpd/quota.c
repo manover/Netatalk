@@ -1,5 +1,5 @@
 /*
- * $Id: quota.c,v 1.22.8.6 2004-01-15 08:12:57 bfernhomberg Exp $
+ * $Id: quota.c,v 1.22.8.7 2004-02-27 02:39:24 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -192,7 +192,7 @@ struct dqblk *dqb;
 	
 	memset (&D, 0, sizeof(D));
 
-	if ((ret = quotactl(QCMD(Q_XGETQUOTA,USRQUOTA), path, euser_id, (caddr_t)&D)))
+	if ((ret = quotactl(QCMD(Q_XGETQUOTA,(what ? GRPQUOTA : USRQUOTA)), path, euser_id, (caddr_t)&D)))
                return ret;
 
 	dqb->bsize = (u_int64_t)512;
@@ -507,7 +507,7 @@ struct dqblk		*dq;
     	if (ngroups >= 1)
     	{
 		if (get_linux_quota(WANT_GROUP_QUOTA, vol->v_gvs, groups[0],  &dqg) != 0)
-                	LOG(log_info, logtype_afpd, "group quota did not work!" );
+                	LOG(log_debug, logtype_afpd, "group quota did not work!" );
      	}
 #endif  /* BSD4_4 */
 
