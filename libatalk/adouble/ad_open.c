@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.2 2003-10-17 00:01:12 didg Exp $
+ * $Id: ad_open.c,v 1.30.6.3 2003-11-25 05:05:43 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -230,10 +230,8 @@ static int ad_v1tov2(struct adouble *ad, const char *path)
    *  2) create space for SHORTNAME, AFPFILEI, DID, and PRODOSI
    *  3) move FILEI attributes into AFPFILEI
    *  4) initialize ACCESS field of FILEDATESI.
-   *
-   *  so, we need 4*12 (entry ids) + 12 (shortname) + 4 (afpfilei) +
-   *  4 (did) + 8 (prodosi) = 76 more bytes.  */
-  
+   */
+   
 #define SHIFTDATA (AD_DATASZ2 - AD_DATASZ1)
 
   /* bail if we can't get a lock */

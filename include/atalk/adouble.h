@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.2 2003-10-17 00:01:12 didg Exp $
+ * $Id: adouble.h,v 1.21.6.3 2003-11-25 05:05:43 didg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -156,7 +156,17 @@ ADEID_NUM_V1*AD_ENTRY_LEN)
 +ADEDLEN_PRIVDEV +ADEDLEN_PRIVINO +ADEDLEN_PRIVSYN)
 
 /* 725 */
+/*
 #define AD_DATASZ2      (AD_DATASZ1 + (ADEID_NUM_V2 -ADEID_NUM_V1)*AD_ENTRY_LEN)
+FIXME I give up,
+for our adouble version 2 size *is* 725 
+*/
+#define AD_DATASZ2 725
+
+#if AD_DATASZ2 != 725
+#error bad size for AD_DATASZ2
+#endif
+
 #define AD_DATASZ_MAX   1024
 #if AD_VERSION == AD_VERSION1
 #define AD_DATASZ	AD_DATASZ1 /* hold enough for the entries */
@@ -411,7 +421,7 @@ extern int ad_getattr __P((const struct adouble *, u_int16_t *));
 #if AD_VERSION == AD_VERSION2
 extern int ad_setid __P((struct adouble *, const struct stat *, const u_int32_t, const void *));
 #else
-#define ad_setid(a, b, c)
+#define ad_setid(a, b, c, d)
 #endif
 
 #ifdef WITH_SENDFILE
