@@ -17,9 +17,7 @@ noinst_HEADERS = auth.h afp_config.h desktop.h directory.h file.h \
 	 filedir.h fork.h globals.h icon.h mangle.h misc.h status.h switch.h \
 	 uam_auth.h uid.h unix.h volume.h
 
-#LIBS = @LIBS@ @AFPD_LIBS@ @QUOTA_LIBS@ @SLP_LIBS@
 LIBS = @LIBS@ @PAM_LIBS@ @QUOTA_LIBS@ @SLP_LIBS@
-#LIBS = @LIBS@ @QUOTA_LIBS@ @SLP_LIBS@
 
 CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/sys \
 	 @CFLAGS@ @SLP_CFLAGS@ \
@@ -28,6 +26,5 @@ CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/sys \
 	 -D_PATH_AFPDPWFILE=\"$(pkgconfdir)/afppasswd\" \
 	 -D_PATH_AFPDCONF=\"$(pkgconfdir)/afpd.conf\" \
 	 -D_PATH_AFPDUAMPATH=\"$(UAMS_PATH)/\" \
-	 -DAFPD_MTAB_FILE=\"$(pkgconfdir)/afpd.mtab\" \
 	 -DAPPLCNAME \
 	 -DSERVERTEXT=\"$(SERVERTEXT)/\"
