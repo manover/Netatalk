@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.16 2004-02-29 22:23:09 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.17 2004-03-04 23:57:20 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -28,6 +28,7 @@ char *strchr (), *strrchr ();
 #endif /* ! HAVE_MEMCPY */
 #endif /* STDC_HEADERS */
 
+#include <atalk/adouble.h>
 #include <utime.h>
 #include <dirent.h>
 #include <errno.h>
@@ -35,7 +36,6 @@ char *strchr (), *strrchr ();
 #include <atalk/logger.h>
 #include <sys/param.h>
 
-#include <atalk/adouble.h>
 
 #include <atalk/afp.h>
 #include <atalk/util.h>

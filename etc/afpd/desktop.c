@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.8 2004-02-20 21:22:57 didg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.9 2004-03-04 23:57:14 bfernhomberg Exp $
  *
  * See COPYRIGHT.
  *
@@ -20,6 +20,7 @@
 #include <errno.h>
 #include <dirent.h>
 
+#include <atalk/adouble.h>
 #include <sys/uio.h>
 #include <sys/param.h>
 #include <sys/socket.h>
@@ -29,7 +30,6 @@
 #include <atalk/atp.h>
 #include <atalk/asp.h>
 #include <atalk/afp.h>
-#include <atalk/adouble.h>
 #include <atalk/util.h>
 #include <atalk/logger.h>
 #include "volume.h"
