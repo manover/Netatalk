@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_metad.c,v 1.1.4.12 2004-02-07 19:46:08 didg Exp $
+ * $Id: cnid_metad.c,v 1.1.4.13 2004-02-09 13:54:29 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -133,12 +133,18 @@ static int send_cred(int socket, int fd)
    struct iovec iov[1];
    struct cmsghdr *cmsgp = NULL;
    char *buf;
+   size_t size;
    int er=0;
 
-   buf = malloc(CMSG_SPACE(sizeof fd));
+   size = CMSG_SPACE(sizeof fd);
+   buf = malloc(size);
+   if (!buf) {
+       LOG(log_error, logtype_cnid, "error in sendmsg: %s", strerror(errno));
+       return -1;
+   }
 
    memset(&msgh,0,sizeof (msgh));
-   memset(buf,0,sizeof (buf));
+   memset(buf,0, size);
 
    msgh.msg_name = NULL;
    msgh.msg_namelen = 0;
@@ -150,7 +156,7 @@ static int send_cred(int socket, int fd)
    iov[0].iov_len = sizeof(er);
 
    msgh.msg_control = buf;
-   msgh.msg_controllen = sizeof(buf);
+   msgh.msg_controllen = size;
 
    cmsgp = CMSG_FIRSTHDR(&msgh);
    cmsgp->cmsg_level = SOL_SOCKET;
