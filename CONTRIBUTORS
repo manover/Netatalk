@@ -49,9 +49,10 @@ Developers: Version 1.4.99 - 1.5
 Webmin Module:
 	Matthew Keller <kellermg@potsdam.edu>
 
-Package Maintainers:
-	Sebastian Rittau <srittau@debian.org> (Debian)
+Package Maintainers and Contributors:
+	Sebastian Rittau <srittau@debian.org> (Debian GNU/Linux)
 	Joe Clarke <marcus@marcuscom.com> (FreeBSD)
+	David Rankin <drankin@bohemians.lexington.ky.us> (NetBSD)
 
 Sourceforge Website Maintainers:
 	Andrew Morgan <morgan@orst.edu>	
