@@ -3,6 +3,7 @@ Changes in 1.6pre2
 
 * UPD: Removed --with-catsearch option from configure and enable FPCatSearch
        by default.
+* FIX: Build fix for non-GNU-C compilers in libatalk/util/logger.c.
 
 Changes in 1.6pre1
 ====================
