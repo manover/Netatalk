@@ -1,5 +1,5 @@
 /*
- * $Id: afp_dsi.c,v 1.24.2.3 2003-11-05 06:41:01 didg Exp $
+ * $Id: afp_dsi.c,v 1.24.2.4 2003-11-18 21:47:41 bfernhomberg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -130,10 +130,16 @@ static void afp_dsi_getmesg (int sig)
 
 static void alarm_handler()
 {
+    int err;
+
     /* if we're in the midst of processing something,
        don't die. */
     if ((child.flags & CHILD_RUNNING) || (child.tickle++ < child.obj->options.timeout)) {
-        dsi_tickle(child.obj->handle);
+        if (!(err = pollvoltime(child.obj)))
+            err = dsi_tickle(child.obj->handle);
+        if (err <= 0) 
+            afp_dsi_die(1);
+        
     } else { /* didn't receive a tickle. close connection */
         LOG(log_error, logtype_afpd, "afp_alarm: child timed out");
         afp_dsi_die(1);
