@@ -6,10 +6,11 @@
 
 depend() {
 	need net
+	use logger dns
 }
 
-start () {
-	. :ETCDIR:/netatalk.conf
+atalk_startup () {
+#	. :ETCDIR:/netatalk.conf
 
 	if [ "${ATALKD_RUN}" != "no" ]; then
 		ebegin "Starting atalkd"
@@ -36,6 +37,7 @@ start () {
 	if [ "${CNID_METAD_RUN}" = "yes" ] ; then
         	ebegin "Starting cnid_metad"
 		start-stop-daemon --start --quiet --exec :SBINDIR:/cnid_metad
+		eend $?
 	fi
 
 
@@ -46,11 +48,40 @@ start () {
 			-n "${ATALK_NAME}${ATALK_ZONE}"
 		eend $?
 	fi
+
+	if [ "${TIMELORD_RUN}" = "yes" ]; then
+		ebegin "Starting timelord"
+		start-stop-daemon --start --quiet --exec :SBINDIR:/timelord
+		eend $?
+	fi
 }
 
+start () {
+	. :ETCDIR:/netatalk.conf
+
+        if [ x"${ATALK_BGROUND}" = x"yes" ]; then
+            echo "Starting netatalk in the background ... "
+            atalk_startup >& /dev/null &
+        else
+            atalk_startup
+        fi
+        ;;
+}
 
 stop () {
 	. :ETCDIR:/netatalk.conf
+
+	if [ "${AFPD_RUN}" = "yes" ]; then
+		ebegin "Stopping afpd"
+		start-stop-daemon --stop --quiet --exec :SBINDIR:/afpd
+		eend $?
+	fi
+
+	if [ "${TIMELORD_RUN}" = "yes" ]; then
+		ebegin "Stopping timelord"
+		start-stop-daemon --stop --quiet --exec :SBINDIR:/timelord
+		eend $?
+	fi
 
 	if [ "${ATALKD_RUN}" != "no" ]; then
 		if [ "${PAPD_RUN}" = "yes" ]; then
@@ -73,14 +104,9 @@ stop () {
 		eend $?
 	fi
 
-	if [ "${AFPD_RUN}" = "yes" ]; then
-		ebegin "Stopping afpd"
-		start-stop-daemon --stop --quiet --exec :SBINDIR:/afpd
-		eend $?
-	fi
-
 	if [ "${CNID_METAD_RUN}" = "yes" ] ; then
         	ebegin "Stopping cnid_metad"
 		start-stop-daemon --stop --quiet --exec :SBINDIR:/cnid_metad
+		eend $?
 	fi
 }
