@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.11 2004-03-11 16:16:40 didg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.12 2004-03-11 23:01:40 bfernhomberg Exp $
  *
  * See COPYRIGHT.
  *
@@ -814,7 +814,7 @@ static int ad_getcomment(struct vol *vol, struct path *path, char *rbuf, int *rb
     /*
      * Make sure the AD file is not bogus.
      */
-    if ( ad_getentrylen( adp, ADEID_COMMENT ) < 0 ||
+    if ( ad_getentrylen( adp, ADEID_COMMENT ) <= 0 ||
             ad_getentrylen( adp, ADEID_COMMENT ) > 199 ) {
         ad_close( adp, ADFLAGS_HF );
         return( AFPERR_NOITEM );
@@ -826,7 +826,6 @@ static int ad_getcomment(struct vol *vol, struct path *path, char *rbuf, int *rb
     *rbuflen = ad_getentrylen( adp, ADEID_COMMENT ) + 1;
     ad_close( adp, ADFLAGS_HF );
 
-    /* return AFPERR_NOITEM if len == 0 ? */
     return( AFP_OK );
 }
 
