@@ -41,7 +41,7 @@
 #include <string.h>
 
 /* FIXME */
-#ifndef SOLARIS
+#ifdef linux
 #ifndef USE_SETRESUID
 #define USE_SETRESUID 1
 #endif

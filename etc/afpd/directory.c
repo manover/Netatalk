@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.3 2003-10-30 05:57:44 bfernhomberg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.4 2003-10-30 07:11:31 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -29,7 +29,6 @@ char *strchr (), *strrchr ();
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
 #endif
-#include <utime.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
@@ -40,9 +39,10 @@ char *strchr (), *strrchr ();
 #include <pwd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <errno.h>
 #include <sys/time.h>
 #include <sys/param.h>
+#include <errno.h>
+#include <utime.h>
 #include <netatalk/endian.h>
 #include <atalk/adouble.h>
 #include <atalk/afp.h>
