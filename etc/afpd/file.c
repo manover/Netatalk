@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.20 2004-03-11 16:16:40 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.21 2004-03-12 02:21:19 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1819,6 +1819,46 @@ int		ibuflen, *rbuflen;
     return err;
 }
 
+/* ------------------------------ */
+static struct adouble *find_adouble(struct path *path, struct ofork **of, struct adouble *adp)
+{
+    if (path->st_errno) {
+        switch (path->st_errno) {
+        case ENOENT:
+            afp_errno = AFPERR_NOID;
+            break;
+        case EPERM:
+        case EACCES:
+            afp_errno = AFPERR_ACCESS;
+            break;
+        default:
+            afp_errno = AFPERR_PARAM;
+            break;
+        }
+        return NULL;
+    }
+
+    if ((*of = of_findname(path))) {
+            /* reuse struct adouble so it won't break locks */
+            adp = (*of)->of_ad;
+    }
+    else {
+        ad_open( path->u_name, ADFLAGS_HF, O_RDONLY, 0, adp);
+    }
+    if ( ad_hfileno( adp ) != -1 
+        && !(adp->ad_hf.adf_flags & ( O_RDWR | O_WRONLY))
+        && sizeof(dev_t) == ad_getentrylen(adp, ADEID_PRIVDEV)
+        && sizeof(ino_t) == ad_getentrylen(adp,ADEID_PRIVINO)
+    ) {
+        /* it's an adouble version 2 with cached resource fork 
+         * but the file is not open RW so we can't update cnid
+         */
+        afp_errno = AFPERR_ACCESS;
+        return NULL;
+    }
+    return adp;
+}
+
 #define APPLETEMP ".AppleTempXXXXXX"
 
 int afp_exchangefiles(obj, ibuf, ibuflen, rbuf, rbuflen )
@@ -1859,7 +1899,7 @@ int		ibuflen, *rbuflen;
         return( AFPERR_PARAM);
     }
 
-    if (vol->v_flags & AFPVOL_RO)
+    if ((vol->v_flags & AFPVOL_RO))
         return AFPERR_VLOCK;
 
     /* source and destination dids */
@@ -1878,33 +1918,25 @@ int		ibuflen, *rbuflen;
     }
 
     if ( path_isadir(path) ) {
-        return( AFPERR_BADTYPE );   /* it's a dir */
+        return AFPERR_BADTYPE;   /* it's a dir */
     }
 
-    upath = path->u_name;
-    switch (path->st_errno) {
-        case 0:
-             break;
-        case ENOENT:
-            return AFPERR_NOID;
-        case EPERM:
-        case EACCES:
-            return AFPERR_ACCESS;
-        default:
-            return AFPERR_PARAM;
-    }
+    /* XXX 
+     * here we need to switch to root 
+    */
+
     ad_init(&ads, vol->v_adouble);
-    adsp = &ads;
-    if ((s_of = of_findname(path))) {
-            /* reuse struct adouble so it won't break locks */
-            adsp = s_of->of_ad;
+    if (!(adsp = find_adouble( path, &s_of, &ads))) {
+        return afp_errno;
     }
-    memcpy(&srcst, &path->st, sizeof(struct stat));
+    
     /* save some stuff */
+    srcst = path->st;
     sdir = curdir;
     spath = obj->oldtmp;
     supath = obj->newtmp;
     strcpy(spath, path->m_name);
+    upath = path->u_name;
     strcpy(supath, upath); /* this is for the cnid changing */
     p = absupath( vol, sdir, upath);
     if (!p) {
@@ -1925,7 +1957,7 @@ int		ibuflen, *rbuflen;
     }
 
     if ( path_isadir(path) ) {
-        return( AFPERR_BADTYPE );
+        return AFPERR_BADTYPE;
     }
 
     /* FPExchangeFiles is the only call that can return the SameObj
@@ -1933,33 +1965,20 @@ int		ibuflen, *rbuflen;
     if ((curdir == sdir) && strcmp(spath, path->m_name) == 0)
         return AFPERR_SAMEOBJ;
 
-    switch (path->st_errno) {
-        case 0:
-             break;
-        case ENOENT:
-            return AFPERR_NOID;
-        case EPERM:
-        case EACCES:
-            return AFPERR_ACCESS;
-        default:
-            return AFPERR_PARAM;
-    }
     ad_init(&add, vol->v_adouble);
-    addp = &add;
-    if ((d_of = of_findname( path))) {
-            /* reuse struct adouble so it won't break locks */
-            addp = d_of->of_ad;
+    if (!(addp = find_adouble( path, &d_of, &add))) {
+        return afp_errno;
     }
-    memcpy(&destst, &path->st, sizeof(struct stat));
+    destst = path->st;
 
     /* they are not on the same device and at least one is open
     */
     crossdev = (srcst.st_dev != destst.st_dev);
     if ((d_of || s_of)  && crossdev)
         return AFPERR_MISC;
-    
-    upath = path->u_name;
+
     /* look for destination id. */
+    upath = path->u_name;
     did = cnid_lookup(vol->v_cdb, &destst, curdir->d_did, upath, dlen = strlen(upath));
 
     /* construct a temp name.
@@ -1970,17 +1989,17 @@ int		ibuflen, *rbuflen;
         return AFPERR_MISC;
 
     /* now, quickly rename the file. we error if we can't. */
-    if ((err = renamefile(vol, p, temp, temp, adsp)) < 0)
+    if ((err = renamefile(vol, p, temp, temp, adsp)) != AFP_OK)
         goto err_exchangefile;
     of_rename(vol, s_of, sdir, spath, curdir, temp);
 
     /* rename destination to source */
-    if ((err = renamefile(vol, upath, p, spath, addp)) < 0)
+    if ((err = renamefile(vol, upath, p, spath, addp)) != AFP_OK)
         goto err_src_to_tmp;
     of_rename(vol, d_of, curdir, path->m_name, sdir, spath);
 
     /* rename temp to destination */
-    if ((err = renamefile(vol, temp, upath, path->m_name, adsp)) < 0)
+    if ((err = renamefile(vol, temp, upath, path->m_name, adsp)) != AFP_OK)
         goto err_dest_to_src;
     of_rename(vol, s_of, curdir, temp, curdir, path->m_name);
 
@@ -2009,13 +2028,24 @@ int		ibuflen, *rbuflen;
         }
         goto err_temp_to_dest;
     }
+    if (sid)
+        ad_setid(addp,(vol->v_flags & AFPVOL_NODEV)?0:destst.st_dev, destst.st_ino,  sid, sdir->d_did, vol->v_stamp);
+    if (did)
+        ad_setid(adsp,(vol->v_flags & AFPVOL_NODEV)?0:srcst.st_dev, srcst.st_ino,  did, curdir->d_did, vol->v_stamp);
 
+    if ( !s_of ) {
+       ad_flush( adsp, ADFLAGS_HF );
+       ad_close(adsp, ADFLAGS_HF);
+    }
+    if ( !d_of ) {
+       ad_flush( addp, ADFLAGS_HF );
+       ad_close(addp, ADFLAGS_HF);
+    }
 #ifdef DEBUG
     LOG(log_info, logtype_afpd, "ending afp_exchangefiles:");
 #endif /* DEBUG */
 
     return AFP_OK;
-
 
     /* all this stuff is so that we can unwind a failed operation
      * properly. */
