@@ -1,5 +1,5 @@
 /*
- * $Id: dbif.c,v 1.1.4.13 2004-01-10 07:00:59 bfernhomberg Exp $
+ * $Id: dbif.c,v 1.1.4.14 2004-02-07 18:45:46 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -34,7 +34,7 @@ static FILE   *db_errlog = NULL;
 #ifdef CNID_BACKEND_DBD_TXN
 #define DBOPTIONS    (DB_CREATE | DB_INIT_LOCK | DB_INIT_LOG | DB_INIT_MPOOL | DB_INIT_TXN)
 #else
-#define DBOPTIONS    (DB_CREATE | DB_INIT_CDB | DB_INIT_MPOOL) 
+#define DBOPTIONS    (DB_CREATE | DB_INIT_CDB | DB_INIT_MPOOL | DB_PRIVATE) 
 #endif
 
 static struct db_table {
