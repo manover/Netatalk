@@ -1,3 +1,25 @@
+Changes in 2.0-alpha2
+=====================
+
+* NEW: uniconv tool for converting volume encoding.
+* NEW: afpd: Make sure getstatus doesn't return loopback address as server IP.
+* NEW: afpd: Specify USEDOTS with MSWINDOWS implicitely.
+* NEW: afpd: SRVLOC register with IP address instead of hostname by default,
+       if -fqdn is specified register with FQDN.  Added extended character 
+       support for SLP, non ASCII characters are escaped Added ZONE to registration.
+* NEW: atalkd: Make atalkd set interfaces to ALLMULTI on linux by default.
+* NEW: cnid_metad: Use DB_PRIVATE attribute for dbd backend without transaction.
+* FIX: afpd: Partial workaround for an OSX client deadlock.
+* FIX: afpd: Reenumerate folder if db is out of sync in resolveID.
+* FIX: afpd: Don't modify modification date in copyfile.
+* FIX: afpd: Variable $v substitution: always use name defined in config files.
+* FIX: libatalk: Speed optimisation for byte locking was broken on resource fork.
+* FIX: Solaris 9 compilation.
+* FIX: Tru64 compilation fixes.
+* FIX: AFS compilation fixes.
+* FIX: strncpy bugfix.
+* FIX: configure, man pages update and small bugfixes.
+
 Changes in 2.0-alpha1
 =====================
 
