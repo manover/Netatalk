@@ -32,8 +32,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#ifdef HAVE_BACKTRACE_SYMBOLS
 #include <execinfo.h>
-
+#endif
 #include <atalk/logger.h>
 
 #ifndef SIGNAL_CAST
