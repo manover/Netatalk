@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.15.2.1 2004-10-20 21:43:33 didg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.15.2.2 2004-12-07 02:58:10 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -979,6 +979,7 @@ char	**cpath;
     u_int16_t   len16;
     int         size = 0;
     char        sep;
+    int         toUTF8 = 0;
        	
     data = *cpath;
     afp_errno = AFPERR_NOOBJ;
@@ -988,6 +989,10 @@ char	**cpath;
        len = (unsigned char) *data++;
        size = 2;
        sep = 0;
+       if (afp_version >= 30) {
+           ret.m_type = 3;
+           toUTF8 = 1;
+       }
        break;
     case 3:
        if (afp_version >= 30) {
@@ -1104,9 +1109,20 @@ char	**cpath;
         if ( p != path ) { /* we got something */
             ret.u_name = NULL;
             if (afp_version >= 30) {
-                /* check for OS X mangled filename :( */
                 char *t;
                 cnid_t fileid;
+                
+                if (toUTF8) {
+                    static char	temp[ MAXPATHLEN + 1];
+
+                    /* not an UTF8 name */
+                    if (mtoUTF8(vol, path, strlen(path), temp, MAXPATHLEN) == -1) {
+                        afp_errno = AFPERR_PARAM;
+                        return( NULL );
+                    }
+                    strcpy(path, temp);
+                }
+                /* check for OS X mangled filename :( */
 	    
                 t = demangle_osx(vol, path, dir->d_did, &fileid);
                 if (t != path) {

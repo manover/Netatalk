@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.45.2.2.2.14 2004-10-06 20:05:14 bfernhomberg Exp $
+ * $Id: filedir.c,v 1.45.2.2.2.14.2.1 2004-12-07 02:58:08 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -503,7 +503,7 @@ int		ibuflen, *rbuflen;
     }
 
     /* another place where we know about the path type */
-    if ((plen = copy_path_name(newname, ibuf)) < 0) {
+    if ((plen = copy_path_name(vol, newname, ibuf)) < 0) {
         return( AFPERR_PARAM );
     }
 
@@ -719,7 +719,7 @@ int		ibuflen, *rbuflen;
     }
 
     /* one more place where we know about path type */
-    if ((plen = copy_path_name(newname, ibuf)) < 0) {
+    if ((plen = copy_path_name(vol, newname, ibuf)) < 0) {
         return( AFPERR_PARAM );
     }
 

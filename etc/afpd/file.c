@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.31.2.3 2004-10-30 21:43:46 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.31.2.4 2004-12-07 02:58:09 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1127,7 +1127,21 @@ struct adouble    *adp;
     return( AFP_OK );
 }
 
-int copy_path_name(char *newname, char *ibuf)
+/* ---------------- 
+   convert a Mac long name to an utf8 name,
+*/
+size_t mtoUTF8(const struct vol *vol, const char *src, size_t srclen, char *dest, size_t destlen)
+{
+size_t    outlen;
+
+    if ((size_t)-1 == (outlen = convert_string ( vol->v_maccharset, CH_UTF8_MAC, src, srclen, dest, destlen)) ) {
+	return -1;
+    }
+    return outlen;
+}
+
+/* ---------------- */
+int copy_path_name(const struct vol *vol, char *newname, char *ibuf)
 {
 char        type = *ibuf;
 size_t      plen = 0;
@@ -1141,8 +1155,16 @@ u_int32_t   hint;
     switch (type) {
     case 2:
         if (( plen = (unsigned char)*ibuf++ ) != 0 ) {
-            strncpy( newname, ibuf, plen );
-            newname[ plen ] = '\0';
+            if (afp_version >= 30) {
+                /* convert it to UTF8 
+                */
+                if ((plen = mtoUTF8(vol, ibuf, plen, newname, AFPOBJ_TMPSIZ)) == -1)
+                   return -1;
+            }
+            else {
+                strncpy( newname, ibuf, plen );
+                newname[ plen ] = '\0';
+            }
             if (strlen(newname) != plen) {
                 /* there's \0 in newname, e.g. it's a pathname not
                  * only a filename. 
@@ -1259,7 +1281,7 @@ int		ibuflen, *rbuflen;
     }
 
     /* one of the handful of places that knows about the path type */
-    if (copy_path_name(newname, ibuf) < 0) {
+    if (copy_path_name(d_vol, newname, ibuf) < 0) {
         return( AFPERR_PARAM );
     }
     /* newname is always only a filename so curdir *is* its

@@ -1,5 +1,5 @@
 /*
- * $Id: file.h,v 1.16.2.2.2.3 2004-03-11 02:02:01 didg Exp $
+ * $Id: file.h,v 1.16.2.2.2.3.2.1 2004-12-07 02:58:09 didg Exp $
  *
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
@@ -134,7 +134,9 @@ extern int copyfile     __P((const struct vol *, const struct vol *, char *, cha
 extern int deletefile   __P((const struct vol *, char *, int));
 
 extern void *get_finderinfo __P((const char *, struct adouble *, void *));
-extern int  copy_path_name __P((char *, char *i));
+
+extern size_t mtoUTF8   __P((const struct vol *, const char *, size_t , char *, size_t ));
+extern int  copy_path_name __P((const struct vol *, char *, char *i));
 
 extern u_int32_t get_id  __P((struct vol *, struct adouble *, const struct stat *,
                                 const cnid_t , const char *, const int ));
