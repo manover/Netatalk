@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.45.2.2.2.12 2004-08-11 03:13:21 bfernhomberg Exp $
+ * $Id: filedir.c,v 1.45.2.2.2.13 2004-09-25 14:46:22 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -416,7 +416,7 @@ int         isdir;
                 free(oldname_w);
                 return AFPERR_MISC; /* conversion error has already been logged */
             }
-	    if (!strcasecmp_w(oldname_w, newname_w)) {
+	    if (strcasecmp_w(oldname_w, newname_w)) {
 		free(oldname_w);
 		free(newname_w);
                 return AFPERR_EXIST;
