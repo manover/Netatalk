@@ -1,3 +1,22 @@
+Changes in 2.0-rc2
+==================
+
+* UPD: use 0 0 for default creator/type rather than UNIX TEXT, from
+       Shlomi Yaakobovich.
+* UPD: updated documentation
+* UPD: change machine type from Macintosh to Netatalk in status reply
+* FIX: afpd: CopyFile only create a resource fork for destination if source
+       has one.
+* FIX: afpd: mangling: for utf8 --> max filename length is 255 bytes, else 31.
+* FIX: cnid_dbd: fix a signed/unsigned, 16/32 bits mismatch. from Burkhard
+       Schmidt, bs at cpfs.mpg.de.
+* FIX: afpd: After ad_setid don't flush resource fork if it has not been
+       modified.
+* FIX: NEWS: Fixed ancient NEWS entries. Removed umlauts
+* FIX: fix macname cache, SF bug 1021642
+* FIX: revert Makefile change from 2.0-rc1. We have to include BDB_CFLAGS
+       after CFLAGS
+
 Changes in 2.0-rc1
 ==================
 
