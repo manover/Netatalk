@@ -1,5 +1,5 @@
 /*
- * $Id: uam.c,v 1.15.2.5 2002-03-18 19:39:13 jmarcus Exp $
+ * $Id: uam.c,v 1.15.2.6 2002-03-27 22:20:15 srittau Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -464,13 +464,11 @@ int uam_sia_validate_user(sia_collect_func_t * collect, int argc, char **argv,
        if ((rc=sia_ses_authent(collect, passphrase, entity)) != SIASUCCESS) {
                /* restore old action after clobbering by sia_ses_authent() */
                if (sigaction(SIGALRM, &act, NULL))
-                       syslog(LOG_ERR, "cannot restore SIGALRM");
-               syslog(LOG_ERR, "unsuccessful login for %s",
-(hostname?hostname:"(null)"));
+                       syslog(LOG_ERR, "cannot restore SIGALRM handler");
+               syslog(LOG_INFO, "unsuccessful login for %s", (hostname?hostname:"(null)"));
                return SIAFAIL;
        }
-       syslog(LOG_ERR, "successful login for %s",
-(hostname?hostname:"(null)"));
+       syslog(LOG_INFO, "successful login for %s", (hostname?hostname:"(null)"));
 
        /* restore old action after clobbering by sia_ses_authent() */   
        if (sigaction(SIGALRM, &act, NULL))
