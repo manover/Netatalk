@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.18 2004-01-21 13:02:04 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.19 2004-02-05 16:55:19 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -409,7 +409,7 @@ static void volset(struct vol_option *options, struct vol_option *save,
             if (strcasecmp(p, "prodos") == 0)
                 options[VOLOPT_FLAGS].i_value |= AFPVOL_A2VOL;
             else if (strcasecmp(p, "mswindows") == 0) {
-                options[VOLOPT_FLAGS].i_value |= AFPVOL_MSWINDOWS;
+                options[VOLOPT_FLAGS].i_value |= AFPVOL_MSWINDOWS | AFPVOL_USEDOTS;
             } else if (strcasecmp(p, "crlf") == 0)
                 options[VOLOPT_FLAGS].i_value |= AFPVOL_CRLF;
             else if (strcasecmp(p, "noadouble") == 0)
