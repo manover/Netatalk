@@ -1,8 +1,8 @@
 /*
- * $Id: comm.h,v 1.1.4.3 2004-01-03 23:01:40 lenneis Exp $
+ * $Id: comm.h,v 1.1.4.4 2004-01-09 21:05:50 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
- * All Rights Reserved.  See COPYRIGHT.
+ * All Rights Reserved.  See COPYING.
  */
 
 #ifndef CNID_DBD_COMM_H

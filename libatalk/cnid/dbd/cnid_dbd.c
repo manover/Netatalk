@@ -1,15 +1,8 @@
 /*
- * $Id: cnid_dbd.c,v 1.1.4.11 2004-01-08 19:16:58 lenneis Exp $
+ * $Id: cnid_dbd.c,v 1.1.4.12 2004-01-09 21:05:50 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
- * All Rights Reserved.  See COPYRIGHT.
- */
-
-/*
- *  Replacement functions for cnid_xxx if we use the cnid_dbd database
- *  daemon. Basically we just check parameters for obvious errors and then pass
- *  the request to the daemon for further processing.
- *  
+ * All Rights Reserved.  See COPYING.
  */
 
 #ifdef HAVE_CONFIG_H

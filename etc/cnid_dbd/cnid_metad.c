@@ -1,8 +1,8 @@
 /*
- * $Id: cnid_metad.c,v 1.1.4.10 2004-01-07 19:00:24 lenneis Exp $
+ * $Id: cnid_metad.c,v 1.1.4.11 2004-01-09 21:05:50 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
- * All Rights Reserved.  See COPYRIGHT.
+ * All Rights Reserved.  See COPYING.
  *
  */
 

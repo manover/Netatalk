@@ -1,8 +1,8 @@
 /*
- * $Id: usockfd.h,v 1.1.4.2 2003-10-30 10:03:19 bfernhomberg Exp $
+ * $Id: usockfd.h,v 1.1.4.3 2004-01-09 21:05:50 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
- * All Rights Reserved.  See COPYRIGHT.
+ * All Rights Reserved.  See COPYING.
  */
 
 #ifndef CNID_DBD_USOCKFD_H

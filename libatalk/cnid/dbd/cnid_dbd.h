@@ -1,8 +1,8 @@
 /*
- * $Id: cnid_dbd.h,v 1.1.4.2 2003-10-17 00:01:14 didg Exp $
+ * $Id: cnid_dbd.h,v 1.1.4.3 2004-01-09 21:05:50 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
- * All Rights Reserved.  See COPYRIGHT.
+ * All Rights Reserved.  See COPYING.
  */
 
 

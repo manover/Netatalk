@@ -1,8 +1,8 @@
 /*
- * $Id: comm.c,v 1.1.4.5 2004-01-03 23:01:40 lenneis Exp $
+ * $Id: comm.c,v 1.1.4.6 2004-01-09 21:05:50 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
- * All Rights Reserved.  See COPYRIGHT.
+ * All Rights Reserved.  See COPYING.
  */
 
 #ifdef HAVE_CONFIG_H

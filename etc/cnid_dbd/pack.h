@@ -1,8 +1,8 @@
 /*
- * $Id: pack.h,v 1.1.4.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: pack.h,v 1.1.4.2 2004-01-09 21:05:50 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
- * All Rights Reserved.  See COPYRIGHT.
+ * All Rights Reserved.  See COPYING.
  */
 
 #ifndef CNID_DBD_PACK_H

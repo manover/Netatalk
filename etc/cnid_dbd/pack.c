@@ -1,8 +1,8 @@
 /*
- * $Id: pack.c,v 1.1.4.6 2003-12-03 14:56:12 lenneis Exp $
+ * $Id: pack.c,v 1.1.4.7 2004-01-09 21:05:50 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
- * All Rights Reserved.  See COPYRIGHT.
+ * All Rights Reserved.  See COPYING.
  */
 
 #ifdef HAVE_CONFIG_H

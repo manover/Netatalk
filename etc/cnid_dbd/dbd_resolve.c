@@ -1,8 +1,8 @@
 /*
- * $Id: dbd_resolve.c,v 1.1.4.4 2003-11-25 00:41:31 lenneis Exp $
+ * $Id: dbd_resolve.c,v 1.1.4.5 2004-01-09 21:05:50 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
- * All Rights Reserved.  See COPYRIGHT.
+ * All Rights Reserved.  See COPYING.
  */
 
 #ifdef HAVE_CONFIG_H
