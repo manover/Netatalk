@@ -1,6 +1,6 @@
 
 /*
- * $Id: cnid_db3_open.c,v 1.1.4.3 2004-01-10 06:25:18 bfernhomberg Exp $
+ * $Id: cnid_db3_open.c,v 1.1.4.4 2004-03-02 13:30:29 bfernhomberg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -322,6 +322,9 @@ struct _cnid_db *cnid_db3_open(const char *dir, mode_t mask)
     path[len + DBHOMELEN] = '\0';
     open_flag = DB_CREATE;
 
+    /* Print out the version of BDB we're linked against. */
+    LOG(log_info, logtype_default, "CNID DB initializing using %s", db_version(NULL, NULL, NULL));
+
     /* We need to be able to open the database environment with full
      * transaction, logging, and locking support if we ever hope to 
      * be a true multi-acess file server. */
@@ -471,8 +474,6 @@ struct _cnid_db *cnid_db3_open(const char *dir, mode_t mask)
         goto fail_appinit;
     }
 
-    /* Print out the version of BDB we're linked against. */
-    LOG(log_info, logtype_default, "CNID DB initialized using %s", db_version(NULL, NULL, NULL));
 #if 0
     db_env_set_func_yield(my_yield);
 #endif

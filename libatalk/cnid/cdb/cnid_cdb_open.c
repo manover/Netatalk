@@ -1,6 +1,6 @@
 
 /*
- * $Id: cnid_cdb_open.c,v 1.1.4.8 2004-02-07 19:46:09 didg Exp $
+ * $Id: cnid_cdb_open.c,v 1.1.4.9 2004-03-02 13:30:28 bfernhomberg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -257,6 +257,12 @@ struct _cnid_db *cnid_cdb_open(const char *dir, mode_t mask)
 	goto fail_adouble;
     }
 
+    /* Print out the version of BDB we're linked against. */
+    if (!first) {
+        first = 1;
+        LOG(log_info, logtype_default, "CNID DB initialized using %s", db_version(NULL, NULL, NULL));
+    }
+
     open_flag = DB_CREATE;
 
     /* We need to be able to open the database environment with full
@@ -389,12 +395,6 @@ struct _cnid_db *cnid_cdb_open(const char *dir, mode_t mask)
         /* Do stuff here. */
     }
 #endif /* 0 */
-
-    /* Print out the version of BDB we're linked against. */
-    if (!first) {
-        first = 1;
-        LOG(log_info, logtype_default, "CNID DB initialized using %s", db_version(NULL, NULL, NULL));
-    }
 
     db_env_set_func_yield(my_yield);
     return cdb;
