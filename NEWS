@@ -6,7 +6,7 @@ Changes in 1.6.4
 * FIX: megatron: Fixed an uninitialized variable. [Olaf Hering]
 * FIX: Compilation issues. [Olaf Hering, Sebastian Rittau]
 * FIX: Don't overwrite PAM file if --enable-overwrite configure option is
-       not set. [Sam Noble]
+       not set. [Sam Noble, Ryan Cleary]
 * FIX: afpd: Catsearch, fix possible SIGSEGV
 * FIX: cnid: Fix compile problems on Tru64. [Burkhard Schmidt]
 * FIX: deadlock in signal handlers (Redhat 9)
@@ -15,7 +15,8 @@ Changes in 1.6.4
 * UPD: remove ssl-dir/ssl-dirs confusion from doc/INSTALL
 * FIX: afpd: Solaris compile issues
 * FIX: afpd: If connection broke in dsi_tickle the child did never die
-* NEW: afpd: Using the mswindows option now impictly specifies usedots [Sam Noble] 
+* NEW: afpd: Using the mswindows option now impictly specifies usedots [Sam Noble]
+* FIX: removed broken --with-flock-locks
 
 Changes in 1.6.3
 ================
