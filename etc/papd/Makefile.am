@@ -39,4 +39,8 @@ install-exec-hook:
 	echo "Creating SPOOLDIR $(spooldir)..."
 	$(mkinstalldirs) $(spooldir)
 	chmod 0777 $(spooldir)
+
+else
+install-exec-hook:
+
 endif
