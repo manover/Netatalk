@@ -25,7 +25,8 @@ GENERATED_FILES = \
 	rc.papd.netbsd		\
 	rc.timelord.netbsd	\
 	rc.atalk.sysv		\
-	rc.atalk.gentoo
+	rc.atalk.gentoo		\
+	rc.atalk.debian
 
 TEMPLATES = \
 	rc.afpd.netbsd.tmpl		\
@@ -38,7 +39,8 @@ TEMPLATES = \
 	rc.papd.netbsd.tmpl		\
 	rc.timelord.netbsd.tmpl		\
 	rc.atalk.sysv.tmpl		\
-	rc.atalk.gentoo.tmpl
+	rc.atalk.gentoo.tmpl		\
+	rc.atalk.debian.tmpl
 
 CLEANFILES = $(GENERATED_FILES) atalk afpd atalkd papd timelord
 EXTRA_DIST = $(TEMPLATES) rc.atalk.cobalt
@@ -210,6 +212,28 @@ install-data-hook:
 uninstall-startup:
 	-rc-update del atalk default
 	rm -f /etc/init.d/atalk
+
+endif
+
+#
+# checking for "Debian" style sysv scripts:
+#
+
+if USE_DEBIAN
+
+sysvdir = /etc/init.d
+sysv_SCRIPTS = atalk
+
+atalk: rc.atalk.debian
+	cp -f rc.atalk.debian atalk
+	chmod a+x atalk
+
+install-data-hook:
+	update-rc.d atalk defaults 90 10
+
+uninstall-startup:
+	rm -f /etc/init.d/atalk
+	update-rc.d atalk remove
 
 endif
 
