@@ -1,6 +1,6 @@
 
 /*
- * $Id: cnid_cdb_open.c,v 1.1.4.9 2004-03-02 13:30:28 bfernhomberg Exp $
+ * $Id: cnid_cdb_open.c,v 1.1.4.10 2004-03-22 04:38:51 bfernhomberg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -171,6 +171,7 @@ static struct _cnid_db *cnid_cdb_new(const char *volpath)
     cdb->cnid_resolve = cnid_cdb_resolve;
     cdb->cnid_update = cnid_cdb_update;
     cdb->cnid_close = cnid_cdb_close;
+    cdb->cnid_getstamp = cnid_cdb_getstamp;
 
     return cdb;
 }

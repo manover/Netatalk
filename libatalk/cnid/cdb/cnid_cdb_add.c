@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_cdb_add.c,v 1.1.4.3 2003-11-25 19:13:27 lenneis Exp $
+ * $Id: cnid_cdb_add.c,v 1.1.4.4 2004-03-22 04:38:51 bfernhomberg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -72,15 +72,29 @@ char *make_cnid_data(const struct stat *st,const cnid_t did,
 extern int cnid_cdb_update(struct _cnid_db *cdb, const cnid_t id, const struct stat *st,
                 const cnid_t did, const char *name, const int len);
 
+/* --------------- */
+int db_stamp(void *buffer, size_t size)
+{
+    memset(buffer, 0, size);
+    /* return the current time. */
+    if (size < sizeof(time_t))
+        return -1;
+    time(buffer);
+    return 0;
+
+}
+
+
 /* ----------------------------- */
 static cnid_t get_cnid(CNID_private *db)
 {
     DBT rootinfo_key, rootinfo_data;
     DBC  *cursor;
     int rc;
-    int flag;
+    int flag, setstamp=0;
     cnid_t hint,id;
-    char buf[ROOTINFO_DATALEN];      
+    char buf[ROOTINFO_DATALEN];
+    char stamp[CNID_DEV_LEN];
      
     if ((rc = db->db_cnid->cursor(db->db_cnid, NULL, &cursor, DB_WRITECURSOR) ) != 0) {
         LOG(log_error, logtype_default, "get_cnid: Unable to get a cursor: %s", db_strerror(rc));
@@ -109,6 +123,7 @@ static cnid_t get_cnid(CNID_private *db)
     case DB_NOTFOUND:
         hint = htonl(CNID_START);
         flag = DB_KEYFIRST;
+	setstamp = 1;
         break;
     default:
         LOG(log_error, logtype_default, "cnid_add: Unable to lookup rootinfo: %s", db_strerror(rc));
@@ -120,6 +135,13 @@ static cnid_t get_cnid(CNID_private *db)
     rootinfo_data.data = buf;
     rootinfo_data.size = ROOTINFO_DATALEN;
     memcpy((char *)rootinfo_data.data +CNID_TYPE_OFS, &hint, sizeof(hint));
+    if (setstamp) {
+        if (db_stamp(stamp, CNID_DEV_LEN) < 0) {
+            goto cleanup;
+        }
+        memcpy((char *)rootinfo_data.data +CNID_DEV_OFS, stamp, sizeof(stamp));
+    }
+
     
     switch (rc = cursor->c_put(cursor, &rootinfo_key, &rootinfo_data, flag)) {
     case 0:
@@ -219,5 +241,54 @@ cnid_t cnid_cdb_add(struct _cnid_db *cdb, const struct stat *st,
 
     return hint;
 }
+
+/* cnid_cbd_getstamp */
+/*-----------------------*/
+int cnid_cdb_getstamp(struct _cnid_db *cdb, void *buffer, const int len)
+{
+    DBT key, data;
+    int rc;
+    CNID_private *db;
+
+    if (!cdb || !(db = cdb->_private) || !buffer || !len) {
+        errno = CNID_ERR_PARAM;
+        return -1;
+    }
+
+    memset(buffer, 0, len);
+    memset(&key, 0, sizeof(key));
+    memset(&data, 0, sizeof(data));
+
+    key.data = ROOTINFO_KEY;
+    key.size = ROOTINFO_KEYLEN;
+
+    if (0 != (rc = db->db_cnid->get(db->db_cnid, NULL, &key, &data, 0 )) ) {
+        if (rc != DB_NOTFOUND) {
+            LOG(log_error, logtype_default, "cnid_lookup: Unable to get database stamp: %s",
+               db_strerror(rc));
+            errno = CNID_ERR_DB;
+            return -1;
+        }
+	/* we waste a single ID here... */
+        get_cnid(db);
+        memset(&key, 0, sizeof(key));
+        memset(&data, 0, sizeof(data));
+        key.data = ROOTINFO_KEY;
+        key.size = ROOTINFO_KEYLEN;
+	if (0 != (rc = db->db_cnid->get(db->db_cnid, NULL, &key, &data, 0 )) ) {
+	    LOG(log_error, logtype_default, "cnid_getstamp: failed to get rootinfo: %s", 
+               db_strerror(rc));
+            errno = CNID_ERR_DB;
+	    return -1;
+        }
+    }
+
+    memcpy(buffer, data.data + CNID_DEV_OFS, len);
+#ifdef DEBUG
+    LOG(log_info, logtype_cnid, "cnid_getstamp: Returning stamp");
+#endif
+   return 0;
+}
+
 
 #endif /* CNID_BACKEND_CDB */

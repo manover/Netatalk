@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_cdb_private.h,v 1.1.4.6 2004-02-07 19:46:09 didg Exp $
+ * $Id: cnid_cdb_private.h,v 1.1.4.7 2004-03-22 04:38:51 bfernhomberg Exp $
  */
 
 #ifndef LIBATALK_CDB_PRIVATE_H
@@ -25,6 +25,9 @@
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif /* HAVE_SYS_TIME_H */
+#ifdef HAVE_TIME_H
+#include <time.h>
+#endif
 #include <sys/cdefs.h>
 #include <db.h>
 

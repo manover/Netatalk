@@ -24,6 +24,7 @@ extern void cnid_cdb_close __P((struct _cnid_db *));
 /* cnid_add.c */
 extern cnid_t cnid_cdb_add __P((struct _cnid_db *, const struct stat *, const cnid_t,
 			    const char *, const int, cnid_t));
+extern int cnid_cdb_getstamp __P((struct _cnid_db *, void *, const int ));
 
 /* cnid_get.c */
 extern cnid_t cnid_cdb_get __P((struct _cnid_db *, const cnid_t, const char *, const int)); 
