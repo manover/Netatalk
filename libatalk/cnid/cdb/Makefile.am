@@ -1,6 +1,6 @@
 # Makefile.am for libatalk/cnid/
 
-CFLAGS = @BDB_CFLAGS@ @CFLAGS@
+CFLAGS = @CFLAGS@ @BDB_CFLAGS@
 LIBS = @LIBS@ @BDB_LIBS@
 
 noinst_LTLIBRARIES = libcnid_cdb.la

@@ -23,5 +23,5 @@ EXTRA_DIST = README
 LIBS = @LIBS@ @BDB_LIBS@
 
 
-CFLAGS = @BDB_CFLAGS@ @CFLAGS@ \
+CFLAGS = @CFLAGS@ @BDB_CFLAGS@ \
          -D_PATH_CNID_DBD=\"$(sbindir)/cnid_dbd\"
