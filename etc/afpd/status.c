@@ -1,5 +1,5 @@
 /*
- * $Id: status.c,v 1.7 2002-02-06 21:58:50 jmarcus Exp $
+ * $Id: status.c,v 1.7.4.1 2003-06-09 14:30:45 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -35,7 +35,7 @@
 #include "icon.h"
 
 static void status_flags(char *data, const int notif, const int ipok,
-                         const unsigned char passwdbits)
+                         const unsigned char passwdbits, const int dirsrvcs)
 {
     u_int16_t           status;
 
@@ -58,6 +58,8 @@ static void status_flags(char *data, const int notif, const int ipok,
         status |= AFPSRVRINFO_SRVNOTIFY;
     }
     status |= AFPSRVRINFO_FASTBOZO;
+    if (dirsrvcs)
+	status |= AFPSRVRINFO_SRVRDIR;
     status = htons(status);
     memcpy(data + AFPSTATUS_FLAGOFF, &status, sizeof(status));
 }
@@ -82,14 +84,18 @@ static int status_server(char *data, const char *server)
         len++;
     data += len;
 
-    /* make room for signature and net address offset. save location of
-     * signature offset. 
+    /* Make room for signature and net address offset. Save location of
+     * signature offset. We're also making room for directory names offset
+     * and the utf-8 server name offset.
      *
-     * NOTE: technically, we don't need to reserve space for the
+     * NOTE: Technically, we don't need to reserve space for the
      * signature and net address offsets if they're not going to be
-     * used. as there are no offsets after them, it doesn't hurt to
-     * have them specified though. so, we just do that to simplify
-     * things.  
+     * used. As there are no offsets after them, it doesn't hurt to
+     * have them specified though. So, we just do that to simplify
+     * things.
+     *
+     * NOTE2: AFP3.1 Documentation states that the directory names offset
+     * is a required feature, even though it can be set to zero.
      */
     len = data - start;
     status = htons(len + AFPSTATUS_POSTLEN);
@@ -179,7 +185,7 @@ static u_int16_t status_signature(char *data, int *servoffset, DSI *dsi,
     return sigoff;
 }
 
-static int status_netaddress(char *data, const int servoffset,
+static int status_netaddress(char *data, int *servoffset,
                              const ASP asp, const DSI *dsi,
                              const char *fqdn)
 {
@@ -189,7 +195,7 @@ static int status_netaddress(char *data, const int servoffset,
     begin = data;
 
     /* get net address offset */
-    memcpy(&offset, data + servoffset, sizeof(offset));
+    memcpy(&offset, data + *servoffset, sizeof(offset));
     data += ntohs(offset);
 
     /* format:
@@ -203,12 +209,12 @@ static int status_netaddress(char *data, const int servoffset,
     /* number of addresses. this currently screws up if we have a dsi
        connection, but we don't have the ip address. to get around this,
        we turn off the status flag for tcp/ip. */
-    *data++ = (fqdn ? 1 : 0) + (dsi ? 1 : 0) + (asp ? 1 : 0);
+    *data++ = ((fqdn && dsi) ? 1 : 0) + (dsi ? 1 : 0) + (asp ? 1 : 0);
 
     /* handle DNS names */
-    if (fqdn) {
-        int len = strlen(fqdn) + 2;
-        *data++ = len;
+    if (fqdn && dsi) {
+        int len = strlen(fqdn);
+        *data++ = len + 2;
         *data++ = 0x04;
         memcpy(data, fqdn, len);
         data += len;
@@ -253,6 +259,85 @@ static int status_netaddress(char *data, const int servoffset,
     }
 #endif /* ! NO_DDP */
 
+    /* calculate/store Directory Services Names offset */
+    offset = htons(data - begin);
+    *servoffset += sizeof(offset);
+    memcpy(begin + *servoffset, &offset, sizeof(offset));
+
+    /* return length of buffer */
+    return (data - begin);
+}
+
+static int status_directorynames(char *data, int *diroffset,
+				 const DSI *dsi,
+				 const struct afp_options *options)
+{
+    char *begin = data;
+    u_int16_t offset;
+    memcpy(&offset, data + *diroffset, sizeof(offset));
+    offset = ntohs(offset);
+    data += offset;
+                                                                                
+    /* I can not find documentation of any other purpose for the
+     * DirectoryNames field.
+     */
+    /*
+     * Try to synthesize a principal:
+     * service '/' fqdn '@' realm
+     */
+    if (options->k5service && options->k5realm && options->fqdn) {
+	/* should k5princ be utf8 encoded? */
+	u_int8_t len;
+	char *p = strchr( options->fqdn, ':' );
+	if (p)
+	    *p = '\0';
+	len = strlen( options->k5service )
+			+ strlen( options->fqdn )
+			+ strlen( options->k5realm );
+	len+=2; /* '/' and '@' */
+	*data++ = 1; /* DirectoryNamesCount */
+	*data++ = len;
+	snprintf( data, len + 1, "%s/%s@%s", options->k5service,
+				options->fqdn, options->k5realm );
+	data += len;
+	if (p)
+            *p = ':';
+    } else {
+	memset(begin + *diroffset, 0, sizeof(offset));
+    }
+
+    /* Calculate and store offset for UTF8ServerName */
+    *diroffset += sizeof(u_int16_t);
+    offset = htons(data - begin);
+    memcpy(begin + *diroffset, &offset, sizeof(u_int16_t));
+                                                                                
+    /* return length of buffer */
+    return (data - begin);
+}
+
+static int status_utf8servername(char *data, int *nameoffset,
+				 const DSI *dsi,
+				 const struct afp_options *options)
+{
+    u_int16_t namelen, len;
+    char *begin = data;
+    u_int16_t offset;
+    memcpy(&offset, data + *nameoffset, sizeof(offset));
+    offset = ntohs(offset);
+    data += offset;
+                                                                                
+    /* FIXME: For now we set the UTF-8 ServerName offset to 0
+     * It's irrelevent anyway until we set the appropriate Flags value.
+     * Later this can be set to something meaningful.
+     *
+     * What is the valid character range for an nbpname?
+     *
+     * Apple's server likes to use the non-qualified hostname
+     * This obviously won't work very well if multiple servers are running
+     * on the box.
+     */
+    memset(begin + *nameoffset, 0, sizeof(offset));
+                                                                                
     /* return length of buffer */
     return (data - begin);
 }
@@ -287,7 +372,7 @@ void status_init(AFPConfig *aspconfig, AFPConfig *dsiconfig,
     ASP asp;
     DSI *dsi;
     char *status;
-    int c, sigoff;
+    int statuslen, c, sigoff;
 
     if (!(aspconfig || dsiconfig) || !options)
         return;
@@ -327,7 +412,8 @@ void status_init(AFPConfig *aspconfig, AFPConfig *dsiconfig,
 
     status_flags(status, options->server_notif, options->fqdn ||
                  (dsiconfig && dsi->server.sin_addr.s_addr),
-                 options->passwdbits);
+                 options->passwdbits,
+                 (options->k5service && options->k5realm && options->fqdn));
     /* returns offset to signature offset */
     c = status_server(status, options->server ? options->server :
                       options->hostname);
@@ -340,16 +426,21 @@ void status_init(AFPConfig *aspconfig, AFPConfig *dsiconfig,
         status_icon(status, apple_atalk_icon, sizeof(apple_atalk_icon), c);
 
     sigoff = status_signature(status, &c, dsi, options->hostname);
+    /* c now contains the offset where the netaddress offset lives */
+                                                                                
+    status_netaddress(status, &c, asp, dsi, options->fqdn);
+    /* c now contains the offset where the Directory Names Count offset lives */                                                                                
+    status_directorynames(status, &c, dsi, options);
+    /* c now contains the offset where the UTF-8 ServerName offset lives */
 
-    /* returns length */
-    c = status_netaddress(status, c, asp, dsi, options->fqdn);
+    statuslen = status_utf8servername(status, &c, dsi, options);
 
 
 #ifndef NO_DDP
     if (aspconfig) {
-        asp_setstatus(asp, status, c);
+        asp_setstatus(asp, status, statuslen);
         aspconfig->signature = status + sigoff;
-        aspconfig->statuslen = c;
+        aspconfig->statuslen = statuslen;
     }
 #endif /* ! NO_DDP */
 
@@ -362,9 +453,9 @@ void status_init(AFPConfig *aspconfig, AFPConfig *dsiconfig,
         if ((options->flags & OPTION_CUSTOMICON) == 0) {
             status_icon(status, apple_tcp_icon, sizeof(apple_tcp_icon), 0);
         }
-        dsi_setstatus(dsi, status, c);
+        dsi_setstatus(dsi, status, statuslen);
         dsiconfig->signature = status + sigoff;
-        dsiconfig->statuslen = c;
+        dsiconfig->statuslen = statuslen;
     }
 }
 

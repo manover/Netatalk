@@ -1,6 +1,9 @@
 Changes in 1.6.3
 ================
 
+* UPD: afpd: Infrastructural support for an upcoming Kerberos 5 UAM.
+       [Sam Noble]
+* FIX: afpd: Bug in AFP connection negotiation stage. [Sam]
 * FIX: afpd: Catsearch, when Mac and unix name differ, search on attributes.
 * FIX: afpd: Files could be opened for writing on read-only filesystems.
 * FIX: afpd: Debugging using SIGUSR1 was broken. [Stefan Muenkner]

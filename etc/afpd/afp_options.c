@@ -1,5 +1,5 @@
 /*
- * $Id: afp_options.c,v 1.27 2002-08-24 05:00:07 sibaz Exp $
+ * $Id: afp_options.c,v 1.27.2.1 2003-06-09 14:30:43 srittau Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -122,6 +122,10 @@ void afp_options_free(struct afp_options *opt,
         free(opt->nlspath);
     if (opt->passwdfile && (opt->passwdfile != save->passwdfile))
         free(opt->passwdfile);
+    if (opt->k5service && (opt->k5service != save->k5service))
+        free(opt->k5service);
+    if (opt->k5realm && (opt->k5realm != save->k5realm))
+        free(opt->k5realm);
 }
 
 /* initialize options */
@@ -148,6 +152,8 @@ void afp_options_init(struct afp_options *options)
 #ifdef ADMIN_GRP
     options->admingid = 0;
 #endif /* ADMIN_GRP */
+    options->k5service = NULL;
+    options->k5realm = NULL;
 }
 
 /* parse an afpd.conf line. i'm doing it this way because it's
@@ -371,6 +377,12 @@ int afp_options_parseline(char *buf, struct afp_options *options)
     }
 #endif /* ADMIN_GRP */
 
+    if ((c = getoption(buf, "-k5service")) && (opt = strdup(c)))
+        options->k5service = opt;
+    if ((c = getoption(buf, "-k5realm")) && (opt = strdup(c)))
+        options->k5realm = opt;
+    if ((c = getoption(buf, "-k5keytab")))
+        setenv( "KRB5_KTNAME", c, 1 );
     if ((c = getoption(buf, "-authprintdir")) && (opt = strdup(c)))
         options->authprintdir = opt;
     if ((c = getoption(buf, "-uampath")) && (opt = strdup(c)))
