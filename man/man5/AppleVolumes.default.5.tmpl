@@ -1,4 +1,4 @@
-.\" $Id: AppleVolumes.default.5.tmpl,v 1.2 2001-02-28 16:53:24 rufustfirefly Exp $
+.\" $Id: AppleVolumes.default.5.tmpl,v 1.2.14.1 2003-11-30 22:07:36 rlewczuk Exp $
 .TH AppleVolumes.default 5 "20 September 2000" "netatalk 1.5"
 .UC 4
 .SH NAME
@@ -57,6 +57,11 @@ options are:
 \fBxlateupper\fR - Client sees uppercase, server sees lowercase.
 
 .TP
+.B cnidscheme:[scheme]
+Set the CNID database backend for the volume, default is [:DEFAULT_CNID_SCHEME:],
+available backends are [:COMPLETED_BACKENDS:].
+
+.TP
 .B codepage:[nls file]
 The codepage option loads a specific codepage from the nls directory.
 
@@ -90,16 +95,28 @@ specified.
 \fBnoadouble\fR - Forces afpd to not create .AppleDouble unless a resource
 fork needs to be created.
 
+\fBnofileid\fR - Don't advertise createfileid, resolveid and deleteid calls.
+
 \fBnohex\fR - Disables :hex translations for anything except dot files.
 This option makes the \fB/\fR character illegal.
+
+\fBnostat\fR - Don't stat volume path when enumerating volumes list.
+
+\fBpreexec_close\fR - A non-zero return code from preexec close 
+the volume being mounted.
 
 \fBprodos\fR - Provides compatibility with Apple II clients.
 
 \fBro\fR - Specifies the share as being read only for all users.
 
+\fBroot_preexec_close\fR - A non-zero return code from root_preexec close 
+the volume being mounted. 
+
 \fBusedots\fR - Don't do :hex translation for dot files. This makes all
 files such as .Parent, .Apple* illegal. Dot files created on the server
 side will be invisible to the client.
+
+\fBupriv\fR - Use UNIX privilege (AFP3x).
 
 .TP
 .B password:[password]
@@ -107,9 +124,25 @@ This option allows you to set a volume password, which can be a maximum
 of 8 characters long.
 
 .TP
+.B postexec:[command]
+Command to be run when the volume is closed, ignore for user defined volumes.
+
+.TP
+.B preexec:[command]
+Command to be run when the volume is mounted, ignore for user defined volumes.
+
+.TP
 .B rolist:[users/groups]
 Allows certain users and groups to have read-only access to a share.
 This follows the \fBallow\fR option format.
+
+.TP
+.B root_postexec:[command]
+Command to be run as root when the volume is closed, ignore for user defined volumes.
+
+.TP
+.B root_preexec:[command]
+Command to be run as root when the volume is opened, ignore for user defined volumes.
 
 .TP
 .B rwlist:[users/groups]
@@ -120,8 +153,16 @@ This follows the \fBallow\fR option format.
 The variables which can be used for subsitutions are:
 
 .TP
+.B $b
+basename of path
+
+.TP
 .B $c
 client's ip or appletalk address
+
+.TP
+.B $d
+volume pathname on server
 
 .TP
 .B $f
@@ -134,6 +175,10 @@ group name
 .TP
 .B $h
 hostname
+
+.TP
+.B $i
+client IP without tcp port or appletalk network
 
 .TP
 .B $s
