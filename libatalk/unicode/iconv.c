@@ -297,14 +297,12 @@ atalk_iconv_t atalk_iconv_open(const char *tocode, const char *fromcode)
 
 	/* check if we can use iconv for this conversion */
 #ifdef HAVE_USABLE_ICONV
-	LOG (log_debug, logtype_default, "Trying %s/%s", UCS2ICONV, fromcode);
 	if (!ret->pull) {
 		ret->cd_pull = iconv_open(UCS2ICONV, fromcode);
 		if (ret->cd_pull != (iconv_t)-1)
 			ret->pull = sys_iconv;
 	}
 
-	LOG (log_debug, logtype_default, "Trying %s/%s", tocode, UCS2ICONV);
 	if (!ret->push) {
 		ret->cd_push = iconv_open(tocode, UCS2ICONV);
 		if (ret->cd_push != (iconv_t)-1)
