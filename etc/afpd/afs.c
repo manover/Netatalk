@@ -1,5 +1,5 @@
 /*
- * $Id: afs.c,v 1.4.2.1 2001-12-03 05:01:03 jmarcus Exp $
+ * $Id: afs.c,v 1.4.2.2 2002-02-07 23:54:56 srittau Exp $
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
  */
@@ -146,7 +146,7 @@ struct dir		*dir;
         return;
     }
 
-    accessmode( upath, &ma, dir );
+    accessmode( path, &ma, dir );
 
     return;
 }
