@@ -23,7 +23,9 @@ GENERATED_FILES = \
 	rc.atalk.suse		\
 	rc.cnid_metad.netbsd	\
 	rc.papd.netbsd		\
-	rc.timelord.netbsd
+	rc.timelord.netbsd	\
+	rc.atalk.sysv
+
 TEMPLATES = \
 	rc.afpd.netbsd.tmpl		\
 	rc.atalk.redhat.tmpl		\
@@ -33,12 +35,12 @@ TEMPLATES = \
 	rc.atalk.suse.tmpl		\
 	rc.cnid_metad.netbsd.tmpl	\
 	rc.papd.netbsd.tmpl		\
-	rc.timelord.netbsd.tmpl
+	rc.timelord.netbsd.tmpl		\
+	rc.atalk.sysv.tmpl
 
-CLEANFILES = $(GENERATED_FILES)
-EXTRA_DIST = $(TEMPLATES) rc.atalk.cobalt rc.atalk.sysv
+CLEANFILES = $(GENERATED_FILES) atalk afpd atalkd papd timelord
+EXTRA_DIST = $(TEMPLATES) rc.atalk.cobalt
 
-install-data-hook: $(GENERATED_FILES)
 
 #
 # checking for "redhat" style sysv scripts:
@@ -52,6 +54,13 @@ sysv_SCRIPTS = atalk
 atalk: rc.atalk.redhat
 	cp -f rc.atalk.redhat atalk
 	chmod a+x atalk
+
+install-data-hook:
+	-chkconfig --add atalk
+
+uninstall:
+	-chkconfig --del atalk
+	rm -f /etc/rc.d/init.d/atalk
 
 endif
 
@@ -67,6 +76,13 @@ sysv_SCRIPTS = atalk
 atalk: rc.atalk.suse
 	cp -f rc.atalk.suse atalk
 	chmod a+x atalk
+
+install-data-hook:
+	-insserv atalk
+
+uninstall:
+	-insserv -d atalk
+	rm -f /etc/init.d/atalk
 
 endif
 
@@ -127,3 +143,26 @@ timelord: rc.timelord.netbsd
 
 endif
 
+#
+# checking for Solaris init scripts
+#
+
+if USE_SOLARIS
+
+sysvdir = /etc/init.d
+sysv_SCRIPTS = atalk
+
+atalk: rc.atalk.sysv
+	cp -f rc.atalk.sysv $@
+	chmod a+x $@
+
+install-data-hook:
+	rm -f /etc/rc2.d/S90atalk
+	-ln -s ../init.d/atalk /etc/rc2.d/S90atalk
+	rm -f /etc/rc0.d/K04atalk
+	-ln -s ../init.d/atalk /etc/rc0.d/K04atalk
+
+uninstall-hook:
+	rm -f /etc/rc2.d/S90atalk /etc/rc0.d/K04atalk
+
+endif
