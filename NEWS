@@ -6,6 +6,7 @@ Changes from 1.5.2
        based on the fact that they have no shell.
 * UPD: Autoconf updates.
 * UPD: Tru64 afpd authentication updates.
+* UPD: As always: lots of minor code cleanups.
 * FIX: Problems with Photoshop trying to open image files has been
        corrected.
 * FIX: Preserve special permission bits when creating or modifying
