@@ -1,5 +1,5 @@
 /*
- * $Id: directory.h,v 1.13.2.2 2003-05-10 10:33:16 didg Exp $
+ * $Id: directory.h,v 1.13.2.3 2003-05-20 14:49:19 didg Exp $
  *
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
@@ -53,7 +53,7 @@ struct dir {
     int	        d_flags;
 
     time_t      ctime;                /* inode ctime */
-    int         offcnt;               /* offspring count */
+    u_int32_t   offcnt;               /* offspring count */
 
     char	*d_m_name;            /* mac name */
     char        *d_u_name;            /* unix name */
