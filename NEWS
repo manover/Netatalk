@@ -1,3 +1,12 @@
+Changes from 1.5.4
+==================
+
+* NEW: Allow afpd debugging to be enabled by sending the afpd process
+       a SIGUSR1.
+* NEW: Allow SLP to be disabled per afpd process by adding a new -noslp flag
+       to afpd.conf.
+* FIX: Use server name (if not NULL) for the SLP URL.
+
 Changes from 1.5.3
 ==================
 
@@ -5,11 +14,6 @@ Changes from 1.5.3
 * FIX: Problems with unexpected EOF when reading files on a ddp connection
        Photoshop, old finder.
 * FIX: --with-nls-dir option does now work
-* NEW: Allow afpd debugging to be enabled by sending the afpd process
-       a SIGUSR1.
-* NEW: Allow SLP to be disabled per afpd process by adding a new -noslp flag
-       to afpd.conf.
-* FIX: Use server name (if not NULL) for the SLP URL.
 
 Changes from 1.5.2
 ==================
