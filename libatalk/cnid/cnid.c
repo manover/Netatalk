@@ -1,5 +1,5 @@
 /* 
- * $Id: cnid.c,v 1.1.4.1 2003-09-09 16:42:21 didg Exp $
+ * $Id: cnid.c,v 1.1.4.2 2003-09-21 09:25:17 didg Exp $
  *
  * Copyright (c) 2003 the Netatalk Team
  * Copyright (c) 2003 Rafal Lewczuk <rlewczuk@pronet.pl>
@@ -28,6 +28,7 @@
 #include <atalk/logger.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 /* List of all registered modules. */
 static struct list_head modules = LIST_HEAD_INIT(modules);
@@ -218,7 +219,13 @@ cnid_t cnid_getstamp(struct _cnid_db *cdb,  void *buffer, const int len)
 cnid_t ret;
 
     if (!cdb->cnid_getstamp) {
-        return -1;
+        time_t stamp;
+        memset(buffer, 0, len);
+    	/* return the current time. it will invalide cache */
+    	if (len < sizeof(time_t))
+    	    return -1;
+    	time(buffer);
+        return 0;
     }
     block_signal(cdb);
     ret = cdb->cnid_getstamp(cdb, buffer, len);

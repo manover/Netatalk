@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.2 2003-09-21 09:25:17 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -202,34 +202,33 @@ char   stamp[ADEDLEN_PRIVSYN];
 #endif
     if (vol->v_cdb != NULL) {
 	    aint = cnid_add(vol->v_cdb, st, did, upath, len, aint);
-    /* Throw errors if cnid_add fails. */
-    if (aint == CNID_INVALID) {
-        switch (errno) {
-        case CNID_ERR_CLOSE: /* the db is closed */
-            break;
-        case CNID_ERR_PARAM:
-            LOG(log_error, logtype_afpd, "get_id: Incorrect parameters passed to cnid_add");
-            afp_errno = AFPERR_PARAM;
-            return CNID_INVALID;
-        case CNID_ERR_PATH:
-            afp_errno = AFPERR_PARAM;
-            return CNID_INVALID;
-        default:
-            afp_errno = AFPERR_MISC;
-            return CNID_INVALID;
+	    /* Throw errors if cnid_add fails. */
+	    if (aint == CNID_INVALID) {
+            switch (errno) {
+            case CNID_ERR_CLOSE: /* the db is closed */
+                break;
+            case CNID_ERR_PARAM:
+                LOG(log_error, logtype_afpd, "get_id: Incorrect parameters passed to cnid_add");
+                afp_errno = AFPERR_PARAM;
+                return CNID_INVALID;
+            case CNID_ERR_PATH:
+                afp_errno = AFPERR_PARAM;
+                return CNID_INVALID;
+            default:
+                afp_errno = AFPERR_MISC;
+                return CNID_INVALID;
+            }
         }
-    }
 #if AD_VERSION > AD_VERSION1
-            else if (adp && sizeof(dev_t) == ADEDLEN_PRIVDEV && sizeof(ino_t) == ADEDLEN_PRIVINO) {
-                /* update the ressource fork
-                 * for a folder adp is always null
-         */
-                 ad_setid(adp, st, aint, vol->v_stamp);
-                 ad_flush(adp, ADFLAGS_HF);
+        else if (adp && sizeof(dev_t) == ADEDLEN_PRIVDEV && sizeof(ino_t) == ADEDLEN_PRIVINO) {
+            /* update the ressource fork
+             * for a folder adp is always null
+             */
+            ad_setid(adp, st, aint, vol->v_stamp);
+            ad_flush(adp, ADFLAGS_HF);
         }
 #endif    
-        }
-
+    }
     return aint;
 }
              

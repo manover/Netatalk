@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.2 2003-09-13 02:46:28 bfernhomberg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.3 2003-09-21 09:25:17 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1370,7 +1370,6 @@ int 	ibuflen, *rbuflen;
     char	*data;
     int			vcnt, len;
 
-
     load_volumes(obj);
 
     data = rbuf + 5;
@@ -1599,12 +1598,9 @@ int		ibuflen, *rbuflen;
         if ((volume->v_cdb->flags & CNID_FLAG_PERSISTENT)) {
 
             /* FIXME find db time stamp */
-            if (!cnid_getstamp(volume->v_cdb, volume->v_stamp, sizeof(volume->v_stamp)) ) {
-                LOG(log_error, logtype_afpd, "stamp %x", *(unsigned *)volume->v_stamp);
-            
-            }
-        p = Trash;
-        cname( volume, volume->v_dir, &p );
+            cnid_getstamp(volume->v_cdb, volume->v_stamp, sizeof(volume->v_stamp));
+            p = Trash;
+            cname( volume, volume->v_dir, &p );
         }
         return( AFP_OK );
     }
