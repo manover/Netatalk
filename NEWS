@@ -1,3 +1,20 @@
+Changes in 2.0.0
+================
+
+* UPD: afpd: add an error message if -ipaddr parameter cannot be parsed
+* UPD: updated documentation
+* FIX: afpd: fix a file descriptor and memory leak with OSX ._ resource fork
+* FIX: afpd: Prevent overwriting a file by renaming a file in the same 
+       directory to the same name. Won't work with OSX, the dest file gets 
+       deleted by OSX first.
+* FIX: sometimes '0' was used instead of 0 for creator/type
+* FIX: removed setpgrp check from configure, we don't use it anymore and
+       it doesn't work with cross compile.
+* FIX: fix for Solaris "make maintainer-clean", from Alexander Barton
+* FIX: fix username matching bug in afppasswd. from kanai at nadmin dot org
+* FIX: reworked username check a little. Depending on the UAM, the wrong
+       username _could_ have been selected.
+
 Changes in 2.0-rc2
 ==================
 
