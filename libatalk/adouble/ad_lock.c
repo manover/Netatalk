@@ -1,5 +1,5 @@
 /* 
- * $Id: ad_lock.c,v 1.11.6.3 2004-02-20 19:57:14 didg Exp $
+ * $Id: ad_lock.c,v 1.11.6.4 2004-05-08 22:37:46 didg Exp $
  *
  * Copyright (c) 1998,1999 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT for more information.
@@ -111,7 +111,7 @@ static __inline__ void adf_freelock(struct ad_fd *ad, const int i)
  * i converted to using arrays of locks. everytime a lock
  * gets removed, we shift all of the locks down.
  */
-static __inline__ void adf_unlock(struct ad_fd *ad, int fd, const int user)
+static __inline__ void adf_unlock(struct ad_fd *ad, const int user)
 {
     adf_lock_t *lock = ad->adf_lock;
     int i;
@@ -270,6 +270,14 @@ int ad_fcntl_lock(struct adouble *ad, const u_int32_t eid, const int locktype,
     }
   } else { /* rfork */
     adf = &ad->ad_hf;
+    if (adf->adf_fd == -1) {
+        /* there's no resource fork. return a lock error
+         * otherwise if a second process is able to create it
+         * locks are a mess.
+         */
+        errno = EACCES;
+        return -1;
+    }
     if (type & ADLOCK_FILELOCK) 
       lock.l_start = hf2off(off);
     else
@@ -438,6 +446,10 @@ int ad_fcntl_tmplock(struct adouble *ad, const u_int32_t eid, const int locktype
     adf = &ad->ad_df;
   } else {
     adf = &ad->ad_hf;
+    if (adf->adf_fd == -1) {
+        /* there's no resource fork. return success */
+        return 0;
+    }
     /* if ADLOCK_FILELOCK we want a lock from offset 0
      * it's used when deleting a file:
      * in open we put read locks on meta datas
@@ -492,17 +504,17 @@ int ad_excl_lock(struct adouble *ad, const u_int32_t eid)
   struct flock lock;
   int    err;
   
-  if (eid == ADEID_DFORK) {
-    adf = &ad->ad_df;
-  } else {
-    /* FIXME it's broken for resource fork */
-    return 0;
-    adf = &ad->ad_hf;
-  }
   lock.l_start = 0;
   lock.l_type = F_WRLCK;
   lock.l_whence = SEEK_SET;
   lock.l_len = 0;
+
+  if (eid == ADEID_DFORK) {
+    adf = &ad->ad_df;
+  } else {
+    adf = &ad->ad_hf;
+    lock.l_start = ad_getentryoff(ad, eid);
+  }
   
   err = fcntl(adf->adf_fd, F_SETLK, &lock);
   if (!err)
@@ -514,9 +526,9 @@ int ad_excl_lock(struct adouble *ad, const u_int32_t eid)
 void ad_fcntl_unlock(struct adouble *ad, const int user)
 {
   if (ad->ad_df.adf_fd != -1) {
-    adf_unlock(&ad->ad_df, ad->ad_df.adf_fd, user);
+    adf_unlock(&ad->ad_df, user);
   }
   if (ad->ad_hf.adf_fd != -1) {
-    adf_unlock(&ad->ad_hf, ad->ad_hf.adf_fd, user);
+    adf_unlock(&ad->ad_hf, user);
   }
 }
