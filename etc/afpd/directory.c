@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.19.2.1 2001-12-03 05:01:04 jmarcus Exp $
+ * $Id: directory.c,v 1.19.2.2 2002-01-02 17:21:39 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -55,6 +55,7 @@ char *strchr (), *strrchr ();
 #include "volume.h"
 #include "fork.h"
 #include "file.h"
+#include "filedir.h"
 #include "globals.h"
 #include "unix.h"
 
@@ -455,9 +456,11 @@ static int deletedir(char *dir)
                     continue; /* somebody went and deleted it behind our backs. */
                 case EROFS:
                     err = AFPERR_VLOCK;
+					break;
                 case EPERM:
                 case EACCES :
                     err = AFPERR_ACCESS;
+					break;
                 default :
                     err = AFPERR_PARAM;
                 }

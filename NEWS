@@ -4,6 +4,8 @@ Changes from 1.5.0
 * NEW: Added a program called cnid_didname_verify that can be used to
        verify the consistency of the CNID database.
 * UPD: Code cleanups and compatibility fixes to macusers.
+* FIX: Hand correct error value back to AFP client when deleting a directory
+       fails.
 * FIX: Minor code cleanups and warning fixes.
 
 Changes from 1.5rc2
