@@ -1,5 +1,5 @@
 /* 
- * $Id: cnid.c,v 1.1.4.4 2003-10-12 16:25:19 didg Exp $
+ * $Id: cnid.c,v 1.1.4.5 2003-10-30 03:31:33 bfernhomberg Exp $
  *
  * Copyright (c) 2003 the Netatalk Team
  * Copyright (c) 2003 Rafal Lewczuk <rlewczuk@pronet.pl>
@@ -31,7 +31,7 @@
 #include <time.h>
 
 /* List of all registered modules. */
-static struct list_head modules = LIST_HEAD_INIT(modules);
+static struct list_head modules = ATALK_LIST_HEAD_INIT(modules);
 
 static sigset_t sigblockset;
 static const struct itimerval none = {{0, 0}, {0, 0}};

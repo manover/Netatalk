@@ -17,12 +17,12 @@ struct list_head {
     struct list_head *next, *prev;
 };
 
-#define LIST_HEAD_INIT(name) { &(name), &(name) }
+#define ATALK_LIST_HEAD_INIT(name) { &(name), &(name) }
 
-#define LIST_HEAD(name) \
+#define ATALK_LIST_HEAD(name) \
     struct list_head name = LIST_HEAD_INIT(name)
 
-#define INIT_LIST_HEAD(ptr) do { \
+#define ATALK_INIT_LIST_HEAD(ptr) do { \
     (ptr)->next = (ptr); (ptr)->prev = (ptr); \
 } while (0)
 

@@ -3,7 +3,6 @@
 #define _ATALK_UNICODE_H 1
 
 #include <sys/cdefs.h>
-#include <atalk/list.h>
 
 #define ucs2_t u_int16_t
 
