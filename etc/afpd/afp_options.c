@@ -1,5 +1,5 @@
 /*
- * $Id: afp_options.c,v 1.30.2.2.2.11 2004-09-28 13:19:12 didg Exp $
+ * $Id: afp_options.c,v 1.30.2.2.2.11.2.1 2004-12-07 18:22:38 bfernhomberg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -65,7 +65,7 @@ char *strchr (), *strrchr ();
 char             Cnid_srv[MAXHOSTNAMELEN + 1] = "localhost";
 int              Cnid_port = 4700;
 
-#define OPTIONS "dn:f:s:uc:g:P:ptDS:TL:F:U:Ivm:"
+#define OPTIONS "dn:f:s:uc:g:P:ptDS:TL:F:U:hIvVm:"
 #define LENGTH 512
 
 /* return an option. this uses an internal array, so it's necessary
@@ -505,6 +505,151 @@ int afp_options_parseline(char *buf, struct afp_options *options)
     return 1;
 }
 
+/*
+ * Show version information about afpd.
+ * Used by "afp -v".
+ */
+void show_version( )
+{
+	printf( "afpd %s - Apple Filing Protocol (AFP) daemon of Netatalk\n\n", VERSION );
+
+	puts( "This program is free software; you can redistribute it and/or modify it under" );
+	puts( "the terms of the GNU General Public License as published by the Free Software" );
+	puts( "Foundation; either version 2 of the License, or (at your option) any later" );
+	puts( "version. Please see the file COPYING for further information and details.\n" );
+
+	puts( "afpd has been compiled with support for these features:\n" );
+
+	printf( "        AFP3.1 support:\t" );
+#ifdef AFP3x
+	puts( "Yes" );
+#else
+	puts( "No" );
+#endif
+
+	printf( "      Transport layers:\t" );
+#ifdef NO_DDP
+	puts( "TCP/IP" );
+#else
+	puts( "TCP/IP DDP" );
+#endif
+
+	printf( "         CNID backends:\t" );
+#ifdef CNID_BACKEND_CDB
+	printf( "cdb ");
+#endif
+#ifdef CNID_BACKEND_DB3
+	printf( "db3 " );
+#endif
+#ifdef CNID_BACKEND_DBD
+#ifdef CNID_BACKEND_DBD_TXN
+	printf( "dbd-txn " );
+#else
+	printf( "dbd " );
+#endif
+#endif
+#ifdef CNID_BACKEND_HASH
+	printf( "hash " );
+#endif
+#ifdef CNID_BACKEND_LAST
+	printf( "last " );
+#endif
+#ifdef CNID_BACKEND_MTAB
+	printf( "mtab " );
+#endif
+#ifdef CNID_BACKEND_TDB
+	printf( "tdb " );
+#endif
+	puts( "" );
+}
+
+/*
+ * Show extended version information about afpd and Netatalk.
+ * Used by "afp -V".
+ */
+void show_version_extended( )
+{
+	show_version( );
+
+	printf( "           SLP support:\t" );
+#ifdef USE_SRVLOC
+	puts( "Yes" );
+#else
+	puts( "No" );
+#endif
+
+	printf( "  TCP wrappers support:\t" );
+#ifdef TCPWRAP
+	puts( "Yes" );
+#else
+	puts( "No" );
+#endif
+
+	printf( "         Quota support:\t" );
+#ifndef NO_QUOTA_SUPPORT
+	puts( "Yes" );
+#else
+	puts( "No" );
+#endif
+
+	printf( "   Admin group support:\t" );
+#ifdef ADMIN_GRP
+	puts( "Yes" );
+#else
+	puts( "No" );
+#endif
+
+	printf( "    Valid shell checks:\t" );
+#ifndef DISABLE_SHELLCHECK
+	puts( "Yes" );
+#else
+	puts( "No" );
+#endif
+
+	printf( "      cracklib support:\t" );
+#ifdef USE_CRACKLIB
+	puts( "Yes" );
+#else
+	puts( "No" );
+#endif
+
+	printf( "        Dropbox kludge:\t" );
+#ifdef DROPKLUDGE
+	puts( "Yes" );
+#else
+	puts( "No" );
+#endif
+
+	printf( "  Force volume uid/gid:\t" );
+#ifdef FORCE_UIDGID
+	puts( "Yes" );
+#else
+	puts( "No" );
+#endif
+}
+
+/*
+ * Display compiled-in default paths
+ */
+void show_paths( void )
+{
+	printf( "             afpd.conf:\t%s\n", _PATH_AFPDCONF );
+	printf( "   AppleVolumes.system:\t%s\n", _PATH_AFPDSYSVOL );
+	printf( "  AppleVolumes.default:\t%s\n", _PATH_AFPDDEFVOL );
+	printf( "       UAM search path:\t%s\n", _PATH_AFPDUAMPATH );
+}
+
+/*
+ * Display usage information about adpd.
+ */
+void show_usage( char *name )
+{
+	fprintf( stderr, "Usage:\t%s [-dDIptTu] [-c maxconnections] [-f defaultvolumes] [-F config]\n", name );
+	fprintf( stderr, "\t     [-g guest] [-L message] [-m umask][-n nbpname] [-P pidfile]\n" );
+	fprintf( stderr, "\t     [-s systemvolumes] [-S port] [-U uams]\n" );
+	fprintf( stderr, "\t%s -h|-v|-V\n", name );
+}
+
 int afp_options_parse(int ac, char **av, struct afp_options *options)
 {
     extern char *optarg;
@@ -582,8 +727,18 @@ int afp_options_parse(int ac, char **av, struct afp_options *options)
             options->uamlist = optarg;
             break;
         case 'v':	/* version */
-            printf( "afpd (version %s)\n", VERSION );
-            exit ( 1 );
+            show_version( ); puts( "" );
+	    show_paths( ); puts( "" );
+            exit( 0 );
+            break;
+        case 'V':	/* extended version */
+            show_version_extended( ); puts( "" );
+	    show_paths( ); puts( "" );
+            exit( 0 );
+            break;
+        case 'h':	/* usage */
+            show_usage( p );
+            exit( 0 );
             break;
         case 'I':
             options->flags |= OPTION_CUSTOMICON;
@@ -604,13 +759,8 @@ int afp_options_parse(int ac, char **av, struct afp_options *options)
         }
     }
     if ( err || optind != ac ) {
-        fprintf( stderr,
-                 "Usage:\t%s [ -dpDTIt ] [ -n nbpname ] [ -f defvols ] \
-                 [ -P pidfile ] [ -s sysvols ] \n", p );
-        fprintf( stderr,
-                 "\t[ -u ] [ -c maxconn ] [ -g guest ] \
-                 [ -S port ] [ -L loginmesg ] [ -F configfile ] [ -U uamlist ]\n" );
-        return 0;
+        show_usage( p );
+        exit( 2 );
     }
 
 #ifdef ultrix
