@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.29.2.5 2002-02-09 20:29:02 jmarcus Exp $
+ * $Id: file.c,v 1.29.2.6 2002-03-05 02:08:12 jmarcus Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1386,7 +1386,7 @@ int		ibuflen, *rbuflen;
         return AFPERR_ACCESS;
         break;
     default:
-        syslog(LOG_ERR, "afp_createid: cnid_add: %m");
+        syslog(LOG_ERR, "afp_createid: cnid_add: %s", strerror(errno));
         return AFPERR_PARAM;
     }
 }

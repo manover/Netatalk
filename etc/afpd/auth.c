@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.19.2.2 2002-02-07 23:55:35 srittau Exp $
+ * $Id: auth.c,v 1.19.2.3 2002-03-05 02:08:12 jmarcus Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -263,7 +263,7 @@ static int login(AFPObj *obj, struct passwd *pwd, void (*logout)(void))
                 inet_ntoa( dsi->client.sin_addr ) );
 
         if (setegid( pwd->pw_gid ) < 0 || seteuid( pwd->pw_uid ) < 0) {
-            syslog( LOG_ERR, "login: %m" );
+            syslog( LOG_ERR, "login: %s", strerror(errno) );
             return AFPERR_BADUAM;
         }
     }

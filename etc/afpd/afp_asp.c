@@ -1,5 +1,5 @@
 /*
- * $Id: afp_asp.c,v 1.6.2.3 2002-02-08 02:44:05 jmarcus Exp $
+ * $Id: afp_asp.c,v 1.6.2.4 2002-03-05 02:08:12 jmarcus Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -173,7 +173,7 @@ void afp_over_asp(AFPObj *obj)
 #ifdef AFS
             if ( writtenfork ) {
                 if ( flushfork( writtenfork ) < 0 ) {
-                    syslog( LOG_ERR, "main flushfork: %m" );
+                    syslog( LOG_ERR, "main flushfork: %s", strerror(errno) );
                 }
                 writtenfork = NULL;
             }

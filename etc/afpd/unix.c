@@ -1,5 +1,5 @@
 /*
- * $Id: unix.c,v 1.24.2.2 2001-12-15 06:32:14 jmarcus Exp $
+ * $Id: unix.c,v 1.24.2.3 2002-03-05 02:08:12 jmarcus Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -232,14 +232,14 @@ const int dropbox;
             else { /* if S_IWOTH and not S_IROTH */
                 uid=geteuid();
                 if ( seteuid(0) < 0) {
-                    syslog( LOG_ERR, "stickydirmode: unable to seteuid root: %m");
+                    syslog( LOG_ERR, "stickydirmode: unable to seteuid root: %s", strerror(errno));
                 }
                 if ( retval=chmod( name, ( (DIRBITS | mode | S_ISVTX) & 0777 & ~default_options.umask) ) < 0) {
-                    syslog( LOG_ERR, "stickydirmode: chmod \"%s\": %m", name );
+                    syslog( LOG_ERR, "stickydirmode: chmod \"%s\": %s", name, strerror(retval) );
                     return(AFPERR_ACCESS);
                 } else {
 #ifdef DEBUG
-                    syslog( LOG_INFO, "stickydirmode: (debug) chmod \"%s\": %m", name );
+                    syslog( LOG_INFO, "stickydirmode: (debug) chmod \"%s\"", name );
 #endif /* DEBUG */
                     seteuid(uid);
                 } /* end getting retval */

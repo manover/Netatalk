@@ -1,5 +1,5 @@
 /*
- * $Id: messages.c,v 1.9.2.2 2002-01-02 17:27:50 srittau Exp $
+ * $Id: messages.c,v 1.9.2.3 2002-03-05 02:08:12 jmarcus Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -71,18 +71,18 @@ void readmessage(void)
         /* Delete will probably fail otherwise, but let's try anyways */
         euid = geteuid();
         if (seteuid(0) < 0) {
-            syslog(LOG_ERR, "Could not switch back to root: %m");
+            syslog(LOG_ERR, "Could not switch back to root: %s", strerror(errno));
         }
 
         rc = unlink(filename);
 
         /* Drop privs again, failing this is very bad */
         if (seteuid(euid) < 0) {
-            syslog(LOG_ERR, "Could not switch back to uid %d: %m", euid);
+            syslog(LOG_ERR, "Could not switch back to uid %d: %s", euid, strerror(errno));
         }
 
         if (rc < 0) {
-            syslog (LOG_ERR, "Error deleting %s: %m", filename);
+            syslog (LOG_ERR, "Error deleting %s: %s", filename, strerror(rc));
         }
 #ifdef DEBUG
         else {
