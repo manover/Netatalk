@@ -12,6 +12,8 @@ Changes in 2.0-rc1
        Sourceforge bug ID 829221
 * UPD: ASP: rework getstatus. use several ASP packets if the client allows
        it, otherwise just send as much as we can
+* FIX: FreeBSD 5 build, from Alex Barton (alex at barton.de)
+* FIX: OSX 10.3 build
 * FIX: papd: workaround a problem with PJL before Postscript
 * FIX: afpd: make sure we only disconnect on old session if the users match
 * FIX: apfd: Quark6 mangled long filenames should work better now
