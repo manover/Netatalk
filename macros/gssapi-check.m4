@@ -1,4 +1,4 @@
-dnl $Id: gssapi-check.m4,v 1.1.2.4 2004-06-08 13:59:35 bfernhomberg Exp $
+dnl $Id: gssapi-check.m4,v 1.1.2.5 2004-06-18 07:57:19 bfernhomberg Exp $
 dnl Autoconf macro to check for kerberos
 
 AC_DEFUN([NETATALK_GSSAPI_CHECK], 
@@ -126,7 +126,7 @@ AC_DEFUN([NETATALK_GSSAPI_CHECK],
 	if test x"$ac_cv_func_gss_acquire_cred" = x"yes"; then
    		AC_DEFINE(HAVE_GSSAPI,1,[Whether to enable GSSAPI support])
 		AC_MSG_RESULT([yes])
-		GSSAPI_LIBS="$LIBS $LDLAGS"
+		GSSAPI_LIBS="$LDFLAGS $LIBS"
 	else
 		AC_MSG_RESULT([no])
 		if test x"$compilegssapi" = x"yes"; then
