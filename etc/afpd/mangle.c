@@ -1,5 +1,5 @@
 /* 
- * $Id: mangle.c,v 1.16.2.1.2.6 2003-11-01 02:14:56 bfernhomberg Exp $ 
+ * $Id: mangle.c,v 1.16.2.1.2.7 2003-11-03 03:10:01 bfernhomberg Exp $ 
  *
  * Copyright (c) 2002. Joe Marcus Clarke (marcus@marcuscom.com)
  * All Rights Reserved.  See COPYRIGHT.
@@ -112,11 +112,13 @@ private_demangle(const struct vol *vol, char *mfilename, cnid_t did, cnid_t *osx
 {
     char *t;
     char *u_name;
-    u_int32_t id = 0;
+    u_int32_t id, file_id;
     static char buffer[12 + MAXPATHLEN + 1];
     int len = 12 + MAXPATHLEN + 1;
     struct dir	*dir;
     size_t prefix;
+
+    id = file_id = 0;
 
     t = strchr(mfilename, MANGLE_CHAR);
     if (t == NULL) {
@@ -139,7 +141,7 @@ private_demangle(const struct vol *vol, char *mfilename, cnid_t did, cnid_t *osx
         return mfilename;
     }
 
-    id = htonl(id);
+    file_id = id = htonl(id);
     if (osx) {
         *osx = id;
     }
@@ -168,7 +170,7 @@ private_demangle(const struct vol *vol, char *mfilename, cnid_t did, cnid_t *osx
         }
         if (!osx) {
             /* convert back to mac name and check it's the same */
-            t = utompath(vol, u_name, id, utf8_encoding());
+            t = utompath(vol, u_name, file_id, utf8_encoding());
             if (!strcmp(t, mfilename)) {
                 return u_name;
             }
