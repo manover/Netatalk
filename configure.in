@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.1 2003-09-09 16:42:19 didg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.2 2003-09-09 18:18:53 bfernhomberg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(bin/adv1tov2/adv1tov2.c)
@@ -667,11 +667,18 @@ if test x"$this_os" = "xlinux"; then
 	AC_MSG_RESULT([ * Linux specific configuration])
 
 	dnl ----- check if we need the quotactl wrapper
-	AC_CHECK_HEADERS(sys/quota.h linux/quota.h)
-	AC_CHECK_FUNC(quotactl,,
-		AC_DEFINE(NEED_QUOTACTL_WRAPPER, 1, [Define if the quotactl wrapper is needed])
-		AC_MSG_RESULT([enabling quotactl wrapper])
-	)
+#	AC_CHECK_HEADERS(sys/quota.h linux/quota.h)
+#	AC_CHECK_FUNC(quotactl,,
+#		AC_DEFINE(NEED_QUOTACTL_WRAPPER, 1, [Define if the quotactl wrapper is needed])
+#		AC_MSG_RESULT([enabling quotactl wrapper])
+#	)
+
+        # For quotas on Linux XFS filesystems
+        AC_CHECK_HEADERS(linux/xqm.h linux/xfs_fs.h)
+        AC_CHECK_HEADERS(xfs/libxfs.h xfs/xqm.h xfs/xfs_fs.h)
+        # For linux > 2.5.56
+        AC_CHECK_HEADERS(linux/dqblk_xfs.h)
+
 
 	dnl ----- as far as I can tell, dbtob always does the wrong thing
 	dnl ----- on every single version of linux I've ever played with.
