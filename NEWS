@@ -1,3 +1,38 @@
+Changes in 2.0-rc1
+==================
+
+* NEW: new manual page for asip-status.pl
+* UPD: updated documentation
+* UPD: uams: link uam_dhx_passwd.so to lcrypt before lcrypto. might help with
+       MD5 passwords
+* UPD: Improved BerkeleyDB detection
+* UPD: sys/solaris/Makefile.in: enable 'make check', from Alexander Barton
+* UPD: tcp wrappers detection should work on OpenBSD as well now
+* UPD: macbin: increase the maximum size of macbinary forks, as suggested by 
+       Sourceforge bug ID 829221
+* UPD: ASP: rework getstatus. use several ASP packets if the client allows
+       it, otherwise just send as much as we can
+* FIX: papd: workaround a problem with PJL before Postscript
+* FIX: afpd: make sure we only disconnect on old session if the users match
+* FIX: apfd: Quark6 mangled long filenames should work better now
+* FIX: enhance ADv1 to ADv2 conversion. Fixed a SIGSEGV reported by Mark Baker
+* FIX: better detection of invalid resource forks
+* FIX: fix some linking problems on OpenBSD
+* FIX: afpd: catsearch.c, filedir.c: fix bogus casts, from Olaf Hering 
+       (olh at suse.de)
+* FIX: afpd: don't try to create special folders and .volinfo on read-only
+       volumes
+* FIX: iconv/unicode enhancements. fixed a sigsegv on conversion error
+* FIX: configure.in: fix a typo, reported by Joerg Rossdeutscher
+* FIX: uniconv: enhanced uniconv behaviour
+* FIX: fixed some Solaris compilation problems
+* FIX: papd/Makefile.am: add a missing $DESTDIR, from Vlad Agranovsky
+* FIX: afpd: quota.c: remove a c99 declaration, from Yann Rouillard
+* FIX: configure.in: Solaris/gcc 3.0 fix, from Yann Rouillard
+* FIX: afpd: fix a SIGSEGV when sharing home dirs without any options in 
+       AppleVolumes.
+* FIX: numerous small bugfixes
+
 Changes in 2.0-beta2
 ====================
 
