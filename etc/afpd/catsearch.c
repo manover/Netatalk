@@ -408,8 +408,10 @@ static int rslt_add(struct vol *vol, struct stat *statbuf, char *fname, short ci
 
 	/* Fill offset of returned file name */
 	if (savefname != NULL) {
-		*p++ = 0;
-		*p++ = (int)(p - *rbuf) - 1;
+		*p = 0;
+		p += 1;
+		*p = (int)(p - *rbuf) - 1;
+		p += 1;
 		p[0] = l;
 		strcpy(p+1, savefname);
 		p += l + 1;
