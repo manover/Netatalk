@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.17 2004-05-10 18:40:33 didg Exp $
+ * $Id: adouble.h,v 1.21.6.18 2004-05-11 08:28:33 didg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -266,6 +266,7 @@ struct adouble {
 #define ADFLAGS_NOADOUBLE (1<<3)
 #define ADFLAGS_V1COMPAT  (1<<4)
 #define ADFLAGS_NOHF      (1<<5)  /* not an error if no ressource fork */
+#define ADFLAGS_RDONLY    (1<<6)  /* don't try readwrite */
 
 /* lock flags */
 #define ADLOCK_CLR      (0)
@@ -371,8 +372,11 @@ extern void ad_init       __P((struct adouble *, int ));
 extern int ad_open        __P((const char *, int, int, int, struct adouble *)); 
 extern int ad_refresh     __P((struct adouble *));
 extern int ad_stat        __P((const char *, struct stat *));
+extern int ad_metadata    __P((const char *, int, struct adouble *));
 
+#if 0
 #define ad_metadata(name, flags, adp)  ad_open(name, ADFLAGS_HF|(flags), O_RDONLY, 0666, adp)
+#endif
 
 /* extend header to RW if R or W (W if R for locking),
  */ 
@@ -382,7 +386,7 @@ extern int ad_stat        __P((const char *, struct stat *));
 #endif
 static __inline__ mode_t ad_hf_mode (mode_t mode)
 {
-#if 1
+#if 0
     mode |= S_IRUSR;
 #endif    
     /* fnctl lock need write access */

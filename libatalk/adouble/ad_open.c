@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.13 2004-05-10 18:40:33 didg Exp $
+ * $Id: ad_open.c,v 1.30.6.14 2004-05-11 08:28:33 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -41,6 +41,7 @@
 #include <string.h>
 
 #include "ad_private.h"
+#include <stdlib.h>
 
 #ifndef MAX
 #define MAX(a, b)  ((a) < (b) ? (b) : (a))
@@ -471,7 +472,9 @@ bail_err:
 mode_t ad_hf_mode (mode_t mode)
 {
     /* we always need RW mode for file owner */
+#if 0
     mode |= S_IRUSR;
+#endif    
     /* fnctl lock need write access */
     if ((mode & S_IRUSR))
         mode |= S_IWUSR;
@@ -710,19 +713,19 @@ ad_path_osx( path, adflags )
         getcwd(buf, MAXPATHLEN);
     }
     else {
-        strncpy(buf, path, MAXPATHLEN);
+        strlcpy(buf, path, MAXPATHLEN +1);
     }
     if (NULL != ( slash = strrchr( buf, '/' )) ) {
 	c = *++slash;
 	*slash = '\0';
-	strncpy( pathbuf, buf, MAXPATHLEN);
+	strlcpy( pathbuf, buf, MAXPATHLEN +1);
 	*slash = c;
     } else {
 	pathbuf[ 0 ] = '\0';
 	slash = buf;
     }
-    strncat( pathbuf, "._", MAXPATHLEN - strlen(pathbuf));  
-    strncat( pathbuf, slash, MAXPATHLEN - strlen(pathbuf));
+    strlcat( pathbuf, "._", MAXPATHLEN  +1);  
+    strlcat( pathbuf, slash, MAXPATHLEN +1);
     return pathbuf;
 }
 
@@ -1004,7 +1007,9 @@ int ad_open( path, adflags, oflags, mode, ad )
     ad_p = ad->ad_path( path, adflags );
 
     hoflags = oflags & ~O_CREAT;
-    hoflags = (hoflags & ~(O_RDONLY | O_WRONLY)) | O_RDWR;
+    if (!(adflags & ADFLAGS_RDONLY)) {
+        hoflags = (hoflags & ~(O_RDONLY | O_WRONLY)) | O_RDWR;
+    }
     ad->ad_hf.adf_fd = open( ad_p, hoflags, 0 );
     if (ad->ad_hf.adf_fd < 0 ) {
         if ((errno == EACCES || errno == EROFS) && !(oflags & O_RDWR)) {
@@ -1095,6 +1100,33 @@ int ad_open( path, adflags, oflags, mode, ad )
     return 0 ;
 }
 
+/* ----------------------------------- 
+ * return only metadata but try very hard
+*/
+int ad_metadata(const char *name, int flags, struct adouble *adp)
+{
+    uid_t uid;
+    int   ret, err;
+
+    if ((ret = ad_open(name, ADFLAGS_HF | (flags), O_RDONLY, 0, adp)) < 0 && errno == EACCES) {
+        uid = geteuid();
+        if (seteuid(0)) {
+            LOG(log_error, logtype_default, "ad_metadata(%s): seteuid failed %s", name, strerror(errno));
+            errno = EACCES;
+            return -1;
+        }
+        /* we are root open read only */
+        ret = ad_open(name, ADFLAGS_HF|ADFLAGS_RDONLY|(flags), O_RDONLY, 0, adp);
+        err = errno;
+        if ( seteuid(uid) < 0) {
+            LOG(log_error, logtype_default, "ad_metadata: can't seteuid back");
+            exit(EXITERR_SYS);
+        }
+        errno = err;
+    }
+    return ret;
+}
+
 /* ----------------------------------- */
 static int new_rfork(const char *path, struct adouble *ad, int adflags)
 {
@@ -1164,7 +1196,7 @@ static int new_rfork(const char *path, struct adouble *ad, int adflags)
 int ad_refresh(struct adouble *ad)
 {
 
-  if (ad->ad_hf.adf_fd < -1)
+  if (ad->ad_hf.adf_fd < 0)
     return -1;
 
   return ad_header_read(ad, NULL);
