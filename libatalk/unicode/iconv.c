@@ -74,9 +74,6 @@ static size_t ascii_pull(void *,char **, size_t *, char **, size_t *);
 static size_t ascii_push(void *,char **, size_t *, char **, size_t *);
 static size_t iconv_copy(void *,char **, size_t *, char **, size_t *);
 
-static char hexdig[] = "0123456789abcdef";
-#define hextoint( c )   ( isdigit( c ) ? c - '0' : c + 10 - 'a' )
-
 struct charset_functions charset_ucs2 =
 {
         "UCS-2LE",
@@ -249,69 +246,6 @@ size_t atalk_iconv(atalk_iconv_t cd,
 	return 0;
 }
 
-
-size_t atalk_iconv_ignore(atalk_iconv_t cd, 
-		 const char **inbuf, size_t *inbytesleft,
-		 char **outbuf, size_t *outbytesleft, int *ignore)
-{
-	char cvtbuf[2048];
-	char *bufp = cvtbuf;
-	size_t bufsize;
-	size_t outlen = *outbytesleft;
-	char *o_save;
-	
-	/* in many cases we can go direct */
-	if (cd->direct) {
-	o_save = *outbuf;
-direct_loop:		
-		if ((size_t)-1 == cd->direct(cd->cd_direct, (char **)inbuf, inbytesleft, outbuf, outbytesleft)) {
-			if (errno == EILSEQ) {
-				o_save[outlen-*outbytesleft] = '_';
-				(*outbuf) = o_save + outlen-*outbytesleft+1;
-				(*outbytesleft) -=1;
-				(*inbuf) += 2;
-				(*inbytesleft) -= 2;
-				*ignore = 1;
-				goto direct_loop;
-		    }
-		    else
-			return (size_t)(-1);
-		}
-	}
-	
-	/* we have to do it chunks at a time */
-	while (*inbytesleft > 0) {
-		bufp = cvtbuf;
-		bufsize = sizeof(cvtbuf);
-		
-		if (cd->pull(cd->cd_pull, (char **)inbuf, inbytesleft, &bufp, &bufsize) == (size_t)-1
-		        && errno != E2BIG) {
-		    return -1;
-		}
-
-		bufp = cvtbuf;
-		bufsize = sizeof(cvtbuf) - bufsize;
-
-		o_save = *outbuf;
-convert_push:
-		if (cd->push(cd->cd_push, 
-			     &bufp, &bufsize, 
-			     outbuf, outbytesleft) == (size_t)-1) {
-		    if (errno == EILSEQ) {
-			o_save[outlen-*outbytesleft] = '_';
-			(*outbuf) = o_save + outlen-*outbytesleft+1;
-			(*outbytesleft) -=1;
-			bufp += 2;
-			bufsize -= 2;
-			*ignore = 1;
-			goto convert_push;
-		    }
-		    else
-			return (size_t)(-1);
-		}
-	}
-	return 0;
-}
 
 /*
   simple iconv_open() wrapper
