@@ -1,5 +1,5 @@
 /* 
- * $Id: cnid.c,v 1.1.4.2 2003-09-21 09:25:17 didg Exp $
+ * $Id: cnid.c,v 1.1.4.3 2003-10-12 15:13:29 didg Exp $
  *
  * Copyright (c) 2003 the Netatalk Team
  * Copyright (c) 2003 Rafal Lewczuk <rlewczuk@pronet.pl>
@@ -137,7 +137,7 @@ struct _cnid_db *cnid_open(const char *volpath, mode_t mask, char *type)
     }
     db->flags |= mod->flags;
 
-    if (db->flags |= CNID_FLAG_BLOCK) {
+    if ((db->flags | CNID_FLAG_BLOCK)) {
         sigemptyset(&sigblockset);
         sigaddset(&sigblockset, SIGTERM);
         sigaddset(&sigblockset, SIGHUP);
@@ -219,7 +219,6 @@ cnid_t cnid_getstamp(struct _cnid_db *cdb,  void *buffer, const int len)
 cnid_t ret;
 
     if (!cdb->cnid_getstamp) {
-        time_t stamp;
         memset(buffer, 0, len);
     	/* return the current time. it will invalide cache */
     	if (len < sizeof(time_t))
