@@ -1,4 +1,4 @@
-dnl $Id: ssl-check.m4,v 1.8.6.3 2004-04-21 00:56:59 bfernhomberg Exp $
+dnl $Id: ssl-check.m4,v 1.8.6.4 2004-08-11 03:03:50 bfernhomberg Exp $
 dnl Autoconf macro to check for SSL or OpenSSL
 
 AC_DEFUN([AC_CRYPT], [
@@ -37,6 +37,7 @@ AC_DEFUN([AC_PATH_SSL], [
 	SSL_CFLAGS=""
 	SSL_LIBS=""
 	saved_LIBS=$LIBS
+	saved_CFLAGS=$CFLAGS
 	compile_ssl=no
 
 	dnl make sure atalk_libname is defined beforehand
@@ -52,6 +53,8 @@ AC_DEFUN([AC_PATH_SSL], [
 					SSL_LIBS="$SSL_LIBS -R$ssldir/$atalk_libname -R$ssldir"
 				fi
 				AC_MSG_RESULT([$ssldir (enabling RANDNUM and DHX support)])
+				CFLAGS="$CFLAGS $SSL_CFLAGS"
+				LIBS="$LIBS $SSL_LIBS"
 
 dnl FIXME: The following looks crude and probably doesn't work properly.
 				dnl Check for the crypto library:
@@ -62,6 +65,8 @@ dnl FIXME: The following looks crude and probably doesn't work properly.
 		 		AC_DEFINE(OPENSSL_DHX,	1, [Define if the OpenSSL DHX modules should be built])
 				AC_DEFINE(UAM_DHX,	1, [Define if the DHX UAM modules should be compiled])
 				compile_ssl=yes
+				CFLAGS=$saved_CFLAGS
+				LIBS=$saved_LIBS
 				break
 			fi
 		done
