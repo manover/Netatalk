@@ -2,6 +2,14 @@
 
 pkgconfdir = @PKGCONFDIR@
 
+GENERATED_FILES = lp2pap.sh
+TEMPLATE_FILES = $(foreach f,$(GENERATED_FILES),$(f).tmpl)
+SCRIPTS = \
+	afpd-mtab.pl			\
+	apple_cp apple_mv apple_rm	\
+	cleanappledouble.pl		\
+	netatalkshorternamelinks.pl
+
 SUFFIXES = .tmpl .
 
 .tmpl:
@@ -10,9 +18,8 @@ SUFFIXES = .tmpl .
 		-e s@:ETCDIR:@${pkgconfdir}@ \
 		<$< >$@
 
-CLEANFILES = lp2pap.sh
+CLEANFILES = $(GENERATED_FILES)
 
-bin_SCRIPTS = apple_cp apple_mv apple_rm cleanappledouble.pl lp2pap.sh \
-	netatalkshorternamelinks.pl afpd-mtab.pl
+bin_SCRIPTS = $(SCRIPTS) $(GENERATED_FILES)
 
-EXTRA_DIST = $(bin_SCRIPTS)
+EXTRA_DIST = $(SCRIPTS) $(TEMPLATE_FILES)
