@@ -1,3 +1,8 @@
+2001-12-03  joe c  <marcus@marcuscom.com>
+	* etc/afpd/*.[ch], libatalk/cnid/*.[ch]: Big commit to clean up code
+	with astyle (readable code is hackable code).  Also committed a fix
+	for CNID DB that should give it a shot in production use.
+
 2001-11-16  jnewman <jnewman@mudpup.com>
 	* macros/db3-check.m4: Prefer specific directories before general ones
 	
