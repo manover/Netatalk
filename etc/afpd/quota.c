@@ -1,5 +1,5 @@
 /*
- * $Id: quota.c,v 1.22.8.10 2004-05-12 21:21:48 didg Exp $
+ * $Id: quota.c,v 1.22.8.11 2004-06-28 22:46:28 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -443,11 +443,13 @@ struct dqblk		*dq;
 {
 	struct dqblk dqg;
 
+#ifdef __svr4__
+    struct quotctl      qc;
+#endif
+
     memset(&dqg, 0, sizeof(dqg));
 	
 #ifdef __svr4__
-    struct quotctl	qc;
-
     qc.op = Q_GETQUOTA;
     qc.uid = uid;
     qc.addr = (caddr_t)dq;
