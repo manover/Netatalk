@@ -11,7 +11,8 @@
 # default translation -- note that CR <-> LF translation is done on all
 # files of type TEXT.  The first line turns off translation for files of
 # unknown type, the second turns this translation on.
-.         "BINA"  "UNIX"      Unix Binary                    Unix                      application/octet-stream
+.         "????"  "????"      Unix Binary                     Unix                      application/octet-stream
+#.         "BINA"  "UNIX"      Unix Binary                    Unix                      application/octet-stream
 # .         "TEXT"  "ttxt"      ASCII Text                     SimpleText                text/plain
 
 .1st      "TEXT"  "ttxt"      Text Readme                    SimpleText                application/text
