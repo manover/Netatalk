@@ -1,5 +1,5 @@
 /*
- * $Id: server_child.c,v 1.7.4.1.2.1 2003-11-11 08:48:33 didg Exp $
+ * $Id: server_child.c,v 1.7.4.1.2.2 2003-11-13 15:39:02 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -31,6 +31,8 @@
 #ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
 #endif /* HAVE_SYS_WAIT_H */
+#include <sys/time.h>
+
 #ifndef WEXITSTATUS
 #define WEXITSTATUS(stat_val) ((unsigned)(stat_val) >> 8)
 #endif /* ! WEXITSTATUS */
@@ -355,4 +357,33 @@ void server_child_handler(server_child *children)
       }
     }
   }
+}
+
+/* --------------------------- 
+ * reset children signals
+*/
+void server_reset_signal(void)
+{
+    struct sigaction    sv;
+    sigset_t            sigs;
+    const struct itimerval none = {{0, 0}, {0, 0}};
+
+    setitimer(ITIMER_REAL, &none, NULL);
+    memset(&sv, 0, sizeof(sv));
+    sv.sa_handler =  SIG_DFL;
+    sigemptyset( &sv.sa_mask );
+    
+    sigaction(SIGALRM, &sv, 0 );
+    sigaction(SIGHUP,  &sv, 0 );
+    sigaction(SIGTERM, &sv, 0 );
+    sigaction(SIGUSR1, &sv, 0 );
+    sigaction(SIGCHLD, &sv, 0 );
+    
+    sigemptyset(&sigs);
+    sigaddset(&sigs, SIGALRM);
+    sigaddset(&sigs, SIGHUP);
+    sigaddset(&sigs, SIGUSR1);
+    sigaddset(&sigs, SIGCHLD);
+    sigprocmask(SIG_UNBLOCK, &sigs, NULL);
+        
 }

@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_tcp.c,v 1.9.10.2 2003-11-11 08:48:33 didg Exp $
+ * $Id: dsi_tcp.c,v 1.9.10.3 2003-11-13 15:39:02 didg Exp $
  *
  * Copyright (c) 1997, 1998 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -132,9 +132,8 @@ static int dsi_tcp_open(DSI *dsi)
     u_int8_t block[DSI_BLOCKSIZ];
     size_t stored;
     
-    /* reset a couple signals */
-    signal(SIGTERM, SIG_DFL); 
-    signal(SIGHUP, SIG_DFL);
+    /* reset signals */
+    server_reset_signal();
 
     /* install an alarm to deal with non-responsive connections */
     newact.sa_handler = timeout_handler;

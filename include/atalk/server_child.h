@@ -36,5 +36,6 @@ extern void server_child_kill_one_by_id __P((server_child *children, const int f
 
 extern void server_child_setup __P((server_child *, const int, void (*)()));
 extern void server_child_handler __P((server_child *));
+extern void server_reset_signal __P((void));
 
 #endif

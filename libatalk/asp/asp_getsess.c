@@ -1,5 +1,5 @@
 /*
- * $Id: asp_getsess.c,v 1.7.8.1 2003-11-11 08:48:33 didg Exp $
+ * $Id: asp_getsess.c,v 1.7.8.2 2003-11-13 15:39:02 didg Exp $
  *
  * Copyright (c) 1990,1996 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -219,8 +219,7 @@ ASP asp_getsession(ASP asp, server_child *server_children,
 
 	switch ((pid = fork())) {
 	case 0 : /* child */
-	  signal(SIGTERM, SIG_DFL);
-	  signal(SIGHUP, SIG_DFL);
+	  server_reset_signal();
 	  /* free/close some things */
 	  for (i = 0; i < children->nsessions; i++ ) {
 	    if ( asp_ac[i] != NULL )
