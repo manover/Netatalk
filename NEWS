@@ -5,6 +5,10 @@ Changes in 1.6.1
 * FIX: Codepage file maccode.koi8-r is now correctly cleaned.
 * FIX: Fix init script location on SuSE. [Olaf]
 * FIX: Build fixes. [Olaf]
+* FIX: various bugs when a user doesn't have access permission to a folder.
+       (fix an OSX kernel panic)
+* FIX: CNID, folders' DID handling with concurrent access or symlinks.
+       (fix an endless loop in afpd).
 
 Changes in 1.6.0
 ================
