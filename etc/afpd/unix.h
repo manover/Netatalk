@@ -1,5 +1,5 @@
 /*
- * $Id: unix.h,v 1.12.2.1.2.4 2004-03-12 13:03:19 didg Exp $
+ * $Id: unix.h,v 1.12.2.1.2.5 2004-05-08 22:39:26 didg Exp $
  */
 
 #ifndef AFPD_UNIX_H
@@ -227,6 +227,7 @@ extern int setfilowner      __P((const struct vol *, const uid_t, const gid_t, s
 extern int unix_rename      __P((const char *oldpath, const char *newpath));
 
 extern void accessmode      __P((char *, struct maccess *, struct dir *, struct stat *));
+extern char *fullpathname   __P((const char *));
 
 #ifdef AFS	
     #define accessmode afsmode
