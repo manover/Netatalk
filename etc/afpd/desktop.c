@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.5 2003-10-17 00:01:10 didg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.6 2003-10-30 03:39:09 bfernhomberg Exp $
  *
  * See COPYRIGHT.
  *
@@ -13,8 +13,17 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include <atalk/logger.h>
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif /* HAVE_UNISTD_H */
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif /* HAVE_FCNTL_H */
 #include <errno.h>
+#include <dirent.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/uio.h>
@@ -29,29 +38,14 @@
 #include <atalk/afp.h>
 #include <atalk/adouble.h>
 #include <atalk/util.h>
-#include <dirent.h>
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif /* HAVE_FCNTL_H */
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-#ifdef HAVE_FCNTL_H
-#include <unistd.h>
-#endif /* HAVE_FCNTL_H */
-
+#include <atalk/logger.h>
 #include "volume.h"
 #include "directory.h"
 #include "fork.h"
 #include "globals.h"
 #include "desktop.h"
-
 #include "mangle.h"
 
-#ifdef AFP3x
-#include <iconv.h>
-#include <atalk/unicode.h>
-#endif
 
 int afp_opendt(obj, ibuf, ibuflen, rbuf, rbuflen )
 AFPObj      *obj;
