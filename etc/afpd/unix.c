@@ -1,5 +1,5 @@
 /*
- * $Id: unix.c,v 1.43.2.1.2.1 2003-10-30 05:57:44 bfernhomberg Exp $
+ * $Id: unix.c,v 1.43.2.1.2.2 2004-02-11 06:27:25 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -160,6 +160,9 @@ mode_t mode;
 }
 
 
+#ifdef accessmode
+#undef accessmode
+#endif
 /*
  * Calculate the mode for a directory using a stat() call to
  * estimate permission.
