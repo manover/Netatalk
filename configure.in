@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.126.2.1 2001-11-17 23:43:01 srittau Exp $
+dnl $Id: configure.in,v 1.126.2.2 2001-11-23 07:34:58 srittau Exp $
 dnl configure.in for netatalk
 
 AC_INIT(bin/adv1tov2/adv1tov2.c)
@@ -151,16 +151,6 @@ AC_ARG_ENABLE(afs,
 		AC_DEFINE(AFS, 1)
 		AC_MSG_RESULT([enabling AFS support])
 	fi
-)
-
-AC_ARG_WITH(config-dir,
-	[  --with-config-dir=DIR   obsolete - use --with-pkgconfdir],
-		sysconfdir="$withval",
-		if test "x$prefix" = "xNONE"; then
-			sysconfdir="$ac_default_prefix/etc"
-		else
-			sysconfdir="${prefix}/etc"
-		fi
 )
 
 AC_ARG_WITH(pkgconfdir,
