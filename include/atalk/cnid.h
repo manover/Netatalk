@@ -1,5 +1,5 @@
 /* 
- * $Id: cnid.h,v 1.9.6.3 2004-01-03 22:42:55 didg Exp $
+ * $Id: cnid.h,v 1.9.6.4 2004-01-10 07:19:31 bfernhomberg Exp $
  *
  * Copyright (c) 2003 the Netatalk Team
  * Copyright (c) 2003 Rafal Lewczuk <rlewczuk@pronet.pl>
@@ -79,6 +79,9 @@ struct _cnid_module {
 };
 typedef struct _cnid_module cnid_module;
 
+/* Inititalize the CNID backends */
+void cnid_init();
+
 /* Registers new CNID backend module */
 void cnid_register(struct _cnid_module *module);
 
@@ -109,7 +112,10 @@ void cnid_close(struct _cnid_db *db);
 
 /*
  * $Log: cnid.h,v $
- * Revision 1.9.6.3  2004-01-03 22:42:55  didg
+ * Revision 1.9.6.4  2004-01-10 07:19:31  bfernhomberg
+ * add cnid_init prototype
+ *
+ * Revision 1.9.6.3  2004/01/03 22:42:55  didg
  *
  * better errors handling in afpd for dbd cnid.
  *
