@@ -257,10 +257,7 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 	descriptor = conv_handles[from][to];
 
 	if (descriptor == (atalk_iconv_t)-1 || descriptor == (atalk_iconv_t)0) {
-		/* conversion not supported, use as is */
-		size_t len = MIN(srclen,destlen);
-		memcpy(dest,src,len);
-		return len;
+		return (size_t) -1;
 	}
 
 	i_len=srclen;
@@ -274,19 +271,13 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 				break;
 			case E2BIG:
 				reason="No more room"; 
-				LOG(log_debug, logtype_default, "convert_string: Required %d, available %d\n",
-					srclen, destlen);
-				/* we are not sure we need srclen bytes,
-			          may be more, may be less.
-				  We only know we need more than destlen
-				  bytes ---simo */
 		               break;
 			case EILSEQ:
 			       reason="Illegal multibyte sequence";
 			       break;
 		}
+		LOG(log_debug, logtype_default,"Conversion error: %s(%s)\n",reason,inbuf);
 		return (size_t)-1;
-		/* smb_panic(reason); */
 	}
 
 	/* Terminate the string */
@@ -437,7 +428,6 @@ convert:
 		*dest = (char *)realloc(ob,destlen+1);
 	}
 
-	//*dest = (char *)realloc(ob,destlen);
 	if (destlen && !*dest) {
 		LOG(log_debug, logtype_default, "convert_string_allocate: out of memory!\n");
 		SAFE_FREE(ob);
