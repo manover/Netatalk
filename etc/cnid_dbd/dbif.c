@@ -1,5 +1,5 @@
 /*
- * $Id: dbif.c,v 1.1.4.11 2004-01-10 06:18:43 didg Exp $
+ * $Id: dbif.c,v 1.1.4.12 2004-01-10 06:54:01 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -44,9 +44,9 @@ static struct db_table {
      DBTYPE          type;
 } db_table[] =
 {
-     { "cnid2.db",       NULL,      0, DB_HASH},
-     { "devino.db",      NULL,      0, DB_HASH},
-     { "didname.db",     NULL,      0, DB_HASH},
+     { "cnid2.db",       NULL,      0, DB_BTREE},
+     { "devino.db",      NULL,      0, DB_BTREE},
+     { "didname.db",     NULL,      0, DB_BTREE},
 };
 
 static char *old_dbfiles[] = {"cnid.db", NULL};
