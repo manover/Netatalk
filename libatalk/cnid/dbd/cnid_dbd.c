@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_dbd.c,v 1.1.4.14 2004-01-10 07:30:29 didg Exp $
+ * $Id: cnid_dbd.c,v 1.1.4.15 2004-01-14 23:15:19 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -584,17 +584,9 @@ static int dbd_getstamp(CNID_private *db, void *buffer, const int len)
     struct cnid_dbd_rqst rqst;
     struct cnid_dbd_rply rply;
 
-    /* TODO: We should maybe also check len. At the moment we rely on the caller
-       to provide a buffer that is large enough for MAXPATHLEN plus
-       CNID_HEADER_LEN plus 1 byte, which is large enough for the maximum that
-       can come from the database. */
-
     memset(buffer, 0, len);
     dbd_initstamp(&rqst);
 
-    /* This mimicks the behaviour of the "regular" cnid_resolve. So far,
-       nobody uses the content of buffer. It only provides space for the
-       name in the caller. */
     rply.name = buffer;
 
     if (transmit(db, &rqst, &rply) < 0) {

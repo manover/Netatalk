@@ -1,5 +1,5 @@
 /* 
- * $Id: cnid.h,v 1.9.6.4 2004-01-10 07:19:31 bfernhomberg Exp $
+ * $Id: cnid.h,v 1.9.6.5 2004-01-14 23:15:19 lenneis Exp $
  *
  * Copyright (c) 2003 the Netatalk Team
  * Copyright (c) 2003 Rafal Lewczuk <rlewczuk@pronet.pl>
@@ -95,7 +95,7 @@ int    cnid_delete(struct _cnid_db *cdb, cnid_t id);
 
 cnid_t cnid_get   (struct _cnid_db *cdb, const cnid_t did, const char *name,const int len);
 
-cnid_t cnid_getstamp(struct _cnid_db *cdb, void *buffer, const int len);
+int    cnid_getstamp(struct _cnid_db *cdb, void *buffer, const int len);
 
 cnid_t cnid_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t did,
 			const char *name, const int len);
@@ -112,7 +112,11 @@ void cnid_close(struct _cnid_db *db);
 
 /*
  * $Log: cnid.h,v $
- * Revision 1.9.6.4  2004-01-10 07:19:31  bfernhomberg
+ * Revision 1.9.6.5  2004-01-14 23:15:19  lenneis
+ * Check if we can get a DB stamp sucessfully in afs_openvol and fail
+ * the open if not.
+ *
+ * Revision 1.9.6.4  2004/01/10 07:19:31  bfernhomberg
  * add cnid_init prototype
  *
  * Revision 1.9.6.3  2004/01/03 22:42:55  didg

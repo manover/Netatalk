@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.16 2004-01-08 04:17:21 bfernhomberg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.17 2004-01-14 23:15:19 lenneis Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1706,7 +1706,10 @@ int		ibuflen, *rbuflen;
         if ((volume->v_cdb->flags & CNID_FLAG_PERSISTENT)) {
 
             /* FIXME find db time stamp */
-            cnid_getstamp(volume->v_cdb, volume->v_stamp, sizeof(volume->v_stamp));
+            if (cnid_getstamp(volume->v_cdb, volume->v_stamp, sizeof(volume->v_stamp)) < 0) {
+		LOG (log_error, logtype_afpd, "Fatal error: Unable to get stamp value from CNID backend");
+		goto openvol_err;
+	    }
 	}
 	else {
             p = Trash;

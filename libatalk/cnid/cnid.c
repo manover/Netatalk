@@ -1,5 +1,5 @@
 /* 
- * $Id: cnid.c,v 1.1.4.7 2004-01-03 22:21:09 didg Exp $
+ * $Id: cnid.c,v 1.1.4.8 2004-01-14 23:15:19 lenneis Exp $
  *
  * Copyright (c) 2003 the Netatalk Team
  * Copyright (c) 2003 Rafal Lewczuk <rlewczuk@pronet.pl>
@@ -223,7 +223,7 @@ cnid_t ret;
 }
 
 /* --------------- */
-cnid_t cnid_getstamp(struct _cnid_db *cdb,  void *buffer, const int len)
+int cnid_getstamp(struct _cnid_db *cdb,  void *buffer, const int len)
 {
 cnid_t ret;
 
