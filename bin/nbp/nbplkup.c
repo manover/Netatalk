@@ -1,5 +1,5 @@
 /*
- * $Id: nbplkup.c,v 1.4.14.1 2004-06-09 01:07:17 bfernhomberg Exp $
+ * $Id: nbplkup.c,v 1.4.14.2 2004-06-15 00:44:02 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
@@ -34,9 +34,10 @@
 #include <atalk/util.h>
 #include <string.h>
 #include <stdio.h>
-#if !defined( sun ) || !defined( i386 )
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif /* ! sun || ! i386 */
+#endif
+
 
 #include <atalk/unicode.h>
 

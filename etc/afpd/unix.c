@@ -1,5 +1,5 @@
 /*
- * $Id: unix.c,v 1.43.2.1.2.8 2004-05-12 21:21:48 didg Exp $
+ * $Id: unix.c,v 1.43.2.1.2.9 2004-06-15 00:46:01 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -33,6 +33,7 @@ char *strchr (), *strrchr ();
 #include <dirent.h>
 #include <limits.h>
 #include <sys/param.h>
+#include <sys/stat.h>
 #include <atalk/logger.h>
 #include <atalk/adouble.h>
 #include <atalk/afp.h>
