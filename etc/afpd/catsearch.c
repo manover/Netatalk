@@ -254,7 +254,7 @@ static struct adouble *adl_lkup(struct vol *vol, struct path *path)
 		adp = &ad;
 	} 
 
-    	if ( ad_open( path->u_name, ADFLAGS_HF | ((isdir)?ADFLAGS_DIR:0), O_RDONLY, 0, adp) < 0 ) {
+    	if ( ad_metadata( path->u_name, ((isdir)?ADFLAGS_DIR:0), adp) < 0 ) {
         	return NULL;
     	} 
 	return adp;	

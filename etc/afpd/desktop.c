@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.13 2004-05-04 15:38:24 didg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.14 2004-05-10 18:40:32 didg Exp $
  *
  * See COPYRIGHT.
  *
@@ -807,9 +807,7 @@ static int ad_getcomment(struct vol *vol, struct path *path, char *rbuf, int *rb
     } else
         adp = of->of_ad;
         
-    if ( ad_open( upath,
-                  ( isadir) ? ADFLAGS_HF|ADFLAGS_DIR : ADFLAGS_HF,
-                  O_RDONLY, 0666, adp) < 0 ) {
+    if ( ad_metadata( upath,( isadir) ? ADFLAGS_DIR : 0, adp) < 0 ) {
         return( AFPERR_NOITEM );
     }
 

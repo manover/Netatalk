@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.13 2004-05-04 15:38:24 didg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.14 2004-05-10 18:40:32 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -121,7 +121,7 @@ u_int32_t	did;
 #ifdef ATACC
 int path_isadir(struct path *o_path)
 {
-    return o_path->dir != NULL;
+    return o_path->d_dir != NULL;
 #if 0
     return o_path->m_name == '\0' || /* we are in a it */
            !o_path->st_valid ||      /* in cache but we can't chdir in it */ 
@@ -565,7 +565,7 @@ struct path *path;
     if ( path->u_name == NULL) {
         path->u_name = mtoupath(vol, path->m_name, dir->d_did, (path->m_type==3) );
     }
-    path->dir = NULL;
+    path->d_dir = NULL;
 
     if ( path->u_name == NULL) {
         afp_errno = AFPERR_PARAM;
@@ -598,7 +598,7 @@ struct path *path;
         }
     }
 
-    path->dir = dir;
+    path->d_dir = dir;
     if ( movecwd( vol, dir ) < 0 ) {
         return( NULL );
     }
@@ -1013,7 +1013,7 @@ char	**cpath;
     ret.m_name = path;
     ret.st_errno = 0;
     ret.st_valid = 0;
-    ret.dir = NULL;
+    ret.d_dir = NULL;
     for ( ;; ) {
         if ( len == 0 ) {
             if (movecwd( vol, dir ) < 0 ) {
@@ -1034,7 +1034,7 @@ char	**cpath;
             	    */
             	    ret.m_name = dir->d_m_name;
             	    ret.u_name = dir->d_u_name;
-            	    ret.dir = dir;
+            	    ret.d_dir = dir;
             	    return &ret;
             	} else if (afp_errno == AFPERR_NOOBJ) {
                     if ( movecwd( vol, dir->d_parent ) < 0 ) {
@@ -1064,7 +1064,7 @@ char	**cpath;
             }
             if (*path == '\0') {
                ret.u_name = ".";
-               ret.dir = dir;
+               ret.d_dir = dir;
             }               
             return &ret;
         } /* if (len == 0) */
@@ -1303,8 +1303,7 @@ int getdirparams(const struct vol *vol,
 		   (1 << DIRPBIT_FINFO)))) {
 
         ad_init(&ad, vol->v_adouble);
-    	if ( !ad_open( upath, ADFLAGS_HF|ADFLAGS_DIR, O_RDONLY,
-                  DIRBITS | 0777, &ad)) {
+    	if ( !ad_metadata( upath, ADFLAGS_DIR, &ad) ) {
             isad = 1;
         }
     }
@@ -1484,8 +1483,7 @@ int getdirparams(const struct vol *vol,
             *data++ = ma.ma_group;
             *data++ = ma.ma_owner;
             break;
-
-
+            
         default :
             if ( isad ) {
                 ad_close( &ad, ADFLAGS_HF );
@@ -1521,7 +1519,7 @@ int path_error(struct path *path, int error)
  */
     if (path_isadir(path))
         return afp_errno;
-    if (path->st_errno)
+    if (path->st_valid && path->st_errno)
         return error;
     return AFPERR_BADTYPE ;
 }
@@ -1567,7 +1565,10 @@ int		ibuflen, *rbuflen;
     }
 
     if ( *path->m_name != '\0' ) {
-    	return path_error(path, AFPERR_NOOBJ);
+        rc = path_error(path, AFPERR_NOOBJ);
+        /* maybe we are trying to set perms back */
+        if (rc != AFPERR_ACCESS)
+            return rc;
     }
 
     /*
@@ -1597,8 +1598,23 @@ struct path Cur_Path = {
     0,  /* */
 };
 
+/* ------------------ */
+static int set_dir_errors(struct path *path, const char *where, int err)
+{
+    switch ( err ) {
+    case EPERM :
+    case EACCES :
+        return AFPERR_ACCESS;
+    case EROFS :
+        return AFPERR_VLOCK;
+    }
+    LOG(log_error, logtype_afpd, "setdirparam(%s): %s: %s", fullpathname(path->u_name), where, strerror(err) );
+    return AFPERR_PARAM;
+}
+ 
+/* ------------------ */
 int setdirparams(const struct vol *vol, 
-                 struct path *path, u_int16_t bitmap, char *buf )
+                 struct path *path, u_int16_t d_bitmap, char *buf )
 {
     struct maccess	ma;
     struct adouble	ad;
@@ -1606,14 +1622,126 @@ int setdirparams(const struct vol *vol,
     struct timeval      tv;
 
     char                *upath;
-    int			bit = 0, aint, isad = 1;
+    struct dir          *dir;
+    int			bit, aint, isad = 1;
+    int                 cdate, bdate;
+    int                 owner, group;
     u_int16_t		ashort, bshort;
     int                 err = AFP_OK;
     int                 change_mdate = 0;
     int                 change_parent_mdate = 0;
     int                 newdate = 0;
+    u_int16_t           bitmap = d_bitmap;
+    u_char              finder_buf[32];
+    u_int32_t		upriv;
+    mode_t              mpriv;
+    u_int16_t           upriv_bit = 0;
 
+    bit = 0;
     upath = path->u_name;
+    dir   = path->d_dir;
+    while ( bitmap != 0 ) {
+        while (( bitmap & 1 ) == 0 ) {
+            bitmap = bitmap>>1;
+            bit++;
+        }
+
+        switch( bit ) {
+        case DIRPBIT_ATTR :
+            change_mdate = 1;
+            memcpy( &ashort, buf, sizeof( ashort ));
+            if ((ashort & htons(ATTRBIT_INVISIBLE)))
+		change_parent_mdate = 1;
+            buf += sizeof( ashort );
+            break;
+        case DIRPBIT_CDATE :
+            change_mdate = 1;
+            memcpy(&cdate, buf, sizeof(cdate));
+            buf += sizeof( cdate );
+            break;
+        case DIRPBIT_MDATE :
+            memcpy(&newdate, buf, sizeof(newdate));
+            buf += sizeof( newdate );
+            break;
+        case DIRPBIT_BDATE :
+            change_mdate = 1;
+            memcpy(&bdate, buf, sizeof(bdate));
+            buf += sizeof( bdate );
+            break;
+        case DIRPBIT_FINFO :
+            change_mdate = 1;
+            memcpy( finder_buf, buf, 32 );
+            buf += 32;
+            break;
+        case DIRPBIT_UID :	/* What kind of loser mounts as root? */
+            change_parent_mdate = 1;
+            memcpy( &owner, buf, sizeof(owner));
+            buf += sizeof( owner );
+            break;
+        case DIRPBIT_GID :
+            change_parent_mdate = 1;
+            memcpy( &group, buf, sizeof( group ));
+            buf += sizeof( group );
+            break;
+        case DIRPBIT_ACCESS :
+            change_mdate = 1;
+            change_parent_mdate = 1;
+            ma.ma_user = *buf++;
+            ma.ma_world = *buf++;
+            ma.ma_group = *buf++;
+            ma.ma_owner = *buf++;
+            mpriv = mtoumode( &ma );
+            if (dir_rx_set(mpriv) && setdirmode( vol, upath, mpriv) < 0 ) {
+                err = set_dir_errors(path, "setdirmode", errno);
+                bitmap = 0;
+            }
+            break;
+        /* Ignore what the client thinks we should do to the
+           ProDOS information block.  Skip over the data and
+           report nothing amiss. <shirsch@ibm.net> */
+        case DIRPBIT_PDINFO :
+            if (afp_version < 30) {
+                buf += 6;
+            }
+            else {
+                err = AFPERR_BITMAP;
+                bitmap = 0;
+            }
+            break;
+	case DIRPBIT_UNIXPR :
+	    if (vol_unix_priv(vol)) {
+	        /* Skip UID and GID for now, there seems to be no way to set them from an OSX client anyway */
+                buf += sizeof( aint );
+                buf += sizeof( aint );
+
+                change_mdate = 1;
+                change_parent_mdate = 1;
+                memcpy( &upriv, buf, sizeof( upriv ));
+                buf += sizeof( upriv );
+                upriv = ntohl (upriv);
+                if (dir_rx_set(upriv)) {
+                    /* maybe we are trying to set perms back */
+                    if ( setdirunixmode(vol, upath, upriv) < 0 ) {
+                        bitmap = 0;
+                        err = set_dir_errors(path, "setdirmode", errno);
+                    }
+                }
+                else {
+                    /* do it later */
+            	    upriv_bit = 1;
+                }
+                break;
+            }
+            /* fall through */
+        default :
+            err = AFPERR_BITMAP;
+            bitmap = 0;
+            break;
+        }
+
+        bitmap = bitmap>>1;
+        bit++;
+    }
     ad_init(&ad, vol->v_adouble);
 
     if (ad_open( upath, vol_noadouble(vol)|ADFLAGS_HF|ADFLAGS_DIR,
@@ -1626,8 +1754,9 @@ int setdirparams(const struct vol *vol,
          * note: we also don't need to worry about mdate. also, be quiet
          *       if we're using the noadouble option.
          */
-        if (!vol_noadouble(vol) && (bitmap &
-                                    ~((1<<DIRPBIT_ACCESS)|(1<<DIRPBIT_UID)|(1<<DIRPBIT_GID)|
+        if (!vol_noadouble(vol) && (d_bitmap &
+                                    ~((1<<DIRPBIT_ACCESS)|(1<<DIRPBIT_UNIXPR)|
+                                      (1<<DIRPBIT_UID)|(1<<DIRPBIT_GID)|
                                       (1<<DIRPBIT_MDATE)|(1<<DIRPBIT_PDINFO)))) {
             return AFPERR_ACCESS;
         }
@@ -1643,6 +1772,8 @@ int setdirparams(const struct vol *vol,
         }
     }
 
+    bit = 0;
+    bitmap = d_bitmap;
     while ( bitmap != 0 ) {
         while (( bitmap & 1 ) == 0 ) {
             bitmap = bitmap>>1;
@@ -1651,9 +1782,7 @@ int setdirparams(const struct vol *vol,
 
         switch( bit ) {
         case DIRPBIT_ATTR :
-            change_mdate = 1;
             if (isad) {
-                memcpy( &ashort, buf, sizeof( ashort ));
                 ad_getattr(&ad, &bshort);
                 if ( ntohs( ashort ) & ATTRBIT_SETCLR ) {
                     bshort |= htons( ntohs( ashort ) & ~ATTRBIT_SETCLR );
@@ -1661,250 +1790,114 @@ int setdirparams(const struct vol *vol,
                     bshort &= ~ashort;
                 }
                 ad_setattr(&ad, bshort);
-                if ((ashort & htons(ATTRBIT_INVISIBLE)))
-		   change_parent_mdate = 1;
             }
-            buf += sizeof( ashort );
             break;
-
         case DIRPBIT_CDATE :
-            change_mdate = 1;
             if (isad) {
-                memcpy(&aint, buf, sizeof(aint));
-                ad_setdate(&ad, AD_DATE_CREATE, aint);
+                ad_setdate(&ad, AD_DATE_CREATE, cdate);
             }
-            buf += sizeof( aint );
             break;
-
         case DIRPBIT_MDATE :
-            memcpy(&newdate, buf, sizeof(newdate));
-            buf += sizeof( newdate );
             break;
-
         case DIRPBIT_BDATE :
-            change_mdate = 1;
             if (isad) {
-                memcpy(&aint, buf, sizeof(aint));
-                ad_setdate(&ad, AD_DATE_BACKUP, aint);
+                ad_setdate(&ad, AD_DATE_BACKUP, bdate);
             }
-            buf += sizeof( aint );
             break;
-
         case DIRPBIT_FINFO :
-            change_mdate = 1;
-            /*
-             * Alright, we admit it, this is *really* sick!
-             * The 4 bytes that we don't copy, when we're dealing
-             * with the root of a volume, are the directory's
-             * location information. This eliminates that annoying
-             * behavior one sees when mounting above another mount
-             * point.
-             */
             if (isad) {
-                if (  curdir->d_did == DIRDID_ROOT ) {
-                    memcpy( ad_entry( &ad, ADEID_FINDERI ), buf, 10 );
-                    memcpy( ad_entry( &ad, ADEID_FINDERI ) + 14, buf + 14, 18 );
+                if (  dir->d_did == DIRDID_ROOT ) {
+                    /*
+                     * Alright, we admit it, this is *really* sick!
+                     * The 4 bytes that we don't copy, when we're dealing
+                     * with the root of a volume, are the directory's
+                     * location information. This eliminates that annoying
+                     * behavior one sees when mounting above another mount
+                     * point.
+                     */
+                    memcpy( ad_entry( &ad, ADEID_FINDERI ), finder_buf, 10 );
+                    memcpy( ad_entry( &ad, ADEID_FINDERI ) + 14, finder_buf + 14, 18 );
                 } else {
-                    memcpy( ad_entry( &ad, ADEID_FINDERI ), buf, 32 );
+                    memcpy( ad_entry( &ad, ADEID_FINDERI ), finder_buf, 32 );
                 }
             }
-            buf += 32;
+            break;
+        case DIRPBIT_UID :	/* What kind of loser mounts as root? */
+            if ( (dir->d_did == DIRDID_ROOT) &&
+                    (setdeskowner( ntohl(owner), -1 ) < 0)) {
+                err = set_dir_errors(path, "setdeskowner", errno);
+                if (isad && err == AFPERR_PARAM) {
+                    err = AFP_OK; /* ???*/
+                }
+                else {
+                    goto setdirparam_done;
+                }
+            }
+            if ( setdirowner(vol, upath, ntohl(owner), -1 ) < 0 ) {
+                err = set_dir_errors(path, "setdirowner", errno);
+                goto setdirparam_done;
+            }
             break;
 
-        case DIRPBIT_UID :	/* What kind of loser mounts as root? */
-            change_parent_mdate = 1;
-            memcpy( &aint, buf, sizeof(aint));
-            buf += sizeof( aint );
-            if ( (curdir->d_did == DIRDID_ROOT) &&
-                    (setdeskowner( ntohl(aint), -1 ) < 0)) {
-                switch ( errno ) {
-                case EPERM :
-                case EACCES :
-                    err = AFPERR_ACCESS;
-                    goto setdirparam_done;
-                    break;
-                case EROFS :
-                    err = AFPERR_VLOCK;
-                    goto setdirparam_done;
-                    break;
-                default :
-                    LOG(log_error, logtype_afpd, "setdirparam(%s): setdeskowner: %s",
-                        path->u_name, strerror(errno) );
-                    if (!isad) {
-                        err = AFPERR_PARAM;
-                        goto setdirparam_done;
-                    }
-                    break;
-                }
-            }
-            if ( setdirowner(vol,  ntohl(aint), -1 ) < 0 ) {
-                switch ( errno ) {
-                case EPERM :
-                case EACCES :
-                    err = AFPERR_ACCESS;
-                    goto setdirparam_done;
-                    break;
-                case EROFS :
-                    err = AFPERR_VLOCK;
-                    goto setdirparam_done;
-                    break;
-                default :
-                    LOG(log_error, logtype_afpd, "setdirparam(%s): setdirowner: %s",
-                        path->u_name, strerror(errno) );
-                    break;
-                }
-            }
-            break;
         case DIRPBIT_GID :
-            change_parent_mdate = 1;
-            memcpy( &aint, buf, sizeof( aint ));
-            buf += sizeof( aint );
-            if (curdir->d_did == DIRDID_ROOT)
-                setdeskowner( -1, ntohl(aint) );
+            if (dir->d_did == DIRDID_ROOT)
+                setdeskowner( -1, ntohl(group) ); 
 
 #if 0       /* don't error if we can't set the desktop owner. */
-            switch ( errno ) {
-            case EPERM :
-            case EACCES :
-                err = AFPERR_ACCESS;
-                goto setdirparam_done;
-                break;
-            case EROFS :
-                err = AFPERR_VLOCK;
-                goto setdirparam_done;
-                break;
-            default :
-                LOG(log_error, logtype_afpd, "setdirparam(%s): setdeskowner: %s", path->u_name, strerror(errno)  );
-                if (!isad) {
-                    err = AFPERR_PARAM;
+                err = set_dir_errors(path, "setdeskowner", errno);
+                if (isad && err == AFPERR_PARAM) {
+                    err = AFP_OK; /* ???*/
+                }
+                else {
                     goto setdirparam_done;
                 }
-                break;
-            }
 #endif /* 0 */
 
-            if ( setdirowner(vol, -1, ntohl(aint) ) < 0 ) {
-                switch ( errno ) {
-                case EPERM :
-                case EACCES :
-                    err = AFPERR_ACCESS;
-                    goto setdirparam_done;
-                    break;
-                case EROFS :
-                    err = AFPERR_VLOCK;
-                    goto setdirparam_done;
-                    break;
-                default :
-                    LOG(log_error, logtype_afpd, "setdirparam(%s): setdirowner: %s",
-                        path->u_name, strerror(errno) );
-                    break;
-                }
+            if ( setdirowner(vol, upath, -1, ntohl(group) ) < 0 ) {
+                err = set_dir_errors(path, "setdirowner", errno);
+                goto setdirparam_done;
             }
             break;
 
         case DIRPBIT_ACCESS :
-            change_mdate = 1;
-            change_parent_mdate = 1;
-            ma.ma_user = *buf++;
-            ma.ma_world = *buf++;
-            ma.ma_group = *buf++;
-            ma.ma_owner = *buf++;
-
-            if (curdir->d_did == DIRDID_ROOT)
-                setdeskmode(mtoumode( &ma ));
-#if 0 /* don't error if we can't set the desktop mode */
-            switch ( errno ) {
-            case EPERM :
-            case EACCES :
-                err = AFPERR_ACCESS;
-                goto setdirparam_done;
-            case EROFS :
-                err = AFPERR_VLOCK;
-                goto setdirparam_done;
-            default :
-                LOG(log_error, logtype_afpd, "setdirparam(%s): setdeskmode: %s",
-                    path->u_name, strerror(errno) );
-                break;
-                err = AFPERR_PARAM;
-                goto setdirparam_done;
-            }
-#endif /* 0 */
-
-            if ( setdirmode( vol, mtoumode( &ma )) < 0 ) {
-                switch ( errno ) {
-                case EPERM :
-                case EACCES :
+            if (dir->d_did == DIRDID_ROOT) {
+                setdeskmode(mpriv);
+                if (!dir_rx_set(mpriv)) {
+                    /* we can't remove read and search for owner on volume root */
                     err = AFPERR_ACCESS;
-                    goto setdirparam_done;
-                case EROFS :
-                    err = AFPERR_VLOCK;
-                    goto setdirparam_done;
-                default :
-                    LOG(log_error, logtype_afpd, "setdirparam(%s): setdirmode: %s",
-                        path->u_name, strerror(errno) );
-                    err = AFPERR_PARAM;
                     goto setdirparam_done;
                 }
             }
-            break;
 
-        /* Ignore what the client thinks we should do to the
-           ProDOS information block.  Skip over the data and
-           report nothing amiss. <shirsch@ibm.net> */
+            if (!dir_rx_set(mpriv) && setdirmode( vol, upath, mpriv) < 0 ) {
+                err = set_dir_errors(path, "setdirmode", errno);
+                goto setdirparam_done;
+            }
+            break;
         case DIRPBIT_PDINFO :
-            if (afp_version < 30) {
-                buf += 6;
-                break;
-            }
-
-	case DIRPBIT_UNIXPR :
-	    /* Skip UID and GID for now, there seems to be now way to set them from an OSX client anyway */
-            buf += sizeof( aint );
-            buf += sizeof( aint );
-
-            change_mdate = 1;
-            change_parent_mdate = 1;
-            memcpy( &aint, buf, sizeof( aint ));
-            buf += sizeof( aint );
-	    aint = ntohl (aint);
-            if (curdir->d_did == DIRDID_ROOT)
-                setdeskmode( aint );
-#if 0 /* don't error if we can't set the desktop mode */
-            switch ( errno ) {
-            case EPERM :
-            case EACCES :
-                err = AFPERR_ACCESS;
+            if (afp_version >= 30) {
+                err = AFPERR_BITMAP;
                 goto setdirparam_done;
-            case EROFS :
-                err = AFPERR_VLOCK;
-                goto setdirparam_done;
-            default :
-                LOG(log_error, logtype_afpd, "setdirparam(%s): setdeskmode: %s",
-                    path->u_name, strerror(errno) );
-                break;
-                err = AFPERR_PARAM;
-                goto setdirparam_done;
-            }
-#endif /* 0 */
-
-            if ( setdirunixmode(vol, aint) < 0 ) {
-                switch ( errno ) {
-                case EPERM :
-                case EACCES :
-                    err = AFPERR_ACCESS;
-                    goto setdirparam_done;
-                case EROFS :
-                    err = AFPERR_VLOCK;
-                    goto setdirparam_done;
-                default :
-                    LOG(log_error, logtype_afpd, "setdirparam(%s): setdirmode: %s",
-                        path->u_name, strerror(errno) );
-                    err = AFPERR_PARAM;
-                    goto setdirparam_done;
-                }
             }
             break;
+	case DIRPBIT_UNIXPR :
+	    if (vol_unix_priv(vol)) {
+                if (dir->d_did == DIRDID_ROOT) {
+                    setdeskmode( upriv );
+                    if (!dir_rx_set(upriv)) {
+                        /* we can't remove read and search for owner on volume root */
+                        err = AFPERR_ACCESS;
+                        goto setdirparam_done;
+                    }
+                }
 
+                if ( upriv_bit && setdirunixmode(vol, upath, upriv) < 0 ) {
+                    err = set_dir_errors(path, "setdirmode", errno);
+                    goto setdirparam_done;
+                }
+                break;
+            }
+            /* fall through */
         default :
             err = AFPERR_BITMAP;
             goto setdirparam_done;
@@ -1930,20 +1923,20 @@ setdirparam_done:
         if (path->st_valid && !path->st_errno) {
             struct stat *st = &path->st;
 
-            if (curdir->d_parent) {
+            if (dir && dir->d_parent) {
                 ad_setid(&ad,(vol->v_flags & AFPVOL_NODEV)?0:st->st_dev, 
-                         st->st_ino,  curdir->d_did, curdir->d_parent->d_did, vol->v_stamp);
+                         st->st_ino,  dir->d_did, dir->d_parent->d_did, vol->v_stamp);
             }
         }
-    
         ad_flush( &ad, ADFLAGS_HF );
         ad_close( &ad, ADFLAGS_HF );
     }
 
-    if (change_parent_mdate && curdir->d_did != DIRDID_ROOT
+    if (change_parent_mdate && dir->d_did != DIRDID_ROOT
             && gettimeofday(&tv, NULL) == 0) {
-       if (!movecwd(vol, curdir->d_parent)) {
+       if (!movecwd(vol, dir->d_parent)) {
            newdate = AD_DATE_FROM_UNIX(tv.tv_sec);
+           /* be careful with bitmap because now dir is null */
            bitmap = 1<<DIRPBIT_MDATE;
            setdirparams(vol, &Cur_Path, bitmap, (char *)&newdate);
            /* should we reset curdir ?*/
@@ -2160,8 +2153,7 @@ int pathlen;
     fdir = curdir;
 
     ad_init(&ad, vol->v_adouble);
-    if ( ad_open( ".", ADFLAGS_HF|ADFLAGS_DIR, O_RDONLY,
-                  DIRBITS | 0777, &ad) == 0 ) {
+    if ( ad_metadata( ".", ADFLAGS_DIR, &ad) == 0 ) {
 
         ad_getattr(&ad, &ashort);
         ad_close( &ad, ADFLAGS_HF );

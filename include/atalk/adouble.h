@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.16 2004-04-21 18:45:45 bfernhomberg Exp $
+ * $Id: adouble.h,v 1.21.6.17 2004-05-10 18:40:33 didg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -372,6 +372,8 @@ extern int ad_open        __P((const char *, int, int, int, struct adouble *));
 extern int ad_refresh     __P((struct adouble *));
 extern int ad_stat        __P((const char *, struct stat *));
 
+#define ad_metadata(name, flags, adp)  ad_open(name, ADFLAGS_HF|(flags), O_RDONLY, 0666, adp)
+
 /* extend header to RW if R or W (W if R for locking),
  */ 
 #ifndef ATACC
@@ -380,6 +382,9 @@ extern int ad_stat        __P((const char *, struct stat *));
 #endif
 static __inline__ mode_t ad_hf_mode (mode_t mode)
 {
+#if 1
+    mode |= S_IRUSR;
+#endif    
     /* fnctl lock need write access */
     if ((mode & S_IRUSR))
         mode |= S_IWUSR;

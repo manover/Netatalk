@@ -1,5 +1,5 @@
 /*
- * $Id: ofork.c,v 1.20.6.5 2004-03-02 13:27:08 didg Exp $
+ * $Id: ofork.c,v 1.20.6.6 2004-05-10 18:40:32 didg Exp $
  *
  * Copyright (c) 1996 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -286,10 +286,8 @@ int ret;
    return ret;
 }
 
-/* -------------------------- 
- * assume 
-*/
-int of_statdir  (struct path *path)
+/* -------------------------- */
+int of_statdir  (const struct vol *vol, struct path *path)
 {
 static char pathname[ MAXPATHLEN + 1];
 int ret;
@@ -300,11 +298,23 @@ int ret;
     }
     path->st_errno = 0;
     path->st_valid = 1;
+    /* FIXME, what about: we don't have r-x perm anymore ? */
     strcpy(pathname, "../");
-    strlcat(pathname, path->dir->d_u_name, MAXPATHLEN);
-    if ((ret = stat(pathname, &path->st)) < 0)
-    	path->st_errno = errno;
-   return ret;
+    strlcat(pathname, path->d_dir->d_u_name, MAXPATHLEN);
+
+    if (!(ret = stat(pathname, &path->st)))
+        return 0;
+        
+    path->st_errno = errno;
+    /* hmm, can't stat curdir anymore */
+    if (errno == EACCES && curdir->d_parent ) {
+       if (movecwd(vol, curdir->d_parent)) 
+           return -1;
+       path->st_errno = 0;
+       if ((ret = stat(path->d_dir->d_u_name, &path->st)) < 0) 
+           path->st_errno = errno;
+    }
+    return ret;
 }
 
 /* -------------------------- */

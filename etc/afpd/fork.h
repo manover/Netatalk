@@ -1,5 +1,5 @@
 /*
- * $Id: fork.h,v 1.8.6.1 2004-03-02 13:27:08 didg Exp $
+ * $Id: fork.h,v 1.8.6.2 2004-05-10 18:40:32 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -68,7 +68,7 @@ extern int          of_rename    __P((const struct vol *,
 extern int          of_flush     __P((const struct vol *));
 extern void         of_pforkdesc __P((FILE *));
 extern int          of_stat      __P((struct path *));
-extern int          of_statdir   __P((struct path *));
+extern int          of_statdir   __P((const struct vol *vol, struct path *));
 /* in fork.c */
 extern int          flushfork    __P((struct ofork *));
 

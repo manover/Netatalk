@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.24 2004-05-04 15:38:24 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.25 2004-05-10 18:40:32 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -454,7 +454,7 @@ int getmetadata(struct vol *vol,
             memcpy(data, &aint, sizeof( aint ));
             data += sizeof( aint );
             break;
-        case FILPBIT_UNIXPR :
+        case FILPBIT_UNIXPR :            
             /* accessmode may change st_mode with ACLs */
             accessmode( upath, &ma, dir , st);
 
@@ -469,13 +469,12 @@ int getmetadata(struct vol *vol,
             memcpy( data, &aint, sizeof( aint ));
             data += sizeof( aint );
 
-
             *data++ = ma.ma_user;
             *data++ = ma.ma_world;
             *data++ = ma.ma_group;
             *data++ = ma.ma_owner;
             break;
-
+            
         default :
             return( AFPERR_BITMAP );
         }
@@ -526,10 +525,22 @@ int getfilparams(struct vol *vol,
             adp = &ad;
         }
 
-        if ( ad_open( upath, ADFLAGS_HF, O_RDONLY, 0, adp) < 0 ) {
-             adp = NULL;
+        if ( ad_metadata( upath, 0, adp) < 0 ) {
+            switch (errno) {
+            case EACCES:
+                LOG(log_error, logtype_afpd, "getfilparams(%s): %s: check resource fork permission?",
+                upath, strerror(errno));
+                return AFPERR_ACCESS;
+            case EIO:
+                LOG(log_error, logtype_afpd, "getfilparams(%s): bad resource fork", upath);
+                /* fall through */
+            case ENOENT:
+            default:
+                adp = NULL;
+                break;
+            }
         }
-        else {
+        if (adp) {
     	    /* FIXME 
     	       we need to check if the file is open by another process.
     	       it's slow so we only do it if we have to:
@@ -752,21 +763,24 @@ int		ibuflen, *rbuflen;
 
 /*
  * cf AFP3.0.pdf page 252 for change_mdate and change_parent_mdate logic  
- *
+ * 
 */
 extern struct path Cur_Path;
 
 int setfilparams(struct vol *vol,
-                 struct path *path, u_int16_t bitmap, char *buf )
+                 struct path *path, u_int16_t f_bitmap, char *buf )
 {
     struct adouble	ad, *adp;
     struct ofork        *of;
     struct extmap	*em;
-    int			bit = 0, isad = 1, err = AFP_OK;
+    int			bit, isad = 1, err = AFP_OK;
     char                *upath;
     u_char              achar, *fdType, xyy[4];
     u_int16_t		ashort, bshort;
     u_int32_t		aint;
+    u_int32_t		upriv;
+    u_int16_t           upriv_bit = 0;
+    
     struct utimbuf	ut;
 
     int                 change_mdate = 0;
@@ -775,7 +789,9 @@ int setfilparams(struct vol *vol,
     struct timeval      tv;
     uid_t		f_uid;
     gid_t		f_gid;
-
+    u_int16_t           bitmap = f_bitmap;
+    u_int32_t           cdate,bdate;
+    u_char              finder_buf[32];
 
 #ifdef DEBUG
     LOG(log_info, logtype_afpd, "begin setfilparams:");
@@ -793,78 +809,47 @@ int setfilparams(struct vol *vol,
         return AFPERR_ACCESS;
     }
 
-    if (ad_open( upath, vol_noadouble(vol) | ADFLAGS_HF,
-                 O_RDWR|O_CREAT, 0666, adp) < 0) {
-        /* for some things, we don't need an adouble header */
-        if (bitmap & ~(1<<FILPBIT_MDATE)) {
-            return vol_noadouble(vol) ? AFP_OK : AFPERR_ACCESS;
-        }
-        isad = 0;
-    } else if ((ad_get_HF_flags( adp ) & O_CREAT) ) {
-        ad_setname(adp, path->m_name);
-    }
-
+    /* with unix priv maybe we have to change adouble file priv first */
+    bit = 0;
     while ( bitmap != 0 ) {
         while (( bitmap & 1 ) == 0 ) {
             bitmap = bitmap>>1;
             bit++;
         }
-
         switch(  bit ) {
         case FILPBIT_ATTR :
             change_mdate = 1;
             memcpy(&ashort, buf, sizeof( ashort ));
-            ad_getattr(adp, &bshort);
-            if ( ntohs( ashort ) & ATTRBIT_SETCLR ) {
-                bshort |= htons( ntohs( ashort ) & ~ATTRBIT_SETCLR );
-            } else {
-                bshort &= ~ashort;
-            }
             if ((ashort & htons(ATTRBIT_INVISIBLE)))
                 change_parent_mdate = 1;
-            ad_setattr(adp, bshort);
             buf += sizeof( ashort );
             break;
-
         case FILPBIT_CDATE :
             change_mdate = 1;
-            memcpy(&aint, buf, sizeof(aint));
-            ad_setdate(adp, AD_DATE_CREATE, aint);
-            buf += sizeof( aint );
+            memcpy(&cdate, buf, sizeof(cdate));
+            buf += sizeof( cdate );
             break;
-
         case FILPBIT_MDATE :
             memcpy(&newdate, buf, sizeof( newdate ));
             buf += sizeof( newdate );
             break;
-
         case FILPBIT_BDATE :
             change_mdate = 1;
-            memcpy(&aint, buf, sizeof(aint));
-            ad_setdate(adp, AD_DATE_BACKUP, aint);
-            buf += sizeof( aint );
+            memcpy(&bdate, buf, sizeof( bdate));
+            buf += sizeof( bdate );
             break;
-
         case FILPBIT_FINFO :
             change_mdate = 1;
-
-            if (!memcmp( ad_entry( adp, ADEID_FINDERI ), ufinderi, 8 )
-                    && ( 
-                     ((em = getextmap( path->m_name )) &&
-                      !memcmp(buf, em->em_type, sizeof( em->em_type )) &&
-                      !memcmp(buf + 4, em->em_creator,sizeof( em->em_creator)))
-                     || ((em = getdefextmap()) &&
-                      !memcmp(buf, em->em_type, sizeof( em->em_type )) &&
-                      !memcmp(buf + 4, em->em_creator,sizeof( em->em_creator)))
-            )) {
-                memcpy(buf, ufinderi, 8 );
-            }
-
-            memcpy(ad_entry( adp, ADEID_FINDERI ), buf, 32 );
+            memcpy(finder_buf, buf, 32 );
             buf += 32;
             break;
-
         case FILPBIT_UNIXPR :
+            if (!vol_unix_priv(vol)) {
+            	/* this volume doesn't use unix priv */
+            	err = AFPERR_BITMAP;
+            	bitmap = 0;
+            	break;
+            }
             change_mdate = 1;
             change_parent_mdate = 1;
 
@@ -876,16 +861,17 @@ int setfilparams(struct vol *vol,
             buf += sizeof( aint );
             setfilowner(vol, f_uid, f_gid, path);
 
-            memcpy( &aint, buf, sizeof( aint ));
-            buf += sizeof( aint );
-            aint = ntohl (aint);
-            setfilunixmode(vol, path, aint);
+            memcpy( &upriv, buf, sizeof( upriv ));
+            buf += sizeof( upriv );
+            upriv = ntohl (upriv);
+            if ((upriv & S_IWUSR)) {
+            	setfilunixmode(vol, path, upriv);
+            }
+            else {
+            	/* do it later */
+            	upriv_bit = 1;
+            }
             break;
-            /* Client needs to set the ProDOS file info for this file.
-               Use a defined string for TEXT to support crlf
-               translations and convert all else into pXYY per Inside
-               Appletalk.  Always set the creator as "pdos".  Changes
-               from original by Marsha Jackson. */
         case FILPBIT_PDINFO :
             if (afp_version < 30) { /* else it's UTF8 name */
                 achar = *buf;
@@ -901,6 +887,81 @@ int setfilparams(struct vol *vol,
             	    xyy[2] = *buf++;
             	    fdType = xyy;
 	        }
+                break;
+            }
+            /* fallthrough */
+        default :
+            err = AFPERR_BITMAP;
+            /* break while loop */
+            bitmap = 0;
+            break;
+        }
+
+        bitmap = bitmap>>1;
+        bit++;
+    }
+
+    /* second try with adouble open 
+    */
+    if (ad_open( upath, vol_noadouble(vol) | ADFLAGS_HF,
+                 O_RDWR|O_CREAT, 0666, adp) < 0) {
+        /* for some things, we don't need an adouble header */
+        if (f_bitmap & ~(1<<FILPBIT_MDATE)) {
+            return vol_noadouble(vol) ? AFP_OK : AFPERR_ACCESS;
+        }
+        isad = 0;
+    } else if ((ad_get_HF_flags( adp ) & O_CREAT) ) {
+        ad_setname(adp, path->m_name);
+    }
+    
+    bit = 0;
+    bitmap = f_bitmap;
+    while ( bitmap != 0 ) {
+        while (( bitmap & 1 ) == 0 ) {
+            bitmap = bitmap>>1;
+            bit++;
+        }
+
+        switch(  bit ) {
+        case FILPBIT_ATTR :
+            ad_getattr(adp, &bshort);
+            if ( ntohs( ashort ) & ATTRBIT_SETCLR ) {
+                bshort |= htons( ntohs( ashort ) & ~ATTRBIT_SETCLR );
+            } else {
+                bshort &= ~ashort;
+            }
+            ad_setattr(adp, bshort);
+            break;
+        case FILPBIT_CDATE :
+            ad_setdate(adp, AD_DATE_CREATE, cdate);
+            break;
+        case FILPBIT_MDATE :
+            break;
+        case FILPBIT_BDATE :
+            ad_setdate(adp, AD_DATE_BACKUP, bdate);
+            break;
+        case FILPBIT_FINFO :
+            if (!memcmp( ad_entry( adp, ADEID_FINDERI ), ufinderi, 8 )
+                    && ( 
+                     ((em = getextmap( path->m_name )) &&
+                      !memcmp(finder_buf, em->em_type, sizeof( em->em_type )) &&
+                      !memcmp(finder_buf + 4, em->em_creator,sizeof( em->em_creator)))
+                     || ((em = getdefextmap()) &&
+                      !memcmp(finder_buf, em->em_type, sizeof( em->em_type )) &&
+                      !memcmp(finder_buf + 4, em->em_creator,sizeof( em->em_creator)))
+            )) {
+                memcpy(finder_buf, ufinderi, 8 );
+            }
+
+            memcpy(ad_entry( adp, ADEID_FINDERI ), finder_buf, 32 );
+            break;
+        case FILPBIT_UNIXPR :
+            if (upriv_bit) {
+            	setfilunixmode(vol, path, upriv);
+            }
+            break;
+        case FILPBIT_PDINFO :
+            if (afp_version < 30) { /* else it's UTF8 name */
                 memcpy(ad_entry( adp, ADEID_FINDERI ), fdType, 4 );
                 memcpy(ad_entry( adp, ADEID_FINDERI ) + 4, "pdos", 4 );
                 break;
@@ -910,7 +971,6 @@ int setfilparams(struct vol *vol,
             err = AFPERR_BITMAP;
             goto setfilparam_done;
         }
-
         bitmap = bitmap>>1;
         bit++;
     }
@@ -1188,9 +1248,6 @@ int		ibuflen, *rbuflen;
         return get_afp_errno(AFPERR_NOOBJ); 
     }
     if ( *s_path->m_name != '\0' ) {
-#if 0
-        return (path_isadir( s_path))? AFPERR_PARAM:AFPERR_BADTYPE ;
-#endif        
 	path_error(s_path, AFPERR_PARAM);
     }
 
@@ -1426,6 +1483,7 @@ char		*file;
 int         checkAttrib;
 {
     struct adouble	ad;
+    struct adouble      *adp = &ad;
     int			adflags, err = AFP_OK;
 
 #ifdef DEBUG
@@ -1447,7 +1505,8 @@ int         checkAttrib;
                 continue;
 
             case EACCES:
-                return AFPERR_ACCESS;
+                adp = NULL; /* maybe it's a file we no rw mode for us */
+                break;      /* was return AFPERR_ACCESS;*/
             case EROFS:
                 return AFPERR_VLOCK;
             default:
@@ -1459,17 +1518,31 @@ int         checkAttrib;
     /*
      * Does kFPDeleteInhibitBit (bit 8) set?
      */
-    if (checkAttrib && (adflags & ADFLAGS_HF)) {
+    if (checkAttrib) {
         u_int16_t   bshort;
+        
+        if (adp && (adflags & ADFLAGS_HF)) {
 
-        ad_getattr(&ad, &bshort);
-        if ((bshort & htons(ATTRBIT_NODELETE))) {
-            ad_close( &ad, adflags );
-            return(AFPERR_OLOCK);
+            ad_getattr(&ad, &bshort);
+            if ((bshort & htons(ATTRBIT_NODELETE))) {
+                ad_close( &ad, adflags );
+                return(AFPERR_OLOCK);
+            }
+        }
+        else if (!adp) {
+            /* was EACCESS error try to get only metadata */
+            ad_init(&ad, vol->v_adouble);  /* OK */
+            if ( ad_metadata( file , 0, &ad) == 0 ) {
+                ad_getattr(&ad, &bshort);
+                ad_close( &ad, ADFLAGS_HF );
+                if ((bshort & htons(ATTRBIT_NODELETE))) {
+                    return  AFPERR_OLOCK;
+                }
+            }
         }
     }
     
-    if ((adflags & ADFLAGS_HF) ) {
+    if (adp && (adflags & ADFLAGS_HF) ) {
         /* FIXME we have a pb here because we want to know if a file is open 
          * there's a 'priority inversion' if you can't open the ressource fork RW
          * you can delete it if it's open because you can't get a write lock.
@@ -1485,7 +1558,7 @@ int         checkAttrib;
         }
     }
 
-    if (ad_tmplock( &ad, ADEID_DFORK, ADLOCK_WR, 0, 0, 0 ) < 0) {
+    if (adp && ad_tmplock( &ad, ADEID_DFORK, ADLOCK_WR, 0, 0, 0 ) < 0) {
         err = AFPERR_BUSY;
     }
     else if (!(err = netatalk_unlink( vol->ad_path( file, ADFLAGS_HF)) ) &&
@@ -1497,7 +1570,8 @@ int         checkAttrib;
         }
 
     }
-    ad_close( &ad, adflags );  /* ad_close removes locks if any */
+    if (adp)
+        ad_close( &ad, adflags );  /* ad_close removes locks if any */
 
 #ifdef DEBUG
     LOG(log_info, logtype_afpd, "end deletefile:");

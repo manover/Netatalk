@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.45.2.2.2.10 2004-05-04 15:38:25 didg Exp $
+ * $Id: filedir.c,v 1.45.2.2.2.11 2004-05-10 18:40:32 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -180,7 +180,7 @@ int		ibuflen, *rbuflen;
          * it's curdir (maybe deleted, but then we can't know).
          * So we need to try harder.
          */
-        of_statdir(s_path);
+        of_statdir(vol, s_path);
     }
     if ( s_path->st_errno != 0 ) {
         return( AFPERR_NOOBJ );
@@ -189,7 +189,7 @@ int		ibuflen, *rbuflen;
     buflen = 0;
     if (S_ISDIR(st->st_mode)) {
         if (dbitmap) {
-            dir = s_path->dir;
+            dir = s_path->d_dir;
             if (!dir) 
                 return AFPERR_NOOBJ;
 
@@ -272,7 +272,7 @@ int		ibuflen, *rbuflen;
         /* it's a dir and it should be there
          * because we chdir in it in cname
          */
-        of_stat(path);
+        of_statdir(vol, path);
     }
 
     if ( path->st_errno != 0 ) {
@@ -381,7 +381,7 @@ int         isdir;
      * we are in the dest folder so we need to use p for ad_open
     */
     
-    if (!ad_open(p, ADFLAGS_HF |adflags, O_RDONLY, 0666, adp)) {
+    if (!ad_metadata(p, adflags, adp)) {
     u_int16_t bshort;
 
         ad_getattr(adp, &bshort);
@@ -501,7 +501,7 @@ int		ibuflen, *rbuflen;
         strcpy(oldname, path->m_name); /* an extra copy for of_rename */
         if (isdir) {
             /* curdir parent dir, need to move sdir back */
-            sdir = path->dir;
+            sdir = path->d_dir;
         }
     }
     else {
@@ -712,7 +712,7 @@ int		ibuflen, *rbuflen;
     isdir = path_isadir(path);
     if ( *path->m_name != '\0' ) {
         if (isdir) {
-            sdir = path->dir;
+            sdir = path->d_dir;
 	}
         strcpy(oldname, path->m_name); /* an extra copy for of_rename */
     } else {

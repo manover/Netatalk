@@ -1,5 +1,5 @@
 /*
- * $Id: unix.h,v 1.12.2.1.2.5 2004-05-08 22:39:26 didg Exp $
+ * $Id: unix.h,v 1.12.2.1.2.6 2004-05-10 18:40:33 didg Exp $
  */
 
 #ifndef AFPD_UNIX_H
@@ -217,14 +217,15 @@ extern struct afp_options default_options;
 
 extern int gmem            __P((const gid_t));
 extern int setdeskmode      __P((const mode_t));
-extern int setdirunixmode   __P((const struct vol *, const mode_t));
-extern int setdirmode       __P((const struct vol *, const mode_t));
+extern int setdirunixmode   __P((const struct vol *, const char *, const mode_t));
+extern int setdirmode       __P((const struct vol *, const char *, const mode_t));
 extern int setdeskowner     __P((const uid_t, const gid_t));
-extern int setdirowner      __P((const struct vol *, const uid_t, const gid_t));
+extern int setdirowner      __P((const struct vol *, const char *, const uid_t, const gid_t));
 extern int setfilmode       __P((char *, mode_t , struct stat *));
 extern int setfilunixmode   __P((const struct vol *, struct path*, const mode_t));
 extern int setfilowner      __P((const struct vol *, const uid_t, const gid_t, struct path*));
 extern int unix_rename      __P((const char *oldpath, const char *newpath));
+extern int dir_rx_set       __P((mode_t mode));
 
 extern void accessmode      __P((char *, struct maccess *, struct dir *, struct stat *));
 extern char *fullpathname   __P((const char *));

@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.12 2004-05-08 22:38:33 didg Exp $
+ * $Id: ad_open.c,v 1.30.6.13 2004-05-10 18:40:33 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -470,6 +470,8 @@ bail_err:
 #ifdef ATACC
 mode_t ad_hf_mode (mode_t mode)
 {
+    /* we always need RW mode for file owner */
+    mode |= S_IRUSR;
     /* fnctl lock need write access */
     if ((mode & S_IRUSR))
         mode |= S_IWUSR;

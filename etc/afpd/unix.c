@@ -1,5 +1,5 @@
 /*
- * $Id: unix.c,v 1.43.2.1.2.6 2004-05-08 22:39:26 didg Exp $
+ * $Id: unix.c,v 1.43.2.1.2.7 2004-05-10 18:40:32 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -303,6 +303,14 @@ const int dropbox;
     return retval;
 }
 
+/* ------------------------- */
+int dir_rx_set(mode_t mode)
+{
+    return (mode & (S_IXUSR | S_IRUSR)) == (S_IXUSR | S_IRUSR);
+}
+
+#define EXEC_MODE (S_IXGRP | S_IXUSR | S_IXOTH)
+
 int setdeskmode( mode )
 const mode_t	mode;
 {
@@ -312,6 +320,10 @@ const mode_t	mode;
     struct dirent	*deskp, *subp;
     DIR			*desk, *sub;
 
+    if (!dir_rx_set(mode)) {
+        /* want to remove read and search access to owner it will screw the volume */
+        return -1 ;
+    }
     if ( getcwd( wd , MAXPATHLEN) == NULL ) {
         return( -1 );
     }
@@ -350,9 +362,9 @@ const mode_t	mode;
 
             if (S_ISDIR(st.st_mode)) {
                 if ( chmod( modbuf,  (DIRBITS | mode) & ~default_options.umask ) < 0 && errno != EPERM ) {
-                    LOG(log_error, logtype_afpd, "setdeskmode: chmod %s: %s",fullpathname(modbuf), strerror(errno) );
+                     LOG(log_error, logtype_afpd, "setdeskmode: chmod %s: %s",fullpathname(modbuf), strerror(errno) );
                 }
-            } else if ( chmod( modbuf,  mode & ~default_options.umask ) < 0 && errno != EPERM ) {
+            } else if ( chmod( modbuf,  mode & ~(default_options.umask | EXEC_MODE) ) < 0 && errno != EPERM ) {
                 LOG(log_error, logtype_afpd, "setdeskmode: chmod %s: %s",fullpathname(modbuf), strerror(errno) );
             }
 
@@ -418,25 +430,44 @@ mode_t mask = S_IRUSR |S_IWUSR | S_IRGRP | S_IWGRP |S_IROTH | S_IWOTH;
 }
 
 /* --------------------- */
-int setdirunixmode( vol, mode )
+int setdirunixmode( vol, name, mode )
 const struct vol *vol;
+const char       *name;
 const mode_t     mode;
 {
+char *adouble = vol->ad_path( name, ADFLAGS_DIR );
+
     int dropbox = (vol->v_flags & AFPVOL_DROPBOX);
 
-    if (vol->v_adouble != AD_VERSION2_OSX) {
-        if (stickydirmode(".AppleDouble", DIRBITS | mode, dropbox) < 0 && !vol_noadouble(vol))
-            return  -1 ;
+    if (dir_rx_set(mode)) {
+    	/* extending right? dir first then .AppleDouble */
+    	if ( stickydirmode(name, DIRBITS | mode, dropbox) < 0 )
+        	return -1;
+    	if (vol->v_adouble != AD_VERSION2_OSX) {
+            if (stickydirmode(ad_dir(adouble), DIRBITS | mode, dropbox) < 0 && !vol_noadouble(vol)) {
+                return  -1 ;
+            }
+        }
     }
-
-    if ( stickydirmode(".", DIRBITS | mode, dropbox) < 0 )
-        return -1;
+    if (setfilmode(adouble, ad_hf_mode(mode), NULL) < 0 && !vol_noadouble(vol)) {
+        return  -1 ;
+    }
+    if (!dir_rx_set(mode)) {
+    	if (vol->v_adouble != AD_VERSION2_OSX) {
+            if (stickydirmode(ad_dir(adouble), DIRBITS | mode, dropbox) < 0 && !vol_noadouble(vol)) {
+                return  -1 ;
+            }
+        }
+    	if ( stickydirmode(name, DIRBITS | mode, dropbox) < 0 )
+            return -1;
+    }
     return 0;
 }
 
 /* --------------------- */
-int setdirmode( vol, mode )
+int setdirmode( vol, name, mode )
 const struct vol *vol;
+const char       *name;
 const mode_t mode;
 {
     char		buf[ MAXPATHLEN + 1];
@@ -447,9 +478,22 @@ const mode_t mode;
     int                 osx = vol->v_adouble == AD_VERSION2_OSX;
     int                 hf_mode = ad_hf_mode(mode);
     int                 dropbox = (vol->v_flags & AFPVOL_DROPBOX);
+    char                *adouble = vol->ad_path( name, ADFLAGS_DIR );
+    char                *adouble_p = ad_dir(adouble);
     
-    if (( dir = opendir( "." )) == NULL ) {
-        LOG(log_error, logtype_afpd, "setdirmode: opendir %s: %s", fullpathname("."), strerror(errno) );
+    if (dir_rx_set(mode)) {
+    	/* extending right? dir first then .AppleDouble */
+    	if ( stickydirmode(name, DIRBITS | mode, dropbox) < 0 )
+        	return -1;
+    	if (!osx) {
+            if (stickydirmode(adouble_p, DIRBITS | mode, dropbox) < 0 && !vol_noadouble(vol)) {
+                return  -1 ;
+            }
+        }
+    }
+    
+    if (( dir = opendir( name )) == NULL ) {
+        LOG(log_error, logtype_afpd, "setdirmode: opendir: %s", fullpathname(name), strerror(errno) );
         return( -1 );
     }
 
@@ -472,7 +516,7 @@ const mode_t mode;
            }
         }
 #if 0
-            /* XXX: need to preserve special modes */
+        /* Don't change subdir perm */
         else if (S_ISDIR(st.st_mode)) {
                 if (stickydirmode(dirp->d_name, DIRBITS | mode, dropbox) < 0)
                     return (-1);
@@ -489,13 +533,13 @@ const mode_t mode;
     
     /* change perm of .AppleDouble's files
     */
-    if (( dir = opendir( ".AppleDouble" )) == NULL ) {
+    if (( dir = opendir( adouble_p )) == NULL ) {
         if (vol_noadouble(vol))
             goto setdirmode_noadouble;
         LOG(log_error, logtype_afpd, "setdirmode: opendir %s: %s", fullpathname(".AppleDouble"),strerror(errno) );
         return( -1 );
     }
-    strcpy( buf, ".AppleDouble" );
+    strcpy( buf, adouble_p);
     strcat( buf, "/" );
     m = strchr( buf, '\0' );
     for ( dirp = readdir( dir ); dirp != NULL; dirp = readdir( dir )) {
@@ -518,16 +562,18 @@ const mode_t mode;
     } /* end for */
     closedir( dir );
 
-    /* XXX: use special bits to tag directory permissions */
-
-    /* XXX: need to preserve special modes */
-    if ( stickydirmode(".AppleDouble", DIRBITS | mode, dropbox) < 0 )
-        return( -1 );
+    if (!dir_rx_set(mode)) {
+        /* XXX: need to preserve special modes */
+        if (stickydirmode(adouble_p, DIRBITS | mode, dropbox) < 0 ) {
+                return  -1 ;
+        }
+    }
 
 setdirmode_noadouble:
-    /* XXX: need to preserve special modes */
-    if ( stickydirmode(".", DIRBITS | mode, dropbox) < 0 )
-        return( -1 );
+    if (!dir_rx_set(mode)) {
+    	if ( stickydirmode(name, DIRBITS | mode, dropbox) < 0 )
+        	return -1;
+    }
     return( 0 );
 }
 
@@ -639,8 +685,9 @@ struct path* path;
  * that user/group should inherit from other, but that doesn't fit
  * into the unix permission scheme. we can get around this by
  * co-opting some bits. */
-int setdirowner(vol, uid, gid )
+int setdirowner(vol, name, uid, gid )
 const struct vol *vol;
+const char      *name;
 const uid_t	uid;
 const gid_t	gid;
 {
@@ -651,8 +698,10 @@ const gid_t	gid;
     DIR			*dir;
     int                 osx = vol->v_adouble == AD_VERSION2_OSX;
     int                 noadouble = vol_noadouble(vol);
+    char                *adouble; 
+    char                *adouble_p;
 
-    if (( dir = opendir( "." )) == NULL ) {
+    if (( dir = opendir( name )) == NULL ) {
         return( -1 );
     }
     for ( dirp = readdir( dir ); dirp != NULL; dirp = readdir( dir )) {
@@ -678,12 +727,14 @@ const gid_t	gid;
        goto setdirowner_noadouble;
     }
 
-    if (( dir = opendir( ".AppleDouble" )) == NULL ) {
+    adouble = vol->ad_path( name, ADFLAGS_DIR );
+    adouble_p = ad_dir(adouble);
+    if (( dir = opendir( adouble_p )) == NULL ) {
         if (noadouble)
             goto setdirowner_noadouble;
         return( -1 );
     }
-    strcpy( buf, ".AppleDouble" );
+    strcpy( buf, adouble_p );
     strcat( buf, "/" );
     m = strchr( buf, '\0' );
     for ( dirp = readdir( dir ); dirp != NULL; dirp = readdir( dir )) {
