@@ -1,5 +1,5 @@
 /* 
- * $Id: mangle.c,v 1.16.2.1.2.2 2003-09-17 07:51:28 didg Exp $ 
+ * $Id: mangle.c,v 1.16.2.1.2.3 2003-09-28 13:58:58 didg Exp $ 
  *
  * Copyright (c) 2002. Joe Marcus Clarke (marcus@marcuscom.com)
  * All Rights Reserved.  See COPYRIGHT.
@@ -16,15 +16,91 @@
 #include <stdio.h>
 #include <ctype.h>
 #include "mangle.h"
+#include "desktop.h"
 
 #define hextoint( c )   ( isdigit( c ) ? c - '0' : c + 10 - 'A' )
 #define isuxdigit(x)    (isdigit(x) || (isupper(x) && isxdigit(x)))
 
-/*
- * OS X  
+
+
+static char *demangle_checks ( const struct vol *vol, char* uname, char * mfilename, size_t prefix)
+{
+    u_int16_t flags;
+    static char buffer[MAXPATHLEN +1];
+    size_t len;
+
+    /* We need to check, whether we really need to demangle the filename 	*/
+    /* i.e. it's not just a file with a valid #HEX in the name ...		*/
+    /* but we don't want to miss valid demangle as well.			*/
+
+    /* First we convert the unix name to our volume maccharset     	*/
+    /* This assumes, OSX will not send us a mangled name for *any* 	*/
+    /* other reason than a hint/filename mismatch on the OSX side!! */
+    /* If the filename needed mangling, we'll get the mac filename	*/
+    /* till the first unconvertable char, so these have to	match	*/
+    /* the mangled name we got ..					*/
+
+    flags = CONV_IGNORE | CONV_UNESCAPEHEX;
+    if ( (size_t) -1 == (len = convert_charset(vol->v_volcharset, vol->v_maccharset, 0, 
+				      uname, strlen(uname), buffer, MAXPATHLEN, &flags)) ) {
+	return mfilename;
+    }
+    /* If the filename is too long we also needed to mangle isn't this stuff always false */
+    if ( len >= vol->max_filename ) {
+        flags |= CONV_REQMANGLE;
+        len = prefix;
+    }
+    
+    /* Ok, mangling was needed, now we do some further checks    */
+    /* this is still necessary, as we might have a file abcde:xx */
+    /* with id 12, mangled to abcde#12, and a passed filename    */
+    /* abcd#12 						     */ 
+    /* if we only checked if "prefix" number of characters match */
+    /* we get a false postive in above case			     */
+
+    if ( flags & CONV_REQMANGLE ) {
+        if (len) { 
+            /* convert the buffer to UTF8_MAC ... */
+            if ((size_t) -1 == (len = convert_charset(vol->v_maccharset, CH_UTF8_MAC, 0, 
+            			buffer, len, buffer, MAXPATHLEN, &flags)) ) {
+                return mfilename;
+            }
+            /* Now compare the two names, they have to match the number of characters in buffer */
+            /* prefix can be longer than len, OSX might send us the first character(s) of a     */
+            /* decomposed char as the *last* character(s) before the #, so our match below will */
+            /* still work, but leaves room for a race ... FIXME				    */
+            if ( prefix >= len && !strncmp (mfilename, buffer, len)) {
+                 return uname;
+            }
+        }
+        else {
+            /* We couldn't convert the name to maccharset at all, so we'd expect a name */
+            /* in the "???#ID" form ... */
+            if ( !strncmp("???", mfilename, prefix)) {
+                return uname;
+            }
+            /* ..but OSX might send us only the first characters of a decomposed character. */
+            /*  So convert to UTF8_MAC again, now at least the prefix number of 	  */
+            /* characters have to match ... again a possible race FIXME			  */
+            
+            if ( (size_t) -1 == (len = convert_charset(vol->v_volcharset, CH_UTF8_MAC, 0, 
+	                          uname, strlen(uname), buffer, MAXPATHLEN, &flags)) ) {
+	        return mfilename;
+	    }
+
+            if ( !strncmp (mfilename, buffer, prefix) ) {
+                return uname;
+            }
+        }
+    }
+    return mfilename;
+}
+
+/* -------------------------------------------------------
 */
-char *
-demangle(const struct vol *vol, char *mfilename) {
+static char *
+private_demangle(const struct vol *vol, char *mfilename, cnid_t did, cnid_t *osx) 
+{
     char *t;
     char *u_name;
     u_int32_t id = 0;
@@ -55,19 +131,62 @@ demangle(const struct vol *vol, char *mfilename) {
     }
 
     id = htonl(id);
+    if (osx) {
+        *osx = id;
+    }
+
     /* is it a dir?, there's a conflict with pre OSX 'trash #2'  */
     if ((dir = dirsearch(vol, id))) {
-        if (!strncmp(dir->d_m_name, mfilename, prefix) || !strncmp("???", mfilename, prefix) ) {
-            return dir->d_u_name;
+        if (dir->d_did != id) {
+            /* not in the same folder, there's a race with outdate cache
+             * but we have to live with it, hopefully client will recover
+            */
+            return mfilename;
         }
-        return mfilename;
+        if (!osx) {
+            /* it's not from cname so mfilename and dir must be the same */
+            if (!strcmp(dir->d_m_name, mfilename)) {
+                return dir->d_u_name;
+            }
+        } 
+        else {
+	    return demangle_checks (vol, dir->d_u_name, mfilename, prefix);
+	}
     }
-    
-    if (NULL != (u_name = cnid_resolve(vol->v_cdb, &id, buffer, len)) ) {
-        /* FIXME we need to check here too but we don't have unix name */
-        return u_name;
+    else if (NULL != (u_name = cnid_resolve(vol->v_cdb, &id, buffer, len)) ) {
+        if (id != did) {
+            return mfilename;
+        }
+        if (!osx) {
+            /* convert back to mac name and check it's the same */
+            t = utompath(vol, u_name, id, utf8_encoding());
+            if (!strcmp(t, mfilename)) {
+                return u_name;
+            }
+        }
+        else {
+            return demangle_checks (vol, u_name, mfilename, prefix);
+        }
     }
+
     return mfilename;
+}
+
+/* -------------------------------------------------------
+*/
+char *
+demangle(const struct vol *vol, char *mfilename, cnid_t did)
+{
+    return private_demangle(vol, mfilename, did, NULL);
+}
+
+/* -------------------------------------------------------
+ * OS X  
+*/
+char *
+demangle_osx(const struct vol *vol, char *mfilename, cnid_t did, cnid_t *fileid) 
+{
+    return private_demangle(vol, mfilename, did, fileid);
 }
 
 /* -----------------------

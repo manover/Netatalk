@@ -1,5 +1,5 @@
 /*
- * $Id: file.h,v 1.16.2.2.2.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: file.h,v 1.16.2.2.2.2 2003-09-28 13:58:57 didg Exp $
  *
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
@@ -120,7 +120,7 @@ typedef enum {
   kTextEncodingMacKeyboardGlyphs = 41,
 } kTextEncoding_t;
 
-extern char *set_name   __P((const struct vol *, char *, char *, cnid_t, u_int32_t ) );
+extern char *set_name   __P((const struct vol *, char *, cnid_t, char *, cnid_t, u_int32_t ) );
 
 extern struct extmap	*getextmap __P((const char *));
 extern struct extmap	*getdefextmap __P((void));

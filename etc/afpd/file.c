@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.2 2003-09-21 09:25:17 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.3 2003-09-28 13:58:57 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -108,7 +108,7 @@ void *get_finderinfo(const char *mpath, struct adouble *adp, void *data)
 
 /* ---------------------
 */
-char *set_name(const struct vol *vol, char *data, char *name, cnid_t id, u_int32_t utf8) 
+char *set_name(const struct vol *vol, char *data, cnid_t pid, char *name, cnid_t id, u_int32_t utf8) 
 {
     u_int32_t   aint;
     char        *tp = NULL;
@@ -123,7 +123,7 @@ char *set_name(const struct vol *vol, char *data, char *name, cnid_t id, u_int32
            
             /* global static variable... */
             tp = strdup(name);
-            if (!(u = mtoupath(vol, name, 1)) || !(m = utompath(vol, u, id, 0))) {
+            if (!(u = mtoupath(vol, name, pid, 1)) || !(m = utompath(vol, u, id, 0))) {
                aint = 0;
             }
             else {
@@ -485,12 +485,12 @@ int getmetadata(struct vol *vol,
     if ( l_nameoff ) {
         ashort = htons( data - buf );
         memcpy(l_nameoff, &ashort, sizeof( ashort ));
-        data = set_name(vol, data, path->m_name, id, 0);
+        data = set_name(vol, data, dir->d_did, path->m_name, id, 0);
     }
     if ( utf_nameoff ) {
         ashort = htons( data - buf );
         memcpy(utf_nameoff, &ashort, sizeof( ashort ));
-        data = set_name(vol, data, path->m_name, id, utf8);
+        data = set_name(vol, data, dir->d_did, path->m_name, id, utf8);
     }
     *buflen = data - buf;
     return (AFP_OK);
@@ -1195,8 +1195,10 @@ int		ibuflen, *rbuflen;
     if (copy_path_name(newname, ibuf) < 0) {
         return( AFPERR_PARAM );
     }
-
-    if (NULL == (upath = mtoupath(vol, newname, utf8_encoding()))) {
+    /* newname is always only a filename so curdir *is* its
+     * parent folder
+    */
+    if (NULL == (upath = mtoupath(vol, newname, curdir->d_did, utf8_encoding()))) {
         return( AFPERR_PARAM );
     }
     if ( (err = copyfile(p, upath , newname, vol_noadouble(vol))) < 0 ) {

@@ -1,5 +1,5 @@
 /*
- * $Id: mangle.h,v 1.4.2.1.2.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: mangle.h,v 1.4.2.1.2.2 2003-09-28 13:58:58 didg Exp $
  *
  */
 
@@ -25,6 +25,7 @@
 #define MAX_LENGTH MACFILELEN 
 
 extern char *mangle __P((const struct vol *, char *, char *, cnid_t, int));
-extern char *demangle __P((const struct vol *, char *));
+extern char *demangle __P((const struct vol *, char *, cnid_t did));
+extern char *demangle_osx __P((const struct vol *, char *, cnid_t did, cnid_t *fileid));
 
 #endif /* AFPD_MANGLE_H */

@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.3 2003-09-12 18:44:17 didg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.4 2003-09-28 13:58:55 didg Exp $
  *
  * See COPYRIGHT.
  *
@@ -619,12 +619,13 @@ char *dtfile(const struct vol *vol, u_char creator[], char *ext )
 
 /* ---------------------------
  * mpath is only a filename 
+ * did filename parent directory ID.
 */
 static char  upath[ MAXPATHLEN + 1];
 static char  mpath[ MAXPATHLEN + 1];
 static char  ucs2[ MAXPATHLEN + 1];
 
-char *mtoupath(const struct vol *vol, char *mpath, int utf8)
+char *mtoupath(const struct vol *vol, char *mpath, cnid_t did, int utf8)
 {
     char	*m, *u;
     size_t       inplen;
@@ -646,7 +647,7 @@ char *mtoupath(const struct vol *vol, char *mpath, int utf8)
     else if ((vol->v_casefold & AFPVOL_MTOULOWER))
         flags |= CONV_TOLOWER;
 
-    m = demangle(vol, mpath);
+    m = demangle(vol, mpath, did);
     if (m != mpath) {
         return m;
     }
@@ -669,7 +670,9 @@ char *mtoupath(const struct vol *vol, char *mpath, int utf8)
     return( upath );
 }
 
-/* --------------- */
+/* --------------- 
+ * id filename ID
+*/
 char *utompath(const struct vol *vol, char *upath, cnid_t id, int utf8)
 {
     char        *m, *u;
@@ -695,10 +698,6 @@ char *utompath(const struct vol *vol, char *upath, cnid_t id, int utf8)
     mpath[outlen] = 0; 
     if (!(flags & CONV_REQMANGLE)) 
         flags = 0;
-    else {
-    	if (NULL != (u = strrchr(mpath, '.')) ) 
-		mpath[u-mpath] = 0;
-   }
 
     m = mangle(vol, mpath, upath, id, flags);
 
@@ -708,7 +707,7 @@ char *utompath(const struct vol *vol, char *upath, cnid_t id, int utf8)
     return(m);
 
 utompath_error:
-    u = "unconvertable";
+    u = "???";
     m = mangle(vol, u, upath, id, 1);
     return(m);
 }

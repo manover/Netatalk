@@ -1,5 +1,5 @@
 /*
- * $Id: fork.c,v 1.51.2.2.2.2 2003-09-12 18:44:17 didg Exp $
+ * $Id: fork.c,v 1.51.2.2.2.3 2003-09-28 13:58:57 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -84,7 +84,7 @@ const u_int16_t     attrbits;
     vol = ofork->of_vol;
     dir = ofork->of_dir;
 
-    if (NULL == (path.u_name = mtoupath(vol, ofork->of_name, utf8_encoding()))) {
+    if (NULL == (path.u_name = mtoupath(vol, ofork->of_name, dir->d_did, utf8_encoding()))) {
         return( AFPERR_MISC );
     }
     path.m_name = ofork->of_name;

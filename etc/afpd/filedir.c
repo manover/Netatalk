@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.45.2.2.2.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: filedir.c,v 1.45.2.2.2.2 2003-09-28 13:58:57 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -356,7 +356,7 @@ int         isdir;
     adflags = 0;
     
     if (!isdir) {
-        p = mtoupath(vol, oldname, utf8_encoding());
+        p = mtoupath(vol, oldname, sdir->d_did, utf8_encoding());
         if (!p) { 
             return AFPERR_PARAM; /* can't convert */
         }
@@ -395,7 +395,7 @@ int         isdir;
             return(AFPERR_OLOCK);
     }
 
-    if (NULL == (upath = mtoupath(vol, newname, utf8_encoding()))){ 
+    if (NULL == (upath = mtoupath(vol, newname, curdir->d_did, utf8_encoding()))){ 
         return AFPERR_PARAM;
     }
     path.u_name = upath;
@@ -590,6 +590,7 @@ int		ibuflen, *rbuflen;
 
     return( rc );
 }
+/* ------------------------ */
 char *absupath( vol, dir, u )
 const struct vol	*vol;
 struct dir	*dir;
@@ -632,12 +633,15 @@ char	*u;
     return( p );
 }
 
+/* ------------------------
+ * FIXME dir could be NULL
+*/
 char *ctoupath( vol, dir, name )
 const struct vol	*vol;
 struct dir	*dir;
 char	*name;
 {
-    return absupath(vol, dir, mtoupath(vol, name, utf8_encoding()));
+    return absupath(vol, dir, mtoupath(vol, name, dir->d_did, utf8_encoding()));
 }
 
 /* ------------------------- */
@@ -652,6 +656,7 @@ int		ibuflen, *rbuflen;
     char	*oldname, *newname;
     struct path *path;
     int		did;
+    int		pdid;
     int         plen;
     u_int16_t	vid;
     int         rc;
@@ -711,6 +716,7 @@ int		ibuflen, *rbuflen;
     if (NULL == ( path = cname( vol, ddir, &ibuf ))) {
         return( AFPERR_NOOBJ );
     }
+    pdid = curdir->d_did;
     if ( *path->m_name != '\0' ) {
         return path_error(path, AFPERR_NOOBJ);
     }
@@ -727,7 +733,7 @@ int		ibuflen, *rbuflen;
     rc = moveandrename(vol, sdir, oldname, newname, isdir);
 
     if ( rc == AFP_OK ) {
-        char *upath = mtoupath(vol, newname, utf8_encoding());
+        char *upath = mtoupath(vol, newname, pdid, utf8_encoding());
         
         if (NULL == upath) {
             return AFPERR_PARAM;
@@ -736,6 +742,7 @@ int		ibuflen, *rbuflen;
         sdir->offcnt--;
 #ifdef DROPKLUDGE
         if (vol->v_flags & AFPVOL_DROPBOX) {
+            /* FIXME did is not always the source id */
             if ((retvalue=matchfile2dirperms (upath, vol, did)) != AFP_OK) {
                 return retvalue;
             }

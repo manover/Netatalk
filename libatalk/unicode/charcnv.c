@@ -247,6 +247,7 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 	size_t retval;
 	const char* inbuf = (const char*)src;
 	char* outbuf = (char*)dest;
+	char* o_save = outbuf;
 	atalk_iconv_t descriptor;
 
 	if (srclen == (size_t)-1)
@@ -282,11 +283,11 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 
 	/* Terminate the string */
 	if (to == CH_UCS2 && destlen-o_len >= 2) {
-		*(++outbuf) = 0;
-		*(++outbuf) = 0;
+		o_save[destlen-o_len]   = 0;
+		o_save[destlen-o_len+1] = 0;
 	}
 	else if ( destlen-o_len > 0)
-		*(++outbuf) = 0;
+		o_save[destlen-o_len] = 0;
 
 	return destlen-o_len;
 }
@@ -703,8 +704,8 @@ char * debug_out ( char * seq, size_t len)
 /* 
  * Convert from MB to UCS2 charset 
  * Flags:
- *		CONV_UNESCAPEHEX:	 ':XXXX' will be converted to an UCS2 character
- *		CONV_IGNORE:	 	unconvertable characters will be replaced with '_'
+ *		CONV_UNESCAPEHEX:	 ':XX' will be converted to an UCS2 character
+ *		CONV_IGNORE:	 	 return the first convertable characters.
  * FIXME:
  *		This will *not* work if the destination charset is not multibyte, i.e. UCS2->UCS2 will fail
  *		The (un)escape scheme is not compatible to the old cap style escape. This is bad, we need it 
@@ -814,7 +815,7 @@ unhex_char:
  * Convert from UCS2 to MB charset 
  * Flags:
  * 		CONV_ESCAPEDOTS: escape leading dots
- *		CONV_ESCAPEHEX:	 unconvertable characters and '/' will be escaped to :XXXX
+ *		CONV_ESCAPEHEX:	 unconvertable characters and '/' will be escaped to :XX
  *		CONV_IGNORE:	 unconvertable characters will be replaced with '_'
  * FIXME:
  *		CONV_IGNORE and CONV_ESCAPEHEX can't work together. Should we check this ?

@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.2 2003-09-28 13:58:56 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -564,8 +564,9 @@ struct vol	*vol;
 struct dir	*dir;
 struct path *path;
 {
+
     if ( path->u_name == NULL) {
-    path->u_name = mtoupath(vol, path->m_name, utf8_encoding() );
+        path->u_name = mtoupath(vol, path->m_name, dir->d_did, utf8_encoding() );
     }
     path->dir = NULL;
 
@@ -1081,18 +1082,22 @@ char	**cpath;
         *p = '\0';
 
         if ( p != path ) { /* we got something */
-            char *t;
             ret.u_name = NULL;
-            /* check for mangled filename :( */
             if (afp_version >= 30) {
-                t = demangle(vol, path);
+                /* check for OS X mangled filename :( */
+                char *t;
+                cnid_t fileid;
+	    
+                t = demangle_osx(vol, path, dir->d_did, &fileid);
                 if (t != path) {
-                    /* should we check id is cdir->d_did ? */
                     ret.u_name = t;
-                    if ( (t = utompath(vol, ret.u_name, 0, utf8_encoding())) ) {
-                         /* at last got our mac name */
-                         strcpy(path,t);
-                    }
+                    /* duplicate work but we can't reuse all convert_char we did in demagnle_osx 
+                     * flags weren't the same
+                    */
+                    if ( (t = utompath(vol, ret.u_name, fileid, utf8_encoding())) ) {
+                        /* at last got our view of mac name */
+                        strcpy(path,t);
+                    }                    
                 }
             }
             if ( !extend ) {
@@ -1267,6 +1272,7 @@ int getdirparams(const struct vol *vol,
     u_int16_t		ashort;
     int                 ret;
     u_int32_t           utf8 = 0;
+    cnid_t              pdid;
     struct stat *st = &s_path->st;
     char *upath = s_path->u_name;
     
@@ -1282,7 +1288,15 @@ int getdirparams(const struct vol *vol,
             isad = 1;
         }
     }
-
+    
+    if ( dir->d_did == DIRDID_ROOT) {
+        pdid = DIRDID_ROOT_PARENT;
+    } else if (dir->d_did == DIRDID_ROOT_PARENT) {
+        pdid = 0;
+    } else {
+        pdid = dir->d_parent->d_did;
+    }
+    
     data = buf;
     while ( bitmap != 0 ) {
         while (( bitmap & 1 ) == 0 ) {
@@ -1305,15 +1319,8 @@ int getdirparams(const struct vol *vol,
             break;
 
         case DIRPBIT_PDID :
-            if ( dir->d_did == DIRDID_ROOT) {
-                aint = DIRDID_ROOT_PARENT;
-            } else if (dir->d_did == DIRDID_ROOT_PARENT) {
-                aint = 0;
-            } else {
-                aint = dir->d_parent->d_did;
-            }
-            memcpy( data, &aint, sizeof( aint ));
-            data += sizeof( aint );
+            memcpy( data, &pdid, sizeof( pdid ));
+            data += sizeof( pdid );
             break;
 
         case DIRPBIT_CDATE :
@@ -1471,12 +1478,12 @@ int getdirparams(const struct vol *vol,
     if ( l_nameoff ) {
         ashort = htons( data - buf );
         memcpy( l_nameoff, &ashort, sizeof( ashort ));
-        data = set_name(vol, data, dir->d_m_name, dir->d_did, 0);
+        data = set_name(vol, data, pdid, dir->d_m_name, dir->d_did, 0);
     }
     if ( utf_nameoff ) {
         ashort = htons( data - buf );
         memcpy( utf_nameoff, &ashort, sizeof( ashort ));
-        data = set_name(vol, data, dir->d_m_name, dir->d_did, utf8);
+        data = set_name(vol, data, pdid, dir->d_m_name, dir->d_did, utf8);
     }
     if ( isad ) {
         ad_close( &ad, ADFLAGS_HF );
