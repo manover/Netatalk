@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.17 2004-08-23 22:27:02 bfernhomberg Exp $
+ * $Id: ad_open.c,v 1.30.6.18 2004-09-07 06:17:22 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -1192,8 +1192,8 @@ static int new_rfork(const char *path, struct adouble *ad, int adflags)
 		     &ashort, sizeof(ashort));
     } else {
         /* set default creator/type fields */
-	memcpy(ad_entry(ad, ADEID_FINDERI) + FINDERINFO_FRTYPEOFF,"TEXT", 4);
-	memcpy(ad_entry(ad, ADEID_FINDERI) + FINDERINFO_FRCREATOFF,"UNIX", 4);
+	memcpy(ad_entry(ad, ADEID_FINDERI) + FINDERINFO_FRTYPEOFF,"\0\0\0\0", 4);
+	memcpy(ad_entry(ad, ADEID_FINDERI) + FINDERINFO_FRCREATOFF,"\0\0\0\0", 4);
     }
 
     /* make things invisible */

@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.15 2004-06-20 15:30:04 bfernhomberg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.16 2004-09-07 06:17:20 didg Exp $
  *
  * See COPYRIGHT.
  *
@@ -309,11 +309,11 @@ addicon_err:
     return( AFP_OK );
 }
 
-u_char	utag[] = { 0, 0, 0, 0 };
-u_char	ucreator[] = { 'U', 'N', 'I', 'X' };
-u_char	utype[] = { 'T', 'E', 'X', 'T' };
-short	usize = 256;
-u_char	uicon[] = {
+static u_char	utag[] = { 0, 0, 0, 0 };
+static u_char	ucreator[] = { '0', '0', '0', '0' };/* { 'U', 'N', 'I', 'X' };*/
+static u_char	utype[] = { '0', '0', '0', '0' };/* { 'T', 'E', 'X', 'T' };*/
+static short	usize = 256;
+static u_char	uicon[] = {
     0x1F, 0xFF, 0xFC, 0x00, 0x10, 0x00, 0x06, 0x00,
     0x10, 0x00, 0x05, 0x00, 0x10, 0x00, 0x04, 0x80,
     0x10, 0x00, 0x04, 0x40, 0x10, 0x00, 0x04, 0x20,

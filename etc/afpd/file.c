@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.30 2004-09-06 09:38:21 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.31 2004-09-07 06:17:21 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -69,7 +69,7 @@ char *strchr (), *strrchr ();
  */
 
 const u_char ufinderi[] = {
-                              'T', 'E', 'X', 'T', 'U', 'N', 'I', 'X',
+                              0, 0, 0, 0, 0, 0, 0, 0,
                               0, 0, 0, 0, 0, 0, 0, 0,
                               0, 0, 0, 0, 0, 0, 0, 0,
                               0, 0, 0, 0, 0, 0, 0, 0
@@ -79,18 +79,21 @@ const u_char ufinderi[] = {
 void *get_finderinfo(const char *mpath, struct adouble *adp, void *data)
 {
     struct extmap	*em;
-    void                *ad_finder;
+    void                *ad_finder = NULL;
+    int                 chk_ext = 0;
+    
+    if (adp)
+        ad_finder = ad_entry(adp, ADEID_FINDERI);
 
-    if (adp && (ad_finder = ad_entry(adp, ADEID_FINDERI))) {
+    if ((adp != NULL) && (ad_finder != NULL)) {
         memcpy(data, ad_finder, 32);
     }
     else {
         memcpy(data, ufinderi, 32);
+        chk_ext = 1;
     }
-
-    if ((!adp  || !memcmp(ad_entry(adp, ADEID_FINDERI),ufinderi , 8 )) 
-            	&& (em = getextmap( mpath ))
-    ) {
+    /** Only enter if no appledouble information and no finder information found. */
+    if (chk_ext && (em = getextmap( mpath ))) {
         memcpy(data, em->em_type, sizeof( em->em_type ));
         memcpy((char *)data + 4, em->em_creator, sizeof(em->em_creator));
     }
