@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.25 2004-04-21 00:56:58 bfernhomberg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.26 2004-04-21 18:45:40 bfernhomberg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(etc/afpd/main.c)
@@ -148,7 +148,7 @@ case $host in
 esac
 
 dnl
-dnl FIXME: guess this won't work on Solaris, need to check
+dnl FIXME: Do we need something like this for Solaris 64bit?
 dnl
 
 case $host_cpu:$atalk_cv_cc_64bit_output in

@@ -1,5 +1,5 @@
 /*
- * $Id: util.h,v 1.7.10.4 2004-02-20 20:53:15 bfernhomberg Exp $
+ * $Id: util.h,v 1.7.10.5 2004-04-21 18:45:54 bfernhomberg Exp $
  */
 
 #ifndef _ATALK_UTIL_H
@@ -54,10 +54,14 @@ extern void mod_close    __P((void *));
 #define RTLD_NOW 1
 #endif /* ! RTLD_NOW */
 
-/* NetBSD doesn't like RTLD_NOW for dlopen (it fails). Use RTLD_LAZY. */
+/* NetBSD doesn't like RTLD_NOW for dlopen (it fails). Use RTLD_LAZY.
+ * OpenBSD currently does not use the second arg for dlopen(). For
+ * future compatibility we define DL_LAZY */
 #ifdef __NetBSD__
 #define mod_open(a)      dlopen(a, RTLD_LAZY)
-#else /* ! __NetBSD__ */
+#elif defined(__OpenBSD__)
+#define mod_open(a)      dlopen(a, DL_LAZY)
+#else /* ! __NetBSD__ && ! __OpenBSD__ */
 #define mod_open(a)      dlopen(a, RTLD_NOW)
 #endif /* __NetBSD__ */
 

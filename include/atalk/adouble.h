@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.15 2004-03-11 19:57:32 didg Exp $
+ * $Id: adouble.h,v 1.21.6.16 2004-04-21 18:45:45 bfernhomberg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -46,7 +46,11 @@
 #endif
 #endif
 
-#if defined(HAVE_PREAD) && !defined(SOLARIS)
+/*
+   Still have to figure out which platforms really
+   need _XOPEN_SOURCE defined for pread.
+ */  
+#if defined(HAVE_PREAD) && !defined(SOLARIS) && !defined(__OpenBSD__)
 #ifdef _XOPEN_SOURCE
 #undef _XOPEN_SOURCE
 #endif
