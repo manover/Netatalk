@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_dbd.c,v 1.1.4.13 2004-01-10 06:40:58 didg Exp $
+ * $Id: cnid_dbd.c,v 1.1.4.14 2004-01-10 07:30:29 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -620,6 +620,7 @@ int cnid_dbd_getstamp(struct _cnid_db *cdb, void *buffer, const int len)
     	db->notfirst = 1;
     	memcpy(db->stamp, buffer, len);
     }
+    return ret;
 }
 
 /* ---------------------- */

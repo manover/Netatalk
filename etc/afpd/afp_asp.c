@@ -1,5 +1,5 @@
 /*
- * $Id: afp_asp.c,v 1.18.6.2 2003-09-12 18:44:16 didg Exp $
+ * $Id: afp_asp.c,v 1.18.6.3 2004-01-10 07:30:29 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -190,7 +190,10 @@ void afp_over_asp(AFPObj *obj)
 {
     ASP asp;
     struct sigaction  action;
-    int		func, ccnt = 0, reply = 0;
+    int		func,  reply = 0;
+#ifdef DEBUG1
+    ccnt = 0;
+#endif    
 
     obj->exit = afp_asp_die;
     obj->reply = (int (*)()) asp_cmdreply;
