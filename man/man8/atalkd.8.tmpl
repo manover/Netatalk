@@ -1,4 +1,4 @@
-.TH atalkd 8 "17 Nov 1995" 2.0-rc1 Netatalk 
+.TH atalkd 8 "06 Sep 2004" 2.0-rc2 Netatalk 
 .SH NAME
 atalkd \- AppleTalk RTMP, NBP, ZIP, and AEP manager
 .SH SYNOPSIS
@@ -22,8 +22,8 @@ first column are ignored, as are blank lines. The syntax is
 \fB\-zone\fR \fIzonename\fR ] ...
 .PP
 Note that all fields except the interface are optional. The loopback
-interface is configured automatically. If \fB\-seed\fR
-is specified, all other fields must be present. Also,
+interface is configured automatically. If \fB\-seed\fR is
+specified, all other fields must be present. Also,
 atalkd will exit during bootstrap\%ping, if a router
 disagrees with its seed information. If \fB\-seed\fR is not
 given, all other information may be overriden during auto\-configuration.
@@ -33,8 +33,8 @@ is given and \fB\-net\fR is not, a net\-range of one is
 assumed.
 .PP
 The first \-zone directive for each interface is the ``default''
-zone. Under Phase 1, there is only one zone. Under Phase 2, all routers on the
-network are configured with the default zone and must agree.
+zone. Under Phase 1, there is only one zone. Under Phase 2, all routers on
+the network are configured with the default zone and must agree.
 atalkd maps ``*'' to the default zone of the first
 interface. Note: The default zone for a machine is determined by the
 configuration of the local routers; to appear in a non\-default zone, each
@@ -70,4 +70,6 @@ automatically acts as a router if there is more than one interface.
 .SH BUGS
 On some systems, atalkd can not be
 restarted.
+.SH "SEE ALSO"
+\fBatalkd.conf\fR(5)
 

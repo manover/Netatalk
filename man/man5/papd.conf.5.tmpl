@@ -1,4 +1,4 @@
-.TH papd.conf 5 "13 June 2004" 2.0-rc1 Netatalk 
+.TH papd.conf 5 "06 Sep 2004" 2.0-rc2 Netatalk 
 .SH NAME
 papd.conf \- Configuration file used by papd(8) to determine the configuration of printers used by the Netatalk printing daemon
 .SH DESCRIPTION
@@ -19,9 +19,7 @@ this case, atalkd should auto\-discover the local printers on the machine.
 Please note that you can split lines by using \fI\\\\fR.\fR
 .PP
 printername may be just a name (\fIPrinter
-1\fR), or it may be a full name in nbp_name format (\fIPrinter 1:LaserWriter@My Zone\fR). If more than 15
-printers are defined, you should explicitly define the zone for each
-printer. Otherwise, the Mac Chooser not show all the printers.
+1\fR), or it may be a full name in nbp_name format (\fIPrinter 1:LaserWriter@My Zone\fR).
 .PP
 Systems using a BSD printing system should make use of a pipe to the
 printing command in question within the \fIpr\fR
