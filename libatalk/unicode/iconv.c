@@ -366,8 +366,14 @@ static size_t ascii_pull(void *cd, char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
-		(*outbuf)[0] = (*inbuf)[0];
-		(*outbuf)[1] = 0;
+		if ((unsigned char)(*inbuf)[0] < 0x80) {
+			(*outbuf)[0] = (*inbuf)[0];
+			(*outbuf)[1] = 0;
+		}
+		else {
+			errno = EILSEQ;
+			return -1;
+		}
 		(*inbytesleft)  -= 1;
 		(*outbytesleft) -= 2;
 		(*inbuf)  += 1;
@@ -388,8 +394,12 @@ static size_t ascii_push(void *cd, char **inbuf, size_t *inbytesleft,
 	int ir_count=0;
 
 	while (*inbytesleft >= 2 && *outbytesleft >= 1) {
-		(*outbuf)[0] = (*inbuf)[0] & 0x7F;
-		if ((*inbuf)[1]) ir_count++;
+		if ((unsigned char)(*inbuf)[0] < 0x80 && (*inbuf)[1] == 0) 
+			(*outbuf)[0] = (*inbuf)[0];
+		else {
+			errno = EILSEQ;
+			return -1;
+		}	
 		(*inbytesleft)  -= 2;
 		(*outbytesleft) -= 1;
 		(*inbuf)  += 2;
