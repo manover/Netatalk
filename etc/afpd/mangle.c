@@ -1,5 +1,5 @@
 /* 
- * $Id: mangle.c,v 1.16.2.1.2.1 2003-09-09 16:42:20 didg Exp $ 
+ * $Id: mangle.c,v 1.16.2.1.2.2 2003-09-17 07:51:28 didg Exp $ 
  *
  * Copyright (c) 2002. Joe Marcus Clarke (marcus@marcuscom.com)
  * All Rights Reserved.  See COPYRIGHT.
@@ -20,6 +20,9 @@
 #define hextoint( c )   ( isdigit( c ) ? c - '0' : c + 10 - 'A' )
 #define isuxdigit(x)    (isdigit(x) || (isupper(x) && isxdigit(x)))
 
+/*
+ * OS X  
+*/
 char *
 demangle(const struct vol *vol, char *mfilename) {
     char *t;
@@ -28,31 +31,40 @@ demangle(const struct vol *vol, char *mfilename) {
     static char buffer[12 + MAXPATHLEN + 1];
     int len = 12 + MAXPATHLEN + 1;
     struct dir	*dir;
-
+    size_t prefix;
 
     t = strchr(mfilename, MANGLE_CHAR);
     if (t == NULL) {
-	    return mfilename;
-	}
+        return mfilename;
+    }
+    prefix = t - mfilename;
+    /* FIXME 
+     * is prefix == 0 a valid mangled filename ?
+    */
     /* may be a mangled filename */
     t++;
     if (*t == '0') { /* can't start with a 0 */
         return mfilename;
-	}
+    }
     while(isuxdigit(*t)) {
         id = (id *16) + hextoint(*t);
         t++;
     }
     if ((*t != 0 && *t != '.') || strlen(t) > MAX_EXT_LENGTH || id == 0) {
-	    return mfilename;
-	}
+        return mfilename;
+    }
 
     id = htonl(id);
-    /* is it a dir?*/
-    if (NULL != (dir = dirsearch(vol, id))) {
-        return dir->d_u_name;
-	}
+    /* is it a dir?, there's a conflict with pre OSX 'trash #2'  */
+    if ((dir = dirsearch(vol, id))) {
+        if (!strncmp(dir->d_m_name, mfilename, prefix) || !strncmp("???", mfilename, prefix) ) {
+            return dir->d_u_name;
+        }
+        return mfilename;
+    }
+    
     if (NULL != (u_name = cnid_resolve(vol->v_cdb, &id, buffer, len)) ) {
+        /* FIXME we need to check here too but we don't have unix name */
         return u_name;
     }
     return mfilename;
@@ -60,7 +72,7 @@ demangle(const struct vol *vol, char *mfilename) {
 
 /* -----------------------
    with utf8 filename not always round trip
-   filename   mac filename too long or with unmatchable utf8 replaced with _
+   filename   mac filename too long or first chars if unmatchable chars.
    uname      unix filename 
    id         file/folder ID or 0
    
@@ -86,13 +98,16 @@ mangle(const struct vol *vol, char *filename, char *uname, cnid_t id, int flags)
 	    ext_len = MAX_EXT_LENGTH;
 	}
     }
-	m = mfilename;
+    m = mfilename;
     memset(m, 0, MAX_LENGTH + 1);
     k = sprintf(mangle_suffix, "%c%X", MANGLE_CHAR, ntohl(id));
 
     strncpy(m, filename, MAX_LENGTH - k - ext_len);
-    	strcat(m, mangle_suffix);
-		strncat(m, ext, ext_len);
+    if (*m == 0) {
+        strcat(m, "???");
+    }
+    strcat(m, mangle_suffix);
+    strncat(m, ext, ext_len);
 
     return m;
 }
