@@ -1,5 +1,5 @@
 /*
- * $Id: afp_config.c,v 1.22.6.8 2004-06-12 14:36:24 didg Exp $
+ * $Id: afp_config.c,v 1.22.6.9 2004-06-14 20:58:56 bfernhomberg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -285,7 +285,8 @@ static AFPConfig *ASPConfigInit(const struct afp_options *options,
         LOG(log_error, logtype_afpd, "main: can't parse %s", options->server );
         goto serv_free_return;
     }
-    free (convname);
+    if (convname)
+        free (convname);
 
     /* dup Obj, Type and Zone as they get assigned to a single internal
      * buffer by nbp_name */
