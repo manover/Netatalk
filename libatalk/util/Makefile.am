@@ -15,6 +15,7 @@ libutil_la_SOURCES = \
 	server_lock.c	\
 	strcasestr.c    \
 	strdicasecmp.c	\
+	strlcpy.c	\
 	fault.c
 
 #	util_unicode.c

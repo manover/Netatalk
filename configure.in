@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.17 2004-02-07 19:46:07 didg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.18 2004-02-14 00:23:20 didg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(etc/afpd/main.c)
@@ -118,6 +118,7 @@ AC_FUNC_SETPGRP
 AC_CHECK_FUNCS(backtrace_symbols)
 AC_CHECK_FUNCS(setlocale nl_langinfo)
 AC_CHECK_FUNCS(dlopen dlclose dlsym dlerror waitpid getcwd strdup strndup strnlen strtoul strerror chown fchown chmod fchmod chroot link mknod mknod64)
+AC_CHECK_FUNCS(strlcpy strlcat)
 AC_CACHE_SAVE
 
 
