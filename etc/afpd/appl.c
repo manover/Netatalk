@@ -1,5 +1,5 @@
 /*
- * $Id: appl.c,v 1.12.2.1.2.1 2004-02-13 22:32:17 didg Exp $
+ * $Id: appl.c,v 1.12.2.1.2.2 2004-02-20 21:22:57 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -13,19 +13,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif /* HAVE_FCNTL_H */
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif /* HAVE_UNISTD_H */
-#include <sys/types.h>
-#include <sys/stat.h>
+
 #include <sys/param.h>
 #include <atalk/logger.h>
 #include <errno.h>
 
-#include <netatalk/endian.h>
 #include <atalk/adouble.h>
 #include <atalk/afp.h>
 

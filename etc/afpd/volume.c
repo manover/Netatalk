@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.20 2004-02-14 15:47:20 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.21 2004-02-20 21:23:13 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -17,9 +17,6 @@
 #include <grp.h>
 #include <utime.h>
 #include <errno.h>
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif /* HAVE_FCNTL_H */
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
 #endif
@@ -37,14 +34,10 @@ char *strchr (), *strrchr ();
 #define memmove(d,s,n) bcopy ((s), (d), (n))
 #endif /* ! HAVE_MEMCPY */
 #endif /* STDC_HEADERS */
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/param.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <netatalk/endian.h>
 #include <atalk/asp.h>
 #include <atalk/dsi.h>
 #include <atalk/adouble.h>

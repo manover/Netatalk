@@ -1,5 +1,5 @@
 /*
- * $Id: fork.c,v 1.51.2.2.2.5 2004-02-10 10:21:35 didg Exp $
+ * $Id: fork.c,v 1.51.2.2.2.6 2004-02-20 21:23:13 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -10,31 +10,24 @@
 #endif /* HAVE_CONFIG_H */
 
 #include <stdio.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif /* HAVE_UNISTD_H */
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif /* HAVE_FCNTL_H */
+
 #include <dirent.h>
 #include <string.h>
 #include <errno.h>
+
+#include <atalk/adouble.h>
 #include <atalk/logger.h>
 
 #include <sys/param.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/time.h>
 #include <sys/socket.h>
 
-#include <netatalk/endian.h>
 #include <netatalk/at.h>
 
 #include <atalk/dsi.h>
 #include <atalk/atp.h>
 #include <atalk/asp.h>
 #include <atalk/afp.h>
-#include <atalk/adouble.h>
+
 #include <atalk/util.h>
 #include <atalk/cnid.h>
 

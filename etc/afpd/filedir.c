@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.45.2.2.2.6 2004-02-13 22:32:18 didg Exp $
+ * $Id: filedir.c,v 1.45.2.2.2.7 2004-02-20 21:23:13 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -25,22 +25,15 @@ char *strchr (), *strrchr ();
 #define memmove(d,s,n) bcopy ((s), (d), (n))
 #endif /* ! HAVE_MEMCPY */
 #endif /* STDC_HEADERS */
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif /* HAVE_UNISTD_H */
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif /* HAVE_FCNTL_H */
+
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
 #endif
 #include <dirent.h>
 #include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/param.h>
-#include <netatalk/endian.h>
 #include <atalk/adouble.h>
+
 #include <atalk/afp.h>
 #include <atalk/util.h>
 #include <atalk/cnid.h>

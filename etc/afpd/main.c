@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.20.4.2.2.5 2003-11-14 14:37:38 didg Exp $
+ * $Id: main.c,v 1.20.4.2.2.6 2004-02-20 21:23:13 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -12,16 +12,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif /* HAVE_UNISTD_H */
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif /* HAVE_FCNTL_H */
 #include <signal.h>
 
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/param.h>
 #include <sys/uio.h>
 #include <atalk/logger.h>
@@ -30,14 +22,14 @@
 
 #include <errno.h>
 
-#include <netatalk/endian.h>
+#include <atalk/adouble.h>
+
 #include <netatalk/at.h>
 #include <atalk/compat.h>
 #include <atalk/dsi.h>
 #include <atalk/atp.h>
 #include <atalk/asp.h>
 #include <atalk/afp.h>
-#include <atalk/adouble.h>
 #include <atalk/paths.h>
 #include <atalk/util.h>
 #include <atalk/server_child.h>
@@ -318,8 +310,9 @@ char	**av;
         for (config = configs; config; config = config->next) {
             if (config->fd < 0)
                 continue;
-            if (FD_ISSET(config->fd, &rfds))
+            if (FD_ISSET(config->fd, &rfds)) {
                 config->server_start(config, configs, server_children);
+            }
         }
     }
 

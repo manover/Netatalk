@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.9 2004-02-13 22:32:18 didg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.10 2004-02-20 21:22:57 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -32,19 +32,14 @@ char *strchr (), *strrchr ();
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif /* HAVE_FCNTL_H */
+
 #include <grp.h>
 #include <pwd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/time.h>
 #include <sys/param.h>
 #include <errno.h>
 #include <utime.h>
-#include <netatalk/endian.h>
 #include <atalk/adouble.h>
+
 #include <atalk/afp.h>
 #include <atalk/util.h>
 #include <atalk/cnid.h>

@@ -1,5 +1,5 @@
 /*
- * $Id: unix.c,v 1.43.2.1.2.2 2004-02-11 06:27:25 didg Exp $
+ * $Id: unix.c,v 1.43.2.1.2.3 2004-02-20 21:23:13 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -11,34 +11,32 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+
 /* STDC check */
 #ifdef STDC_HEADERS
 #include <string.h>
 #else /* STDC_HEADERS */
+
 #ifndef HAVE_STRCHR
 #define strchr index
 #define strrchr index
 #endif /* HAVE_STRCHR */
 char *strchr (), *strrchr ();
+
 #ifndef HAVE_MEMCPY
 #define memcpy(d,s,n) bcopy ((s), (d), (n))
 #define memmove(d,s,n) bcopy ((s), (d), (n))
 #endif /* ! HAVE_MEMCPY */
 #endif /* STDC_HEADERS */
+
 #include <errno.h>
 #include <dirent.h>
 #include <limits.h>
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif /* HAVE_FCNTL_H */
-#include <sys/types.h>
 #include <sys/param.h>
-#include <sys/stat.h>
-#include <netatalk/endian.h>
 #include <atalk/logger.h>
 #include <atalk/adouble.h>
 #include <atalk/afp.h>
+
 #include "auth.h"
 #include "directory.h"
 #include "volume.h"

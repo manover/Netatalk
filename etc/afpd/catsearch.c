@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <dirent.h>
 #include <errno.h>
-#include <unistd.h>
 #include <ctype.h>
 #include <string.h>
 #include <time.h>
@@ -42,12 +41,9 @@
 #endif /* ! HAVE_MEMCPY */
 #endif
 
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/file.h>
 #include <netinet/in.h>
 
-#include <netatalk/endian.h>
 #include <atalk/afp.h>
 #include <atalk/adouble.h>
 #include <atalk/logger.h>

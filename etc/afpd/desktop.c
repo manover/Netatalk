@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.7 2004-01-10 06:40:58 didg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.8 2004-02-20 21:22:57 didg Exp $
  *
  * See COPYRIGHT.
  *
@@ -16,19 +16,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif /* HAVE_UNISTD_H */
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif /* HAVE_FCNTL_H */
+
 #include <errno.h>
 #include <dirent.h>
-#include <sys/types.h>
-#include <sys/time.h>
+
 #include <sys/uio.h>
 #include <sys/param.h>
-#include <sys/stat.h>
 #include <sys/socket.h>
 #include <netatalk/at.h>
 #include <netatalk/endian.h>
