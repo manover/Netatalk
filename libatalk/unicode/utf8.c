@@ -148,6 +148,10 @@ static size_t utf8_push(void *cd, char **inbuf, size_t *inbytesleft,
 		} else {
 			c[0] = uc;
 		}
+		else if ( uc >= 0x202a && uc <= 0x202e ) {
+			/* ignore bidi hint characters */
+			olen = 0;
+		}
 
 
 		(*inbytesleft)  -= 2;
