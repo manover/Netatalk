@@ -1,5 +1,5 @@
 /* 
- * $Id: mangle.c,v 1.16.2.1.2.3 2003-09-28 13:58:58 didg Exp $ 
+ * $Id: mangle.c,v 1.16.2.1.2.4 2003-10-12 02:11:28 didg Exp $ 
  *
  * Copyright (c) 2002. Joe Marcus Clarke (marcus@marcuscom.com)
  * All Rights Reserved.  See COPYRIGHT.
@@ -126,7 +126,7 @@ private_demangle(const struct vol *vol, char *mfilename, cnid_t did, cnid_t *osx
         id = (id *16) + hextoint(*t);
         t++;
     }
-    if ((*t != 0 && *t != '.') || strlen(t) > MAX_EXT_LENGTH || id == 0) {
+    if ((*t != 0 && *t != '.') || strlen(t) > MAX_EXT_LENGTH || id < 17) {
         return mfilename;
     }
 
