@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.44.2.3.2.7 2003-11-14 14:37:37 didg Exp $
+ * $Id: auth.c,v 1.44.2.3.2.8 2003-12-12 19:16:32 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -198,8 +198,13 @@ static int set_auth_switch(AFPObj *obj, int expired)
 	    uam_afpserver_action(AFP_READ_EXT,      UAM_AFPSERVER_POSTAUTH, afp_read_ext, NULL); 
 	    uam_afpserver_action(AFP_WRITE_EXT,     UAM_AFPSERVER_POSTAUTH, afp_write_ext, NULL); 
 	    uam_afpserver_action(AFP_DISCTOLDSESS,  UAM_AFPSERVER_POSTAUTH, afp_disconnect, NULL); 
-	    uam_afpserver_action(AFP_ZZZ,  UAM_AFPSERVER_POSTAUTH, afp_zzz, NULL); 
 
+        case 22:
+            /*
+             * If first connection to a server is done in classic AFP2.2 version is used
+             * but OSX uses AFP3.x FPzzz command !
+            */
+	    uam_afpserver_action(AFP_ZZZ,  UAM_AFPSERVER_POSTAUTH, afp_zzz, NULL); 
 	    break;
         }
     }
