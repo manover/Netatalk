@@ -70,7 +70,7 @@ uams_randnum_la_LDFLAGS    = -module -avoid-version @SSL_LIBS@
 uams_passwd_la_LDFLAGS     = -module -avoid-version @CRYPT_LIBS@
 uams_pam_la_LDFLAGS        = -module -avoid-version @PAM_LIBS@
 uams_pgp_la_LDFLAGS        = -module -avoid-version @SSL_LIBS@
-uams_dhx_passwd_la_LDFLAGS = -module -avoid-version @SSL_LIBS@ @CRYPT_LIBS@
+uams_dhx_passwd_la_LDFLAGS = -module -avoid-version @CRYPT_LIBS@ @SSL_LIBS@
 uams_dhx_pam_la_LDFLAGS    = -module -avoid-version @SSL_LIBS@ @PAM_LIBS@
 uams_gss_la_LDFLAGS   	   = -module -avoid-version @GSSAPI_LIBS@ 
 
