@@ -1,33 +1,32 @@
 /*
- * $Id: hqx.c,v 1.8 2001-06-29 14:14:46 rufustfirefly Exp $
+ * $Id: hqx.c,v 1.8.2.1 2002-03-12 14:12:40 srittau Exp $
  */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <sys/time.h>
 #include <sys/param.h>
-#ifdef notdef
-#if BSD >= 199006
-# include <machine/endian.h>
-#else /* BSD >= 199006 */
-# include <netinet/in.h>
-#endif /* BSD >= 199006 */
-#endif /* notdef */
+
+#include <string.h>
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
+
+#include <unistd.h>
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif /* HAVE_FCNTL_H */
-#include <string.h>
-#include <syslog.h>
-#include <ctype.h>
-#include <stdio.h>
+
+#include <netinet/in.h>
+
 #include <atalk/adouble.h>
 #include <netatalk/endian.h>
+
 #include "megatron.h"
 #include "hqx.h"
 
@@ -132,7 +131,7 @@ int hqx_open( hqxfile, flags, fh, options )
 #if DEBUG
 		off_t	pos;
 
-		pos = lseek( hqx.filed, 0, L_INCR );
+		pos = lseek( hqx.filed, 0, SEEK_CUR );
 		fprintf( stderr, "megatron: current position is %ld\n", pos );
 #endif /* DEBUG */
 		return( 0 );
@@ -199,7 +198,7 @@ int hqx_read( fork, buffer, length )
 #if DEBUG >= 3
     {
 	off_t	pos;
-	pos = lseek( hqx.filed, 0, L_INCR );
+	pos = lseek( hqx.filed, 0, SEEK_CUR );
 	fprintf( stderr, "hqx_read: current position is %ld\n", pos );
     }
     fprintf( stderr, "hqx_read: fork is %s\n", forkname[ fork ] );
