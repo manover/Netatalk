@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.8 2004-02-07 19:46:08 didg Exp $
+ * $Id: adouble.h,v 1.21.6.9 2004-02-09 23:44:32 bfernhomberg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -28,9 +28,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
 
 /* ------------------- 
  * need pread() and pwrite()
@@ -52,9 +49,10 @@
 #endif
 
 #ifdef  HAVE_PREAD
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE 500
+#ifdef _XOPEN_SOURCE
+#undef _XOPEN_SOURCE
 #endif
+#define _XOPEN_SOURCE 500
 #endif
 
 #ifdef HAVE_UNISTD_H
@@ -71,6 +69,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
 #include <netatalk/endian.h>
 
 /* version info */
