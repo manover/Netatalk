@@ -6,7 +6,8 @@
 # :DEFAULT: [all of the default options except volume name]
 # path [name] [casefold:x] [codepage:y] [options:z,l,j] \
 #   [allow:a,@b,c,d] [deny:a,@b,c,d] [dbpath:path] [password:p] \
-#   [rwlist:a,@b,c,d] [rolist:a,@b,c,d] [limitsize:value in bytes]
+#   [rwlist:a,@b,c,d] [rolist:a,@b,c,d] [limitsize:value in bytes]\
+#   [preexec:cmd] [root_preexec:cmd] [postexec:cmd]  [root_postexec:cmd] 
 #
 #
 # name:      volume name. it can't include the ':' character and is limited
@@ -20,7 +21,9 @@
 #        a value, it will get ignored.
 #
 # the variables:
+# $b   -> basename of path
 # $c   -> client's ip or appletalk address
+# $d   -> volume pathname on server    
 # $f   -> full name (whatever's in the gecos field)
 # $g   -> group
 # $h   -> hostname 
@@ -40,6 +43,14 @@
 # user1,@group,user2  -> allows/denies access from listed users/groups
 #                        rwlist/rolist control whether or not the
 #			 volume is ro for those users.
+# preexec             -> command to be run when the volume is mounted,
+#                        ignore for user defined volumes
+# root_preexec        -> command to be run as root when the volume is mounted,
+#                        ignore for user defined volumes
+# postexec             -> command to be run when the volume is closed,
+#                        ignore for user defined volumes
+# root_postexec        -> command to be run as root when the volume is closed,
+#                        ignore for user defined volumes
 #
 # miscellaneous options [syntax: options:option1,option2]:
 # prodos              -> make compatible with appleII clients.
@@ -71,6 +82,10 @@
 # password:password   -> set a volume password (8 characters max)
 # nofileid            -> don't advertise createfileid, resolveid, deleteid 
 #                        calls
+# root_preexec_close  -> a non-zero return code from root_preexec close the 
+                         volume being mounted.
+# preexec_close       -> a non-zero return code from preexec close the 
+                         volume being mounted.
 #
 # The "~" below indicates that Home directories are visible by default.
 # If you do not wish to have people accessing their Home directories,

@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.44.2.1 2003-05-10 10:33:16 didg Exp $
+ * $Id: auth.c,v 1.44.2.2 2003-05-26 11:04:36 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -676,6 +676,7 @@ char       *ibuf, *rbuf;
 int        ibuflen, *rbuflen;
 {
     LOG(log_info, logtype_afpd, "logout %s", obj->username);
+    close_all_vol();
     obj->exit(0);
     return AFP_OK;
 }

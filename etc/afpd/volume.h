@@ -1,5 +1,5 @@
 /*
- * $Id: volume.h,v 1.19 2003-03-09 20:37:27 didg Exp $
+ * $Id: volume.h,v 1.19.2.1 2003-05-26 11:04:36 didg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -78,6 +78,14 @@ struct vol {
     iconv_t             *v_ucs2tomac;
 #endif
 
+    char                *v_root_preexec;
+    char                *v_preexec;
+
+    char                *v_root_postexec;
+    char                *v_postexec;
+
+    int                 v_root_preexec_close;
+    int                 v_preexec_close;
 };
 
 #ifdef NO_LARGE_VOL_SUPPORT
@@ -187,5 +195,8 @@ extern int	afp_getvolparams __P((AFPObj *, char *, int, char *, int *));
 extern int	afp_setvolparams __P((AFPObj *, char *, int, char *, int *));
 extern int	afp_getsrvrparms __P((AFPObj *, char *, int, char *, int *));
 extern int	afp_closevol     __P((AFPObj *, char *, int, char *, int *));
+
+/* netatalk functions */
+extern void     close_all_vol   __P((void));
 
 #endif

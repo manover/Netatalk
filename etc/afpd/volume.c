@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51 2003-04-22 04:19:55 didg Exp $
+ * $Id: volume.c,v 1.51.2.1 2003-05-26 11:04:36 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -60,6 +60,8 @@ char *strchr (), *strrchr ();
 #include "globals.h"
 #include "unix.h"
 
+extern int afprun(int root, char *cmd, int *outfd);
+
 #ifndef MIN
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif /* ! MIN */
@@ -102,20 +104,24 @@ m=u -> map both ways
   ~u  -> make u illegal only as the first
   part of a double-byte character.
   */
-#define VOLOPT_VETO      10  /* list of veto filespec */
+#define VOLOPT_VETO          10  /* list of veto filespec */
+#define VOLOPT_PREEXEC       11  /* preexec command */
+#define VOLOPT_ROOTPREEXEC   12  /* root preexec command */
 
+#define VOLOPT_POSTEXEC      13  /* postexec command */
+#define VOLOPT_ROOTPOSTEXEC  14  /* root postexec command */
 #ifdef FORCE_UIDGID
 #warning UIDGID
 #include "uid.h"
 
-#define VOLOPT_FORCEUID  11  /* force uid for username x */
-#define VOLOPT_FORCEGID  12  /* force gid for group x */
-#define VOLOPT_UMASK     13
-#define VOLOPT_MAX       13
-#else /* normally, there are only 9 possible options */
-#define VOLOPT_UMASK     11
-#define VOLOPT_MAX       11
+#define VOLOPT_FORCEUID  15  /* force uid for username x */
+#define VOLOPT_FORCEGID  16  /* force gid for group x */
+#define VOLOPT_UMASK     17
+#else 
+#define VOLOPT_UMASK     15
 #endif /* FORCE_UIDGID */
+
+#define VOLOPT_MAX       (VOLOPT_UMASK +1)
 
 #define VOLOPT_NUM        (VOLOPT_MAX + 1)
 
@@ -147,26 +153,40 @@ static __inline__ void volfree(struct vol_option *options,
 
 
 /* handle variable substitutions. here's what we understand:
+ * $b   -> basename of path
  * $c   -> client ip/appletalk address
+ * $d   -> volume pathname on server
  * $f   -> full name (whatever's in the gecos field)
  * $g   -> group
  * $h   -> hostname 
  * $s   -> server name (hostname if it doesn't exist)
  * $u   -> username (guest is usually nobody)
- * $v   -> volume name (ADEID_NAME or basename)
+ * $v   -> volume name (ADEID_NAME or basename if ADEID_NAME is empty)
  * $z   -> zone (may not exist)
  * $$   -> $
  */
 #define is_var(a, b) (strncmp((a), (b), 2) == 0)
-static void volxlate(AFPObj *obj, char *dest, int destlen,
+
+static char *volxlate(AFPObj *obj, char *dest, size_t destlen,
                      char *src, struct passwd *pwd, char *path)
 {
     char *p, *q;
     int len;
-
+    char *ret;
+    
+    if (!src) {
+        return NULL;
+    }
+    if (!dest) {
+        dest = calloc(destlen +1, 1);
+    }
+    ret = dest;
+    if (!ret) {
+        return NULL;
+    }
     strncpy(dest, src, destlen);
     if ((p = strchr(src, '$')) == NULL) /* nothing to do */
-        return;
+        return ret;
 
     /* first part of the path. just forward to the next variable. */
     len = MIN(p - src, destlen);
@@ -178,7 +198,14 @@ static void volxlate(AFPObj *obj, char *dest, int destlen,
     while (p && destlen > 0) {
         /* now figure out what the variable is */
         q = NULL;
-        if (is_var(p, "$c")) {
+        if (is_var(p, "$b")) {
+            if (path) {
+                if ((q = strrchr(path, '/')) == NULL)
+                    q = path;
+                else if (*(q + 1) != '\0')
+                    q++;
+            }
+        } else if (is_var(p, "$c")) {
             if (obj->proto == AFPPROTO_ASP) {
                 ASP asp = obj->handle;
 
@@ -195,6 +222,8 @@ static void volxlate(AFPObj *obj, char *dest, int destlen,
                 dest += len;
                 destlen -= len;
             }
+        } else if (is_var(p, "$d")) {
+             q = path;
         } else if (is_var(p, "$f")) {
             if ((q = strchr(pwd->pw_gecos, ',')))
                 *q = '\0';
@@ -262,11 +291,19 @@ no_volname: /* simple basename */
             destlen -= len;
         }
     }
+    return ret;
 }
 
 /* to make sure that val is valid, make sure to select an opt that
    includes val */
-#define optionok(buf,opt,val) (strstr((buf),(opt)) && ((val)[1] != '\0'))
+static int optionok(const char *buf, const char *opt, const char *val) 
+{
+    if (!strstr(buf,opt))
+        return 0;
+    if (!val[1])
+        return 0;
+    return 1;    
+}
 
 static __inline__ char *get_codepage_path(const char *path, const char *name)
 {
@@ -291,46 +328,53 @@ static __inline__ char *get_codepage_path(const char *path, const char *name)
     return page;
 }
 
-/* handle all the options. tmp can't be NULL. */
-static void volset(struct vol_option *options, char *volname, int vlen,
-                   const char *nlspath, const char *tmp, AFPObj *obj,
-		   struct passwd *pwd)
+/* -------------------- */
+static void setoption(struct vol_option *options, struct vol_option *save, int opt, const char *val)
+{
+    if (options[opt].c_value && (!save || options[opt].c_value != save[opt].c_value))
+        free(options[opt].c_value);
+    options[opt].c_value = strdup(val + 1);
+}
+
+/* ------------------------------------------
+   handle all the options. tmp can't be NULL. */
+static void volset(struct vol_option *options, struct vol_option *save, 
+                   char *volname, int vlen,
+                   const char *nlspath, const char *tmp)
 {
     char *val;
 
     val = strchr(tmp, ':');
+    if (!val) {
+        /* we'll assume it's a volume name. */
+        strncpy(volname, tmp, vlen);
+        volname[vlen] = 0;
+        return;
+    }
+
     LOG(log_debug, logtype_afpd, "Parsing volset %s", val);
 
     if (optionok(tmp, "allow:", val)) {
-        if (options[VOLOPT_ALLOW].c_value)
-            free(options[VOLOPT_ALLOW].c_value);
-        options[VOLOPT_ALLOW].c_value = strdup(val + 1);
+        setoption(options, save, VOLOPT_ALLOW, val);
 
     } else if (optionok(tmp, "deny:", val)) {
-        if (options[VOLOPT_DENY].c_value)
-            free(options[VOLOPT_DENY].c_value);
-        options[VOLOPT_DENY].c_value = strdup(val + 1);
+        setoption(options, save, VOLOPT_DENY, val);
 
     } else if (optionok(tmp, "rwlist:", val)) {
-        if (options[VOLOPT_RWLIST].c_value)
-            free(options[VOLOPT_RWLIST].c_value);
-        options[VOLOPT_RWLIST].c_value = strdup(val + 1);
+        setoption(options, save, VOLOPT_RWLIST, val);
 
     } else if (optionok(tmp, "rolist:", val)) {
-        if (options[VOLOPT_ROLIST].c_value)
-            free(options[VOLOPT_ROLIST].c_value);
-        options[VOLOPT_ROLIST].c_value = strdup(val + 1);
+        setoption(options, save, VOLOPT_ROLIST, val);
 
     } else if (optionok(tmp, "codepage:", val)) {
-        if (options[VOLOPT_CODEPAGE].c_value)
+        if (options[VOLOPT_CODEPAGE].c_value && 
+                (!save || options[VOLOPT_CODEPAGE].c_value != save[VOLOPT_CODEPAGE].c_value)) {
             free(options[VOLOPT_CODEPAGE].c_value);
+        }
         options[VOLOPT_CODEPAGE].c_value = get_codepage_path(nlspath, val + 1);
 
     } else if (optionok(tmp, "veto:", val)) {
-        if (options[VOLOPT_VETO].c_value)
-            free(options[VOLOPT_VETO].c_value);
-        options[VOLOPT_VETO].c_value = strdup(val + 1);
-
+        setoption(options, save, VOLOPT_VETO, val);
     } else if (optionok(tmp, "casefold:", val)) {
         if (strcasecmp(val + 1, "tolower") == 0)
             options[VOLOPT_CASEFOLD].i_value = AFPVOL_UMLOWER;
@@ -377,56 +421,61 @@ static void volset(struct vol_option *options, char *volname, int vlen,
                 options[VOLOPT_FLAGS].i_value |= AFPVOL_NOFILEID;
             else if (strcasecmp(p, "utf8") == 0)
                 options[VOLOPT_FLAGS].i_value |= AFPVOL_UTF8;
-
+            else if (strcasecmp(p, "preexec_close") == 0)
+		options[VOLOPT_PREEXEC].i_value = 1;
+            else if (strcasecmp(p, "root_preexec_close") == 0)
+		options[VOLOPT_ROOTPREEXEC].i_value = 1;
             p = strtok(NULL, ",");
         }
 
 #ifdef CNID_DB
-    } else if (optionok(tmp, "dbpath:", val)) {
-	char t[MAXPATHLEN + 1];
-        if (options[VOLOPT_DBPATH].c_value)
-            free(options[VOLOPT_DBPATH].c_value);
 
-	volxlate(obj, t, MAXPATHLEN, val, pwd, NULL);
-        options[VOLOPT_DBPATH].c_value = strdup(t + 1);
+    } else if (optionok(tmp, "dbpath:", val)) {
+        setoption(options, save, VOLOPT_DBPATH, val);
 #endif /* CNID_DB */
+
     } else if (optionok(tmp, "umask:", val)) {
 	options[VOLOPT_UMASK].i_value = (int)strtol(val, (char **)NULL, 8);
     } else if (optionok(tmp, "mapchars:",val)) {
-        if (options[VOLOPT_MAPCHARS].c_value)
-            free(options[VOLOPT_MAPCHARS].c_value);
-        options[VOLOPT_MAPCHARS].c_value = strdup(val + 1);
+        setoption(options, save, VOLOPT_MAPCHARS, val);
 
     } else if (optionok(tmp, "password:", val)) {
-        if (options[VOLOPT_PASSWORD].c_value)
-            free(options[VOLOPT_PASSWORD].c_value);
-        options[VOLOPT_PASSWORD].c_value = strdup(val + 1);
+        setoption(options, save, VOLOPT_PASSWORD, val);
 
 #ifdef FORCE_UIDGID
 
         /* this code allows forced uid/gid per volume settings */
     } else if (optionok(tmp, "forceuid:", val)) {
-        if (options[VOLOPT_FORCEUID].c_value)
-            free(options[VOLOPT_FORCEUID].c_value);
-        options[VOLOPT_FORCEUID].c_value = strdup(val + 1);
+        setoption(options, save, VOLOPT_FORCEUID, val);
     } else if (optionok(tmp, "forcegid:", val)) {
-        if (options[VOLOPT_FORCEGID].c_value)
-            free(options[VOLOPT_FORCEGID].c_value);
-        options[VOLOPT_FORCEGID].c_value = strdup(val + 1);
+        setoption(options, save, VOLOPT_FORCEGID, val);
 
 #endif /* FORCE_UIDGID */
+    } else if (optionok(tmp, "root_preexec:", val)) {
+        setoption(options, save, VOLOPT_ROOTPREEXEC, val);
 
-    } else if (val) {
+    } else if (optionok(tmp, "preexec:", val)) {
+        setoption(options, save, VOLOPT_PREEXEC, val);
+
+    } else if (optionok(tmp, "root_postexec:", val)) {
+        setoption(options, save, VOLOPT_ROOTPOSTEXEC, val);
+
+    } else if (optionok(tmp, "postexec:", val)) {
+        setoption(options, save, VOLOPT_POSTEXEC, val);
+
+    } else {
         /* ignore unknown options */
         LOG(log_debug, logtype_afpd, "ignoring unknown volume option: %s", tmp);
 
-    } else {
-        /* we'll assume it's a volume name. */
-        strncpy(volname, tmp, vlen);
-    }
+    } 
 }
 
-static int creatvol(const char *path, char *name, struct vol_option *options)
+/* ------------------------------- */
+static int creatvol(AFPObj *obj, struct passwd *pwd, 
+                    char *path, char *name, 
+                    struct vol_option *options, 
+                    const int user /* user defined volume */
+                    )
 {
     struct vol	*volume;
     int		vlen;
@@ -453,19 +502,16 @@ static int creatvol(const char *path, char *name, struct vol_option *options)
         name[AFPVOL_NAMELEN] = '\0';
     }
 
-    if (( volume =
-                (struct vol *)calloc(1, sizeof( struct vol ))) == NULL ) {
+    if (!( volume = (struct vol *)calloc(1, sizeof( struct vol ))) ) {
         LOG(log_error, logtype_afpd, "creatvol: malloc: %s", strerror(errno) );
         return -1;
     }
-    if (( volume->v_name =
-                (char *)malloc( vlen + 1 )) == NULL ) {
+    if (! ( volume->v_name = (char *)malloc( vlen + 1 ) ) ) {
         LOG(log_error, logtype_afpd, "creatvol: malloc: %s", strerror(errno) );
         free(volume);
         return -1;
     }
-    if (( volume->v_path =
-                (char *)malloc( strlen( path ) + 1 )) == NULL ) {
+    if (!( volume->v_path = (char *)malloc( strlen( path ) + 1 )) ) {
         LOG(log_error, logtype_afpd, "creatvol: malloc: %s", strerror(errno) );
         free(volume->v_name);
         free(volume);
@@ -501,14 +547,13 @@ static int creatvol(const char *path, char *name, struct vol_option *options)
 
 #ifdef CNID_DB
         if (options[VOLOPT_DBPATH].c_value)
-            volume->v_dbpath = strdup(options[VOLOPT_DBPATH].c_value);
-#endif /* CNID_DB */
+            volume->v_dbpath = volxlate(obj, NULL, MAXPATHLEN, options[VOLOPT_DBPATH].c_value, pwd, path);
+#endif
 
 	if (options[VOLOPT_UMASK].i_value)
 	    volume->v_umask = (mode_t)options[VOLOPT_UMASK].i_value;
 
 #ifdef FORCE_UIDGID
-
         if (options[VOLOPT_FORCEUID].c_value) {
             volume->v_forceuid = strdup(options[VOLOPT_FORCEUID].c_value);
         } else {
@@ -520,9 +565,22 @@ static int creatvol(const char *path, char *name, struct vol_option *options)
         } else {
             volume->v_forcegid = NULL; /* set as null so as to return 0 later on */
         }
+#endif
+        if (!user) {
+            if (options[VOLOPT_PREEXEC].c_value)
+                volume->v_preexec = volxlate(obj, NULL, MAXPATHLEN, options[VOLOPT_PREEXEC].c_value, pwd, path);
+            volume->v_preexec_close = options[VOLOPT_PREEXEC].i_value;
 
-#endif /* FORCE_UIDGID */
+            if (options[VOLOPT_POSTEXEC].c_value)
+                volume->v_postexec = volxlate(obj, NULL, MAXPATHLEN, options[VOLOPT_POSTEXEC].c_value, pwd, path);
 
+            if (options[VOLOPT_ROOTPREEXEC].c_value)
+                volume->v_root_preexec = volxlate(obj, NULL, MAXPATHLEN, options[VOLOPT_ROOTPREEXEC].c_value, pwd, path);
+            volume->v_root_preexec_close = options[VOLOPT_ROOTPREEXEC].i_value;
+
+            if (options[VOLOPT_ROOTPOSTEXEC].c_value)
+                volume->v_root_postexec = volxlate(obj, NULL, MAXPATHLEN, options[VOLOPT_ROOTPOSTEXEC].c_value, pwd, path);
+        }
     }
 
     volume->v_next = volumes;
@@ -530,6 +588,7 @@ static int creatvol(const char *path, char *name, struct vol_option *options)
     return 0;
 }
 
+/* ---------------- */
 static char *myfgets( buf, size, fp )
 char	*buf;
 int		size;
@@ -675,7 +734,7 @@ static void sortextmap( void)
  * Read a volume configuration file and add the volumes contained within to
  * the global volume list.  If p2 is non-NULL, the file that is opened is
  * p1/p2
- *
+ * 
  * Lines that begin with # and blank lines are ignored.
  * Volume lines are of the form:
  *		<unix path> [<volume name>] [allow:<user>,<@group>,...] \
@@ -727,9 +786,8 @@ struct passwd *pwent;
                     if (parseline( sizeof( path ) - VOLOPT_DEFAULT_LEN - 1,
                                    path + VOLOPT_DEFAULT_LEN) < 0)
                         break;
-                    volset(save_options, tmp, sizeof(tmp) - 1,
-                           obj->options.nlspath, path + VOLOPT_DEFAULT_LEN,
-			   obj, pwent);
+                    volset(save_options, NULL, tmp, sizeof(tmp) - 1,
+                           obj->options.nlspath, path + VOLOPT_DEFAULT_LEN);
                 }
             }
             break;
@@ -769,7 +827,7 @@ struct passwd *pwent;
              * able to specify things in any order, but i don't want to 
              * re-write everything. 
              *
-             * currently we have 11 options: 
+             * currently we have options: 
              *   volname
              *   codepage:x
              *   casefold:x
@@ -777,21 +835,22 @@ struct passwd *pwent;
              *   deny:x,y,@z
              *   rwlist:x,y,@z
              *   rolist:x,y,@z
-             *   options:prodos,crlf,noadouble,ro
+             *   options:prodos,crlf,noadouble,ro...
              *   dbpath:x
              *   password:x
+             *   preexec:x
+             *
              *   namemask:x,y,!z  (not implemented yet)
              */
             memcpy(options, save_options, sizeof(options));
             *volname = '\0';
 
-            /* read in up to 11 possible options */
+            /* read in up to VOLOP_NUM possible options */
             for (i = 0; i < VOLOPT_NUM; i++) {
                 if (parseline( sizeof( tmp ) - 1, tmp ) < 0)
                     break;
 
-                volset(options, volname, sizeof(volname) - 1,
-                       obj->options.nlspath, tmp, obj, pwent);
+                volset(options, save_options, volname, sizeof(volname) - 1,obj->options.nlspath, tmp);
             }
 
             /* check allow/deny lists:
@@ -811,9 +870,9 @@ struct passwd *pwent;
                                     obj->username)))
                     options[VOLOPT_FLAGS].i_value |= AFPVOL_RO;
 
-                /* do variable substitution */
+                /* do variable substitution for volname */
                 volxlate(obj, tmp, sizeof(tmp) - 1, volname, pwent, path);
-                creatvol(path, tmp, options);
+                creatvol(obj, pwent, path, tmp, options, p2 != NULL);
             }
             volfree(options, save_options);
             break;
@@ -859,7 +918,7 @@ static void load_volumes(AFPObj *obj)
                 readvolfile(obj, pwent->pw_dir, ".applevolumes", 1, pwent) < 0 &&
                 obj->options.defaultvol != NULL ) {
             if (readvolfile(obj, obj->options.defaultvol, NULL, 1, pwent) < 0)
-                creatvol(pwent->pw_dir, NULL, NULL);
+                creatvol(obj, pwent, pwent->pw_dir, NULL, NULL, 1);
         }
     }
     if ( obj->options.flags & OPTION_USERVOLFIRST ) {
@@ -876,7 +935,7 @@ VolSpace    *xbfree, *xbtotal;
     u_int32_t   maxsize;
 #ifndef NO_QUOTA_SUPPORT
     VolSpace	qfree, qtotal;
-#endif /* ! NO_QUOTA_SUPPORT */
+#endif
 
     spaceflag = AFPVOL_GVSMASK & vol->v_flags;
     /* report up to 2GB if afp version is < 2.2 (4GB if not) */
@@ -891,7 +950,7 @@ VolSpace    *xbfree, *xbtotal;
             goto getvolspace_done;
         }
     }
-#endif /* AFS */
+#endif
 
     if (( rc = ustatfs_getvolspace( vol, xbfree, xbtotal,
                                     bsize)) != AFP_OK ) {
@@ -908,7 +967,7 @@ VolSpace    *xbfree, *xbtotal;
             goto getvolspace_done;
         }
     }
-#endif /* ! NO_QUOTA_SUPPORT */
+#endif
     vol->v_flags = ( ~AFPVOL_GVSMASK & vol->v_flags ) | AFPVOL_USTATFS;
 
 getvolspace_done:
@@ -1106,8 +1165,7 @@ int		*buflen;
     return( AFP_OK );
 }
 
-
-
+/* ------------------------- */
 int afp_getsrvrparms(obj, ibuf, ibuflen, rbuf, rbuflen )
 AFPObj      *obj;
 char	*ibuf, *rbuf;
@@ -1165,6 +1223,9 @@ int 	ibuflen, *rbuflen;
     return( AFP_OK );
 }
 
+/* ------------------------- 
+ * we are the user here
+*/
 int afp_openvol(obj, ibuf, ibuflen, rbuf, rbuflen )
 AFPObj      *obj;
 char	*ibuf, *rbuf;
@@ -1214,8 +1275,7 @@ int		ibuflen, *rbuflen;
     }
 
     /* check for a volume password */
-    if (volume->v_password &&
-            strncmp(ibuf, volume->v_password, VOLPASSLEN)) {
+    if (volume->v_password && strncmp(ibuf, volume->v_password, VOLPASSLEN)) {
         ret = AFPERR_ACCESS;
         goto openvol_err;
     }
@@ -1242,6 +1302,20 @@ int		ibuflen, *rbuflen;
         volume->v_db = NULL;
         opened = 1;
 #endif
+	if (volume->v_root_preexec) {
+	    if ((ret = afprun(1, volume->v_root_preexec, NULL)) && volume->v_root_preexec_close) {
+                LOG(log_error, logtype_afpd, "afp_openvol: root preexec : %d", ret );
+                ret = AFPERR_MISC;
+                goto openvol_err;
+	    }
+	}
+	if (volume->v_preexec) {
+	    if ((ret = afprun(0, volume->v_preexec, NULL)) && volume->v_preexec_close) {
+                LOG(log_error, logtype_afpd, "afp_openvol: preexec : %d", ret );
+                ret = AFPERR_MISC;
+                goto openvol_err;
+	    }
+	}
     }
     else {
        /* FIXME */
@@ -1346,6 +1420,40 @@ openvol_err:
     return ret;
 }
 
+/* ------------------------- */
+static void closevol(struct vol	*vol)
+{
+    if (!vol)
+        return;
+
+    dirfree( vol->v_root );
+    vol->v_dir = NULL;
+#ifdef CNID_DB
+    cnid_close(vol->v_db);
+    vol->v_db = NULL;
+#endif /* CNID_DB */
+    if (vol->v_postexec) {
+	afprun(0, vol->v_postexec, NULL);
+    }
+    if (vol->v_root_postexec) {
+	afprun(1, vol->v_root_postexec, NULL);
+    }
+}
+
+/* ------------------------- */
+void close_all_vol(void)
+{
+    struct vol	*ovol;
+    curdir = NULL;
+    for ( ovol = volumes; ovol; ovol = ovol->v_next ) {
+        if ( ovol->v_flags & AFPVOL_OPEN ) {
+            ovol->v_flags &= ~AFPVOL_OPEN;
+            closevol(ovol);
+        }
+    }
+}
+
+/* ------------------------- */
 int afp_closevol(obj, ibuf, ibuflen, rbuf, rbuflen )
 AFPObj      *obj;
 char	*ibuf, *rbuf;
@@ -1373,15 +1481,11 @@ int		ibuflen, *rbuflen;
             curdir = ovol->v_dir;
         }
     }
-    dirfree( vol->v_root );
-    vol->v_dir = NULL;
-#ifdef CNID_DB
-    cnid_close(vol->v_db);
-    vol->v_db = NULL;
-#endif /* CNID_DB */
+    closevol(vol);
     return( AFP_OK );
 }
 
+/* ------------------------- */
 struct vol *getvolbyvid(const u_int16_t vid )
 {
     struct vol	*vol;
@@ -1429,12 +1533,13 @@ struct extmap *getextmap(const char *path)
     }
 }
 
+/* ------------------------- */
 struct extmap *getdefextmap(void)
 {
     return( defextmap );
 }
 
-/*
+/* --------------------------
    poll if a volume is changed by other processes.
 */
 int  pollvoltime(obj)
@@ -1463,6 +1568,7 @@ AFPObj *obj;
     return 0;
 }
 
+/* ------------------------- */
 void setvoltime(obj, vol )
 AFPObj *obj;
 struct vol	*vol;
@@ -1494,6 +1600,7 @@ struct vol	*vol;
     }
 }
 
+/* ------------------------- */
 int afp_getvolparams(obj, ibuf, ibuflen, rbuf, rbuflen )
 AFPObj      *obj;
 char	*ibuf, *rbuf;
@@ -1532,6 +1639,7 @@ int		ibuflen, *rbuflen;
     return( AFP_OK );
 }
 
+/* ------------------------- */
 int afp_setvolparams(obj, ibuf, ibuflen, rbuf, rbuflen )
 AFPObj      *obj;
 char	*ibuf, *rbuf;
@@ -1578,7 +1686,7 @@ int		ibuflen, *rbuflen;
     return( AFP_OK );
 }
 
-
+/* ------------------------- */
 int wincheck(const struct vol *vol, const char *path)
 {
     int len;
