@@ -1,4 +1,4 @@
-dnl $Id: ssl-check.m4,v 1.8.6.2 2003-10-29 23:53:24 bfernhomberg Exp $
+dnl $Id: ssl-check.m4,v 1.8.6.3 2004-04-21 00:56:59 bfernhomberg Exp $
 dnl Autoconf macro to check for SSL or OpenSSL
 
 AC_DEFUN([AC_CRYPT], [
@@ -39,14 +39,17 @@ AC_DEFUN([AC_PATH_SSL], [
 	saved_LIBS=$LIBS
 	compile_ssl=no
 
+	dnl make sure atalk_libname is defined beforehand
+	[[ -n "$atalk_libname" ]] || AC_MSG_ERROR([internal error, atalk_libname undefined])
+
 	if test "$tryssl" = "yes"; then
 		AC_MSG_CHECKING([for SSL])
-		for ssldir in "" $tryssldir /usr /usr/local/openssl /usr/lib/openssl /usr/local/ssl /usr/lib/ssl /usr/local /usr/pkg /opt /opt/openssl /usr/local/ssl ; do
+		for ssldir in "" $tryssldir /usr /usr/local/openssl /usr/$atalk_libname/openssl /usr/local/ssl /usr/$atalk_libname/ssl /usr/local /usr/pkg /opt /opt/openssl /usr/local/ssl ; do
 			if test -f "$ssldir/include/openssl/cast.h" ; then
 				SSL_CFLAGS="$SSL_CFLAGS -I$ssldir/include -I$ssldir/include/openssl"
-				SSL_LIBS="$SSL_LIBS -L$ssldir/lib -L$ssldir -lcrypto"
+				SSL_LIBS="$SSL_LIBS -L$ssldir/$atalk_libname -L$ssldir -lcrypto"
 				if test "x$need_dash_r" = "xyes"; then
-					SSL_LIBS="$SSL_LIBS -R$ssldir/lib -R$ssldir"
+					SSL_LIBS="$SSL_LIBS -R$ssldir/$atalk_libname -R$ssldir"
 				fi
 				AC_MSG_RESULT([$ssldir (enabling RANDNUM and DHX support)])
 

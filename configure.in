@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.24 2004-03-18 02:56:31 bfernhomberg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.25 2004-04-21 00:56:58 bfernhomberg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(etc/afpd/main.c)
@@ -122,9 +122,45 @@ AC_CHECK_FUNCS(strlcpy strlcat)
 AC_CHECK_MEMBERS(struct tm.tm_gmtoff,,, [#include <time.h>])
 AC_CACHE_SAVE
 
-
 dnl Checks for (v)snprintf
 NETATALK_SNPRINTF_CHECK
+
+dnl --------------------------------------------------------------------------
+dnl 64bit platform check
+dnl --------------------------------------------------------------------------
+
+AC_MSG_CHECKING([whether to check for 64bit libraries])
+dnl Determine libdir name
+case $host in
+*-*-linux*)
+  # Test if the compiler is 64bit
+  echo 'int i;' > conftest.$ac_ext
+  atalk_cv_cc_64bit_output=no
+  if AC_TRY_EVAL(ac_compile); then
+    case `/usr/bin/file conftest.$ac_objext` in
+    *"ELF 64"*)
+      atalk_cv_cc_64bit_output=yes
+      ;;
+    esac
+  fi
+  rm -rf conftest*
+  ;;
+esac
+
+dnl
+dnl FIXME: guess this won't work on Solaris, need to check
+dnl
+
+case $host_cpu:$atalk_cv_cc_64bit_output in
+powerpc64:yes | s390x:yes | sparc64:yes | x86_64:yes)
+  atalk_libname="lib64"
+  AC_MSG_RESULT([yes])
+  ;;
+*:*)
+  atalk_libname="lib"
+  AC_MSG_RESULT([no])
+  ;;
+esac
 
 dnl --------------------------------------------------------------------------
 dnl specific configuration comes in here:
@@ -182,7 +218,7 @@ AC_ARG_WITH(cracklib,
 			LIBS="$LIBS -lcrack"
 			AC_MSG_RESULT([yes])
 			if test "$cracklib" = "yes"; then
-				cracklib="/usr/lib/cracklib_dict"
+				cracklib="/usr/$atalk_libname/cracklib_dict"
 			fi
 			AC_DEFINE_UNQUOTED(_PATH_CRACKLIB, "$cracklib",
 				[path to cracklib dictionary])

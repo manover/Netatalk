@@ -1,6 +1,6 @@
 dnl Check for optional server location protocol support (used by MacOS X)
 
-dnl $Id: srvloc.m4,v 1.8.6.1 2003-10-29 23:53:24 bfernhomberg Exp $
+dnl $Id: srvloc.m4,v 1.8.6.2 2004-04-21 00:56:59 bfernhomberg Exp $
 
 AC_DEFUN([NETATALK_SRVLOC], [
 
@@ -15,6 +15,9 @@ AC_DEFUN([NETATALK_SRVLOC], [
 		[srvloc=try]
 	)
 
+    dnl make sure atalk_libname is defined beforehand
+    [[ -n "$atalk_libname" ]] || AC_MSG_ERROR([internal error, atalk_libname undefined])
+
 	if test "x$srvloc" != "xno"; then
 
 		savedcppflags="$CPPFLAGS"
@@ -25,7 +28,7 @@ AC_DEFUN([NETATALK_SRVLOC], [
 			srvlocdir="$srvloc"
 		fi
 		CPPFLAGS="$CPPFLAGS -I$srvlocdir/include"
-		LDFLAGS="$LDFLAGS -L$srvlocdir/lib"
+		LDFLAGS="$LDFLAGS -L$srvlocdir/$atalk_libname"
 
 		AC_MSG_CHECKING([for slp.h])
 		AC_TRY_CPP([#include <slp.h>],
@@ -40,7 +43,7 @@ AC_DEFUN([NETATALK_SRVLOC], [
 		
 		if test "x$found_slp" = "xyes"; then
 			AC_CHECK_LIB(slp, SLPOpen, [
-		    	   SLP_LIBS="-L$srvlocdir/lib -lslp"
+		    	   SLP_LIBS="-L$srvlocdir/$atalk_libname -lslp"
 		    	   SLP_CFLAGS="-I$srvlocdir/include"
 			],[ 
 		    	   AC_MSG_RESULT([no])

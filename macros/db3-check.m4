@@ -1,4 +1,4 @@
-dnl $Id: db3-check.m4,v 1.11.6.5 2004-03-30 04:18:21 bfernhomberg Exp $
+dnl $Id: db3-check.m4,v 1.11.6.6 2004-04-21 00:56:58 bfernhomberg Exp $
 dnl Autoconf macro to check for the Berkeley DB library
 
 AC_DEFUN([AC_PATH_BDB], 
@@ -7,6 +7,8 @@ AC_DEFUN([AC_PATH_BDB],
 	dobdbsearch=yes
 	bdb_search_dirs="/usr/local/include/db4 /usr/local/include /usr/include/db4 /usr/include"
 
+dnl make sure atalk_libname is defined beforehand
+[[ -n "$atalk_libname" ]] || AC_MSG_ERROR([internal error, atalk_libname undefined])
 
 	AC_ARG_WITH(bdb,
 		[  --with-bdb=PATH         specify path to Berkeley DB installation[[auto]]],
@@ -25,8 +27,9 @@ AC_DEFUN([AC_PATH_BDB],
 		AC_MSG_CHECKING([for Berkeley DB headers in $bdbdir])
 		if test -f "$bdbdir/db.h" ; then
 			AC_MSG_RESULT([yes])
-			bdblibdir="`echo $bdbdir | sed 's/include\/db4$/lib/'`"
-			bdblibdir="`echo $bdblibdir | sed 's/include$/lib/'`"
+			bdblibdir="`echo $bdbdir | sed 's/\/include\/db4$//'`"
+			bdblibdir="`echo $bdblibdir | sed 's/\/include$//'`"
+			bdblibdir="${bdblibdir}/${atalk_libname}"
 			bdbbindir="`echo $bdbdir | sed 's/include\/db4$/bin/'`"
 			bdbbindir="`echo $bdbbindir | sed 's/include$/bin/'`"
 

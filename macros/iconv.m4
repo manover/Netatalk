@@ -15,10 +15,10 @@ dnl	# check for libiconv support
 	  *)
 	    AC_MSG_RESULT(yes)
 	    CFLAGS="$CFLAGS -I$withval/include"
-	    LDFLAGS="$LDFLAGS -L$withval/lib"
+	    LDFLAGS="$LDFLAGS -L$withval/$atalk_libname"
 	    AC_CHECK_LIB(iconv, iconv_open, [
                                 ICONV_CFLAGS="-I$withval/include"
-                                ICONV_LIBS="-L$withval/lib -liconv"
+                                ICONV_LIBS="-L$withval/$atalk_libname -liconv"
             ])
 	    AC_DEFINE_UNQUOTED(WITH_LIBICONV, "${withval}",[Path to iconv])
 	    ;;
