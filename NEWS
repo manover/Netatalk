@@ -1,3 +1,22 @@
+Changes in 2.0.1
+================
+
+* FIX: insecure tempfile handling bug in etc2ps.sh,
+       found by Trustix, CAN-2004-0974.
+* REM: remove add_netatalk_printer and netatalk.template from stable 
+       branch until fixed. (possible symlink vulnerabilities)
+* FIX: afpd: set hasBeenInited in default finder info. This bug caused 
+       endless finder refreshes with OS9 finder if the noadouble option 
+       was used. From TSUBAKIMOTO Hiroya.
+* FIX: afpd: fix a bug in default CREATOR/TYPE handling. Due to this bug 
+       the type/creator mappings in AppleVolumes.system were ignored, 
+       causing problems i.e. with OS9 clients.
+* FIX: AppleVolumes.system: By default don't define a CREATOR/TYPE for a
+       file of unknown type.
+* FIX: fix two Tru64 UNIX compilation errors, 
+       from Burkhard Schmidt bs AT cpfs.mpg.de
+* FIX: afpd: FPMapId wasn't using UTF8 for groups if requested by client.
+
 Changes in 2.0.0
 ================
 
