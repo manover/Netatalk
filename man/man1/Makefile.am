@@ -12,7 +12,7 @@ SUFFIXES= .tmpl .
 	    <$< >$@
 
 GENERATED_MANS	= apple_cp.1 apple_mv.1 apple_rm.1
-TEMPLATE_FILES	= $(foreach f,$(GENERATED_MANS),$(f).tmpl)
+TEMPLATE_FILES	= apple_cp.1.tmpl apple_mv.1.tmpl apple_rm.1.tmpl
 NONGENERATED_MANS	=	achfile.1  \
 				acleandir.1 \
 				aecho.1 \

@@ -3,7 +3,7 @@
 SUFFIXES = .tmpl .
 
 GENFILES = afpd.conf AppleVolumes.default
-TMPLFILES = $(foreach file,$(GENFILES),$(file).tmpl)
+TMPLFILES = afpd.conf.tmpl AppleVolumes.default.tmpl
 CONFFILES = AppleVolumes.system \
 	atalkd.conf netatalk.conf papd.conf
 PAMFILES = netatalk.pamd

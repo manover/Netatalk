@@ -23,7 +23,15 @@ GENERATED_FILES = \
 	rc.atalk.suse		\
 	rc.papd.netbsd		\
 	rc.timelord.netbsd
-TEMPLATES = $(foreach f,$(GENERATED_FILES),$(f).tmpl)
+TEMPLATES = \
+	rc.afpd.netbsd.tmpl		\
+	rc.atalk.redhat.tmpl		\
+	rc.atalk.tru64.tmpl		\
+	rc.atalk.bsd.tmpl		\
+	rc.atalkd.netbsd.tmpl		\
+	rc.atalk.suse.tmpl		\
+	rc.papd.netbsd.tmpl		\
+	rc.timelord.netbsd.tmpl
 
 CLEANFILES = $(GENERATED_FILES)
 EXTRA_DIST = $(TEMPLATES) rc.atalk.cobalt rc.atalk.sysv

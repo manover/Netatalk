@@ -3,7 +3,7 @@
 pkgconfdir = @PKGCONFDIR@
 
 GENERATED_FILES = lp2pap.sh
-TEMPLATE_FILES = $(foreach f,$(GENERATED_FILES),$(f).tmpl)
+TEMPLATE_FILES = lp2pap.sh.tmpl
 PERLSCRIPTS = \
 	afpd-mtab.pl			\
 	apple_cp apple_mv apple_rm	\
