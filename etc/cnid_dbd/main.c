@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.1.4.6 2003-12-12 19:27:57 didg Exp $
+ * $Id: main.c,v 1.1.4.7 2004-01-03 23:01:41 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -195,15 +195,19 @@ int main(int argc, char *argv[])
     struct db_param *dbp;
     int err = 0;
     struct stat st;
-    int lockfd;
+    int lockfd, ctrlfd, clntfd;
     struct flock lock;
     char *dir;
         
-    if (argc  != 2) {
+    if (argc  != 4) {
         LOG(log_error, logtype_cnid, "main: not enough arguments");
         exit(1);
     }
+
     dir = argv[1];
+    ctrlfd = atoi(argv[2]);
+    clntfd = atoi(argv[3]);
+
     if (chdir(dir) < 0) {
         LOG(log_error, logtype_cnid, "chdir to %s failed: %s", dir, strerror(errno));
         exit(1);
@@ -242,6 +246,7 @@ int main(int argc, char *argv[])
     }
     
     LOG(log_info, logtype_cnid, "Startup, DB dir %s", dir);
+    
     sv.sa_handler = sig_exit;
     sv.sa_flags = 0;
     sigemptyset(&sv.sa_mask);
@@ -290,7 +295,7 @@ int main(int argc, char *argv[])
     if (dbif_txn_commit() < 0)
 	exit(6);
 #endif
-    if (comm_init(dbp) < 0) {
+    if (comm_init(dbp, ctrlfd, clntfd) < 0) {
         dbif_close();
         exit(3);
     }

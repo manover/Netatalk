@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_metad.c,v 1.1.4.7 2003-12-01 22:23:12 lenneis Exp $
+ * $Id: cnid_metad.c,v 1.1.4.8 2004-01-03 23:01:40 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -172,6 +172,8 @@ static int maybe_start_dbd(char *dbdpn, char *dbdir, char *usockfn)
     struct server *up;
     int i;
     time_t t;
+    char buf1[8];
+    char buf2[8];
 
     up = test_usockfn(dbdir, usockfn);
     if (up && up->pid) {
@@ -236,16 +238,21 @@ static int maybe_start_dbd(char *dbdpn, char *dbdir, char *usockfn)
 	 *  just log it. The client process will fail connecting
 	 *  afterwards anyway.
 	 */
-	close(0);
-	close(1);
-	close(srvfd);
-	dup2(up->sv[1], 0);
-	dup2(rqstfd, 1);
 
+	close(srvfd);
 	close(up->sv[0]);
-	close(up->sv[1]);
-	close(rqstfd);
-	if (execlp(dbdpn, dbdpn, dbdir, NULL) < 0) {
+	
+	for (i = 1; i <= MAXSRV; i++) {
+            if (srv[i].pid && up != &srv[i]) {
+		close(srv[i].sv[0]);
+		close(srv[i].sv[1]);
+            }
+        }
+
+	sprintf(buf1, "%i", up->sv[1]);
+	sprintf(buf2, "%i", rqstfd);
+	
+	if (execlp(dbdpn, dbdpn, dbdir, buf1, buf2, NULL) < 0) {
 	    LOG(log_error, logtype_cnid, "Fatal error in exec: %s", strerror(errno));
 	    exit(0);
 	}
@@ -254,6 +261,8 @@ static int maybe_start_dbd(char *dbdpn, char *dbdir, char *usockfn)
      *  Parent.
      */
     up->pid = pid;
+    /* FIXME Any reason we do not close up->sv[1] here? Do we need both
+       descriptors in the srv table? */
     return 0;
 }
 

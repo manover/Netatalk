@@ -1,5 +1,5 @@
 /*
- * $Id: comm.c,v 1.1.4.4 2003-10-30 10:03:19 bfernhomberg Exp $
+ * $Id: comm.c,v 1.1.4.5 2004-01-03 23:01:40 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -60,7 +60,7 @@ struct connection {
     int    fd;
 };
 
-static int   usock_fd;
+static int   control_fd;
 static int   cur_fd;
 static struct connection *fd_table;
 static int  fd_table_size;
@@ -71,7 +71,7 @@ static void invalidate_fd(int fd)
 {
     int i;
 
-    if (fd == usock_fd)
+    if (fd == control_fd)
         return;
     for (i = 0; i != fds_in_use; i++) 
 	if (fd_table[i].fd == fd)
@@ -134,8 +134,8 @@ char dbuf[80];
 
 /*
  *  Check for client requests. We keep up to fd_table_size open descriptors in
- *  fd_table. If the table is full and we get a request for a new descriptor via
- *  usock_fd, we close a random decriptor in the table to make space. The
+ *  fd_table. If the table is full and we get a new descriptor via
+ *  control_fd, we close a random decriptor in the table to make space. The
  *  affected client will automatically reconnect. For an EOF (descriptor is
  *  closed by the client, so a read here returns 0) comm_rcv will take care of
  *  things and clean up fd_table. The same happens for any read/write errors.
@@ -148,11 +148,11 @@ static int check_fd()
     struct timeval tv;
     int ret;
     int i;
-    int maxfd = usock_fd;
+    int maxfd = control_fd;
     time_t t;
     
     FD_ZERO(&readfds);
-    FD_SET(usock_fd, &readfds);
+    FD_SET(control_fd, &readfds);
     
     for (i = 0; i != fds_in_use; i++) {
 	FD_SET(fd_table[i].fd, &readfds);
@@ -174,10 +174,10 @@ static int check_fd()
 
     time(&t);
 
-    if (FD_ISSET(usock_fd, &readfds)) {
+    if (FD_ISSET(control_fd, &readfds)) {
 	int    l = 0;
 	
-        fd = recv_cred(usock_fd);
+        fd = recv_cred(control_fd);
         if (fd < 0) {
             return -1;
         }
@@ -211,7 +211,7 @@ static int check_fd()
     return 0;
 }
 
-int comm_init(struct db_param *dbp)
+int comm_init(struct db_param *dbp, int ctrlfd, int clntfd)
 {
     int i;
 
@@ -225,17 +225,17 @@ int comm_init(struct db_param *dbp)
     for (i = 0; i != fd_table_size; i++)
 	fd_table[i].fd = -1;
     /* from dup2 */
-    usock_fd = 0;
+    control_fd = ctrlfd;
 #if 0
     int b = 1;
     /* this one dump core in recvmsg, great */
-    if ( setsockopt(usock_fd, SOL_SOCKET, SO_PASSCRED, &b, sizeof (b)) < 0) {
+    if ( setsockopt(control_fd, SOL_SOCKET, SO_PASSCRED, &b, sizeof (b)) < 0) {
         LOG(log_error, logtype_cnid, "setsockopt SO_PASSCRED %s",  strerror(errno));
 	return -1;
     }
 #endif
-    /* push the first from dup2 */
-    fd_table[fds_in_use].fd = 1;
+    /* push the first client fd */
+    fd_table[fds_in_use].fd = clntfd;
     fds_in_use++;
     
     return 0;
