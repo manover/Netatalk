@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.44.2.3.2.15 2004-07-01 01:27:34 didg Exp $
+ * $Id: auth.c,v 1.44.2.3.2.15.2.1 2005-01-11 20:58:42 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -52,17 +52,18 @@ int	afp_version = 11;
 static int afp_version_index;
 
 uid_t	uuid;
-#if defined( __svr4__ ) && !defined( NGROUPS )
-#define NGROUPS NGROUPS_MAX
-#endif /* __svr4__ NGROUPS */
+
 #if defined( sun ) && !defined( __svr4__ ) || defined( ultrix )
-int	groups[ NGROUPS ];
+
+int	*groups;
+#define GROUPS_SIZE sizeof(int)
+
 #else /* sun __svr4__ ultrix */
-#if defined( __svr4__ ) && !defined( NGROUPS )
-#define NGROUPS	NGROUPS_MAX
-#endif /* __svr4__ NGROUPS */
-gid_t	groups[ NGROUPS ];
+
+gid_t	*groups;
+#define GROUPS_SIZE sizeof(gid_t)
 #endif /* sun ultrix */
+
 int	ngroups;
 
 /*
@@ -281,7 +282,17 @@ static int login(AFPObj *obj, struct passwd *pwd, void (*logout)(void), int expi
 
     /* Basically if the user is in the admin group, we stay root */
 
-    if (( ngroups = getgroups( NGROUPS, groups )) < 0 ) {
+    if (( ngroups = getgroups( 0, NULL )) < 0 ) {
+        LOG(log_error, logtype_afpd, "login: %s getgroups: %s", pwd->pw_name, strerror(errno) );
+        return AFPERR_BADUAM;
+    }
+    
+    if ( NULL == (groups = calloc(ngroups, GROUPS_SIZE)) ) {
+        LOG(log_error, logtype_afpd, "login: %s calloc: %d", ngroups);
+        return AFPERR_BADUAM;
+    }
+
+    if (( ngroups = getgroups( ngroups, groups )) < 0 ) {
         LOG(log_error, logtype_afpd, "login: %s getgroups: %s", pwd->pw_name, strerror(errno) );
         return AFPERR_BADUAM;
     }
