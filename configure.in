@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.15 2004-01-03 01:49:54 bfernhomberg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.16 2004-01-13 12:38:20 bfernhomberg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(etc/afpd/main.c)
@@ -955,7 +955,7 @@ AC_OUTPUT([Makefile
 	[chmod a+x distrib/config/netatalk-config contrib/shell_utils/apple_*]
 )
 
-AM_NETATALK_LIBS_SUMMARY
-AM_NETATALK_CONFIG_SUMMARY
+AC_NETATALK_LIBS_SUMMARY
+AC_NETATALK_CONFIG_SUMMARY
 
 

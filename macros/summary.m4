@@ -1,4 +1,4 @@
-AC_DEFUN([AM_NETATALK_CONFIG_SUMMARY], [
+AC_DEFUN([AC_NETATALK_CONFIG_SUMMARY], [
 
 	AC_MSG_RESULT([Configure summary:])
 	AC_MSG_RESULT([    Install style:])
@@ -57,7 +57,7 @@ AC_DEFUN([AM_NETATALK_CONFIG_SUMMARY], [
 ])
 
 
-AC_DEFUN([AM_NETATALK_LIBS_SUMMARY], [
+AC_DEFUN([AC_NETATALK_LIBS_SUMMARY], [
 	dnl #################################################
 	dnl # Display summary of libraries detected
 
