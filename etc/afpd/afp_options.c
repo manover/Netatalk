@@ -1,5 +1,5 @@
 /*
- * $Id: afp_options.c,v 1.30.2.2.2.8 2004-06-09 02:07:15 bfernhomberg Exp $
+ * $Id: afp_options.c,v 1.30.2.2.2.9 2004-09-28 11:26:53 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -78,7 +78,7 @@ static char *getoption(char *buf, const char *option)
     int len;
 
     if (option && (buf = strstr(buf, option)))
-        buf = strpbrk(buf, " \t");
+        buf = strpbrk(buf, " \t\n");
 
     while (buf && isspace(*buf))
         buf++;
