@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.17 2004-10-06 19:48:40 didg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.18 2004-10-09 12:48:21 didg Exp $
  *
  * See COPYRIGHT.
  *
@@ -736,23 +736,19 @@ static int ad_addcomment(struct vol *vol, struct path *path, char *ibuf)
         return( AFPERR_ACCESS );
     }
 
-    if (!ad_getentryoff(adp, ADEID_COMMENT)) {
-        /* not defined, save nothing but return success */
-        return AFP_OK;
-    }
-
-    if ( (ad_getoflags( adp, ADFLAGS_HF ) & O_CREAT) ) {
-        if ( *path->m_name == '\0' ) {
-            name = curdir->d_m_name;
-        } else {
-            name = path->m_name;
+    if (ad_getentryoff(adp, ADEID_COMMENT)) {
+        if ( (ad_getoflags( adp, ADFLAGS_HF ) & O_CREAT) ) {
+            if ( *path->m_name == '\0' ) {
+                name = curdir->d_m_name;
+            } else {
+                name = path->m_name;
+            }
+            ad_setname(adp, name);
         }
-        ad_setname(adp, name);
+        ad_setentrylen( adp, ADEID_COMMENT, clen );
+        memcpy( ad_entry( adp, ADEID_COMMENT ), ibuf, clen );
+        ad_flush( adp, ADFLAGS_HF );
     }
-
-    ad_setentrylen( adp, ADEID_COMMENT, clen );
-    memcpy( ad_entry( adp, ADEID_COMMENT ), ibuf, clen );
-    ad_flush( adp, ADFLAGS_HF );
     ad_close( adp, ADFLAGS_HF );
     return( AFP_OK );
 }
@@ -904,12 +900,10 @@ static int ad_rmvcomment(struct vol *vol, struct path *path)
         }
     }
 
-    if (!ad_getentryoff(adp, ADEID_COMMENT)) {
-        return AFP_OK;
+    if (ad_getentryoff(adp, ADEID_COMMENT)) {
+        ad_setentrylen( adp, ADEID_COMMENT, 0 );
+        ad_flush( adp, ADFLAGS_HF );
     }
-
-    ad_setentrylen( adp, ADEID_COMMENT, 0 );
-    ad_flush( adp, ADFLAGS_HF );
     ad_close( adp, ADFLAGS_HF );
     return( AFP_OK );
 }
