@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.10 2003-11-15 00:00:35 bfernhomberg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.11 2003-11-18 12:30:48 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -182,6 +182,7 @@ static __inline__ void volfree(struct vol_option *options,
  * $f   -> full name (whatever's in the gecos field)
  * $g   -> group
  * $h   -> hostname 
+ * $i   -> client ip/appletalk address without port
  * $s   -> server name (hostname if it doesn't exist)
  * $u   -> username (guest is usually nobody)
  * $v   -> volume name (ADEID_NAME or basename if ADEID_NAME is empty)
@@ -257,6 +258,19 @@ static char *volxlate(AFPObj *obj, char *dest, size_t destlen,
                 q = grp->gr_name;
         } else if (is_var(p, "$h")) {
             q = obj->options.hostname;
+        } else if (is_var(p, "$i")) {
+            if (obj->proto == AFPPROTO_ASP) {
+                ASP asp = obj->handle;
+ 
+                len = sprintf(dest, "%u", ntohs(asp->asp_sat.sat_addr.s_net));
+                dest += len;
+                destlen -= len;
+ 
+            } else if (obj->proto == AFPPROTO_DSI) {
+                DSI *dsi = obj->handle;
+ 
+                q = inet_ntoa(dsi->client.sin_addr);
+            }
         } else if (is_var(p, "$s")) {
             if (obj->Obj)
                 q = obj->Obj;
