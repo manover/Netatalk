@@ -1,5 +1,5 @@
 /* 
- * $Id: mangle.c,v 1.16.2.1.2.12.2.2 2005-02-12 11:22:05 didg Exp $ 
+ * $Id: mangle.c,v 1.16.2.1.2.12.2.3 2005-02-14 16:01:54 didg Exp $ 
  *
  * Copyright (c) 2002. Joe Marcus Clarke (marcus@marcuscom.com)
  * All Rights Reserved.  See COPYRIGHT.
@@ -54,8 +54,9 @@ static char *demangle_checks ( const struct vol *vol, char* uname, char * mfilen
 				      uname, strlen(uname), buffer, MAXPATHLEN, &flags)) ) {
 	return mfilename;
     }
-    /* If the filename is too long we also needed to mangle isn't this stuff always false */
-    if ( len >= vol->max_filename || (mfilenamelen = strlen(mfilename)) == MACFILELEN ) {
+    /* If the filename is too long we also needed to mangle */
+    mfilenamelen = strlen(mfilename);
+    if ( len >= vol->max_filename || mfilenamelen == MACFILELEN ) {
         flags |= CONV_REQMANGLE;
         len = prefix;
     }
