@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.13.2.1 2002-03-12 15:44:38 srittau Exp $
+ * $Id: main.c,v 1.13.2.2 2002-08-20 20:42:24 srittau Exp $
  *
  * Copyright (c) 1990,1995 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -94,7 +94,7 @@ char		*uampath = _PATH_PAPDUAMPATH;
 /* Prototypes for locally used functions */
 int getstatus( struct printer *pr, char *buf );
 int rprintcap( struct printer *pr );
-void getprinters( char *cf );
+static void getprinters( char *cf );
 
 
 /* this only needs to be used by the server process */
@@ -539,19 +539,21 @@ int getstatus( pr, buf )
 char	*pgetstr();
 char	*getpname();
 
-void getprinters( cf )
+#define PF_CONFBUFFER	1024
+
+static void getprinters( cf )
     char	*cf;
 {
-    char		buf[ 1024 ], area[ 1024 ], *a, *p, *name, *type, *zone;
+    char		buf[ PF_CONFBUFFER ], area[ PF_CONFBUFFER ], *a, *p, *name, *type, *zone;
     struct printer	*pr;
     int			c;
 
-    while (( c = getprent( cf, buf )) > 0 ) {
+    while (( c = getprent( cf, buf, PF_CONFBUFFER )) > 0 ) {
 	a = area;
 	/*
 	 * Get the printer's nbp name.
 	 */
-	if (( p = getpname( &a )) == NULL ) {
+	if (( p = getpname( &a, PF_CONFBUFFER )) == NULL ) {
 	    fprintf( stderr, "No printer name\n" );
 	    exit( 1 );
 	}
