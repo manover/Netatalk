@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_update.c,v 1.1.4.6 2003-12-03 00:40:20 lenneis Exp $
+ * $Id: dbd_update.c,v 1.1.4.7 2003-12-12 19:27:57 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -69,7 +69,7 @@ int dbd_update(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
     key.size = CNID_DID_LEN + rqst->namelen +1;
     memset(&pkey, 0, sizeof(pkey));
 
-    if ((rc = dbif_pget(DBIF_IDX_DIDNAME, &key, &pkey, &data, 0) < 0)) {
+    if ((rc = dbif_pget(DBIF_IDX_DIDNAME, &key, &pkey, &data, 0)) < 0) {
         goto err_db;
     }
     else if  (rc > 0) {

@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.1.4.5 2003-12-04 21:33:25 lenneis Exp $
+ * $Id: main.c,v 1.1.4.6 2003-12-12 19:27:57 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -242,7 +242,6 @@ int main(int argc, char *argv[])
     }
     
     LOG(log_info, logtype_cnid, "Startup, DB dir %s", dir);
-    sleep(3600);
     sv.sa_handler = sig_exit;
     sv.sa_flags = 0;
     sigemptyset(&sv.sa_mask);
