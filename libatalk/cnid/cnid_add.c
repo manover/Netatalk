@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_add.c,v 1.30.2.1 2003-02-08 03:07:24 jmarcus Exp $
+ * $Id: cnid_add.c,v 1.30.2.2 2003-02-08 03:16:53 jmarcus Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -121,7 +121,7 @@ abort:
     if ((ret = txn_abort(tid)) != 0) {
         return ret;
     }
-#endif /* CNID_DB_CDB */
+#endif    
     return rc;
 }
 
@@ -134,8 +134,7 @@ cnid_t cnid_add(void *CNID, const struct stat *st,
 #ifndef CNID_DB_CDB
     DB_TXN *tid;
 #endif /* CNID_DB_CDB */
-    struct timeval t;
-    cnid_t id, save;
+    cnid_t id;
     int rc;
 
     if (!(db = CNID) || !st || !name) {
@@ -257,7 +256,7 @@ retry:
         if ((rc = txn_abort(tid)) != 0) {
             LOG(log_error, logtype_default, "cnid_add: txn_abort: %s", db_strerror(rc));
             errno = CNID_ERR_DB;
-            return CNID_INVALID; 
+            return CNID_INVALID;
         }
         goto retry;
 #endif /* CNID_DB_CDB */

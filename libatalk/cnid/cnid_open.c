@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_open.c,v 1.43 2002-08-31 05:35:10 jmarcus Exp $
+ * $Id: cnid_open.c,v 1.43.2.1 2003-02-08 03:16:53 jmarcus Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -33,7 +33,7 @@
  * CNIDs 4-16 are reserved according to page 31 of the AFP 3.0 spec so, 
  * CNID_START begins at 17.
  */
- 
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
@@ -106,7 +106,7 @@ DB_INIT_LOG | DB_INIT_TXN)
 
 #ifndef CNID_DB_CDB
 /* Let's try and use the youngest lock detector if present.
- * If we can't do that, then let DB3 use its default deadlock detector. */
+ * If we can't do that, then let BDB use its default deadlock detector. */
 #if defined DB_LOCK_YOUNGEST
 #define DEAD_LOCK_DETECT DB_LOCK_YOUNGEST
 #else /* DB_LOCK_YOUNGEST */
@@ -193,11 +193,11 @@ static int compare_unicode(const DBT *a, const DBT *b)
 }
 
 void *cnid_open(const char *dir, mode_t mask) {
-    struct stat st, rsb, lsb, csb;
+    struct stat st;
 #ifndef CNID_DB_CDB
     struct flock lock;
 #endif /* CNID_DB_CDB */
-    char path[MAXPATHLEN + 1];
+char path[MAXPATHLEN + 1];
     CNID_private *db;
     DBT key, data;
     DB_TXN *tid;
@@ -328,8 +328,13 @@ void *cnid_open(const char *dir, mode_t mask) {
     }
 
     /*db->db_didname->set_bt_compare(db->db_didname, &compare_unix);*/
+#if DB_VERSION_MAJOR > 4 || (DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR >= 1)
+    if ((rc = db->db_didname->open(db->db_didname, NULL, DBDIDNAME, NULL,
+                                   DB_HASH, open_flag, 0666 & ~mask))) {
+#else
     if ((rc = db->db_didname->open(db->db_didname, DBDIDNAME, NULL,
                                    DB_HASH, open_flag, 0666 & ~mask))) {
+#endif /* DB_VERSION_MAJOR >= 4 */
         LOG(log_error, logtype_default, "cnid_open: Failed to open did/name database: %s",
             db_strerror(rc));
         goto fail_appinit;
@@ -399,7 +404,7 @@ dbversion_retry:
                 }
                 else if (ret == DB_RUNRECOVERY) {
                     /* At this point, we don't care if the transaction aborts
-                     * successfully or not. */
+                    * successfully or not. */
                     txn_abort(tid);
                     LOG(log_error, logtype_default, "cnid_open: Error putting new version: %s",
                         db_strerror(ret));
@@ -443,7 +448,11 @@ dbversion_retry:
     }
 
     db->db_macname->set_bt_compare(db->db_macname, &compare_mac);
+#if DB_VERSION_MAJOR > 4 || (DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR >= 1)
+    if ((rc = db->db_macname->open(db->db_macname, NULL, DBMACNAME, NULL, DB_BTREE, open_flag, 0666 & ~mask)) != 0) {
+#else
     if ((rc = db->db_macname->open(db->db_macname, DBMACNAME, NULL, DB_BTREE, open_flag, 0666 & ~mask)) != 0) {
+#endif /* DB_VERSION_MAJOR >= 4 */
         LOG(log_error, logtype_default, "cnid_open: Failed to open did/macname database: %s",
             db_strerror(rc));
         db->db_didname->close(db->db_didname, 0);
@@ -460,7 +469,11 @@ dbversion_retry:
     }
 
     db->db_shortname->set_bt_compare(db->db_shortname, &compare_mac);
+#if DB_VERSION_MAJOR > 4 || (DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR >= 1)
+    if ((rc = db->db_shortname->open(db->db_shortname, NULL, DBSHORTNAME, NULL, DB_BTREE, open_flag, 0666 & ~mask)) != 0) {
+#else
     if ((rc = db->db_shortname->open(db->db_shortname, DBSHORTNAME, NULL, DB_BTREE, open_flag, 0666 & ~mask)) != 0) {
+#endif /* DB_VERSION_MAJOR >= 4 */
         LOG(log_error, logtype_default, "cnid_open: Failed to open did/shortname database: %s",
             db_strerror(rc));
         db->db_didname->close(db->db_didname, 0);
@@ -479,7 +492,11 @@ dbversion_retry:
     }
 
     db->db_longname->set_bt_compare(db->db_longname, &compare_unicode);
+#if DB_VERSION_MAJOR > 4 || (DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR >= 1)
+    if ((rc = db->db_longname->open(db->db_longname, NULL, DBLONGNAME, NULL, DB_BTREE, open_flag, 0666 & ~mask)) != 0) {
+#else
     if ((rc = db->db_longname->open(db->db_longname, DBLONGNAME, NULL, DB_BTREE, open_flag, 0666 & ~mask)) != 0) {
+#endif /* DB_VERSION_MAJOR >= 4 */
         LOG(log_error, logtype_default, "cnid_open: Failed to open did/longname database: %s",
             db_strerror(rc));
         db->db_didname->close(db->db_didname, 0);
@@ -502,7 +519,11 @@ dbversion_retry:
         goto fail_appinit;
     }
 
+#if DB_VERSION_MAJOR > 4 || (DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR >= 1)
+    if ((rc = db->db_devino->open(db->db_devino, NULL, DBDEVINO, NULL, DB_HASH, open_flag, 0666 & ~mask)) != 0) {
+#else
     if ((rc = db->db_devino->open(db->db_devino, DBDEVINO, NULL, DB_HASH, open_flag, 0666 & ~mask)) != 0) {
+#endif /* DB_VERSION_MAJOR >= 4 */
         LOG(log_error, logtype_default, "cnid_open: Failed to open devino database: %s",
             db_strerror(rc));
         db->db_didname->close(db->db_didname, 0);
@@ -529,7 +550,11 @@ dbversion_retry:
     }
 
 
+#if DB_VERSION_MAJOR > 4 || (DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR >= 1)
+    if ((rc = db->db_cnid->open(db->db_cnid, NULL, DBCNID, NULL, DB_HASH, open_flag, 0666 & ~mask)) != 0) {
+#else
     if ((rc = db->db_cnid->open(db->db_cnid, DBCNID, NULL, DB_HASH, open_flag, 0666 & ~mask)) != 0) {
+#endif /* DB_VERSION_MAJOR >= 4 */
         LOG(log_error, logtype_default, "cnid_open: Failed to open dev/ino database: %s",
             db_strerror(rc));
         db->db_didname->close(db->db_didname, 0);
@@ -557,7 +582,11 @@ dbversion_retry:
         goto fail_appinit;
     }
 
+#if DB_VERSION_MAJOR > 4 || (DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR >= 1)
+    if ((rc = db->db_mangle->open(db->db_mangle, NULL, DBMANGLE, NULL, DB_HASH, open_flag, 0666 & ~mask)) != 0) {
+#else
     if ((rc = db->db_mangle->open(db->db_mangle, DBMANGLE, NULL, DB_HASH, open_flag, 0666 & ~mask)) != 0) {
+#endif /* DB_VERSION_MAJOR >= 4 */
         LOG(log_error, logtype_default, "cnid_open: Failed to open mangle database: %s", db_strerror(rc));
         db->db_didname->close(db->db_didname, 0);
         db->db_devino->close(db->db_devino, 0);
@@ -571,7 +600,7 @@ dbversion_retry:
     }
 #endif /* FILE_MANGLING */
 
-    /* Print out the version of DB3 we're linked against. */
+    /* Print out the version of BDB we're linked against. */
     LOG(log_info, logtype_default, "CNID DB initialized using %s",
         db_version(NULL, NULL, NULL));
 

@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_close.c,v 1.25 2002-08-30 03:12:52 jmarcus Exp $
+ * $Id: cnid_close.c,v 1.25.2.1 2003-02-08 03:16:53 jmarcus Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -36,28 +36,33 @@ void cnid_close(void *CNID) {
     if ((db->lockfd > -1) && ((db->flags & CNIDFLAG_DB_RO) == 0)) {
         struct flock lock;
 
-        lock.l_type = F_WRLCK;
-        lock.l_whence = SEEK_SET;
-        lock.l_start = lock.l_len = 0;
-        if (fcntl(db->lockfd, F_SETLK, &lock) == 0) {
+    lock.l_type = F_WRLCK;
+    lock.l_whence = SEEK_SET;
+    lock.l_start = lock.l_len = 0;
+    if (fcntl(db->lockfd, F_SETLK, &lock) == 0) {
             char **list, **first;
-            int cfd = -1;
 
 
             /* Checkpoint the databases until we can checkpoint no
              * more. */
 #if DB_VERSION_MAJOR >= 4
+#if DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR >= 1
+            db->dbenv->txn_checkpoint(db->dbenv, 0, 0, 0);
+#else
             rc = db->dbenv->txn_checkpoint(db->dbenv, 0, 0, 0);
+#endif /* DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR >= 1 */
 #else
             rc = txn_checkpoint(db->dbenv, 0, 0, 0);
-#endif
+#endif /* DB_VERSION_MAJOR >= 4 */
+#if DB_VERSION_MAJOR < 4 || (DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR < 1)
             while (rc == DB_INCOMPLETE) {
 #if DB_VERSION_MAJOR >= 4
-        	    rc = db->dbenv->txn_checkpoint(db->dbenv, 0, 0, 0);
+                rc = db->dbenv->txn_checkpoint(db->dbenv, 0, 0, 0);
 #else
-	            rc = txn_checkpoint(db->dbenv, 0, 0, 0);
-#endif
+                rc = txn_checkpoint(db->dbenv, 0, 0, 0);
+#endif /* DB_VERSION_MAJOR >= 4 */
             }
+#endif /* DB_VERSION_MAJOR < 4 || (DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR < 1) */
 
 #if DB_VERSION_MAJOR >= 4
             if ((rc = db->dbenv->log_archive(db->dbenv, &list, DB_ARCH_ABS)) != 0) {
@@ -73,9 +78,9 @@ void cnid_close(void *CNID) {
                 for (first = list; *list != NULL; ++list) {
                     if ((rc = remove(*list)) != 0) {
 #ifdef DEBUG
-                        LOG(log_info, logtype_default, "cnid_close: failed to remove %s: %s", *list, strerror(rc));
+                            LOG(log_info, logtype_default, "cnid_close: failed to remove %s: %s", *list, strerror(rc));
 #endif
-                    }
+                        }
                 }
                 free(first);
             }
