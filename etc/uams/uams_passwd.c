@@ -1,5 +1,5 @@
 /*
- * $Id: uams_passwd.c,v 1.19.2.1.2.5 2004-01-10 08:01:36 bfernhomberg Exp $
+ * $Id: uams_passwd.c,v 1.19.2.1.2.6 2004-02-14 02:47:15 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -48,6 +48,7 @@ char *strchr (), *strrchr ();
 #include <atalk/afp.h>
 #include <atalk/logger.h>
 #include <atalk/uam.h>
+#include <atalk/util.h>
 
 #define PASSWDLEN 8
 
@@ -276,13 +277,12 @@ struct papfile	*out;
     static const char *loginok = "0\r";
     int ulen;
 
-    data = (char *)malloc(stop - start + 2);
+    data = (char *)malloc(stop - start + 1);
     if (!data) {
 	LOG(log_info, logtype_uams,"Bad Login ClearTxtUAM: malloc");
 	return(-1);
     }
-    strncpy(data, start, stop - start + 1);
-    data[stop - start + 2] = 0;
+    strlcpy(data, start, stop - start + 1);
 
     /* We are looking for the following format in data:
      * (username) (password)
@@ -297,25 +297,21 @@ struct papfile	*out;
         return(-1);
     }
     p++;
-    if ((q = strstr(data, ") (" )) == NULL) {
+    if ((q = strstr(p, ") (" )) == NULL) {
         LOG(log_info, logtype_uams,"Bad Login ClearTxtUAM: username not found in string");
         free(data);
         return(-1);
     }
-    strncpy(username, p, MIN( UAM_USERNAMELEN, (q - p)) );
-    username[ UAM_USERNAMELEN+1] = '\0';
-
+    memcpy(username, p,  MIN( UAM_USERNAMELEN, q - p ));
 
     /* Parse input for password in next () */
     p = q + 3;
-    if ((q = strrchr(data, ')' )) == NULL) {
+    if ((q = strrchr(p , ')' )) == NULL) {
         LOG(log_info, logtype_uams,"Bad Login ClearTxtUAM: password not found in string");
         free(data);
         return(-1);
     }
-    strncpy(password, p, MIN(PASSWDLEN, q - p) );
-    password[ PASSWDLEN+1] = '\0';
-
+    memcpy(password, p, MIN(PASSWDLEN, q - p) );
 
     /* Done copying username and password, clean up */
     free(data);
