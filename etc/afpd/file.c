@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.67 2002-10-13 21:30:55 didg Exp $
+ * $Id: file.c,v 1.62.2.1 2003-06-09 14:53:15 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -85,73 +85,6 @@ const u_char ufinderi[] = {
                               0, 0, 0, 0, 0, 0, 0, 0
                           };
 
-/* FIXME mpath : unix or mac name ? (for now it's mac name ) */
-void *get_finderinfo(const char *mpath, struct adouble *adp, void *data)
-{
-    struct extmap	*em;
-
-    if (adp) {
-        memcpy(data, ad_entry(adp, ADEID_FINDERI), 32);
-    }
-    else {
-        memcpy(data, ufinderi, 32);
-    }
-
-    if ((!adp  || !memcmp(ad_entry(adp, ADEID_FINDERI),ufinderi , 8 )) 
-            	&& (em = getextmap( mpath ))
-    ) {
-        memcpy(data, em->em_type, sizeof( em->em_type ));
-        memcpy(data + 4, em->em_creator, sizeof(em->em_creator));
-    }
-    return data;
-}
-
-/*
- * FIXME: PDINFO is UTF8 and doesn't need adp
-*/
-#define PARAM_NEED_ADP(b) ((b) & ((1 << FILPBIT_ATTR)  |\
-				  (1 << FILPBIT_CDATE) |\
-				  (1 << FILPBIT_MDATE) |\
-				  (1 << FILPBIT_BDATE) |\
-				  (1 << FILPBIT_FINFO) |\
-				  (1 << FILPBIT_RFLEN) |\
-				  (1 << FILPBIT_EXTRFLEN) |\
-				  (1 << FILPBIT_PDINFO)))
-
-
-char *set_name(char *data, const char *name, u_int32_t utf8) 
-{
-    u_int32_t           aint;
-
-    aint = strlen( name );
-
-    if (!utf8) {
-        if (aint > MACFILELEN)
-            aint = MACFILELEN;
-        *data++ = aint;
-    }
-    else {
-        u_int16_t temp;
-
-        if (aint > 255)  /* FIXME safeguard, anyway if no ascii char it's game over*/
-           aint = 255;
-
-        utf8 = htonl(utf8);
-        memcpy(data, &utf8, sizeof(utf8));
-        data += sizeof(utf8);
-        
-        temp = htons(aint);
-        memcpy(data, &temp, sizeof(temp));
-        data += sizeof(temp);
-    }
-
-    memcpy( data, name, aint );
-    data += aint;
-
-    return data;
-}
-
-/* -------------------------- */
 int getmetadata(struct vol *vol,
                  u_int16_t bitmap,
                  char *path, struct dir *dir, struct stat *st,
@@ -160,12 +93,15 @@ int getmetadata(struct vol *vol,
 #ifndef USE_LASTDID
     struct stat		lst, *lstp;
 #endif /* USE_LASTDID */
+    struct extmap	*em;
     char		*data, *nameoff = NULL, *upath;
     int			bit = 0;
     u_int32_t		aint;
     u_int16_t		ashort;
     u_char              achar, fdType[4];
-    u_int32_t           utf8 = 0;
+#if 0
+    struct maccess	ma;
+#endif
 
 #ifdef DEBUG
     LOG(log_info, logtype_afpd, "begin getmetadata:");
@@ -191,7 +127,6 @@ int getmetadata(struct vol *vol,
 #if 0
             /* FIXME do we want a visual clue if the file is read only
              */
-            struct maccess	ma;
             accessmode( ".", &ma, dir , NULL);
             if ((ma.ma_user & AR_UWRITE)) {
             	accessmode( upath, &ma, dir , st);
@@ -238,14 +173,22 @@ int getmetadata(struct vol *vol,
             break;
 
         case FILPBIT_FINFO :
-	    get_finderinfo(path, adp, (char *)data);
-            if (!adp) {
+            if (adp)
+                memcpy(data, ad_entry(adp, ADEID_FINDERI), 32);
+            else {
+                memcpy(data, ufinderi, 32);
                 if (*upath == '.') { /* make it invisible */
                     ashort = htons(FINDERINFO_INVISIBLE);
                     memcpy(data + FINDERINFO_FRFLAGOFF, &ashort, sizeof(ashort));
                 }
             }
 
+            if ((!adp  || !memcmp(ad_entry(adp, ADEID_FINDERI),ufinderi , 8 )) 
+            	&& (em = getextmap( path ))
+            ) {
+                memcpy(data, em->em_type, sizeof( em->em_type ));
+                memcpy(data + 4, em->em_creator, sizeof(em->em_creator));
+            }
             data += 32;
             break;
 
@@ -325,20 +268,14 @@ int getmetadata(struct vol *vol,
             break;
 
         case FILPBIT_DFLEN :
-            if  (st->st_size > 0xffffffff)
-               aint = 0xffffffff;
-            else
-               aint = htonl( st->st_size );
+            aint = htonl( st->st_size );
             memcpy(data, &aint, sizeof( aint ));
             data += sizeof( aint );
             break;
 
         case FILPBIT_RFLEN :
             if ( adp ) {
-                if (adp->ad_rlen > 0xffffffff)
-                    aint = 0xffffffff;
-                else
-                    aint = htonl( adp->ad_rlen);
+                aint = htonl( ad_getentrylen( adp, ADEID_RFORK ));
             } else {
                 aint = 0;
             }
@@ -353,75 +290,47 @@ int getmetadata(struct vol *vol,
                to "pXYZ" when we created it.  See IA, Ver 2.
                <shirsch@ibm.net> */
         case FILPBIT_PDINFO :
-            if (afp_version >= 30) { /* UTF8 name */
-                utf8 = kTextEncodingUTF8;
-                nameoff = data;
-                data += sizeof( u_int16_t );
-                aint = 0;
-                memcpy(data, &aint, sizeof( aint ));
-                data += sizeof( aint );
-            }
-            else {
-                if ( adp ) {
-                    memcpy(fdType, ad_entry( adp, ADEID_FINDERI ), 4 );
+            if ( adp ) {
+                memcpy(fdType, ad_entry( adp, ADEID_FINDERI ), 4 );
 
-                    if ( memcmp( fdType, "TEXT", 4 ) == 0 ) {
-                        achar = '\x04';
-                        ashort = 0x0000;
-                    }
-                    else if ( memcmp( fdType, "PSYS", 4 ) == 0 ) {
-                        achar = '\xff';
-                        ashort = 0x0000;
-                    }
-                    else if ( memcmp( fdType, "PS16", 4 ) == 0 ) {
-                        achar = '\xb3';
-                        ashort = 0x0000;
-                    }
-                    else if ( memcmp( fdType, "BINA", 4 ) == 0 ) {
-                        achar = '\x00';
-                        ashort = 0x0000;
-                    }
-                    else if ( fdType[0] == 'p' ) {
-                        achar = fdType[1];
-                        ashort = (fdType[2] * 256) + fdType[3];
-                    }
-                    else {
-                        achar = '\x00';
-                        ashort = 0x0000;
-                    }
+                if ( memcmp( fdType, "TEXT", 4 ) == 0 ) {
+                    achar = '\x04';
+                    ashort = 0x0000;
+                }
+                else if ( memcmp( fdType, "PSYS", 4 ) == 0 ) {
+                    achar = '\xff';
+                    ashort = 0x0000;
+                }
+                else if ( memcmp( fdType, "PS16", 4 ) == 0 ) {
+                    achar = '\xb3';
+                    ashort = 0x0000;
+                }
+                else if ( memcmp( fdType, "BINA", 4 ) == 0 ) {
+                    achar = '\x00';
+                    ashort = 0x0000;
+                }
+                else if ( fdType[0] == 'p' ) {
+                    achar = fdType[1];
+                    ashort = (fdType[2] * 256) + fdType[3];
                 }
                 else {
                     achar = '\x00';
                     ashort = 0x0000;
                 }
-
-                *data++ = achar;
-                *data++ = 0;
-                memcpy(data, &ashort, sizeof( ashort ));
-                data += sizeof( ashort );
-                memset(data, 0, sizeof( ashort ));
-                data += sizeof( ashort );
             }
+            else {
+                achar = '\x00';
+                ashort = 0x0000;
+            }
+
+            *data++ = achar;
+            *data++ = 0;
+            memcpy(data, &ashort, sizeof( ashort ));
+            data += sizeof( ashort );
+            memset(data, 0, sizeof( ashort ));
+            data += sizeof( ashort );
             break;
-        case FILPBIT_EXTDFLEN:
-            aint = htonl(st->st_size >> 32);
-            memcpy(data, &aint, sizeof( aint ));
-            data += sizeof( aint );
-            aint = htonl(st->st_size);
-            memcpy(data, &aint, sizeof( aint ));
-            data += sizeof( aint );
-            break;
-        case FILPBIT_EXTRFLEN:
-            aint = 0;
-            if (adp) 
-                aint = htonl(adp->ad_rlen >> 32);
-            memcpy(data, &aint, sizeof( aint ));
-            data += sizeof( aint );
-            if (adp) 
-                aint = htonl(adp->ad_rlen);
-            memcpy(data, &aint, sizeof( aint ));
-            data += sizeof( aint );
-            break;
+
         default :
             return( AFPERR_BITMAP );
         }
@@ -431,7 +340,11 @@ int getmetadata(struct vol *vol,
     if ( nameoff ) {
         ashort = htons( data - buf );
         memcpy(nameoff, &ashort, sizeof( ashort ));
-        data = set_name(data, path, utf8);
+        if ((aint = strlen( path )) > MACFILELEN)
+            aint = MACFILELEN;
+        *data++ = aint;
+        memcpy(data, path, aint );
+        data += aint;
     }
     *buflen = data - buf;
     return (AFP_OK);
@@ -440,52 +353,49 @@ int getmetadata(struct vol *vol,
 /* ----------------------- */
 int getfilparams(struct vol *vol,
                  u_int16_t bitmap,
-                 struct path *path, struct dir *dir, 
+                 char *path, struct dir *dir, struct stat *st,
                  char *buf, int *buflen )
 {
     struct adouble	ad, *adp;
     struct ofork        *of;
     char		    *upath;
     u_int16_t		attrbits = 0;
-    int                 opened = 0;
     int rc;    
-
 #ifdef DEBUG
-    LOG(log_info, logtype_default, "begin getfilparams:");
+    LOG(log_info, logtype_afpd, "begin getfilparams:");
 #endif /* DEBUG */
 
-    opened = PARAM_NEED_ADP(bitmap);
-    adp = NULL;
-    if (opened) {
-        upath = path->u_name;
-        if ((of = of_findname(path))) {
-            adp = of->of_ad;
-    	    attrbits = ((of->of_ad->ad_df.adf_refcount > 0) ? ATTRBIT_DOPEN : 0);
-    	    attrbits |= ((of->of_ad->ad_hf.adf_refcount > of->of_ad->ad_df.adf_refcount)? ATTRBIT_ROPEN : 0);
-        } else {
-            memset(&ad, 0, sizeof(ad));
-            adp = &ad;
-        }
+    upath = mtoupath(vol, path);
+    if ((of = of_findname(upath, st))) {
+        adp = of->of_ad;
+    	attrbits = ((of->of_ad->ad_df.adf_refcount > 0) ? ATTRBIT_DOPEN : 0);
+    	attrbits |= ((of->of_ad->ad_hf.adf_refcount > of->of_ad->ad_df.adf_refcount)? ATTRBIT_ROPEN : 0);
 
-        if ( ad_open( upath, ADFLAGS_HF, O_RDONLY, 0, adp) < 0 ) {
-             adp = NULL;
-        }
-        else {
-    	    /* FIXME 
-    	       we need to check if the file is open by another process.
-    	       it's slow so we only do it if we have to:
-    	       - bitmap is requested.
-    	       - we don't already have the answer!
-    	    */
-    	    if ((bitmap & (1 << FILPBIT_ATTR))) {
-	         if (!(attrbits & ATTRBIT_ROPEN)) {
-	    	 }
-    		 if (!(attrbits & ATTRBIT_DOPEN)) {
-	    	 }
-    	    }
-    	}
+    } else {
+        memset(&ad, 0, sizeof(ad));
+        adp = &ad;
     }
-    rc = getmetadata(vol, bitmap, path->m_name, dir, &path->st, buf, buflen, adp, attrbits);
+
+    if ( ad_open( upath, ADFLAGS_HF, O_RDONLY, 0, adp) < 0 ) {
+        adp = NULL;
+    }
+    else {
+#if 0
+    	/* FIXME 
+    	   we need to check if the file is open by another process.
+    	   it's slow so we only do it if we have to:
+    	   - bitmap is requested.
+    	   - we don't already have the answer!
+    	*/
+    	if ((bitmap & (1 << FILPBIT_ATTR))) {
+	    	if (!(attrbits & ATTRBIT_ROPEN)) {
+	    	}
+    		if (!(attrbits & ATTRBIT_DOPEN)) {
+	    	}
+    	}
+#endif    	
+    }
+    rc = getmetadata(vol, bitmap, path, dir, st, buf, buflen, adp, attrbits);
     if ( adp ) {
         ad_close( adp, ADFLAGS_HF );
     }
@@ -502,7 +412,7 @@ AFPObj      *obj;
 char	*ibuf, *rbuf;
 int		ibuflen, *rbuflen;
 {
-    struct stat         *st;
+    struct stat         st;
     struct adouble	ad, *adp;
     struct vol		*vol;
     struct dir		*dir;
@@ -511,8 +421,6 @@ int		ibuflen, *rbuflen;
     int			creatf, did, openf, retvalue = AFP_OK;
     u_int16_t		vid;
     int                 ret;
-    struct path		*s_path;
-    
 #ifdef DEBUG
     LOG(log_info, logtype_afpd, "begin afp_createfile:");
 #endif /* DEBUG */
@@ -538,20 +446,17 @@ int		ibuflen, *rbuflen;
         return( AFPERR_NOOBJ );
     }
 
-    if (( s_path = cname( vol, dir, &ibuf )) == NULL ) {
+    if (( path = cname( vol, dir, &ibuf )) == NULL ) {
         return( AFPERR_NOOBJ );
     }
 
-    if ( *s_path->m_name == '\0' ) {
-        return( AFPERR_BADTYPE );
-    }
-
-    upath = s_path->u_name;
+    upath = mtoupath(vol, path);
     if (0 != (ret = check_name(vol, upath))) 
        return  ret;
-    
+
+    ret = stat(upath, &st);
     /* if upath is deleted we already in trouble anyway */
-    if ((of = of_findname(s_path))) {
+    if (!ret && (of = of_findname(upath, &st))) {
         adp = of->of_ad;
     } else {
         memset(&ad, 0, sizeof(ad));
@@ -559,7 +464,7 @@ int		ibuflen, *rbuflen;
     }
     if ( creatf) {
         /* on a hard create, fail if file exists and is open */
-        if (of)
+        if (!ret && of)
             return AFPERR_BUSY;
         openf = O_RDWR|O_CREAT|O_TRUNC;
     } else {
@@ -581,15 +486,14 @@ int		ibuflen, *rbuflen;
             return( AFPERR_ACCESS );
         case ENOENT:
             /* on noadouble volumes, just creating the data fork is ok */
-            st = &s_path->st;
-            if (vol_noadouble(vol) && (stat(upath, st) == 0))
+            if (vol_noadouble(vol) && (stat(upath, &st) == 0))
                 goto createfile_done;
             /* fallthrough */
         default :
             return( AFPERR_PARAM );
         }
     }
-    path = s_path->m_name;
+
     ad_setentrylen( adp, ADEID_NAME, strlen( path ));
     memcpy(ad_entry( adp, ADEID_NAME ), path,
            ad_getentrylen( adp, ADEID_NAME ));
@@ -620,7 +524,7 @@ int		ibuflen, *rbuflen;
 {
     struct vol	*vol;
     struct dir	*dir;
-    struct path *s_path;
+    char	*path;
     int		did, rc;
     u_int16_t	vid, bitmap;
 
@@ -650,11 +554,11 @@ int		ibuflen, *rbuflen;
     bitmap = ntohs( bitmap );
     ibuf += sizeof( bitmap );
 
-    if (( s_path = cname( vol, dir, &ibuf )) == NULL ) {
+    if (( path = cname( vol, dir, &ibuf )) == NULL ) {
         return( AFPERR_NOOBJ );
     }
 
-    if ( *s_path->m_name == '\0' ) {
+    if ( *path == '\0' ) {
         return( AFPERR_BADTYPE ); /* it's a directory */
     }
 
@@ -662,7 +566,7 @@ int		ibuflen, *rbuflen;
         ibuf++;
     }
 
-    if (( rc = setfilparams(vol, s_path, bitmap, ibuf )) == AFP_OK ) {
+    if (( rc = setfilparams(vol, path, bitmap, ibuf )) == AFP_OK ) {
         setvoltime(obj, vol );
     }
 
@@ -677,10 +581,9 @@ int		ibuflen, *rbuflen;
  * cf AFP3.0.pdf page 252 for change_mdate and change_parent_mdate logic  
  *
 */
-extern struct path Cur_Path;
 
 int setfilparams(struct vol *vol,
-                 struct path *path, u_int16_t bitmap, char *buf )
+                 char *path, u_int16_t bitmap, char *buf )
 {
     struct adouble	ad, *adp;
     struct ofork        *of;
@@ -702,8 +605,8 @@ int setfilparams(struct vol *vol,
     LOG(log_info, logtype_afpd, "begin setfilparams:");
 #endif /* DEBUG */
 
-    upath = path->u_name;
-    if ((of = of_findname(path))) {
+    upath = mtoupath(vol, path);
+    if ((of = of_findname(upath, NULL))) {
         adp = of->of_ad;
     } else {
         memset(&ad, 0, sizeof(ad));
@@ -722,8 +625,8 @@ int setfilparams(struct vol *vol,
         }
         isad = 0;
     } else if ((ad_getoflags( adp, ADFLAGS_HF ) & O_CREAT) ) {
-        ad_setentrylen( adp, ADEID_NAME, strlen( path->m_name ));
-        memcpy(ad_entry( adp, ADEID_NAME ), path->m_name,
+        ad_setentrylen( adp, ADEID_NAME, strlen( path ));
+        memcpy(ad_entry( adp, ADEID_NAME ), path,
                ad_getentrylen( adp, ADEID_NAME ));
     }
 
@@ -773,7 +676,7 @@ int setfilparams(struct vol *vol,
 
             if (!memcmp( ad_entry( adp, ADEID_FINDERI ), ufinderi, 8 )
                     && ( 
-                     ((em = getextmap( path->m_name )) &&
+                     ((em = getextmap( path )) &&
                       !memcmp(buf, em->em_type, sizeof( em->em_type )) &&
                       !memcmp(buf + 4, em->em_creator,sizeof( em->em_creator)))
                      || ((em = getdefextmap()) &&
@@ -859,7 +762,7 @@ setfilparam_done:
     if (change_parent_mdate && gettimeofday(&tv, NULL) == 0) {
         newdate = AD_DATE_FROM_UNIX(tv.tv_sec);
         bitmap = 1<<FILPBIT_MDATE;
-        setdirparams(vol, &Cur_Path, bitmap, (char *)&newdate);
+        setdirparams(vol, "", bitmap, (char *)&newdate);
     }
 
 #ifdef DEBUG
@@ -973,51 +876,6 @@ rename_retry:
     return( AFP_OK );
 }
 
-int copy_path_name(char *newname, char *ibuf)
-{
-char        type = *ibuf;
-size_t      plen = 0;
-u_int16_t   len16;
-u_int32_t   hint;
-
-    if ( type != 2 && !(afp_version >= 30 && type == 3) ) {
-        return -1;
-    }
-    ibuf++;
-    switch (type) {
-    case 2:
-        if (( plen = (unsigned char)*ibuf++ ) != 0 ) {
-            strncpy( newname, ibuf, plen );
-            newname[ plen ] = '\0';
-            if (strlen(newname) != plen) {
-                /* there's \0 in newname, e.g. it's a pathname not
-                 * only a filename. 
-                */
-            	return -1;
-            }
-        }
-        break;
-    case 3:
-        memcpy(&hint, ibuf, sizeof(hint));
-        ibuf += sizeof(hint);
-           
-        memcpy(&len16, ibuf, sizeof(len16));
-        ibuf += sizeof(len16);
-        plen = ntohs(len16);
-        if (plen) {
-            strncpy( newname, ibuf, plen );
-            newname[ plen ] = '\0';
-            if (strchr(newname,'/')) {
-            	return -1;
-            }
-        }
-        break;
-    }
-    return plen;
-}
-
-/* -----------------------------------
-*/
 int afp_copyfile(obj, ibuf, ibuflen, rbuf, rbuflen )
 AFPObj      *obj;
 char	*ibuf, *rbuf;
@@ -1025,10 +883,9 @@ int		ibuflen, *rbuflen;
 {
     struct vol	*vol;
     struct dir	*dir;
-    char	*newname, *p, *upath;
-    struct path *s_path;
+    char	*newname, *path, *p, *upath;
     u_int32_t	sdid, ddid;
-    int         err, retvalue = AFP_OK;
+    int		plen, err, retvalue = AFP_OK;
     u_int16_t	svid, dvid;
 
 #ifdef DEBUG
@@ -1055,10 +912,10 @@ int		ibuflen, *rbuflen;
     memcpy(&ddid, ibuf, sizeof( ddid ));
     ibuf += sizeof( ddid );
 
-    if (( s_path = cname( vol, dir, &ibuf )) == NULL ) {
+    if (( path = cname( vol, dir, &ibuf )) == NULL ) {
         return( AFPERR_NOOBJ );
     }
-    if ( *s_path->m_name == '\0' ) {
+    if ( *path == '\0' ) {
         return( AFPERR_BADTYPE );
     }
 
@@ -1069,9 +926,10 @@ int		ibuflen, *rbuflen;
      *      we just balk if the file is opened already. */
 
     newname = obj->newtmp;
-    strcpy( newname, s_path->m_name );
+    strcpy( newname, path );
 
-    if (of_findname(s_path))
+    upath = mtoupath(vol, newname );
+    if (of_findname(upath, NULL))
         return AFPERR_DENYCONF;
 
     p = ctoupath( vol, curdir, newname );
@@ -1089,18 +947,27 @@ int		ibuflen, *rbuflen;
         return( AFPERR_PARAM );
     }
 
-    if (( s_path = cname( vol, dir, &ibuf )) == NULL ) {
+    if (( path = cname( vol, dir, &ibuf )) == NULL ) {
         return( AFPERR_NOOBJ );
     }
-    if ( *s_path->m_name != '\0' ) {
+    if ( *path != '\0' ) {
         return( AFPERR_BADTYPE ); /* not a directory. AFPERR_PARAM? */
     }
 
     /* one of the handful of places that knows about the path type */
-    if (copy_path_name(newname, ibuf) < 0) {
+    if ( *ibuf++ != 2 ) {
         return( AFPERR_PARAM );
     }
-
+    if (( plen = (unsigned char)*ibuf++ ) != 0 ) {
+        strncpy( newname, ibuf, plen );
+        newname[ plen ] = '\0';
+        if (strlen(newname) != plen) {
+            /* there's \0 in newname, e.g. it's a pathname not
+             * only a filename. 
+            */
+            return( AFPERR_PARAM );
+        }
+    }
     upath = mtoupath(vol, newname);
     if ( (err = copyfile(p, upath , newname, vol_noadouble(vol))) < 0 ) {
         return err;
@@ -1163,9 +1030,7 @@ char	*src, *dst, *newname;
 const int   noadouble;
 {
     struct adouble	ad;
-#ifdef SENDFILE_FLAVOR_LINUX
     struct stat         st;
-#endif
     char		filebuf[8192];
     int			sfd, dfd, len, err = AFP_OK;
     ssize_t             cc;
@@ -1492,7 +1357,7 @@ delete_unlock:
     return err;
 }
 
-/* ------------------------------------ */
+
 #ifdef CNID_DB
 /* return a file id */
 int afp_createid(obj, ibuf, ibuflen, rbuf, rbuflen )
@@ -1500,17 +1365,16 @@ AFPObj      *obj;
 char	*ibuf, *rbuf;
 int		ibuflen, *rbuflen;
 {
-    struct stat         *st;
+    struct stat         st;
 #if AD_VERSION > AD_VERSION1
     struct adouble	ad;
 #endif
     struct vol		*vol;
     struct dir		*dir;
-    char		*upath;
+    char		*path, *upath;
     int                 len;
     cnid_t		did, id;
     u_short		vid;
-    struct path         *s_path;
 
 #ifdef DEBUG
     LOG(log_info, logtype_afpd, "begin afp_createid:");
@@ -1536,18 +1400,17 @@ int		ibuflen, *rbuflen;
         return( AFPERR_PARAM );
     }
 
-    if (( s_path = cname( vol, dir, &ibuf )) == NULL ) {
+    if (( path = cname( vol, dir, &ibuf )) == NULL ) {
         return( AFPERR_PARAM );
     }
 
-    if ( *s_path->m_name == '\0' ) {
+    if ( *path == '\0' ) {
         return( AFPERR_BADTYPE );
     }
 
-    upath = s_path->u_name;
-    switch (s_path->st_errno) {
-        case 0:
-             break; /* success */
+    upath = mtoupath(vol, path);
+    if (stat(upath, &st) < 0) {
+        switch (errno) {
         case EPERM:
         case EACCES:
             return AFPERR_ACCESS;
@@ -1555,9 +1418,10 @@ int		ibuflen, *rbuflen;
             return AFPERR_NOOBJ;
         default:
             return AFPERR_PARAM;
+        }
     }
-    st = &s_path->st;
-    if ((id = cnid_lookup(vol->v_db, st, did, upath, len = strlen(upath)))) {
+
+    if ((id = cnid_lookup(vol->v_db, &st, did, upath, len = strlen(upath)))) {
         memcpy(rbuf, &id, sizeof(id));
         *rbuflen = sizeof(id);
         return AFPERR_EXISTID;
@@ -1571,7 +1435,7 @@ int		ibuflen, *rbuflen;
     }
 #endif /* AD_VERSION > AD_VERSION1 */
 
-    if ((id = cnid_add(vol->v_db, st, did, upath, len, id)) != CNID_INVALID) {
+    if ((id = cnid_add(vol->v_db, &st, did, upath, len, id)) != CNID_INVALID) {
         memcpy(rbuf, &id, sizeof(id));
         *rbuflen = sizeof(id);
         return AFP_OK;
@@ -1595,17 +1459,16 @@ int		ibuflen, *rbuflen;
     }
 }
 
-/* ------------------------------
-   resolve a file id */
+/* resolve a file id */
 int afp_resolveid(obj, ibuf, ibuflen, rbuf, rbuflen )
 AFPObj      *obj;
 char	*ibuf, *rbuf;
 int		ibuflen, *rbuflen;
 {
+    struct stat         st;
     struct vol		*vol;
     struct dir		*dir;
     char		*upath;
-    struct path         path;
     int                 err, buflen;
     cnid_t		id;
     u_int16_t		vid, bitmap;
@@ -1637,8 +1500,8 @@ int		ibuflen, *rbuflen;
     if (( dir = dirlookup( vol, id )) == NULL ) {
         return AFPERR_NOID; /* idem AFPERR_PARAM */
     }
-    path.u_name = upath;
-    if (movecwd(vol, dir) < 0 || of_stat(&path) < 0) {
+
+    if ((movecwd(vol, dir) < 0) || (stat(upath, &st) < 0)) {
         switch (errno) {
         case EACCES:
         case EPERM:
@@ -1649,17 +1512,18 @@ int		ibuflen, *rbuflen;
             return AFPERR_PARAM;
         }
     }
+
     /* directories are bad */
-    if (S_ISDIR(path.st.st_mode))
+    if (S_ISDIR(st.st_mode))
         return AFPERR_BADTYPE;
 
     memcpy(&bitmap, ibuf, sizeof(bitmap));
     bitmap = ntohs( bitmap );
-    path.m_name = utompath(vol, upath);
-    if ((err = getfilparams(vol, bitmap, &path , curdir, 
-                            rbuf + sizeof(bitmap), &buflen)) != AFP_OK) {
+
+    if ((err = getfilparams(vol, bitmap, utompath(vol, upath), curdir, &st,
+                            rbuf + sizeof(bitmap), &buflen)) != AFP_OK)
         return err;
-    }
+
     *rbuflen = buflen + sizeof(bitmap);
     memcpy(rbuf, ibuf, sizeof(bitmap));
 
@@ -1670,7 +1534,6 @@ int		ibuflen, *rbuflen;
     return AFP_OK;
 }
 
-/* ------------------------------ */
 int afp_deleteid(obj, ibuf, ibuflen, rbuf, rbuflen )
 AFPObj      *obj;
 char	*ibuf, *rbuf;
@@ -1765,9 +1628,8 @@ int		ibuflen, *rbuflen;
     struct stat         srcst, destst;
     struct vol		*vol;
     struct dir		*dir, *sdir;
-    char		*spath, temp[17], *p;
+    char		*spath, temp[17], *path, *p;
     char                *supath, *upath;
-    struct path         *path;
     int                 err;
     struct adouble	ads;
     struct adouble	add;
@@ -1814,14 +1676,13 @@ int		ibuflen, *rbuflen;
         return( AFPERR_PARAM );
     }
 
-    if ( *path->m_name == '\0' ) {
+    if ( *path == '\0' ) {
         return( AFPERR_BADTYPE );   /* it's a dir */
     }
 
-    upath = path->u_name;
-    switch (path->st_errno) {
-        case 0:
-             break;
+    upath = mtoupath(vol, path);
+    if (stat(upath, &srcst) < 0) {
+        switch (errno) {
         case ENOENT:
             return AFPERR_NOID;
         case EPERM:
@@ -1829,21 +1690,21 @@ int		ibuflen, *rbuflen;
             return AFPERR_ACCESS;
         default:
             return AFPERR_PARAM;
+        }
     }
     memset(&ads, 0, sizeof(ads));
     adsp = &ads;
-    if ((s_of = of_findname(path))) {
+    if ((s_of = of_findname(upath, &srcst))) {
             /* reuse struct adouble so it won't break locks */
             adsp = s_of->of_ad;
     }
-    memcpy(&srcst, &path->st, sizeof(struct stat));
     /* save some stuff */
     sdir = curdir;
     spath = obj->oldtmp;
     supath = obj->newtmp;
-    strcpy(spath, path->m_name);
+    strcpy(spath, path);
     strcpy(supath, upath); /* this is for the cnid changing */
-    p = absupath( vol, sdir, upath);
+    p = ctoupath( vol, sdir, spath);
 
     /* look for the source cnid. if it doesn't exist, don't worry about
      * it. */
@@ -1860,19 +1721,18 @@ int		ibuflen, *rbuflen;
         return( AFPERR_PARAM );
     }
 
-    if ( *path->m_name == '\0' ) {
+    if ( *path == '\0' ) {
         return( AFPERR_BADTYPE );
     }
 
     /* FPExchangeFiles is the only call that can return the SameObj
      * error */
-    if ((curdir == sdir) && strcmp(spath, path->m_name) == 0)
+    if ((curdir == sdir) && strcmp(spath, path) == 0)
         return AFPERR_SAMEOBJ;
-    memcpy(&srcst, &path->st, sizeof(struct stat));
 
-    switch (errno) {
-        case 0:
-             break;
+    upath = mtoupath(vol, path);
+    if (stat(upath, &destst) < 0) {
+        switch (errno) {
         case ENOENT:
             return AFPERR_NOID;
         case EPERM:
@@ -1880,21 +1740,20 @@ int		ibuflen, *rbuflen;
             return AFPERR_ACCESS;
         default:
             return AFPERR_PARAM;
+        }
     }
     memset(&add, 0, sizeof(add));
     addp = &add;
-    if ((d_of = of_findname( path))) {
+    if ((d_of = of_findname( upath, &destst))) {
             /* reuse struct adouble so it won't break locks */
             addp = d_of->of_ad;
     }
-    memcpy(&destst, &path->st, sizeof(struct stat));
 
     /* they are not on the same device and at least one is open
     */
     if ((d_of || s_of)  && srcst.st_dev != destst.st_dev)
         return AFPERR_MISC;
     
-    upath = path->u_name;
 #ifdef CNID_DB
     /* look for destination id. */
     did = cnid_lookup(vol->v_db, &destst, curdir->d_did, upath,
@@ -1916,12 +1775,12 @@ int		ibuflen, *rbuflen;
     /* rename destination to source */
     if ((err = renamefile(upath, p, spath, vol_noadouble(vol), addp)) < 0)
         goto err_src_to_tmp;
-    of_rename(vol, d_of, curdir, path->m_name, sdir, spath);
+    of_rename(vol, d_of, curdir, path, sdir, spath);
 
     /* rename temp to destination */
-    if ((err = renamefile(temp, upath, path->m_name, vol_noadouble(vol), adsp)) < 0)
+    if ((err = renamefile(temp, upath, path, vol_noadouble(vol), adsp)) < 0)
         goto err_dest_to_src;
-    of_rename(vol, s_of, curdir, temp, curdir, path->m_name);
+    of_rename(vol, s_of, curdir, temp, curdir, path);
 
 #ifdef CNID_DB
     /* id's need switching. src -> dest and dest -> src. */
@@ -1973,8 +1832,8 @@ err_temp_to_dest:
 
 err_dest_to_src:
     /* rename source back to dest */
-    renamefile(p, upath, path->m_name, vol_noadouble(vol), addp);
-    of_rename(vol, d_of, sdir, spath, curdir, path->m_name);
+    renamefile(p, upath, path, vol_noadouble(vol), addp);
+    of_rename(vol, d_of, sdir, spath, curdir, path);
 
 err_src_to_tmp:
     /* rename temp back to source */

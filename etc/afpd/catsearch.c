@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <syslog.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #if STDC_HEADERS
 #include <string.h>
@@ -328,45 +329,50 @@ static int crit_check(struct vol *vol, char *uname, char *fname, int cidx) {
 	}
 				
 	/* Check attributes */
-	if ((c1.rbitmap & (1<<DIRPBIT_ATTR)) && c2.attr != 0)
+	if ((c1.rbitmap & (1<<DIRPBIT_ATTR)) && c2.attr != 0) {
 		if (adp || (adp = adl_lkup(uname, &sbuf))) {
 			ad_getattr(adp, &attr);
 			if ((attr & c2.attr) != c1.attr)
 				goto crit_check_ret;
 		} else goto crit_check_ret;
+	}
 		
 
         /* Check file type ID */
-	if ((c1.rbitmap & (1<<DIRPBIT_FINFO)) && c2.finfo.f_type != 0)
+	if ((c1.rbitmap & (1<<DIRPBIT_FINFO)) && c2.finfo.f_type != 0) {
 		if (adp || (adp = adl_lkup(uname, &sbuf))) {
 			finfo = (struct finderinfo*)ad_entry(adp, ADEID_FINDERI);
 			if (finfo->f_type != c1.finfo.f_type)
 				goto crit_check_ret;
 		} else goto crit_check_ret;
+	}
 
 	/* Check creator ID */
-	if ((c1.rbitmap & (1<<DIRPBIT_FINFO)) && c2.finfo.creator != 0)
+	if ((c1.rbitmap & (1<<DIRPBIT_FINFO)) && c2.finfo.creator != 0) {
 		if (adp || (adp = adl_lkup(uname, &sbuf))) {
 			finfo = (struct finderinfo*)ad_entry(adp, ADEID_FINDERI);
 			if (finfo->creator != c1.finfo.creator)
 				goto crit_check_ret;
 		} else goto crit_check_ret;
+	}
 	
 	/* Check finder info attributes */
-	if ((c1.rbitmap & (1<<DIRPBIT_FINFO)) && c2.finfo.attrs != 0)
+	if ((c1.rbitmap & (1<<DIRPBIT_FINFO)) && c2.finfo.attrs != 0) {
 		if (adp || (adp = adl_lkup(uname, &sbuf))) {
 			finfo = (struct finderinfo*)ad_entry(adp, ADEID_FINDERI);
 			if ((finfo->attrs & c2.finfo.attrs) != c1.finfo.attrs)
 				goto crit_check_ret;
 		} else goto crit_check_ret;
+	}
 
 	/* Check label */
-	if ((c1.rbitmap & (1<<DIRPBIT_FINFO)) && c2.finfo.label != 0)
+	if ((c1.rbitmap & (1<<DIRPBIT_FINFO)) && c2.finfo.label != 0) {
 		if (adp || (adp = adl_lkup(uname, &sbuf))) {
 			finfo = (struct finderinfo*)ad_entry(adp, ADEID_FINDERI);
 			if ((finfo->label & c2.finfo.label) != c1.finfo.label)
 				goto crit_check_ret;
 		} else goto crit_check_ret;
+	}
 	
 	/* FIXME: Attributes check ! */
 	
@@ -583,11 +589,8 @@ int afp_catsearch(AFPObj *obj, char *ibuf, int ibuflen,
     u_int32_t   rmatches, reserved;
     u_int32_t	catpos[4];
     u_int32_t   pdid = 0;
-    char        *lname = NULL;
-    struct dir *dir;
     int ret, rsize, i = 0;
     u_int32_t nrecs = 0;
-    static int nrr = 1;
     char *spec1, *spec2, *bspec1, *bspec2;
 
     memset(&c1, 0, sizeof(c1));
@@ -714,12 +717,12 @@ int afp_catsearch(AFPObj *obj, char *ibuf, int ibuflen,
     if (c1.rbitmap & (1 << FILPBIT_LNAME)) {
         /* Get the long filename */	
 	memcpy(c1.lname, bspec1 + spec1[1] + 1, (bspec1 + spec1[1])[0]);
-	c1.lname[(bspec1 + spec1[1])[0]]= 0;
+	c1.lname[(int) (bspec1 + spec1[1])[0]]= 0;
 	for (i = 0; c1.lname[i] != 0; i++)
 		c1.lname[i] = tolower(c1.lname[i]);
 	/* FIXME: do we need it ? It's always null ! */
 	memcpy(c2.lname, bspec2 + spec2[1] + 1, (bspec2 + spec2[1])[0]);
-	c2.lname[(bspec2 + spec2[1])[0]]= 0;
+	c2.lname[(int) (bspec2 + spec2[1])[0]]= 0;
 	for (i = 0; c2.lname[i] != 0; i++)
 		c2.lname[i] = tolower(c2.lname[i]);
     }

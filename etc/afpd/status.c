@@ -1,5 +1,5 @@
 /*
- * $Id: status.c,v 1.7.4.1 2003-06-09 14:30:45 srittau Exp $
+ * $Id: status.c,v 1.7.4.2 2003-06-09 14:53:16 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -319,7 +319,6 @@ static int status_utf8servername(char *data, int *nameoffset,
 				 const DSI *dsi,
 				 const struct afp_options *options)
 {
-    u_int16_t namelen, len;
     char *begin = data;
     u_int16_t offset;
     memcpy(&offset, data + *nameoffset, sizeof(offset));

@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.32.2.2 2003-02-04 19:10:34 didg Exp $
+ * $Id: filedir.c,v 1.32.2.3 2003-06-09 14:53:15 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -54,6 +54,7 @@ char *strchr (), *strrchr ();
 #include "file.h"
 #include "globals.h"
 #include "filedir.h"
+#include "unix.h"
 
 int matchfile2dirperms(upath, vol, did)
 /* Since it's kinda' big; I decided against an

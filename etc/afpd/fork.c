@@ -1,5 +1,5 @@
 /*
- * $Id: fork.c,v 1.37.2.1 2003-02-16 07:48:29 didg Exp $
+ * $Id: fork.c,v 1.37.2.2 2003-06-09 14:53:15 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -42,6 +42,7 @@
 
 #include "fork.h"
 #include "file.h"
+#include "filedir.h"
 #include "globals.h"
 #include "directory.h"
 #include "desktop.h"
@@ -62,9 +63,6 @@ char		*buf;
 int			*buflen;
 const u_int16_t     attrbits;
 {
-#ifndef USE_LASTDID
-    struct stat		lst, *lstp;
-#endif /* !USE_LASTDID */
     struct stat		st;
     char		*upath;
     u_int32_t		aint;
@@ -231,7 +229,7 @@ int		ibuflen, *rbuflen;
     struct dir		*dir;
     struct ofork	*ofork, *opened;
     struct adouble      *adsame = NULL;
-    int			buflen, ret, adflags, eid, lockop;
+    int			buflen, ret, adflags, eid;
     u_int32_t           did;
     u_int16_t		vid, bitmap, access, ofrefnum, attrbits = 0;
     char		fork, *path, *upath;

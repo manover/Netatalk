@@ -1,5 +1,5 @@
 /*
- * $Id: afp_options.c,v 1.27.2.1 2003-06-09 14:30:43 srittau Exp $
+ * $Id: afp_options.c,v 1.27.2.2 2003-06-09 14:53:14 srittau Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -258,12 +258,15 @@ int afp_options_parseline(char *buf, struct afp_options *options)
     /* -[no]setuplog <logtype> <loglevel> [<filename>]*/
     if ((c = getoption(buf, "-setuplog")))
     {
-      char *ptr, *logsource, *logtype, *loglevel, *filename;
+      char *ptr, *logtype, *loglevel, *filename;
+#if 0
+      char *logsource;
+#endif
 
       LOG(log_debug6, logtype_afpd, "setting up logtype, c is %s", c);
       ptr = c;
-      
-      /* 
+
+#if 0
       logsource = ptr = c;
       if (ptr)
       {
@@ -275,7 +278,7 @@ int afp_options_parseline(char *buf, struct afp_options *options)
             ptr++;
         }
       }
-      */
+#endif
 
       logtype = ptr; 
       if (ptr)
