@@ -36,9 +36,9 @@ CFLAGS = \
 
 if USE_SPOOLDIR
 install-exec-hook:
-	echo "Creating SPOOLDIR $(spooldir)..."
-	$(mkinstalldirs) $(spooldir)
-	chmod 0777 $(spooldir)
+	echo "Creating SPOOLDIR $(DESTDIR)$(spooldir)..."
+	$(mkinstalldirs) $(DESTDIR)$(spooldir)
+	chmod 0777 $(DESTDIR)$(spooldir)
 
 else
 install-exec-hook:
