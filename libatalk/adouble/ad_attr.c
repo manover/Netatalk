@@ -1,5 +1,5 @@
 /*
- * $Id: ad_attr.c,v 1.4.8.6 2004-03-11 19:57:33 didg Exp $
+ * $Id: ad_attr.c,v 1.4.8.7 2004-09-06 09:38:22 didg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -61,6 +61,7 @@ int ad_setattr(const struct adouble *ad, const u_int16_t attr)
 
 /* -------------- 
  * save file/folder ID in AppleDoubleV2 netatalk private parameters
+ * return 1 if resource fork has been modified
 */
 #if AD_VERSION == AD_VERSION2
 int ad_setid (struct adouble *adp, const dev_t dev, const ino_t ino , const u_int32_t id, const cnid_t did, const void *stamp)
@@ -82,6 +83,7 @@ int ad_setid (struct adouble *adp, const dev_t dev, const ino_t ino , const u_in
 
         ad_setentrylen( adp, ADEID_PRIVSYN, ADEDLEN_PRIVSYN);
         memcpy(ad_entry( adp, ADEID_PRIVSYN ), stamp, ADEDLEN_PRIVSYN);
+        return 1;
     }
     return 0;
 }

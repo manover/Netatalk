@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.29 2004-09-02 12:31:55 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.30 2004-09-06 09:38:21 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -218,12 +218,13 @@ char   stamp[ADEDLEN_PRIVSYN];
             }
         }
 #if AD_VERSION > AD_VERSION1
-        else if (adp && sizeof(dev_t) == ADEDLEN_PRIVDEV && sizeof(ino_t) == ADEDLEN_PRIVINO) {
+        else if (adp ) {
             /* update the ressource fork
              * for a folder adp is always null
              */
-            ad_setid(adp,(vol->v_flags & AFPVOL_NODEV)?0:st->st_dev, st->st_ino, aint, did, vol->v_stamp);
-            ad_flush(adp, ADFLAGS_HF);
+            if (ad_setid(adp,(vol->v_flags & AFPVOL_NODEV)?0:st->st_dev, st->st_ino, aint, did, vol->v_stamp)) {
+                ad_flush(adp, ADFLAGS_HF);
+            }
         }
 #endif    
     }
@@ -1717,8 +1718,9 @@ reenumerate_id(const struct vol *vol, char *name, cnid_t did)
             if ( ad_open( de->d_name, ADFLAGS_HF, O_RDWR, 0, adp ) < 0 ) {
                 continue;
             }
-            ad_setid(adp,(vol->v_flags & AFPVOL_NODEV)?0:path.st.st_dev, path.st.st_ino, aint, did, vol->v_stamp);
-            ad_flush(adp, ADFLAGS_HF);
+            if (ad_setid(adp,(vol->v_flags & AFPVOL_NODEV)?0:path.st.st_dev, path.st.st_ino, aint, did, vol->v_stamp)) {
+            	ad_flush(adp, ADFLAGS_HF);
+            }
             ad_close(adp, ADFLAGS_HF);
         }
 #endif /* AD_VERSION > AD_VERSION1 */
