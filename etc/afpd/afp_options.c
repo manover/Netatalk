@@ -1,5 +1,5 @@
 /*
- * $Id: afp_options.c,v 1.13.2.4 2002-02-08 02:54:24 jmarcus Exp $
+ * $Id: afp_options.c,v 1.13.2.5 2002-02-09 05:35:17 jmarcus Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -142,7 +142,6 @@ void afp_options_init(struct afp_options *options)
     options->passwdfile = _PATH_AFPDPWFILE;
     options->tickleval = 30;
     options->timeout = 4;
-    options->server_notif = 0;
     options->authprintdir = NULL;
     options->umask = 0;
 #ifdef ADMIN_GRP
@@ -236,9 +235,6 @@ int afp_options_parseline(char *buf, struct afp_options *options)
         if (options->timeout <= 0) {
             options->timeout = 4;
         }
-    }
-    if ((c = getoption(buf, "-server_notif"))) {
-        options->server_notif = 1;
     }
 
     if ((c = getoption(buf, "-server_quantum")))
