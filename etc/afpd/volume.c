@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.7 2003-10-17 00:01:11 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.8 2003-10-23 04:29:16 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1420,18 +1420,16 @@ int 	ibuflen, *rbuflen;
 
     data = rbuf + 5;
     for ( vcnt = 0, volume = Volumes; volume; volume = volume->v_next ) {
-        if ( stat( volume->v_path, &st ) < 0 ) {
-            if ((volume->v_flags & AFPVOL_NOSTAT)) {
-                continue;
+        if (!(volume->v_flags & AFPVOL_NOSTAT)) {
+            if ( stat( volume->v_path, &st ) < 0 ) {
+                LOG(log_info, logtype_afpd, "afp_getsrvrparms: stat %s: %s",
+                        volume->v_path, strerror(errno) );
+                continue;		/* can't access directory */
             }
-            LOG(log_info, logtype_afpd, "afp_getsrvrparms: stat %s: %s",
-                    volume->v_path, strerror(errno) );
-            continue;		/* can't access directory */
+            if (!S_ISDIR(st.st_mode)) {
+                continue;		/* not a dir */
+            }
         }
-        if (!S_ISDIR(st.st_mode)) {
-            continue;		/* not a dir */
-        }
-
         if (volume->v_hide) {
             continue;		/* config file changed but the volume was mounted */
         }
