@@ -1,7 +1,7 @@
 Changes in 1.6.3
 ================
 
-* FIX: open files on a read-only filesystem.
+* FIX: afpd: Files could be opened for writing on read-only filesystems.
 
 Changes in 1.6.2
 ================
