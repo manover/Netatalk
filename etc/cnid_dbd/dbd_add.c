@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_add.c,v 1.1.4.3 2003-11-25 00:41:31 lenneis Exp $
+ * $Id: dbd_add.c,v 1.1.4.4 2003-12-03 14:56:12 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -130,8 +130,7 @@ static int get_cnid(struct cnid_dbd_rply *rply)
 int dbd_stamp(void) 
 {
     DBT rootinfo_key, rootinfo_data;
-    cnid_t hint, id;
-    int rc;
+    cnid_t hint;
     char buf[ROOTINFO_DATALEN];
     char stamp[CNID_DEV_LEN];
      

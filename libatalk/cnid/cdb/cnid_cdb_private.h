@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_cdb_private.h,v 1.1.4.4 2003-11-25 19:13:27 lenneis Exp $
+ * $Id: cnid_cdb_private.h,v 1.1.4.5 2003-12-03 14:56:12 lenneis Exp $
  */
 
 #ifndef LIBATALK_CDB_PRIVATE_H
@@ -92,7 +92,6 @@ typedef struct cnid_record { /* helper for debug don't use */
 #define ROOTINFO_KEY    "\0\0\0\0"
 #define ROOTINFO_KEYLEN 4
 
-/* FIXME assume dev_t == ino_t == 8 */
 /*                         cnid   - dev        - inode     - type  - did  - name */
 #define ROOTINFO_DATA    "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0RootInfo"
 #define ROOTINFO_DATALEN (3*4 +2*8  +9)

@@ -1,5 +1,5 @@
 /*
- * $Id: pack.c,v 1.1.4.5 2003-11-25 19:13:26 lenneis Exp $
+ * $Id: pack.c,v 1.1.4.6 2003-12-03 14:56:12 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -57,6 +57,9 @@ int len;
  
     memset(skey, 0, sizeof(DBT));
     skey->data = pdata->data + CNID_DID_OFS;
+    /* FIXME: At least DB 4.0.14 and 4.1.25 pass in the correct length of
+       pdata.size. strlen is therefore not needed. Also, skey should be zeroed
+       out already. */
     len = strlen(skey->data + CNID_DID_LEN);
     skey->size = CNID_DID_LEN + len + 1;
     return (0);
