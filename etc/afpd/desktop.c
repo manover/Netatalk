@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.16 2004-09-07 06:17:20 didg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.17 2004-10-06 19:48:40 didg Exp $
  *
  * See COPYRIGHT.
  *
@@ -310,8 +310,8 @@ addicon_err:
 }
 
 static u_char	utag[] = { 0, 0, 0, 0 };
-static u_char	ucreator[] = { '0', '0', '0', '0' };/* { 'U', 'N', 'I', 'X' };*/
-static u_char	utype[] = { '0', '0', '0', '0' };/* { 'T', 'E', 'X', 'T' };*/
+static u_char	ucreator[] = { 0, 0, 0, 0 };/* { 'U', 'N', 'I', 'X' };*/
+static u_char	utype[] = { 0, 0, 0, 0 };/* { 'T', 'E', 'X', 'T' };*/
 static short	usize = 256;
 static u_char	uicon[] = {
     0x1F, 0xFF, 0xFC, 0x00, 0x10, 0x00, 0x06, 0x00,
