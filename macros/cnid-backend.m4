@@ -86,7 +86,6 @@ AC_DEFUN([AC_NETATALK_CNID], [
             use_db3_backend=no
         else
             use_db3_backend=yes
-            compiled_backends="$compiled_backends db3"
         fi
     ],[
         use_db3_backend=no
@@ -98,6 +97,7 @@ AC_DEFUN([AC_NETATALK_CNID], [
         if test x"$DEFAULT_CNID_SCHEME" = x; then
             DEFAULT_CNID_SCHEME=db3
         fi
+        compiled_backends="$compiled_backends db3"
         bdb_required=yes
     else
         AC_MSG_RESULT([no])
@@ -112,7 +112,6 @@ AC_DEFUN([AC_NETATALK_CNID], [
             use_last_backend=no
         else
             use_last_backend=yes
-            compiled_backends="$compiled_backends last"
         fi
     ],[
         use_last_backend=yes
@@ -124,6 +123,7 @@ AC_DEFUN([AC_NETATALK_CNID], [
         if test x"$DEFAULT_CNID_SCHEME" = x; then
             DEFAULT_CNID_SCHEME=last
         fi
+        compiled_backends="$compiled_backends last"
     else
         AC_MSG_RESULT([no])
     fi
@@ -137,7 +137,6 @@ AC_DEFUN([AC_NETATALK_CNID], [
             use_hash_backend=no
         else
             use_hash_backend=yes
-            compiled_backends="$compiled_backends hash"
         fi
     ],[
         use_hash_backend=no
@@ -149,6 +148,7 @@ AC_DEFUN([AC_NETATALK_CNID], [
         if test x"$DEFAULT_CNID_SCHEME" = x; then
             DEFAULT_CNID_SCHEME=hash
         fi
+        compiled_backends="$compiled_backends hash"
     else
         AC_MSG_RESULT([no])
     fi
@@ -162,7 +162,6 @@ AC_DEFUN([AC_NETATALK_CNID], [
             use_tdb_backend=no
         else
             use_tdb_backend=yes
-            compiled_backends="$compiled_backends tdb"
         fi
     ],[
         use_tdb_backend=no
@@ -174,6 +173,7 @@ AC_DEFUN([AC_NETATALK_CNID], [
         if test x"$DEFAULT_TDB_SCHEME" = x; then
             DEFAULT_CNID_SCHEME=tdb
         fi
+        compiled_backends="$compiled_backends tdb"
     else
         AC_MSG_RESULT([no])
     fi
@@ -187,7 +187,6 @@ AC_DEFUN([AC_NETATALK_CNID], [
             use_mtab_backend=no
         else
             use_mtab_backend=yes
-            compiled_backends="$compiled_backends mtab"
         fi
     ],[
         use_mtab_backend=no
@@ -199,6 +198,7 @@ AC_DEFUN([AC_NETATALK_CNID], [
         if test x"$DEFAULT_CNID_SCHEME" = x; then
             DEFAULT_CNID_SCHEME=mtab
         fi
+        compiled_backends="$compiled_backends mtab"
     else		
         AC_MSG_RESULT([no])
     fi
