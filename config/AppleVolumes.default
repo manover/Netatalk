@@ -4,7 +4,7 @@
 # 
 # volume format:
 # :DEFAULT: [all of the default options except volume name]
-# path [name] [casefold:x] [codepage:y] [options:z,l,j] \
+# path [name] [casefold:x] [options:z,l,j] \
 #   [allow:a,@b,c,d] [deny:a,@b,c,d] [dbpath:path] [password:p] \
 #   [rwlist:a,@b,c,d] [rolist:a,@b,c,d] [limitsize:value in bytes]\
 #   [preexec:cmd] [root_preexec:cmd] [postexec:cmd]  [root_postexec:cmd] 
@@ -91,7 +91,6 @@
 # upriv               -> use unix privilege.  
 #
 #
-# codepage:filename   -> load filename from nls directory.
 # dbpath:path         -> store the database stuff in the following path.
 # password:password   -> set a volume password (8 characters max)
 #

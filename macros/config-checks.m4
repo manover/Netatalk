@@ -1,4 +1,4 @@
-dnl $Id: config-checks.m4,v 1.3.4.1 2003-09-03 20:40:51 didg Exp $
+dnl $Id: config-checks.m4,v 1.3.4.1.2.1 2003-09-13 02:46:28 bfernhomberg Exp $
 dnl Autoconf macro to set the configuration directories.
 
 AC_DEFUN([NETATALK_CONFIG_DIRS], [
@@ -14,16 +14,6 @@ AC_DEFUN([NETATALK_CONFIG_DIRS], [
 		]
 	)
 
-	NLSDIR="${datadir}/netatalk/nls"
-
-	AC_ARG_WITH(nls-dir,
-		[  --with-nls-dir=PATH     path to NLS files [DATA/netatalk/nls]],
-		[
-			if test "x$withval" != "x"; then
-				NLSDIR="$withval"
-			fi
-		]
-	)
 
 	SERVERTEXT="${PKGCONFDIR}/msg"
 
@@ -39,6 +29,5 @@ AC_DEFUN([NETATALK_CONFIG_DIRS], [
 	)
 
 	AC_SUBST(PKGCONFDIR)
-	AC_SUBST(NLSDIR)
 	AC_SUBST(SERVERTEXT)
 ])

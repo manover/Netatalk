@@ -1,5 +1,5 @@
 /*
- * $Id: afp_options.c,v 1.30.2.2.2.1 2003-09-09 16:42:19 didg Exp $
+ * $Id: afp_options.c,v 1.30.2.2.2.2 2003-09-13 02:46:28 bfernhomberg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -133,8 +133,6 @@ void afp_options_free(struct afp_options *opt,
         free(opt->uampath);
     if (opt->uamlist && (opt->uamlist != save->uamlist))
         free(opt->uamlist);
-    if (opt->nlspath && (opt->nlspath != save->nlspath))
-        free(opt->nlspath);
     if (opt->passwdfile && (opt->passwdfile != save->passwdfile))
         free(opt->passwdfile);
     if (opt->signature && (opt->signature != save->signature))
@@ -160,7 +158,6 @@ void afp_options_init(struct afp_options *options)
     options->defaultvol.name = _PATH_AFPDDEFVOL;
     options->systemvol.name = _PATH_AFPDSYSVOL;
     options->configfile = _PATH_AFPDCONF;
-    options->nlspath = _PATH_AFPDNLSPATH;
     options->uampath = _PATH_AFPDUAMPATH;
     options->uamlist = "uams_clrtxt.so,uams_dhx.so";
     options->guest = "nobody";
@@ -433,8 +430,6 @@ int afp_options_parseline(char *buf, struct afp_options *options)
         options->uampath = opt;
     if ((c = getoption(buf, "-uamlist")) && (opt = strdup(c)))
         options->uamlist = opt;
-    if ((c = getoption(buf, "-nlspath")) && (opt = strdup(c)))
-        options->nlspath = opt;
 
     if ((c = getoption(buf, "-ipaddr"))) {
         struct in_addr inaddr;

@@ -1,5 +1,5 @@
 /*
- * $Id: volume.h,v 1.19.2.5.2.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: volume.h,v 1.19.2.5.2.2 2003-09-13 02:46:28 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -23,23 +23,6 @@
 
 #include <atalk/cnid.h>
 
-struct codepage_hash {
-    unsigned char *from, *to;
-    struct codepage_hash *next, *prev;
-};
-
-union codepage_val {
-    struct codepage_hash hash; /* hash for multibyte values */
-    unsigned char value; /* single byte value/rule */
-};
-
-struct codepage {
-    union codepage_val *map;
-    int quantum;
-};
-
-#define CP_HASH(a)    (*(a))
-
 struct vol {
     struct vol		*v_next;
     char		*v_name;
@@ -56,7 +39,6 @@ struct vol {
     int                 v_nfs;
     
     int                 v_casefold;
-    struct codepage     *v_mtoupage, *v_utompage, *v_badumap;
     size_t              max_filename;
     
     char                *v_password;
@@ -140,7 +122,6 @@ this is going away. */
 #define AFPVOL_ULOWERMUPPER    (AFPVOL_MTOULOWER | AFPVOL_UTOMUPPER)
 
 #define MSWINDOWS_BADCHARS ":\t\\/<>*?|\""
-#define MSWINDOWS_CODEPAGE "maccode.iso8859-1"
 
 int wincheck(const struct vol *vol, const char *path);
 
@@ -187,12 +168,6 @@ extern struct vol	*getvolbyvid __P((const u_int16_t));
 extern int              ustatfs_getvolspace __P((const struct vol *,
             VolSpace *, VolSpace *,
             u_int32_t *));
-extern int              codepage_init __P((struct vol *, const int,
-            const int));
-extern void             codepage_free __P((struct vol *vol));
-
-extern int              codepage_read __P((struct vol *, const char *));
-extern union codepage_val codepage_find __P(());
 extern void             setvoltime __P((AFPObj *, struct vol *));
 extern int              pollvoltime __P((AFPObj *));
 extern void             load_volumes __P((AFPObj *obj));

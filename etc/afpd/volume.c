@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.2 2003-09-13 02:46:28 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -89,12 +89,11 @@ static void             free_extmap(void);
 #define VOLOPT_DENY       1  /* user deny list */
 #define VOLOPT_RWLIST     2  /* user rw list */
 #define VOLOPT_ROLIST     3  /* user ro list */
-#define VOLOPT_CODEPAGE   4  /* codepage */
-#define VOLOPT_PASSWORD   5  /* volume password */
-#define VOLOPT_CASEFOLD   6  /* character case mangling */
-#define VOLOPT_FLAGS      7  /* various flags */
-#define VOLOPT_DBPATH     8  /* path to database */
-#define VOLOPT_MAPCHARS   9  /* does mtou and utom mappings. syntax:
+#define VOLOPT_PASSWORD   4  /* volume password */
+#define VOLOPT_CASEFOLD   5  /* character case mangling */
+#define VOLOPT_FLAGS      6  /* various flags */
+#define VOLOPT_DBPATH     7  /* path to database */
+#define VOLOPT_MAPCHARS   8  /* does mtou and utom mappings. syntax:
 m and u can be double-byte hex
 strings if necessary.
 m=u -> map both ways
@@ -310,28 +309,6 @@ static int optionok(const char *buf, const char *opt, const char *val)
     return 1;    
 }
 
-static __inline__ char *get_codepage_path(const char *path, const char *name)
-{
-    char *page;
-    int len;
-
-    if (path) {
-        page = (char *) malloc((len = strlen(path)) + strlen(name) + 2);
-        if (page) {
-            strcpy(page, path);
-            if (path[len - 1] != '/') /* add a / */
-                strcat(page, "/");
-            strcat(page, name);
-        }
-    } else {
-        page = strdup(name);
-    }
-
-    /* debug: show which codepage directory we are using */
-    LOG(log_debug, logtype_afpd, "using codepage directory: %s", page);
-
-    return page;
-}
 
 /* -------------------- */
 static void setoption(struct vol_option *options, struct vol_option *save, int opt, const char *val)
@@ -345,7 +322,7 @@ static void setoption(struct vol_option *options, struct vol_option *save, int o
    handle all the options. tmp can't be NULL. */
 static void volset(struct vol_option *options, struct vol_option *save, 
                    char *volname, int vlen,
-                   const char *nlspath, const char *tmp)
+                   const char *tmp)
 {
     char *val;
 
@@ -372,11 +349,9 @@ static void volset(struct vol_option *options, struct vol_option *save,
         setoption(options, save, VOLOPT_ROLIST, val);
 
     } else if (optionok(tmp, "codepage:", val)) {
-        if (options[VOLOPT_CODEPAGE].c_value && 
-                (!save || options[VOLOPT_CODEPAGE].c_value != save[VOLOPT_CODEPAGE].c_value)) {
-            free(options[VOLOPT_CODEPAGE].c_value);
-        }
-        options[VOLOPT_CODEPAGE].c_value = get_codepage_path(nlspath, val + 1);
+	LOG (log_error, logtype_afpd, "The old codepage system has been removed. Please make sure to read the documentation !!!!");
+	/* Make sure we don't screw anything */
+	exit (-1);
     } else if (optionok(tmp, "volcharset:", val)) {
         setoption(options, save, VOLOPT_ENCODING, val);
     } else if (optionok(tmp, "maccharset:", val)) {
@@ -412,10 +387,6 @@ static void volset(struct vol_option *options, struct vol_option *save,
                 options[VOLOPT_FLAGS].i_value |= AFPVOL_A2VOL;
             else if (strcasecmp(p, "mswindows") == 0) {
                 options[VOLOPT_FLAGS].i_value |= AFPVOL_MSWINDOWS;
-                if (!options[VOLOPT_CODEPAGE].c_value)
-                    options[VOLOPT_CODEPAGE].c_value =
-                        get_codepage_path(nlspath, MSWINDOWS_CODEPAGE);
-
             } else if (strcasecmp(p, "crlf") == 0)
                 options[VOLOPT_FLAGS].i_value |= AFPVOL_CRLF;
             else if (strcasecmp(p, "noadouble") == 0)
@@ -567,10 +538,6 @@ static int creatvol(AFPObj *obj, struct passwd *pwd,
 
         /* shift in some flags */
         volume->v_flags = options[VOLOPT_FLAGS].i_value;
-
-        /* read in the code pages */
-        if (options[VOLOPT_CODEPAGE].c_value)
-            codepage_read(volume, options[VOLOPT_CODEPAGE].c_value);
 
         if (options[VOLOPT_PASSWORD].c_value)
             volume->v_password = strdup(options[VOLOPT_PASSWORD].c_value);
@@ -884,7 +851,7 @@ struct passwd *pwent;
                                    path + VOLOPT_DEFAULT_LEN) < 0)
                         break;
                     volset(save_options, NULL, tmp, sizeof(tmp) - 1,
-                           obj->options.nlspath, path + VOLOPT_DEFAULT_LEN);
+                           path + VOLOPT_DEFAULT_LEN);
                 }
             }
             break;
@@ -947,7 +914,7 @@ struct passwd *pwent;
                 if (parseline( sizeof( tmp ) - 1, tmp ) < 0)
                     break;
 
-                volset(options, save_options, volname, sizeof(volname) - 1,obj->options.nlspath, tmp);
+                volset(options, save_options, volname, sizeof(volname) - 1, tmp);
             }
 
             /* check allow/deny lists:
@@ -999,7 +966,6 @@ static void volume_free(struct vol *vol)
     free(vol->v_name);
     vol->v_name = NULL;
     free(vol->v_path);
-    codepage_free(vol);
     free(vol->v_password);
     free(vol->v_veto);
     free(vol->v_volcodepage);

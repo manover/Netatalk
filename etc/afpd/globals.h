@@ -1,5 +1,5 @@
 /*
- * $Id: globals.h,v 1.18.2.2.2.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: globals.h,v 1.18.2.2.2.2 2003-09-13 02:46:28 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -62,7 +62,7 @@ struct afp_options {
     u_int32_t server_quantum;
     char hostname[MAXHOSTNAMELEN + 1], *server, *ipaddr, *configfile;
     struct at_addr ddpaddr;
-    char *uampath, *nlspath, *fqdn;
+    char *uampath, *fqdn;
     char *pidfile;
     struct afp_volume_name defaultvol, systemvol, uservol;
 
