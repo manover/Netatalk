@@ -1,5 +1,5 @@
 /*
- * $Id: ad_write.c,v 1.7.6.1 2003-10-13 18:23:51 didg Exp $
+ * $Id: ad_write.c,v 1.7.6.2 2003-10-13 22:05:17 didg Exp $
  *
  * Copyright (c) 1990,1995 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -114,7 +114,7 @@ char            c = 0;
 
 #ifndef  HAVE_PWRITE
     /* we only care about file pointer if we don't use pwrite */
-    if ((off_t)-1 == (curpos) = lseek(fd, 0, SEEK_CUR))) {
+    if ((off_t)-1 == (curpos = lseek(fd, 0, SEEK_CUR)) ) {
         errno = err;
         return -1;
     }
@@ -136,7 +136,7 @@ char            c = 0;
     }
 
     if (1 != write( fd, &c, 1 )) {
-        errno = err;
+        /* return the write errno */
         return -1;
     }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.20.4.2.2.2 2003-09-12 18:44:17 didg Exp $
+ * $Id: main.c,v 1.20.4.2.2.3 2003-10-13 22:05:17 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -205,7 +205,15 @@ char	**av;
         LOG(log_error, logtype_afpd, "main: server_child alloc: %s", strerror(errno) );
         afp_exit(1);
     }
-
+    
+#ifdef AFP3x
+    /* linux at least up to 2.4.22 send a SIGXFZ for vfat fs,
+       even if the file is open with O_LARGEFILE ! */
+#ifdef SIGXFSZ
+    signal(SIGXFSZ , SIG_IGN); 
+#endif
+#endif    
+    
     memset(&sv, 0, sizeof(sv));
     sv.sa_handler = child_handler;
     sigemptyset( &sv.sa_mask );
