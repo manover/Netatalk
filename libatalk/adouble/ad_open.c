@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.18 2004-09-07 06:17:22 didg Exp $
+ * $Id: ad_open.c,v 1.30.6.18.2.1 2005-01-25 14:32:00 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -541,8 +541,8 @@ static void parse_entries(struct adouble *ad, char *buf,
 	len = ntohl( len );
 	buf += sizeof( len );
 
-	if (eid && eid < ADEID_MAX && off < sizeof(ad->ad_data) && 
-	         (off +len <= sizeof(ad->ad_data) || eid == ADEID_RFORK)) {
+	if (eid && eid < ADEID_MAX && ( (off < sizeof(ad->ad_data) && 
+	         off +len <= sizeof(ad->ad_data)) || eid == ADEID_RFORK)) {
 	    ad->ad_eid[ eid ].ade_off = off;
 	    ad->ad_eid[ eid ].ade_len = len;
 	} else if (!warning) {
