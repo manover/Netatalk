@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.20.2.1 2004-10-20 20:16:21 didg Exp $
+ * $Id: adouble.h,v 1.21.6.20.2.2 2005-02-10 01:23:16 didg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -247,6 +247,7 @@ struct adouble {
     struct ad_entry	ad_eid[ ADEID_MAX ];
     struct ad_fd	ad_df, ad_hf;
     int                 ad_flags, ad_inited;
+    int                 ad_options;
     int                 ad_refcount; /* used in afpd/ofork.c */
     off_t               ad_rlen;     /* ressource fork len with AFP 3.0
                                         the header parameter size is too small.
@@ -267,6 +268,10 @@ struct adouble {
 #define ADFLAGS_V1COMPAT  (1<<4)
 #define ADFLAGS_NOHF      (1<<5)  /* not an error if no ressource fork */
 #define ADFLAGS_RDONLY    (1<<6)  /* don't try readwrite */
+
+/* adouble v2 cnid cache */
+#define ADVOL_NODEV      (1 << 0)   
+#define ADVOL_CACHE      (1 << 1)
 
 /* lock flags */
 #define ADLOCK_CLR      (0)
@@ -372,7 +377,7 @@ extern char *ad_path_osx  __P((const char *, int));
 
 extern int ad_mode        __P((const char *, int));
 extern int ad_mkdir       __P((const char *, int));
-extern void ad_init       __P((struct adouble *, int ));
+extern void ad_init       __P((struct adouble *, int, int ));
 
 extern int ad_open        __P((const char *, int, int, int, struct adouble *)); 
 extern int ad_refresh     __P((struct adouble *));
@@ -451,6 +456,7 @@ extern int ad_getattr __P((const struct adouble *, u_int16_t *));
 extern int ad_setname __P((struct adouble *, const char *));
 #if AD_VERSION == AD_VERSION2
 extern int ad_setid __P((struct adouble *, const dev_t dev,const ino_t ino, const u_int32_t, const u_int32_t, const void *));
+extern u_int32_t ad_getid __P((struct adouble *, const dev_t, const ino_t, const cnid_t, const void *));
 #else
 #define ad_setid(a, b, c)
 #endif

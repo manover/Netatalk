@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.31.2.9 2005-02-05 14:46:35 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.31.2.10 2005-02-10 01:23:12 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -176,34 +176,12 @@ u_int32_t get_id(struct vol *vol, struct adouble *adp,  const struct stat *st,
 u_int32_t aint = 0;
 
 #if AD_VERSION > AD_VERSION1
-dev_t  dev;
-ino_t  ino;
-cnid_t a_did;
-char   stamp[ADEDLEN_PRIVSYN];
-    /* look in AD v2 header 
-     * note inode and device are opaques and not in network order
-    */
-    if (adp 
-           && sizeof(dev_t) == ad_getentrylen(adp, ADEID_PRIVDEV)
-           && sizeof(ino_t) == ad_getentrylen(adp,ADEID_PRIVINO)
-           && sizeof(stamp) == ad_getentrylen(adp,ADEID_PRIVSYN)
-           && sizeof(cnid_t) == ad_getentrylen(adp, ADEID_DID)
-           && sizeof(cnid_t) == ad_getentrylen(adp, ADEID_PRIVID)
-           
-    ) {
-        memcpy(&dev, ad_entry(adp, ADEID_PRIVDEV), sizeof(dev_t));
-        memcpy(&ino, ad_entry(adp, ADEID_PRIVINO), sizeof(ino_t));
-        memcpy(stamp, ad_entry(adp, ADEID_PRIVSYN), sizeof(stamp));
-        memcpy(&a_did, ad_entry(adp, ADEID_DID), sizeof(cnid_t));
 
-        if (  ( (vol->v_flags & AFPVOL_NODEV) || dev == st->st_dev)
-              && ino == st->st_ino && a_did == did 
-              && !memcmp(vol->v_stamp, stamp, sizeof(stamp))) { 
-           memcpy(&aint, ad_entry(adp, ADEID_PRIVID), sizeof(aint));
-           return aint;
-        }
+    if ((aint = ad_getid(adp, st->st_dev, st->st_ino, did, vol->v_stamp))) {
+    	return aint;
     }
 #endif
+
     if (vol->v_cdb != NULL) {
 	    aint = cnid_add(vol->v_cdb, st, did, upath, len, aint);
 	    /* Throw errors if cnid_add fails. */
@@ -228,7 +206,7 @@ char   stamp[ADEDLEN_PRIVSYN];
             /* update the ressource fork
              * for a folder adp is always null
              */
-            if (ad_setid(adp,(vol->v_flags & AFPVOL_NODEV)?0:st->st_dev, st->st_ino, aint, did, vol->v_stamp)) {
+            if (ad_setid(adp, st->st_dev, st->st_ino, aint, did, vol->v_stamp)) {
                 ad_flush(adp, ADFLAGS_HF);
             }
         }
@@ -528,7 +506,7 @@ int getfilparams(struct vol *vol,
     	    attrbits = ((of->of_ad->ad_df.adf_refcount > 0) ? ATTRBIT_DOPEN : 0);
     	    attrbits |= ((of->of_ad->ad_hf.adf_refcount > of->of_ad->ad_df.adf_refcount)? ATTRBIT_ROPEN : 0);
         } else {
-            ad_init(&ad, vol->v_adouble);
+            ad_init(&ad, vol->v_adouble, vol->v_ad_options);
             adp = &ad;
         }
 
@@ -634,7 +612,7 @@ int		ibuflen, *rbuflen;
     if ((of = of_findname(s_path))) {
         adp = of->of_ad;
     } else {
-        ad_init(&ad, vol->v_adouble);
+        ad_init(&ad, vol->v_adouble, vol->v_ad_options);
         adp = &ad;
     }
     if ( creatf) {
@@ -1076,7 +1054,7 @@ struct adouble    *adp;
              * create .AppleDouble if the file is already opened, so we
              * use a diff one, it's not a pb,ie it's not the same file, yet.
              */
-            ad_init(&ad, vol->v_adouble); 
+            ad_init(&ad, vol->v_adouble, vol->v_ad_options); 
             if (!ad_open(dst, ADFLAGS_HF, O_RDWR | O_CREAT, 0666, &ad)) {
             	ad_close(&ad, ADFLAGS_HF);
     	        if (!unix_rename( adsrc, vol->ad_path( dst, 0 )) ) 
@@ -1418,10 +1396,10 @@ struct adouble *adp;
 #endif /* DEBUG */
 
     if (adp == NULL) {
-        ad_init(&ads, s_vol->v_adouble); 
+        ad_init(&ads, s_vol->v_adouble, s_vol->v_ad_options); 
         adp = &ads;
     }
-    ad_init(&add, d_vol->v_adouble);
+    ad_init(&add, d_vol->v_adouble, d_vol->v_ad_options);
     adflags = ADFLAGS_DF;
     if (newname) {
         adflags |= ADFLAGS_HF;
@@ -1463,7 +1441,7 @@ struct adouble *adp;
         goto done;
     } 
     else {
-	ad_init(&add, d_vol->v_adouble);
+	ad_init(&add, d_vol->v_adouble, d_vol->v_ad_options);
 	if (ad_open(dst , adflags | noadouble, O_RDWR, 0666, &add) < 0) {
 	    ret_err = errno;
 	}
@@ -1539,8 +1517,8 @@ int         checkAttrib;
 
     /* try to open both forks at once */
     adflags = ADFLAGS_DF|ADFLAGS_HF;
+    ad_init(&ad, vol->v_adouble, vol->v_ad_options);  /* OK */
     while(1) {
-        ad_init(&ad, vol->v_adouble);  /* OK */
         if ( ad_open( file, adflags, O_RDONLY, 0, &ad ) < 0 ) {
             switch (errno) {
             case ENOENT:
@@ -1578,7 +1556,7 @@ int         checkAttrib;
         }
         else if (!adp) {
             /* was EACCESS error try to get only metadata */
-            ad_init(&ad, vol->v_adouble);  /* OK */
+            ad_init(&ad, vol->v_adouble, vol->v_ad_options);  /* OK */
             if ( ad_metadata( file , 0, &ad) == 0 ) {
                 ad_getattr(&ad, &bshort);
                 ad_close( &ad, ADFLAGS_HF );
@@ -1751,7 +1729,7 @@ reenumerate_id(const struct vol *vol, char *name, cnid_t did)
             if ( ad_open( de->d_name, ADFLAGS_HF, O_RDWR, 0, adp ) < 0 ) {
                 continue;
             }
-            if (ad_setid(adp,(vol->v_flags & AFPVOL_NODEV)?0:path.st.st_dev, path.st.st_ino, aint, did, vol->v_stamp)) {
+            if (ad_setid(adp, path.st.st_dev, path.st.st_ino, aint, did, vol->v_stamp)) {
             	ad_flush(adp, ADFLAGS_HF);
             }
             ad_close(adp, ADFLAGS_HF);
@@ -2087,7 +2065,7 @@ int		ibuflen, *rbuflen;
         return AFPERR_PARAM ;
     }
     
-    ad_init(&ads, vol->v_adouble);
+    ad_init(&ads, vol->v_adouble, vol->v_ad_options);
     if (!(adsp = find_adouble( path, &s_of, &ads))) {
         return afp_errno;
     }
@@ -2120,7 +2098,7 @@ int		ibuflen, *rbuflen;
         goto err_exchangefile;
     }
 
-    ad_init(&add, vol->v_adouble);
+    ad_init(&add, vol->v_adouble, vol->v_ad_options);
     if (!(addp = find_adouble( path, &d_of, &add))) {
         err = afp_errno;
         goto err_exchangefile;
@@ -2198,12 +2176,12 @@ int		ibuflen, *rbuflen;
     }
     
     /* here we need to reopen if crossdev */
-    if (sid && ad_setid(addp,(vol->v_flags & AFPVOL_NODEV)?0:destst.st_dev, destst.st_ino,  sid, sdir->d_did, vol->v_stamp)) 
+    if (sid && ad_setid(addp, destst.st_dev, destst.st_ino,  sid, sdir->d_did, vol->v_stamp)) 
     {
        ad_flush( addp, ADFLAGS_HF );
     }
         
-    if (did && ad_setid(adsp,(vol->v_flags & AFPVOL_NODEV)?0:srcst.st_dev, srcst.st_ino,  did, curdir->d_did, vol->v_stamp)) 
+    if (did && ad_setid(adsp, srcst.st_dev, srcst.st_ino,  did, curdir->d_did, vol->v_stamp)) 
     {
        ad_flush( adsp, ADFLAGS_HF );
     }

@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.18.2.1 2005-02-06 10:16:01 didg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.18.2.2 2005-02-10 01:23:10 didg Exp $
  *
  * See COPYRIGHT.
  *
@@ -727,7 +727,7 @@ static int ad_addcomment(struct vol *vol, struct path *path, char *ibuf)
     
     isadir = path_isadir(path);
     if (isadir || !(of = of_findname(path))) {
-        ad_init(&ad, vol->v_adouble);
+        ad_init(&ad, vol->v_adouble, vol->v_ad_options);
         adp = &ad;
     } else
         adp = of->of_ad;
@@ -805,7 +805,7 @@ static int ad_getcomment(struct vol *vol, struct path *path, char *rbuf, int *rb
     upath = path->u_name;
     isadir = path_isadir(path);
     if (isadir || !(of = of_findname(path))) {
-        ad_init(&ad, vol->v_adouble);
+        ad_init(&ad, vol->v_adouble, vol->v_ad_options);
         adp = &ad;
     } else
         adp = of->of_ad;
@@ -884,7 +884,7 @@ static int ad_rmvcomment(struct vol *vol, struct path *path)
 
     isadir = path_isadir(path);
     if (isadir || !(of = of_findname(path))) {
-        ad_init(&ad, vol->v_adouble);
+        ad_init(&ad, vol->v_adouble, vol->v_ad_options);
         adp = &ad;
     } else
         adp = of->of_ad;

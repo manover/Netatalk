@@ -1,5 +1,5 @@
 /* 
- * $Id: afppasswd.c,v 1.11.6.1 2004-10-08 00:54:40 bfernhomberg Exp $
+ * $Id: afppasswd.c,v 1.11.6.1.2.1 2005-02-10 01:23:07 didg Exp $
  *
  * Copyright 1999 (c) Adrian Sun (asun@u.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -73,7 +73,7 @@ static void convert_passwd(char *buf, char *newpwd, const int keyfd)
 {
   u_int8_t key[HEXPASSWDLEN];
   Key_schedule schedule;
-  int i, j;
+  unsigned int i, j;
 
   if (!newpwd) {
     /* convert to binary */

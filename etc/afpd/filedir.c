@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.45.2.2.2.14.2.1 2004-12-07 02:58:08 didg Exp $
+ * $Id: filedir.c,v 1.45.2.2.2.14.2.2 2005-02-10 01:23:14 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -345,7 +345,7 @@ int         isdir;
     struct path         path;
     cnid_t      id;
 
-    ad_init(&ad, vol->v_adouble);
+    ad_init(&ad, vol->v_adouble, vol->v_ad_options);
     adp = &ad;
     adflags = 0;
     

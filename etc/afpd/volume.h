@@ -1,5 +1,5 @@
 /*
- * $Id: volume.h,v 1.19.2.5.2.7 2004-06-24 00:46:12 bfernhomberg Exp $
+ * $Id: volume.h,v 1.19.2.5.2.7.2.1 2005-02-10 01:23:16 didg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -61,10 +61,11 @@ struct vol {
     charset_t		v_maccharset;
     struct charset_functions	*v_mac;
 
-    int                 v_deleted;  /* volume open but deleted in new config file */
-    int                 v_hide;     /* new volume wait open volume */
-    int                 v_adouble;  /* default adouble format */
-
+    int                 v_deleted;    /* volume open but deleted in new config file */
+    int                 v_hide;       /* new volume wait open volume */
+    int                 v_adouble;    /* default adouble format */
+    int			v_ad_options; /* adouble option NODEV, NOCACHE, etc.. */
+    
     char                *v_root_preexec;
     char                *v_preexec;
 
@@ -114,6 +115,7 @@ this is going away. */
                                      * help if device number is notconsistent across reboot 
                                      * NOTE symlink to a different device will return an ACCESS error
                                      */
+#define AFPVOL_CACHE      (1 << 19)  /* Use adouble v2 CNID caching, default don't use it */
 
 /* FPGetSrvrParms options */
 #define AFPSRVR_CONFIGINFO     (1 << 0)

@@ -1,5 +1,5 @@
 /*
- * $Id: ad_attr.c,v 1.4.8.7 2004-09-06 09:38:22 didg Exp $
+ * $Id: ad_attr.c,v 1.4.8.7.2.1 2005-02-10 01:23:17 didg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -66,11 +66,17 @@ int ad_setattr(const struct adouble *ad, const u_int16_t attr)
 #if AD_VERSION == AD_VERSION2
 int ad_setid (struct adouble *adp, const dev_t dev, const ino_t ino , const u_int32_t id, const cnid_t did, const void *stamp)
 {
-    if (adp->ad_flags == AD_VERSION2  && ad_getentryoff(adp, ADEID_PRIVDEV) &&
+    if (adp->ad_flags == AD_VERSION2  && ( adp->ad_options & ADVOL_CACHE) &&
+                ad_getentryoff(adp, ADEID_PRIVDEV) &&
                 sizeof(dev_t) == ADEDLEN_PRIVDEV && sizeof(ino_t) == ADEDLEN_PRIVINO) 
     {
         ad_setentrylen( adp, ADEID_PRIVDEV, sizeof(dev_t));
-        memcpy(ad_entry( adp, ADEID_PRIVDEV ), &dev, sizeof(dev_t));
+	if ((adp->ad_options & ADVOL_NODEV)) {
+            memset(ad_entry( adp, ADEID_PRIVDEV ), 0, sizeof(dev_t));
+        }
+	else {
+            memcpy(ad_entry( adp, ADEID_PRIVDEV ), &dev, sizeof(dev_t));
+        }
 
         ad_setentrylen( adp, ADEID_PRIVINO, sizeof(ino_t));
         memcpy(ad_entry( adp, ADEID_PRIVINO ), &ino, sizeof(ino_t));
@@ -86,6 +92,40 @@ int ad_setid (struct adouble *adp, const dev_t dev, const ino_t ino , const u_in
         return 1;
     }
     return 0;
+}
+
+/* ----------------------------- */
+u_int32_t ad_getid (struct adouble *adp, const dev_t st_dev, const ino_t st_ino , const cnid_t did, const void *stamp)
+{
+u_int32_t aint = 0;
+dev_t  dev;
+ino_t  ino;
+cnid_t a_did;
+char   temp[ADEDLEN_PRIVSYN];
+
+    /* look in AD v2 header 
+     * note inode and device are opaques and not in network order
+    */
+    if (adp && ( adp->ad_options & ADVOL_CACHE) 
+            && sizeof(dev_t) == ad_getentrylen(adp, ADEID_PRIVDEV)
+            && sizeof(ino_t) == ad_getentrylen(adp,ADEID_PRIVINO)
+            && sizeof(temp) == ad_getentrylen(adp,ADEID_PRIVSYN)
+            && sizeof(cnid_t) == ad_getentrylen(adp, ADEID_DID)
+            && sizeof(cnid_t) == ad_getentrylen(adp, ADEID_PRIVID)
+    ) {
+        memcpy(&dev, ad_entry(adp, ADEID_PRIVDEV), sizeof(dev_t));
+        memcpy(&ino, ad_entry(adp, ADEID_PRIVINO), sizeof(ino_t));
+        memcpy(temp, ad_entry(adp, ADEID_PRIVSYN), sizeof(stamp));
+        memcpy(&a_did, ad_entry(adp, ADEID_DID), sizeof(cnid_t));
+
+        if (  ((adp->ad_options & ADVOL_NODEV) || dev == st_dev)
+              && ino == st_ino && a_did == did 
+              && !memcmp(stamp, temp, sizeof(temp))) { 
+            memcpy(&aint, ad_entry(adp, ADEID_PRIVID), sizeof(aint));
+            return aint;
+        }
+    }
+    return 0; 
 }
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * $Id: nad.c,v 1.11.8.2 2004-06-27 02:38:42 didg Exp $
+ * $Id: nad.c,v 1.11.8.2.2.1 2005-02-10 01:23:08 didg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -424,12 +424,12 @@ static void initvol(char *path)
 {
     if (!loadvolinfo(path, &vol)) {
         vol_load_charsets(&vol);
-        ad_init(&nad.ad, vol.v_adouble);
+        ad_init(&nad.ad, vol.v_adouble, 0);
         _mtoupath = mtoupathiconv;
         _utompath = utompathiconv;
     }
     else
-        ad_init(&nad.ad, 0);
+        ad_init(&nad.ad, 0, 0);
 }
 
 

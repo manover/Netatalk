@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.33.2.3 2005-02-06 10:16:01 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.33.2.4 2005-02-10 01:23:16 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -468,6 +468,8 @@ static void volset(struct vol_option *options, struct vol_option *save,
                 options[VOLOPT_FLAGS].i_value |= AFPVOL_UNIX_PRIV;
             else if (strcasecmp(p, "nodev") == 0)
                 options[VOLOPT_FLAGS].i_value |= AFPVOL_NODEV;
+            else if (strcasecmp(p, "cachecnid") == 0)
+                options[VOLOPT_FLAGS].i_value |= AFPVOL_CACHE;
 
             p = strtok(NULL, ",");
         }
@@ -628,6 +630,12 @@ static int creatvol(AFPObj *obj, struct passwd *pwd,
         /* shift in some flags */
         volume->v_flags = options[VOLOPT_FLAGS].i_value;
 
+        volume->v_ad_options = 0;
+        if ((volume->v_flags & AFPVOL_NODEV))
+            volume->v_ad_options |= AFPVOL_NODEV;
+        if ((volume->v_flags & AFPVOL_CACHE))
+            volume->v_ad_options |= AFPVOL_CACHE;
+        
         if (options[VOLOPT_PASSWORD].c_value)
             volume->v_password = strdup(options[VOLOPT_PASSWORD].c_value);
 
@@ -1227,7 +1235,7 @@ int		*buflen;
      * For MacOS8.x support we need to create the
      * .Parent file here if it doesn't exist. */
 
-    ad_init(&ad, vol->v_adouble);
+    ad_init(&ad, vol->v_adouble, vol->v_ad_options);
     if ( ad_open( vol->v_path, vol_noadouble(vol) |
                   ADFLAGS_HF|ADFLAGS_DIR, O_RDWR | O_CREAT,
                   0666, &ad) < 0 ) {
@@ -1824,7 +1832,7 @@ void close_all_vol(void)
     struct vol	*ovol;
     curdir = NULL;
     for ( ovol = Volumes; ovol; ovol = ovol->v_next ) {
-        if ( ovol->v_flags & AFPVOL_OPEN ) {
+        if ( (ovol->v_flags & AFPVOL_OPEN) ) {
             ovol->v_flags &= ~AFPVOL_OPEN;
             closevol(ovol);
         }
@@ -1849,7 +1857,7 @@ int		ibuflen, *rbuflen;
 
     vol->v_flags &= ~AFPVOL_OPEN;
     for ( ovol = Volumes; ovol; ovol = ovol->v_next ) {
-        if ( ovol->v_flags & AFPVOL_OPEN ) {
+        if ( (ovol->v_flags & AFPVOL_OPEN) ) {
             break;
         }
     }
@@ -2033,14 +2041,14 @@ int		ibuflen, *rbuflen;
         return( AFPERR_PARAM );
     }
 
-    if (vol->v_flags & AFPVOL_RO)
+    if ((vol->v_flags & AFPVOL_RO))
         return AFPERR_VLOCK;
 
     /* we can only set the backup date. */
     if (bitmap != (1 << VOLPBIT_BDATE))
         return AFPERR_BITMAP;
 
-    ad_init(&ad, vol->v_adouble);
+    ad_init(&ad, vol->v_adouble, vol->v_ad_options);
     if ( ad_open( vol->v_path, ADFLAGS_HF|ADFLAGS_DIR, O_RDWR,
                   0666, &ad) < 0 ) {
         if (errno == EROFS)
@@ -2136,7 +2144,7 @@ static int create_special_folder (const struct vol *vol, const struct _special_f
 
 	if ( !ret && folder->hide) {
 		/* Hide it */
-		ad_init(&ad, vol->v_adouble);
+		ad_init(&ad, vol->v_adouble, vol->v_ad_options);
 		if (ad_open( p, vol_noadouble(vol) | ADFLAGS_HF|ADFLAGS_DIR,
                  	O_RDWR|O_CREAT, 0666, &ad) < 0) {
 			free (p);
@@ -2174,7 +2182,7 @@ static void handle_special_folders (const struct vol * vol)
 {
 	const _special_folder *p = &special_folders[0];
 
-    	if (vol->v_flags & AFPVOL_RO)
+    	if ((vol->v_flags & AFPVOL_RO))
 		return;
 
         for (; p->name != NULL; p++) {
@@ -2262,7 +2270,7 @@ static int savevoloptions (const struct vol *vol)
     /* volume flags */
     strcpy(item, "VOLUME_OPTS:");
     for (;op->name; op++) {
-	if ( vol->v_flags & op->option ) {
+	if ( (vol->v_flags & op->option) ) {
             strlcat(item, op->name, sizeof(item));
             strlcat(item, " ", sizeof(item));
         }
@@ -2273,7 +2281,7 @@ static int savevoloptions (const struct vol *vol)
     /* casefold flags */
     strcpy(item, "VOLCASEFOLD:");
     for (;cf->name; cf++) {
-        if ( vol->v_casefold & cf->option ) {
+        if ( (vol->v_casefold & cf->option) ) {
             strlcat(item, cf->name, sizeof(item));
             strlcat(item, " ", sizeof(item));
         }

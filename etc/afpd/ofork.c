@@ -1,5 +1,5 @@
 /*
- * $Id: ofork.c,v 1.20.6.6.2.1 2004-12-07 03:23:51 didg Exp $
+ * $Id: ofork.c,v 1.20.6.6.2.2 2005-02-10 01:23:15 didg Exp $
  *
  * Copyright (c) 1996 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -220,7 +220,7 @@ struct stat     *st;
 
         /* initialize to zero. This is important to ensure that
            ad_open really does reinitialize the structure. */
-        ad_init(ad, vol->v_adouble);
+        ad_init(ad, vol->v_adouble, vol->v_ad_options);
     } else {
         /* Increase the refcount on this struct adouble. This is
            decremented again in oforc_dealloc. */
@@ -384,7 +384,7 @@ struct adouble *of_ad(const struct vol *vol, struct path *path, struct adouble *
     if ((of = of_findname(path))) {
         adp = of->of_ad;
     } else {
-        ad_init(ad, vol->v_adouble);
+        ad_init(ad, vol->v_adouble, vol->v_ad_options);
         adp = ad;
     }
     return adp;

@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.18.2.2 2005-02-05 14:54:49 didg Exp $
+ * $Id: ad_open.c,v 1.30.6.18.2.3 2005-02-10 01:23:18 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -931,7 +931,7 @@ static int new_rfork(const char *path, struct adouble *ad, int adflags);
 #define AD_SET(a) a = 0
 #endif
 
-void ad_init(struct adouble *ad, int flags)
+void ad_init(struct adouble *ad, int flags, int options)
 {
     memset( ad, 0, sizeof( struct adouble ) );
     ad->ad_flags = flags;
@@ -941,6 +941,7 @@ void ad_init(struct adouble *ad, int flags)
     else {
         ad->ad_path     = ad_path;
     }
+    ad->ad_options = options;
 }
 
 /* -------------------

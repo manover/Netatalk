@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.15.2.4 2005-01-31 17:00:43 didg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.15.2.5 2005-02-10 01:23:10 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1318,7 +1318,7 @@ int getdirparams(const struct vol *vol,
 		   (1 << DIRPBIT_BDATE) |
 		   (1 << DIRPBIT_FINFO)))) {
 
-        ad_init(&ad, vol->v_adouble);
+        ad_init(&ad, vol->v_adouble, vol->v_ad_options);
     	if ( !ad_metadata( upath, ADFLAGS_DIR, &ad) ) {
             isad = 1;
         }
@@ -1756,7 +1756,7 @@ int setdirparams(const struct vol *vol,
         bitmap = bitmap>>1;
         bit++;
     }
-    ad_init(&ad, vol->v_adouble);
+    ad_init(&ad, vol->v_adouble, vol->v_ad_options);
 
     if (ad_open( upath, vol_noadouble(vol)|ADFLAGS_HF|ADFLAGS_DIR,
                  O_RDWR|O_CREAT, 0666, &ad) < 0) {
@@ -1941,8 +1941,7 @@ setdirparam_done:
             struct stat *st = &path->st;
 
             if (dir && dir->d_parent) {
-                ad_setid(&ad,(vol->v_flags & AFPVOL_NODEV)?0:st->st_dev, 
-                         st->st_ino,  dir->d_did, dir->d_parent->d_did, vol->v_stamp);
+                ad_setid(&ad, st->st_dev, st->st_ino,  dir->d_did, dir->d_parent->d_did, vol->v_stamp);
             }
         }
         ad_flush( &ad, ADFLAGS_HF );
@@ -2027,7 +2026,7 @@ int		ibuflen, *rbuflen;
         return( AFPERR_PARAM );
     }
 
-    ad_init(&ad, vol->v_adouble);
+    ad_init(&ad, vol->v_adouble, vol->v_ad_options);
     if (ad_open( ".", vol_noadouble(vol)|ADFLAGS_HF|ADFLAGS_DIR,
                  O_RDWR|O_CREAT, 0666, &ad ) < 0)  {
         if (vol_noadouble(vol))
@@ -2035,8 +2034,7 @@ int		ibuflen, *rbuflen;
         return( AFPERR_ACCESS );
     }
     ad_setname(&ad, s_path->m_name);
-    ad_setid( &ad, (vol->v_flags & AFPVOL_NODEV)?0:s_path->st.st_dev,
-                   s_path->st.st_ino, dir->d_did, did, vol->v_stamp);
+    ad_setid( &ad, s_path->st.st_dev, s_path->st.st_ino, dir->d_did, did, vol->v_stamp);
 
     ad_flush( &ad, ADFLAGS_HF );
     ad_close( &ad, ADFLAGS_HF );
@@ -2102,7 +2100,7 @@ struct dir	*dir, *newparent;
      * .Parent
     */
     
-    ad_init(&ad, vol->v_adouble);
+    ad_init(&ad, vol->v_adouble, vol->v_ad_options);
 
     if (!ad_open( dst, ADFLAGS_HF|ADFLAGS_DIR, O_RDWR, 0, &ad)) {
         ad_setname(&ad, newname);
@@ -2169,7 +2167,7 @@ int pathlen;
 
     fdir = curdir;
 
-    ad_init(&ad, vol->v_adouble);
+    ad_init(&ad, vol->v_adouble, vol->v_ad_options);
     if ( ad_metadata( ".", ADFLAGS_DIR, &ad) == 0 ) {
 
         ad_getattr(&ad, &ashort);
