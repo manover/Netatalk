@@ -1,5 +1,5 @@
 /*
- * $Id: server_child.c,v 1.7.4.1.2.4 2004-07-01 01:27:34 didg Exp $
+ * $Id: server_child.c,v 1.7.4.1.2.4.2.1 2005-03-31 00:25:55 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -60,13 +60,14 @@
 #define HASH(i) ((((i) >> 8) ^ (i)) & (CHILD_HASHSIZE - 1))
 
 struct server_child_data {
-  pid_t     pid; 
-  uid_t     uid;
-  int       valid;
-  u_int32_t time;
-  u_int32_t idlen;
-  
-  char *clientid;
+  pid_t     pid; 		/* afpd worker process pid (from the worker afpd process )*/
+  uid_t     uid;		/* user id of connected client (from the worker afpd process) */
+  int       valid;		/* 1 if we have a clientid */
+  u_int32_t time;		/* client boot time (from the mac client) */
+  int       killed;		/* 1 if we already tried to kill the client */
+
+  u_int32_t idlen;		/* clientid len (from the Mac client) */
+  char *clientid;		/* clientid (from the Mac client) */
   struct server_child_data **prevp, *next;
 };
 
@@ -169,6 +170,7 @@ int server_child_add(server_child *children, const int forkid,
 
   child->pid = pid;
   child->valid = 0;
+  child->killed = 0;
   hash_child(fork->table, child);
   children->count++;
   sigprocmask(SIG_SETMASK, &oldsig, NULL);
@@ -246,6 +248,21 @@ void server_child_kill(server_child *children, const int forkid,
  * a plain-old linked list 
  * FIXME use resolve_child ?
  */
+static int kill_child(struct server_child_data *child)
+{
+  if (!child->killed) {
+     kill(child->pid, SIGTERM);
+     /* we don't wait because there's no guarantee that we can really kill it */
+     child->killed = 1;
+     return 1;
+  }
+  else {
+     LOG(log_info, logtype_default, "Already tried to kill (%d) before! Still there?",  child->pid);
+  }
+  return 0;
+}
+
+/* -------------------- */
 void server_child_kill_one(server_child *children, const int forkid, const pid_t pid, const uid_t uid)
 {
   server_child_fork *fork;
@@ -266,7 +283,7 @@ void server_child_kill_one(server_child *children, const int forkid, const pid_t
              LOG(log_info, logtype_default, "Disconnecting old session (%d) not the same user, bailout!",  child->pid);
           }
           else {
-              kill(child->pid, SIGTERM);
+              kill_child(child);
           }
       }
       child = tmp;
@@ -294,12 +311,20 @@ void server_child_kill_one_by_id(server_child *children, const int forkid, const
           if ( child->idlen == idlen && !memcmp(child->clientid, id, idlen)) {
 	     if ( child->time != boottime ) {
 	          if (uid == child->uid) {
-	              kill(child->pid, SIGTERM);
-		      LOG(log_info, logtype_default, "Disconnecting old session %d, client rebooted.",  child->pid);
+	              if (kill_child(child)) {
+		          LOG(log_info, logtype_default, "Disconnecting old session %d, client rebooted.",  child->pid);
+		      }
 		  }
 		  else {
 		      LOG(log_info, logtype_default, "Disconnecting old session not the same uid, bailout!");
 		  }
+	     }
+	     else if (child->killed) {
+	          /* there's case where a Mac close a connection and restart a new one before
+	           * the first is 'waited' by the master afpd process
+	          */
+		  LOG(log_info, logtype_default, 
+		      "WARNING: connection (%d) killed but still there.", child->pid);
 	     }
 	     else {
 		  LOG(log_info, logtype_default, 

@@ -1,5 +1,5 @@
 /*
- * $Id: afp_dsi.c,v 1.27.2.3.2.4 2004-05-04 15:38:24 didg Exp $
+ * $Id: afp_dsi.c,v 1.27.2.3.2.4.2.1 2005-03-31 00:25:55 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -79,6 +79,17 @@ static __inline__ void afp_dsi_close(AFPObj *obj)
  */
 static void afp_dsi_die(int sig)
 {
+static volatile int in_handler;
+    
+    if (in_handler) {
+    	return;
+    }
+    /* it's not atomic but we don't care because it's an exit function
+     * ie if a signal is received here, between the test and the affectation,
+     * it will not return.
+    */
+    in_handler = 1;
+
     dsi_attention(child.obj->handle, AFPATTN_SHUTDOWN);
     afp_dsi_close(child.obj);
     if (sig) /* if no signal, assume dieing because logins are disabled &
