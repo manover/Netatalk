@@ -8,7 +8,7 @@ Changes in 1.6.4
 * FIX: configure: Removed broken --with-flock-locks option. [Björn Fernhomberg]
 * FIX: libatalk: Do not log network probe (OSX 10.3). [Didier Gautheron]
 * FIX: libatalk: Deadlock in signal handlers. [Didier]
-* FIX: libatalk: Compilation with Linux kernel 2.6 fixed. [Sebastian]
+* FIX: libatalk: Compilation with Linux kernel 2.6 fixed. [Sebastian, Björn]
 * FIX: afpd: Solaris compile issues. [Björn]
 * FIX: afpd: If connection broke in dsi_tickle the child did never die. [Björn]
 * FIX: afpd: Catsearch, fixes a possible segmentation fault. [Björn]
