@@ -1,5 +1,5 @@
 /*
- * $Id: afp_dsi.c,v 1.24.2.1 2003-06-06 19:43:12 srittau Exp $
+ * $Id: afp_dsi.c,v 1.24.2.2 2003-06-09 15:09:06 srittau Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -102,6 +102,7 @@ static void afp_dsi_timedown()
     it.it_interval.tv_usec = 0;
     it.it_value.tv_sec = 300;
     it.it_value.tv_usec = 0;
+
     if ( setitimer( ITIMER_REAL, &it, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_timedown: setitimer: %s", strerror(errno) );
         afp_dsi_die(1);
@@ -232,11 +233,12 @@ void afp_over_dsi(AFPObj *obj)
 
         if (cmd == DSIFUNC_TICKLE) {
             /* so we don't get killed on the client side. */
-            if (child.flags & CHILD_DIE)
+            if ((child.flags & CHILD_DIE))
                 dsi_tickle(dsi);
             continue;
-        } else if (!(child.flags & CHILD_DIE)) /* reset tickle timer */
+        } else if (!(child.flags & CHILD_DIE)) { /* reset tickle timer */
             setitimer(ITIMER_REAL, &dsi->timer, NULL);
+        }
 
         switch(cmd) {
         case DSIFUNC_CLOSE:
