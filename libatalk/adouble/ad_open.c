@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.10 2004-05-03 14:04:35 didg Exp $
+ * $Id: ad_open.c,v 1.30.6.11 2004-05-04 14:26:14 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -1005,31 +1005,29 @@ int ad_open( path, adflags, oflags, mode, ad )
 	     * if ((oflags & O_CREAT) ==> (oflags & O_RDWR)
 	     */
 	    admode = mode;
+	    errno = 0;
 	    st_invalid = ad_mode_st(ad_p, &admode, &st);
 	    admode = ad_hf_mode(admode); 
-	    errno = 0;
-	    ad->ad_hf.adf_fd = open( ad_p, oflags,admode );
-	    if ( ad->ad_hf.adf_fd < 0 && ad->ad_flags != AD_VERSION2_OSX) {
+	    if ( errno == ENOENT && !(adflags & ADFLAGS_NOADOUBLE) && ad->ad_flags != AD_VERSION2_OSX) {
 		/*
 		 * Probably .AppleDouble doesn't exist, try to
 		 * mkdir it.
 		 */
-		if (errno == ENOENT && (adflags & ADFLAGS_NOADOUBLE) == 0) {
-		    if (NULL == ( slash = strrchr( ad_p, '/' )) ) {
-		        return ad_error(ad, adflags);
-		    }
-		    *slash = '\0';
-		    errno = 0;
-		    if ( ad_mkdir( ad_p, 0777 ) < 0 ) {
-		        return ad_error(ad, adflags);
-		    }
-		    *slash = '/';
-		    admode = mode;
-		    st_invalid = ad_mode_st(ad_p, &admode, &st);
-		    admode = ad_hf_mode(admode); 
-		    ad->ad_hf.adf_fd = open( ad_p, oflags, admode);
+		if (NULL == ( slash = strrchr( ad_p, '/' )) ) {
+		    return ad_error(ad, adflags);
 		}
+		*slash = '\0';
+		errno = 0;
+		if ( ad_mkdir( ad_p, 0777 ) < 0 ) {
+		    return ad_error(ad, adflags);
+		}
+		*slash = '/';
+		admode = mode;
+		st_invalid = ad_mode_st(ad_p, &admode, &st);
+		admode = ad_hf_mode(admode); 
 	    }
+	    /* retry with O_CREAT */
+	    ad->ad_hf.adf_fd = open( ad_p, oflags,admode );
 	    if ( ad->ad_hf.adf_fd < 0 ) {
 	        return ad_error(ad, adflags);
 	    }

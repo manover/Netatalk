@@ -1,5 +1,5 @@
 /*
- * $Id: fork.c,v 1.51.2.2.2.8 2004-03-11 16:16:41 didg Exp $
+ * $Id: fork.c,v 1.51.2.2.2.9 2004-05-04 14:26:13 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -876,12 +876,10 @@ int		ibuflen, *rbuflen;
 int is64;
 {
     struct ofork	*ofork;
-    off_t 		size;
     off_t		offset, saveoff, reqcount, savereqcount;
     int			cc, err, eid, xlate = 0;
     u_int16_t		ofrefnum;
     u_char		nlmask, nlchar;
-    int                 non_blocking = 0;
     
     ibuf += 2;
     memcpy(&ofrefnum, ibuf, sizeof( ofrefnum ));
@@ -931,14 +929,6 @@ int is64;
         goto afp_read_err;
     }
 
-    /* reqcount isn't always truthful. we need to deal with that. */
-    size = ad_size(ofork->of_ad, eid);
-
-    if (offset >= size) {
-        err = AFPERR_EOF;
-        goto afp_read_err;
-    }
-
     savereqcount = reqcount;
     saveoff = offset;
     if (ad_tmplock(ofork->of_ad, eid, ADLOCK_RD, saveoff, savereqcount,ofork->of_refnum) < 0) {
@@ -955,7 +945,9 @@ int is64;
     /* dsi can stream requests. we can only do this if we're not checking
      * for an end-of-line character. oh well. */
     if ((obj->proto == AFPPROTO_DSI) && (*rbuflen < reqcount) && !nlmask) {
-        DSI *dsi = obj->handle;
+        DSI    *dsi = obj->handle;
+        off_t  size;
+        int    non_blocking = 0;
 
 #ifdef DEBUG1
         if (obj->options.flags & OPTION_DEBUG) {
@@ -963,6 +955,9 @@ int is64;
             bprint(rbuf, *rbuflen);
         }
 #endif        
+        /* reqcount isn't always truthful. we need to deal with that. */
+        size = ad_size(ofork->of_ad, eid);
+
         /* subtract off the offset */
         size -= offset;
         if (reqcount > size) {
@@ -980,7 +975,7 @@ int is64;
 
         /* due to the nature of afp packets, we have to exit if we get
            an error. we can't do this with translation on. */
-#if 0 /* idef WITH_SENDFILE */
+#if 0 /* ifdef WITH_SENDFILE */
         /* FIXME with OS X deadlock partial workaround we can't use sendfile */
         if (!(xlate || Debug(obj) )) {
             if (ad_readfile(ofork->of_ad, eid, dsi->socket, offset, dsi->datasize) < 0) {
@@ -1024,6 +1019,10 @@ afp_read_loop:
                 goto afp_read_exit;
             *rbuflen = cc;
         }
+        if (non_blocking) {
+            /* set back to blocking mode */
+            dsi_block(dsi, 0);
+        }
         dsi_readdone(dsi);
         goto afp_read_done;
 
@@ -1035,11 +1034,6 @@ afp_read_exit:
     }
 
 afp_read_done:
-    if (non_blocking) {
-        DSI *dsi = obj->handle;
-        /* set back to blocking mode */
-        dsi_block(dsi, 0);
-    }
     ad_tmplock(ofork->of_ad, eid, ADLOCK_CLR, saveoff, savereqcount,ofork->of_refnum);
     return err;
 

@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_stream.c,v 1.11.6.4 2004-02-10 10:21:50 didg Exp $
+ * $Id: dsi_stream.c,v 1.11.6.5 2004-05-04 14:26:14 didg Exp $
  *
  * Copyright (c) 1998 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -62,43 +62,50 @@ const void dsi_buffer(DSI *dsi)
     FD_SET( dsi->socket, &readfds);
     FD_SET( dsi->socket, &writefds);
     maxfd = dsi->socket +1;
-    if (select( maxfd, &readfds, &writefds, NULL, NULL) <= 0)
-        return;
+    while (1) {
+        FD_SET( dsi->socket, &readfds);
+        FD_SET( dsi->socket, &writefds);
+        if (select( maxfd, &readfds, &writefds, NULL, NULL) <= 0)
+            return;
 
-    if ( !FD_ISSET(dsi->socket, &readfds)) {
-        /* nothing waiting in the queue */
-        return;
-    }
-    if (!dsi->buffer) {
-        /* XXX config options */
-        dsi->maxsize = 6 * dsi->server_quantum;
-        if (!dsi->maxsize)
-            dsi->maxsize = 6 * DSI_SERVQUANT_DEF;
-        dsi->buffer = malloc(dsi->maxsize);
+        if ( !FD_ISSET(dsi->socket, &readfds)) {
+            /* nothing waiting in the read queue */
+            return;
+        }
         if (!dsi->buffer) {
-           /* fall back to blocking IO */
+            /* XXX config options */
+            dsi->maxsize = 6 * dsi->server_quantum;
+            if (!dsi->maxsize)
+                dsi->maxsize = 6 * DSI_SERVQUANT_DEF;
+            dsi->buffer = malloc(dsi->maxsize);
+            if (!dsi->buffer) {
+                /* fall back to blocking IO */
+                dsi_block(dsi, 0);
+                return;
+            }
+            dsi->start = dsi->buffer;
+            dsi->eof = dsi->buffer;
+            dsi->end = dsi->buffer + dsi->maxsize;
+        }
+        len = dsi->end - dsi->eof;
+
+        if (len <= 0) {
+            /* ouch, our buffer is full ! 
+             * fall back to blocking IO 
+             * could block and disconnect but it's better than a cpu hog
+             */
             dsi_block(dsi, 0);
             return;
         }
-        dsi->start = dsi->buffer;
-        dsi->eof = dsi->buffer;
-        dsi->end = dsi->buffer + dsi->maxsize;
-    }
-    len = dsi->end - dsi->eof;
 
-    if (len <= 0) {
-        /* ouch, our buffer is full ! 
-         * fall back to blocking IO 
-         * could block and disconnect but it's better than a cpu hog
-        */
-        dsi_block(dsi, 0);
-        return;
+        len = read(dsi->socket, dsi->eof, len);
+        if (len <= 0)
+            return;
+        dsi->eof += len;
+        if ( FD_ISSET(dsi->socket, &writefds)) {
+            return;
+        }
     }
-
-    len = read(dsi->socket, dsi->eof, len);
-    if (len <= 0)
-        return;
-    dsi->eof += len;
 }
 
 /* ------------------------------
@@ -261,15 +268,13 @@ int dsi_stream_send(DSI *dsi, void *buf, size_t length)
   memcpy(block + 12, &dsi->header.dsi_reserved,
 	 sizeof(dsi->header.dsi_reserved));
 
-  /* block signals */
-  block_sig(dsi);
-
   if (!length) { /* just write the header */
     length = (dsi_stream_write(dsi, block, sizeof(block), 0) == sizeof(block));
-    unblock_sig(dsi);
     return length; /* really 0 on failure, 1 on success */
   }
   
+  /* block signals */
+  block_sig(dsi);
 #ifdef USE_WRITEV
   iov[0].iov_base = block;
   iov[0].iov_len = sizeof(block);
