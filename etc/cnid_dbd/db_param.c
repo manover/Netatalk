@@ -1,5 +1,5 @@
 /*
- * $Id: db_param.c,v 1.1.4.4 2004-04-29 18:09:14 lenneis Exp $
+ * $Id: db_param.c,v 1.1.4.4.2.1 2004-12-21 13:36:12 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -38,6 +38,7 @@
 #define DEFAULT_USOCK_FILE         "usock"
 #define DEFAULT_FD_TABLE_SIZE      16
 #define DEFAULT_IDLE_TIMEOUT       600
+#define DEFAULT_CHECK              0
 
 static struct db_param params;
 static int parse_err;
@@ -71,14 +72,16 @@ static int make_pathname(char *path, char *dir, char *fn, int maxlen)
 
 static void default_params(struct db_param *dbp, char *dir)
 {        
+    dbp->check               = DEFAULT_CHECK;
     dbp->logfile_autoremove  = DEFAULT_LOGFILE_AUTOREMOVE;
     dbp->cachesize           = DEFAULT_CACHESIZE;
     dbp->nosync              = DEFAULT_NOSYNC;
     dbp->flush_frequency     = DEFAULT_FLUSH_FREQUENCY;
     dbp->flush_interval      = DEFAULT_FLUSH_INTERVAL;
-    if (make_pathname(dbp->usock_file, dir, DEFAULT_USOCK_FILE, usock_maxlen()) < 0)
+    if (make_pathname(dbp->usock_file, dir, DEFAULT_USOCK_FILE, usock_maxlen()) < 0) {
         /* Not an error yet, it might be set in the config file */
         dbp->usock_file[0] = '\0';
+    }
     dbp->fd_table_size       = DEFAULT_FD_TABLE_SIZE;
     dbp->idle_timeout        = DEFAULT_IDLE_TIMEOUT;
     return;
@@ -145,6 +148,8 @@ struct db_param *db_param_read(char *dir)
             params.cachesize = parse_int(val);
         else if (! strcmp(key, "nosync"))
             params.nosync = parse_int(val);
+        else if (! strcmp(key, "check"))
+            params.check = parse_int(val);
         else if (! strcmp(key, "flush_frequency"))
             params.flush_frequency = parse_int(val);
         else if (! strcmp(key, "flush_interval"))

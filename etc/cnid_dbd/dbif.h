@@ -1,5 +1,5 @@
 /*
- * $Id: dbif.h,v 1.1.4.6 2004-01-09 21:05:50 lenneis Exp $
+ * $Id: dbif.h,v 1.1.4.6.2.1 2004-12-21 13:36:12 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -20,12 +20,16 @@
 
 extern int        dbif_stamp  __P((void *, int));
 extern int        dbif_env_init  __P((struct db_param *));
-extern int        dbif_open  __P((struct db_param *));
+extern int        dbif_open  __P((struct db_param *, int));
 extern int        dbif_close __P((void));
+extern int        dbif_closedb __P((void));
 extern int        dbif_get __P((const int, DBT *, DBT *, u_int32_t));
 extern int        dbif_pget __P((const int, DBT *, DBT *, DBT *, u_int32_t));
 extern int        dbif_put __P((const int, DBT *, DBT *, u_int32_t));
 extern int        dbif_del __P((const int, DBT *, u_int32_t));
+
+extern int        dbif_count __P((const int, u_int32_t *));
+
 
 #ifdef CNID_BACKEND_DBD_TXN
 extern int        dbif_txn_begin  __P((void));

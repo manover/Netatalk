@@ -1,5 +1,5 @@
 /*
- * $Id: dbif.c,v 1.1.4.15 2004-04-29 18:09:16 lenneis Exp $
+ * $Id: dbif.c,v 1.1.4.15.2.1 2004-12-21 13:36:12 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <errno.h>
+#include <stdlib.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif /* HAVE_SYS_TYPES_H */
@@ -232,10 +233,11 @@ int dbif_env_init(struct db_param *dbp)
 }
 
 /* --------------- */
-int dbif_open(struct db_param *dbp)
+int dbif_open(struct db_param *dbp, int do_truncate)
 {
     int ret;
     int i;
+    u_int32_t count;
 
     for (i = 0; i != DBIF_DB_CNT; i++) {
         if ((ret = db_create(&(db_table[i].db), db_env, 0))) {
@@ -243,6 +245,7 @@ int dbif_open(struct db_param *dbp)
                 db_table[i].name, db_strerror(ret));
             return -1;
         }
+
         if (db_table[i].general_flags) { 
             if ((ret = db_table[i].db->set_flags(db_table[i].db, db_table[i].general_flags))) {
                 LOG(log_error, logtype_cnid, "error setting flags for database %s: %s", 
@@ -250,6 +253,7 @@ int dbif_open(struct db_param *dbp)
                 return -1;
             }
         }
+
 #if 0
 #ifndef CNID_BACKEND_DBD_TXN
         if ((ret = db_table[i].db->set_cachesize(db_table[i].db, 0, 1024 * dbp->cachesize, 0))) {
@@ -263,17 +267,25 @@ int dbif_open(struct db_param *dbp)
             return -1;
         if (db_errlog != NULL)
             db_table[i].db->set_errfile(db_table[i].db, db_errlog);
+
+        if (do_truncate && i > 0) {
+	    if ((ret = db_table[i].db->truncate(db_table[i].db, db_txn, &count, 0))) {
+                LOG(log_error, logtype_cnid, "error truncating database %s: %s", 
+                    db_table[i].name, db_strerror(ret));
+                return -1;
+            }
+        }
     }
-    
+
     /* TODO: Implement CNID DB versioning info on new databases. */
     /* TODO: Make transaction support a runtime option. */
     /* Associate the secondary with the primary. */
-    if ((ret = db_compat_associate(db_table[0].db, db_table[DBIF_IDX_DIDNAME].db, didname, 0)) != 0) {
+    if ((ret = db_compat_associate(db_table[0].db, db_table[DBIF_IDX_DIDNAME].db, didname, (do_truncate)?DB_CREATE:0)) != 0) {
         LOG(log_error, logtype_cnid, "Failed to associate didname database: %s",db_strerror(ret));
         return -1;
     }
  
-    if ((ret = db_compat_associate(db_table[0].db, db_table[DBIF_IDX_DEVINO].db, devino, 0)) != 0) {
+    if ((ret = db_compat_associate(db_table[0].db, db_table[DBIF_IDX_DEVINO].db, devino, (do_truncate)?DB_CREATE:0)) != 0) {
         LOG(log_error, logtype_cnid, "Failed to associate devino database: %s",db_strerror(ret));
 	return -1;
     }
@@ -282,18 +294,32 @@ int dbif_open(struct db_param *dbp)
 }
 
 /* ------------------------ */
-int dbif_close()
+int dbif_closedb()
 {
     int i;
     int ret;
     int err = 0;
-     
+
     for (i = DBIF_DB_CNT -1; i >= 0; i--) {
         if (db_table[i].db != NULL && (ret = db_table[i].db->close(db_table[i].db, 0))) {
             LOG(log_error, logtype_cnid, "error closing database %s: %s", db_table[i].name, db_strerror(ret));
             err++;
         }
     }
+    if (err)
+        return -1;
+    return 0;
+}
+
+/* ------------------------ */
+int dbif_close()
+{
+    int ret;
+    int err = 0;
+    
+    if (dbif_closedb()) 
+    	err++;
+     
     if (db_env != NULL && (ret = db_env->close(db_env, 0))) { 
         LOG(log_error, logtype_cnid, "error closing DB environment: %s", db_strerror(ret));
         err++;
@@ -304,8 +330,7 @@ int dbif_close()
     }
     if (err)
         return -1;
-    else
-        return 0;
+    return 0;
 }
 
 /*
@@ -482,5 +507,24 @@ int dbif_sync()
         return 0;
 }
 
+
+int dbif_count(const int dbi, u_int32_t *count) 
+{
+    int ret;
+    DB_BTREE_STAT *sp;
+    DB *db = db_table[dbi].db;
+
+    ret = db->stat(db, &sp, 0);
+
+    if (ret) {
+        LOG(log_error, logtype_cnid, "error getting stat infotmation on database: %s", db_strerror(errno));
+        return -1;
+    }
+
+    *count = sp->bt_ndata;
+    free(sp);
+
+    return 0;
+}
 #endif /* CNID_BACKEND_DBD_TXN */
 

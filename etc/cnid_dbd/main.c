@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.1.4.10.2.1 2004-12-11 12:38:20 didg Exp $
+ * $Id: main.c,v 1.1.4.10.2.2 2004-12-21 13:36:12 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -279,6 +279,7 @@ int main(int argc, char *argv[])
 {
     struct db_param *dbp;
     int err = 0;
+    int ret;
     int lockfd, ctrlfd, clntfd;
     char *dir;
        
@@ -320,13 +321,31 @@ int main(int argc, char *argv[])
 	exit(6);
 #endif
     
-    if (dbif_open(dbp) < 0) {
+    if (dbif_open(dbp, 0) < 0) {
 #ifdef CNID_BACKEND_DBD_TXN
 	dbif_txn_abort();
 #endif
         dbif_close();
         exit(2);
     }
+
+#ifndef CNID_BACKEND_DBD_TXN
+    if (dbp->check && (ret = dbd_check(dir))) {
+        if (ret < 0) {
+            dbif_close();
+            exit(2);
+        }
+        dbif_closedb();
+	LOG(log_info, logtype_cnid, "main: re-opening, secondaries will be rebuilt. This may take some time");
+        if (dbif_open(dbp, 1) < 0) {
+	    LOG(log_info, logtype_cnid, "main: re-opening databases failed");
+            dbif_close();
+            exit(2);
+        }
+	LOG(log_info, logtype_cnid, "main: rebuilt done");
+    }
+#endif
+
     if (dbd_stamp() < 0) {
 #ifdef CNID_BACKEND_DBD_TXN
 	dbif_txn_abort();
