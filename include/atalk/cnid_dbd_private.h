@@ -87,10 +87,13 @@ struct cnid_dbd_rply {
 
 typedef struct CNID_private {
     u_int32_t magic;
-    char db_dir[MAXPATHLEN + 1];
-    char usock_file[MAXPATHLEN + 1];
-    char mnamebuf[MAXPATHLEN + 1];
-    int fd;
+    char      db_dir[MAXPATHLEN + 1];
+    char      usock_file[MAXPATHLEN + 1];
+    char      mnamebuf[MAXPATHLEN + 1];
+    int       fd;
+    char      stamp[ADEDLEN_PRIVSYN]; /* db timestamp */
+    int       notfirst;   /* already open before */
+    int       changed;  /* stamp differ */
 } CNID_private;
 
 

@@ -1,5 +1,5 @@
 /* 
- * $Id: cnid.h,v 1.9.6.2 2004-01-03 22:21:09 didg Exp $
+ * $Id: cnid.h,v 1.9.6.3 2004-01-03 22:42:55 didg Exp $
  *
  * Copyright (c) 2003 the Netatalk Team
  * Copyright (c) 2003 Rafal Lewczuk <rlewczuk@pronet.pl>
@@ -47,13 +47,10 @@
  */
 struct _cnid_db {
 	
-	u_int32_t flags;        /* Flags describing some CNID backend aspects. */
-	char *volpath;          /* Volume path this particular CNID db refers to. */
-	void *_private;             /* back-end speficic data */
-#if 0
-	char *stamp[ADEDLEN_PRIVSYN];
-#endif	
-	/* */
+	u_int32_t flags;             /* Flags describing some CNID backend aspects. */
+	char *volpath;               /* Volume path this particular CNID db refers to. */
+	void *_private;              /* back-end speficic data */
+
 	cnid_t (*cnid_add)(struct _cnid_db *cdb, const struct stat *st, const cnid_t did, 
 			const char *name, const int len, cnid_t hint);
 	int (*cnid_delete)(struct _cnid_db *cdb, cnid_t id);
@@ -112,7 +109,11 @@ void cnid_close(struct _cnid_db *db);
 
 /*
  * $Log: cnid.h,v $
- * Revision 1.9.6.2  2004-01-03 22:21:09  didg
+ * Revision 1.9.6.3  2004-01-03 22:42:55  didg
+ *
+ * better errors handling in afpd for dbd cnid.
+ *
+ * Revision 1.9.6.2  2004/01/03 22:21:09  didg
  *
  * add nodev volume option (always use 0 for device number).
  *

@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_dbd.c,v 1.1.4.9 2004-01-03 22:21:09 didg Exp $
+ * $Id: cnid_dbd.c,v 1.1.4.10 2004-01-03 22:42:55 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -67,7 +67,8 @@ int sock;
 struct sockaddr_in server;
 struct hostent* hp;
 int attr;
- 
+int err;
+
     server.sin_family=AF_INET;
     server.sin_port=htons((unsigned short)port);
     if (!host) {
@@ -98,7 +99,12 @@ int attr;
     setsockopt(sock, SOL_TCP, TCP_NODELAY, &attr, sizeof(attr));
     if(connect(sock ,(struct sockaddr*)&server,sizeof(server))==-1) {
         struct timeval tv;
-        switch (errno) {
+        err = errno;
+    	close(sock);
+    	sock=-1;
+        if (!silent)
+            LOG(log_error, logtype_cnid, "transmit: connect %s: %s", host, strerror(errno));
+        switch (err) {
         case ENETUNREACH:
         case ECONNREFUSED: 
             
@@ -107,10 +113,6 @@ int attr;
             select(0, NULL, NULL, NULL, &tv);
             break;
         }
-    	close(sock);
-    	sock=-1;
-        if (!silent)
-            LOG(log_error, logtype_cnid, "transmit: connect %s: %s", host, strerror(errno));
     }
     return(sock);
 }
@@ -183,51 +185,142 @@ static int send_packet(CNID_private *db, struct cnid_dbd_rqst *rqst)
     return 0;
 }
 
-/* --------------------- */
-static int transmit(CNID_private *db, struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
+/* ------------------- */
+static void dbd_initstamp(struct cnid_dbd_rqst *rqst)
 {
-    char *nametmp;
-    int  ret;
-    
-    while (1) {
-
-        if (db->fd == -1 && (db->fd = init_tsockfn(db)) < 0) {
-	    goto transmit_fail;
-        }
-        if (send_packet(db, rqst) < 0) {
-            goto transmit_fail;
-        }
-        nametmp = rply->name;
-        if ((ret = read(db->fd, rply, sizeof(struct cnid_dbd_rply))) != sizeof(struct cnid_dbd_rply)) {
-            LOG(log_error, logtype_cnid, "transmit: Error reading header from fd for usock %s: %s",
-                db->usock_file, ret == -1?strerror(errno):"closed");
-            rply->name = nametmp;
-            goto transmit_fail;
-        }
-        rply->name = nametmp;
-        if (rply->namelen && (ret = read(db->fd, rply->name, rply->namelen)) != rply->namelen) {
-            LOG(log_error, logtype_cnid, "transmit: Error reading name from fd for usock %s: %s",
-                db->usock_file, ret == -1?strerror(errno):"closed");
-	    goto transmit_fail;
-        }
-        return 0;
- 
- transmit_fail:
-{
-        struct timeval tv;
-            tv.tv_usec = 0;
-            tv.tv_sec  = 5;
-            select(0, NULL, NULL, NULL, &tv);
+    RQST_RESET(rqst);
+    rqst->op = CNID_DBD_OP_GETSTAMP;
 }
 
+/* ------------------- */
+static int dbd_reply_stamp(struct cnid_dbd_rply *rply)
+{
+    switch (rply->result) {
+    case CNID_DBD_RES_OK:
+        break;
+    case CNID_DBD_RES_NOTFOUND:
+        return -1;
+    case CNID_DBD_RES_ERR_DB:
+    default:
+        errno = CNID_ERR_DB;
+        return -1;
+    }
+    return 0;
+}
+
+/* --------------------- 
+ * send a request and get reply
+ * assume send is non blocking
+ * if no answer after sometime (at least MAX_DELAY secondes) return an error
+*/
+#define MAX_DELAY 40
+static dbd_rpc(CNID_private *db, struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
+{
+    int  ret;
+    char *nametmp;
+    struct timeval tv;
+    fd_set readfds;
+    int    maxfd;
+
+    if (send_packet(db, rqst) < 0) {
+        return -1;
+    }
+    FD_ZERO(&readfds);
+    FD_SET(db->fd, &readfds);
+    maxfd = db->fd +1;
+        
+    tv.tv_usec = 0;
+    tv.tv_sec  = MAX_DELAY;
+    while ((ret = select(maxfd + 1, &readfds, NULL, NULL, &tv)) < 0 && errno == EINTR);
+
+    if (ret < 0) {
+        return ret;
+    }
+    /* signal ? */
+    if (!ret) {
+        /* no answer */
+        return -1;
+    }
+
+    nametmp = rply->name;
+    /* assume that if we have something then everything is there (doesn't sleep) */ 
+    if ((ret = read(db->fd, rply, sizeof(struct cnid_dbd_rply))) != sizeof(struct cnid_dbd_rply)) {
+        LOG(log_error, logtype_cnid, "transmit: Error reading header from fd for %s: %s",
+                db->db_dir, ret == -1?strerror(errno):"closed");
+        rply->name = nametmp;
+        return -1;
+    }
+    rply->name = nametmp;
+    if (rply->namelen && (ret = read(db->fd, rply->name, rply->namelen)) != rply->namelen) {
+            LOG(log_error, logtype_cnid, "transmit: Error reading name from fd for usock %s: %s",
+                db->usock_file, ret == -1?strerror(errno):"closed");
+        return -1;
+    }
+    return 0;
+}
+
+/* -------------------- */
+static int transmit(CNID_private *db, struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
+{
+    struct timeval tv;
+    time_t orig, t;
+    
+    if (db->changed) {
+        /* volume and db don't have the same timestamp
+        */
+        return -1;
+    }
+    time(&orig);
+    while (1) {
+
+        if (db->fd == -1) {
+            if ((db->fd = init_tsockfn(db)) < 0) {
+                time(&t);
+                if (t - orig > MAX_DELAY)
+                    return -1;
+	        continue;
+            }
+            if (db->notfirst) {
+                struct cnid_dbd_rqst rqst_stamp;
+                struct cnid_dbd_rply rply_stamp;
+                char  stamp[ADEDLEN_PRIVSYN];
+                
+                dbd_initstamp(&rqst_stamp);
+        	memset(stamp, 0, ADEDLEN_PRIVSYN);
+                rply_stamp.name = stamp;
+        	if (dbd_rpc(db, &rqst_stamp, &rply_stamp) < 0)
+        	    goto transmit_fail;
+        	if (dbd_reply_stamp(&rply_stamp ) < 0)
+        	    goto transmit_fail;
+        	if (memcmp(stamp, db->stamp, ADEDLEN_PRIVSYN)) {
+                    LOG(log_error, logtype_cnid, "transmit: not the same db!");
+        	    db->changed = 1;
+        	    return -1;
+        	}
+            }
+
+        }
+        if (!dbd_rpc(db, rqst, rply))
+            return 0;
+
+transmit_fail:
         if (db->fd != -1) {
             close(db->fd);
         }
+        time(&t);
+        if (t - orig > MAX_DELAY)
+            return -1;
+
+        /* sleep a little before retry */
         db->fd = -1;
+        tv.tv_usec = 0;
+        tv.tv_sec  = 5;
+        select(0, NULL, NULL, NULL, &tv);
     }
     return -1;
 }
 
+/* ---------------------- */
 static struct _cnid_db *cnid_dbd_new(const char *volpath)
 {
     struct _cnid_db *cdb;
@@ -491,6 +584,50 @@ char *cnid_dbd_resolve(struct _cnid_db *cdb, cnid_t *id, void *buffer, u_int32_t
     return name;
 }
 
+/* --------------------- */
+static int dbd_getstamp(CNID_private *db, void *buffer, const int len)
+{
+    struct cnid_dbd_rqst rqst;
+    struct cnid_dbd_rply rply;
+
+    /* TODO: We should maybe also check len. At the moment we rely on the caller
+       to provide a buffer that is large enough for MAXPATHLEN plus
+       CNID_HEADER_LEN plus 1 byte, which is large enough for the maximum that
+       can come from the database. */
+
+    memset(buffer, 0, len);
+    dbd_initstamp(&rqst);
+
+    /* This mimicks the behaviour of the "regular" cnid_resolve. So far,
+       nobody uses the content of buffer. It only provides space for the
+       name in the caller. */
+    rply.name = buffer;
+
+    if (transmit(db, &rqst, &rply) < 0) {
+        errno = CNID_ERR_DB;
+        return -1;
+    }
+    return dbd_reply_stamp(&rply);
+}
+
+/* ---------------------- */
+int cnid_dbd_getstamp(struct _cnid_db *cdb, void *buffer, const int len)
+{
+    CNID_private *db;
+    int ret;
+
+    if (!cdb || !(db = cdb->_private) || len != ADEDLEN_PRIVSYN) {
+        LOG(log_error, logtype_cnid, "cnid_getstamp: Parameter error");
+        errno = CNID_ERR_PARAM;                
+        return -1;
+    }
+    ret = dbd_getstamp(db, buffer, len);
+    if (!ret) {
+    	db->notfirst = 1;
+    	memcpy(db->stamp, buffer, len);
+    }
+}
+
 /* ---------------------- */
 cnid_t cnid_dbd_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t did,
                    const char *name, const int len)
@@ -633,50 +770,6 @@ int cnid_dbd_delete(struct _cnid_db *cdb, const cnid_t id)
     }
 }
 
-/* ---------------------- */
-int cnid_dbd_getstamp(struct _cnid_db *cdb, void *buffer, const int len)
-{
-    CNID_private *db;
-    struct cnid_dbd_rqst rqst;
-    struct cnid_dbd_rply rply;
-
-    /* FIXME: We rely on len == ADEDLEN_PRIVSYN == CNID_DEV_LEN here as well as
-       in the backend. There should really be a constant for that value that is
-       used throughout. Also, returning the stamp via the name field is somewhat
-       fishy. */
-
-    if (!cdb || !(db = cdb->_private)) {
-        LOG(log_error, logtype_cnid, "cnid_getstamp: Parameter error");
-        errno = CNID_ERR_PARAM;                
-        return -1;
-    }
-
-
-    RQST_RESET(&rqst);
-    rqst.op = CNID_DBD_OP_GETSTAMP;
-    memset(buffer, 0, len);
-
-    rply.name = buffer;
-
-    if (transmit(db, &rqst, &rply) < 0) {
-        errno = CNID_ERR_DB;
-        return -1;
-    }
-
-    switch (rply.result) {
-    case CNID_DBD_RES_OK:
-        break;
-    case CNID_DBD_RES_NOTFOUND:
-        return -1;
-    case CNID_DBD_RES_ERR_DB:
-        errno = CNID_ERR_DB;
-        return -1;
-    default:
-        abort();
-    }
-    return 0;
-}
-
 struct _cnid_module cnid_dbd_module = {
     "dbd",
     {NULL, NULL},
@@ -684,3 +777,4 @@ struct _cnid_module cnid_dbd_module = {
 };
 
 #endif /* CNID_DBD */
+
