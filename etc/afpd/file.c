@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.31.2.2 2004-10-20 20:05:27 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.31.2.3 2004-10-30 21:43:46 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -2123,7 +2123,7 @@ int		ibuflen, *rbuflen;
     }
     
     if (crossdev) {
-        /* we need to close fork for copy, both s_of and d_of are null */
+        /* FIXME we need to close fork for copy, both s_of and d_of are null */
        ad_close(adsp, ADFLAGS_HF);
        ad_close(addp, ADFLAGS_HF);
     }
@@ -2170,10 +2170,15 @@ int		ibuflen, *rbuflen;
     }
     
     /* here we need to reopen if crossdev */
-    if (sid)
-        ad_setid(addp,(vol->v_flags & AFPVOL_NODEV)?0:destst.st_dev, destst.st_ino,  sid, sdir->d_did, vol->v_stamp);
-    if (did)
-        ad_setid(adsp,(vol->v_flags & AFPVOL_NODEV)?0:srcst.st_dev, srcst.st_ino,  did, curdir->d_did, vol->v_stamp);
+    if (sid && ad_setid(addp,(vol->v_flags & AFPVOL_NODEV)?0:destst.st_dev, destst.st_ino,  sid, sdir->d_did, vol->v_stamp)) 
+    {
+       ad_flush( addp, ADFLAGS_HF );
+    }
+        
+    if (did && ad_setid(adsp,(vol->v_flags & AFPVOL_NODEV)?0:srcst.st_dev, srcst.st_ino,  did, curdir->d_did, vol->v_stamp)) 
+    {
+       ad_flush( adsp, ADFLAGS_HF );
+    }
 
     /* change perms, src gets dest perm and vice versa */
 
@@ -2238,11 +2243,9 @@ err_src_to_tmp:
 
 err_exchangefile:
     if ( !s_of && adsp && ad_hfileno(adsp) != -1 ) {
-       ad_flush( adsp, ADFLAGS_HF );
        ad_close(adsp, ADFLAGS_HF);
     }
     if ( !d_of && addp && ad_hfileno(addp) != -1 ) {
-       ad_flush( addp, ADFLAGS_HF );
        ad_close(addp, ADFLAGS_HF);
     }
 
