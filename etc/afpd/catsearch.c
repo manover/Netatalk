@@ -420,7 +420,8 @@ static int rslt_add(struct vol *vol, struct stat *statbuf, char *fname, short ci
 
 	*rbuf = p;
 	/* *rbuf[0] = (int)(p-*rbuf); */
-	free (savefname);
+	if (savefname != NULL)
+		free (savefname);
 	return 1;
 } /* rslt_add */
 
