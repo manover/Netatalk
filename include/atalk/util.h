@@ -1,5 +1,5 @@
 /*
- * $Id: util.h,v 1.7.10.2 2003-10-17 00:01:12 didg Exp $
+ * $Id: util.h,v 1.7.10.3 2004-02-14 00:30:52 didg Exp $
  */
 
 #ifndef _ATALK_UTIL_H
@@ -33,6 +33,14 @@ extern pid_t server_lock  __P((char * /*program*/, char * /*file*/,
 			       int /*debug*/));
 extern void fault_setup	  __P((void (*fn)(void *)));
 #define server_unlock(x)  (unlink(x))
+
+#ifndef HAVE_STRLCPY
+size_t strlcpy(char *d, const char *s, size_t bufsize);
+#endif
+ 
+#ifndef HAVE_STRLCAT
+size_t strlcat(char *d, const char *s, size_t bufsize);
+#endif
 
 #ifndef HAVE_DLFCN_H
 extern void *mod_open    __P((const char *));

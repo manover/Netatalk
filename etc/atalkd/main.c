@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.17.8.3 2004-01-21 00:20:57 lenneis Exp $
+ * $Id: main.c,v 1.17.8.4 2004-02-14 00:30:51 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -1415,7 +1415,7 @@ int set;
     }
 
     /* get interface config */
-    strncpy(ifr.ifr_name, iname, sizeof(ifr.ifr_name));
+    strlcpy(ifr.ifr_name, iname, sizeof(ifr.ifr_name));
     if (ioctl(sock, SIOCGIFFLAGS, &ifr) < 0) {
         close(sock);
         return (-1);
@@ -1428,7 +1428,7 @@ int set;
 	    ifr.ifr_flags &= ~IFF_ALLMULTI;
 
     /* set interface config */
-    strncpy(ifr.ifr_name, iname, sizeof(ifr.ifr_name));
+    strlcpy(ifr.ifr_name, iname, sizeof(ifr.ifr_name));
     if (ioctl(sock, SIOCSIFFLAGS, &ifr) < 0) {
         close(sock);	
         return -1;

@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_tcp.c,v 1.9.10.4 2004-02-11 16:06:15 didg Exp $
+ * $Id: dsi_tcp.c,v 1.9.10.5 2004-02-14 00:30:52 didg Exp $
  *
  * Copyright (c) 1997, 1998 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -308,8 +308,7 @@ int dsi_tcp_init(DSI *dsi, const char *hostname, const char *address,
       /* get it from the interface list */
       start = list = getifacelist();
       while (list && *list) {
-          strncpy(ifr.ifr_name, *list, sizeof(ifr.ifr_name));
-          ifr.ifr_name[sizeof(ifr.ifr_name) -1] = 0;          
+          strlcpy(ifr.ifr_name, *list, sizeof(ifr.ifr_name));
 	  list++;
 
 #ifndef IFF_SLAVE

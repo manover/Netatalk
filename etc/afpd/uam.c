@@ -1,5 +1,5 @@
 /*
- * $Id: uam.c,v 1.24.6.3 2004-01-11 12:31:12 bfernhomberg Exp $
+ * $Id: uam.c,v 1.24.6.4 2004-02-14 00:30:51 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -93,8 +93,7 @@ struct uam_mod *uam_load(const char *path, const char *name)
         goto uam_load_fail;
     }
 
-    strncpy(buf, name, sizeof(buf));
-    buf[sizeof(buf) - 1] = '\0';
+    strlcpy(buf, name, sizeof(buf));
     if ((p = strchr(buf, '.')))
         *p = '\0';
 
@@ -332,8 +331,7 @@ struct passwd *uam_getname(void *private, char *name, const int len)
 
 	if ( (strncasecmp_w((ucs2_t*)user, (ucs2_t*)username, len) == 0) || 
 		( strncasecmp_w ( (ucs2_t*) pwname, (ucs2_t*) username, len) == 0)) {
-            strncpy(name, pwent->pw_name, len);
-            name[len - 1] = '\0';
+            strlcpy(name, pwent->pw_name, len);
             break;
         }
     }

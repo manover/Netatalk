@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.44.2.3.2.8 2003-12-12 19:16:32 didg Exp $
+ * $Id: auth.c,v 1.44.2.3.2.9 2004-02-14 00:30:50 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -932,7 +932,7 @@ int auth_load(const char *path, const char *list)
     if (!path || !*path || !list || (len = strlen(path)) > sizeof(name) - 2)
         return -1;
 
-    strncpy(buf, list, sizeof(buf));
+    strlcpy(buf, list, sizeof(buf));
     if ((p = strtok(buf, ",")) == NULL)
         return -1;
 

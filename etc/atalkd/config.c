@@ -1,5 +1,5 @@
 /*
- * $Id: config.c,v 1.13.6.2 2004-01-15 06:34:15 bfernhomberg Exp $
+ * $Id: config.c,v 1.13.6.3 2004-02-14 00:30:51 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -342,8 +342,7 @@ int readconf( cf )
 	 * Check that av[ 0 ] is a valid interface.
 	 * Not possible under sysV.
 	 */
-	strncpy( ifr.ifr_name, argv[ 0 ], sizeof(ifr.ifr_name) );
-	ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
+	strlcpy( ifr.ifr_name, argv[ 0 ], sizeof(ifr.ifr_name) );
 
 	/* for devices that don't support appletalk */
 	if ((ioctl(s, SIOCGIFADDR, &ifr) < 0) && (errno == ENODEV)) {
@@ -715,7 +714,7 @@ int getifconf()
 
     start = list = getifacelist();
     while (list && *list) {
-        strncpy(ifr.ifr_name, *list, sizeof(ifr.ifr_name));
+        strlcpy(ifr.ifr_name, *list, sizeof(ifr.ifr_name));
 	list++;
 
 	if (ioctl(s, SIOCGIFFLAGS, &ifr) < 0)
@@ -790,7 +789,7 @@ struct interface *newiface( name )
 	    == NULL ) {
 	return( NULL );
     }
-    strncpy( niface->i_name, name, sizeof(niface->i_name));
+    strlcpy( niface->i_name, name, sizeof(niface->i_name));
 #ifdef BSD4_4
     niface->i_addr.sat_len = sizeof( struct sockaddr_at );
 #endif /* BSD4_4 */

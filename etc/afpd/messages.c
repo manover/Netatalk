@@ -1,5 +1,5 @@
 /*
- * $Id: messages.c,v 1.16.6.1.2.6 2003-11-13 00:19:45 bfernhomberg Exp $
+ * $Id: messages.c,v 1.16.6.1.2.7 2004-02-14 00:30:50 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <atalk/afp.h>
 #include <atalk/dsi.h>
+#include <atalk/util.h>
 #include <atalk/logger.h>
 #include "globals.h"
 #include "misc.h"
@@ -31,7 +32,7 @@ static char localized_message[MAXPATHLEN] = "";
 
 void setmessage(const char *message)
 {
-    strncpy(servermesg, message, MAXMESGSIZE);
+    strlcpy(servermesg, message, MAXMESGSIZE);
 }
 
 void readmessage(obj)

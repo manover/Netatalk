@@ -1,5 +1,5 @@
 /*
- * $Id: uam.c,v 1.9.6.3 2003-11-14 14:37:38 didg Exp $
+ * $Id: uam.c,v 1.9.6.4 2004-02-14 00:30:51 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -64,7 +64,7 @@ struct uam_mod *uam_load(const char *path, const char *name)
     goto uam_load_fail;
   }
 
-  strncpy(buf, name, sizeof(buf));
+  strlcpy(buf, name, sizeof(buf));
   if ((p = strchr(buf, '.')))
     *p = '\0';
   if ((mod->uam_fcn = mod_symbol(module, buf)) == NULL) {
