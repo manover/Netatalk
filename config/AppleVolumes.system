@@ -9,11 +9,12 @@
 #
 
 # default translation -- note that CR <-> LF translation is done on all
-# files of type TEXT.  The first line turns off translation for files of
-# unknown type, the second turns this translation on.
-.         "????"  "????"      Unix Binary                     Unix                      application/octet-stream
+# files of type TEXT (if crlf is set in volume's options).  
+# The first line turns off translation for files of unknown type, 
+# the third turns this translation on.
+#.         "????"  "????"      Unix Binary                    Unix                      application/octet-stream
 #.         "BINA"  "UNIX"      Unix Binary                    Unix                      application/octet-stream
-# .         "TEXT"  "ttxt"      ASCII Text                     SimpleText                text/plain
+#.         "TEXT"  "ttxt"      ASCII Text                     SimpleText                text/plain
 
 .1st      "TEXT"  "ttxt"      Text Readme                    SimpleText                application/text
 .669      "6669"  "SNPL"      669 MOD Music                  PlayerPro
