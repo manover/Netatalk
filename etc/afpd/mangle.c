@@ -1,5 +1,5 @@
 /* 
- * $Id: mangle.c,v 1.16.2.1.2.8 2004-02-14 15:47:20 didg Exp $ 
+ * $Id: mangle.c,v 1.16.2.1.2.9 2004-02-15 22:44:49 bfernhomberg Exp $ 
  *
  * Copyright (c) 2002. Joe Marcus Clarke (marcus@marcuscom.com)
  * All Rights Reserved.  See COPYRIGHT.
@@ -147,7 +147,7 @@ private_demangle(const struct vol *vol, char *mfilename, cnid_t did, cnid_t *osx
 
     /* is it a dir?, there's a conflict with pre OSX 'trash #2'  */
     if ((dir = dirsearch(vol, id))) {
-        if (dir->d_did != id) {
+        if (dir->d_parent && dir->d_parent->d_did != did) {
             /* not in the same folder, there's a race with outdate cache
              * but we have to live with it, hopefully client will recover
             */
