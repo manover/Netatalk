@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.31 2004-09-07 06:17:21 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.31.2.1 2004-10-20 19:48:38 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -70,7 +70,7 @@ char *strchr (), *strrchr ();
 
 const u_char ufinderi[] = {
                               0, 0, 0, 0, 0, 0, 0, 0,
-                              0, 0, 0, 0, 0, 0, 0, 0,
+                              1, 0, 0, 0, 0, 0, 0, 0,
                               0, 0, 0, 0, 0, 0, 0, 0,
                               0, 0, 0, 0, 0, 0, 0, 0
                           };
