@@ -1,4 +1,6 @@
 /*
+ * $Id: atp.h,v 1.2.2.1 2002-02-08 00:00:24 srittau Exp $
+ *
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -86,7 +88,7 @@ struct atpxobuf {
 
 struct atpbuf {
     struct atpbuf	*atpbuf_next;		/* next buffer in chain */
-    short		atpbuf_dlen;		/* data length <= ATP_BUFSIZ */
+    size_t		atpbuf_dlen;		/* data length <= ATP_BUFSIZ */
     struct sockaddr_at	atpbuf_addr;		/* net address sent/recvd */
     union {
 	char		atpbuf_data[ ATP_BUFSIZ ];	/* the data */
