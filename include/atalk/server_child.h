@@ -32,5 +32,6 @@ extern void server_child_free __P((server_child *));
 extern void server_child_kill __P((server_child *, const int, const int));
 extern void server_child_setup __P((server_child *, const int, void (*)()));
 extern void server_child_handler __P((server_child *));
+extern void server_reset_signal __P((void));
 
 #endif
