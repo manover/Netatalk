@@ -1,5 +1,5 @@
 /*
- * $Id: uam.c,v 1.24.6.7 2004-10-08 00:16:09 bfernhomberg Exp $
+ * $Id: uam.c,v 1.24.6.7.2.1 2004-12-07 18:34:15 bfernhomberg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -372,9 +372,10 @@ int uam_checkuser(const struct passwd *pwd)
 int uam_random_string (AFPObj *obj, char *buf, int len)
 {
     u_int32_t result;
+    int ret;
     int fd;
 
-    if ( (len < 0) || (len % sizeof(result)))
+    if ( (len <= 0) || (len % sizeof(result)))
             return -1;
 
     /* construct a random number */
@@ -391,9 +392,9 @@ int uam_random_string (AFPObj *obj, char *buf, int len)
             memcpy(buf + i, &result, sizeof(result));
         }
     } else {
-        result = read(fd, buf, len);
+        ret = read(fd, buf, len);
         close(fd);
-        if (result < 0)
+        if (ret <= 0)
             return -1;
     }
     return 0;
@@ -406,7 +407,6 @@ int uam_afpserver_option(void *private, const int what, void *option,
 AFPObj *obj = private;
     char **buf = (char **) option; /* most of the options are this */
     struct session_info **sinfo = (struct session_info **) option;
-    int32_t result;
 
     if (!obj || !option)
         return -1;
@@ -458,10 +458,10 @@ AFPObj *obj = private;
         break;
 
     case UAM_OPTION_RANDNUM: /* returns a random number in 4-byte units. */
-        if (!len || (*len < 0) || (*len % sizeof(result)))
+        if (!len)
             return -1;
 
-        return uam_random_string(obj, *buf, *len);
+        return uam_random_string(obj, option, *len);
         break;
 
     case UAM_OPTION_HOSTNAME:
