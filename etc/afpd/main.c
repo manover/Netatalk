@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.12.2.2 2002-01-02 17:27:50 srittau Exp $
+ * $Id: main.c,v 1.12.2.3 2002-03-12 15:12:11 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -158,8 +158,6 @@ char	**av;
     argv = av;
     set_auth_parameters( ac, av );
 #endif /* TRU64 */
-
-    umask( 022 );	/* so inherited file permissions work right */
 
     afp_options_init(&default_options);
     if (!afp_options_parse(ac, av, &default_options))
