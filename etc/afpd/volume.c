@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.29 2004-05-04 15:38:25 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.30 2004-05-11 08:30:07 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -2084,6 +2084,7 @@ static int create_special_folder (const struct vol *vol, const struct _special_f
 		    if (ad_mkdir(p, folder->mode)) {
 			LOG(log_debug, logtype_afpd,"Creating '%s' failed in %s: %s", p, vol->v_path, strerror(errno));
 			free(p);
+			free(q);
 			return -1;
                     }
 		    ret = 0;
@@ -2096,6 +2097,7 @@ static int create_special_folder (const struct vol *vol, const struct _special_f
 		if (ad_open( p, vol_noadouble(vol) | ADFLAGS_HF|ADFLAGS_DIR,
                  	O_RDWR|O_CREAT, 0666, &ad) < 0) {
 			free (p);
+			free(q);
 			return (-1);
 		}
     		if ((ad_get_HF_flags( &ad ) & O_CREAT) ) {
@@ -2109,7 +2111,14 @@ static int create_special_folder (const struct vol *vol, const struct _special_f
 		ad_getattr(&ad, &attr);
 		attr |= htons( ntohs( attr ) | ATTRBIT_INVISIBLE );
 		ad_setattr(&ad, attr);
-    
+#if 0		
+		/* do the same with the finder info */
+		if (ad_entry(&ad, ADEID_FINDERI)) {
+			memcpy(&attr, ad_entry(&ad, ADEID_FINDERI) + FINDERINFO_FRFLAGOFF, sizeof(attr));
+			attr   |= htons(FINDERINFO_INVISIBLE);
+			memcpy(ad_entry(&ad, ADEID_FINDERI) + FINDERINFO_FRFLAGOFF,&attr, sizeof(attr));
+		}
+#endif    
         	ad_flush( &ad, ADFLAGS_HF );
         	ad_close( &ad, ADFLAGS_HF );
 	}
