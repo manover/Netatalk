@@ -1,5 +1,5 @@
 /*
- * $Id: afp_options.c,v 1.30.2.2.2.10 2004-09-28 11:34:02 didg Exp $
+ * $Id: afp_options.c,v 1.30.2.2.2.11 2004-09-28 13:19:12 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -439,6 +439,9 @@ int afp_options_parseline(char *buf, struct afp_options *options)
             if (!gethostbyaddr((const char *) &inaddr, sizeof(inaddr), AF_INET))
                 LOG(log_info, logtype_afpd, "WARNING: can't find %s", opt);
             options->ipaddr = opt;
+        }
+        else {
+            LOG(log_error, logtype_afpd, "Error parsing -ipaddr, is %s in numbers-and-dots notation?", c);
         }
     }
 
