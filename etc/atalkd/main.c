@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.10.2.1 2001-12-31 20:05:20 srittau Exp $
+ * $Id: main.c,v 1.10.2.2 2002-03-12 15:36:10 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -41,6 +41,7 @@
 #include <net/route.h>
 
 #include <signal.h>
+#include <netinet/in.h>
 #include <syslog.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -159,10 +160,7 @@ static void atalkd_exit(const int i)
 }
 
 
-#if !defined( ibm032 ) && !defined( _IBMR2 )
-    void
-#endif /* ibm032 _IBMR2 */
-as_timer()
+void as_timer(void)
 {
     struct sockaddr_at	sat;
     struct ziphdr	zh;
