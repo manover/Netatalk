@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_update.c,v 1.12.2.1 2001-12-03 05:05:51 jmarcus Exp $
+ * $Id: cnid_update.c,v 1.12.2.2 2001-12-03 15:53:39 jmarcus Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -97,6 +97,19 @@ retry:
     data.data = make_cnid_data(st, did, name, len);
     data.size = CNID_HEADER_LEN + len + 1;
 
+    /* Update the old CNID with the new info. */
+    key.data = (cnid_t *) &id;
+    key.size = sizeof(id);
+    if ((rc = db->db_cnid->put(db->db_cnid, tid, &key, &data, 0))) {
+        txn_abort(tid);
+        switch (rc) {
+        case DB_LOCK_DEADLOCK:
+            goto retry;
+        default:
+            goto update_err;
+        }
+    }
+
     /* Put in a new dev/ino mapping. */
     key.data = data.data;
     key.size = CNID_DEVINO_LEN;
@@ -125,18 +138,6 @@ retry:
         }
     }
 
-    /* Update the old CNID with the new info. */
-    key.data = (cnid_t *) &id;
-    key.size = sizeof(id);
-    if ((rc = db->db_cnid->put(db->db_cnid, tid, &key, &data, 0))) {
-        txn_abort(tid);
-        switch (rc) {
-        case DB_LOCK_DEADLOCK:
-            goto retry;
-        default:
-            goto update_err;
-        }
-    }
 
     return txn_commit(tid, 0);
 

@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_open.c,v 1.19.2.1 2001-12-03 05:05:48 jmarcus Exp $
+ * $Id: cnid_open.c,v 1.19.2.2 2001-12-03 15:53:39 jmarcus Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -285,7 +285,7 @@ void *cnid_open(const char *dir) {
 
         /* We can't get a full transactional environment, so multi-access
          * is out of the question.  Let's assume a read-only environment,
-         * and trry to at least get a shared memory pool. */
+         * and try to at least get a shared memory pool. */
         if ((rc = db->dbenv->open(db->dbenv, path, DB_INIT_MPOOL, 0666)) != 0) {
             /* Nope, not a MPOOL, either.  Last-ditch effort: we'll try to
              * open the environment with no flags. */

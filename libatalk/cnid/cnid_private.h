@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_private.h,v 1.3.2.1 2001-12-03 05:05:50 jmarcus Exp $
+ * $Id: cnid_private.h,v 1.3.2.2 2001-12-03 15:53:39 jmarcus Exp $
  */
 
 #ifndef LIBATALK_CNID_PRIVATE_H

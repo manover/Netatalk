@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_add.c,v 1.14.2.1 2001-12-03 05:05:45 jmarcus Exp $
+ * $Id: cnid_add.c,v 1.14.2.2 2001-12-03 15:53:39 jmarcus Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -26,6 +26,9 @@
 #endif /* HAVE_FCNTL_H */
 #include <errno.h>
 #include <syslog.h>
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif /* HAVE_SYS_TIME_H */
 
 #include <db.h>
 #include <netatalk/endian.h>
@@ -36,6 +39,8 @@
 
 #include "cnid_private.h"
 
+#define MAX_ABORTS 255
+
 /* add an entry to the CNID databases. we do this as a transaction
  * to prevent messiness. */
 static int add_cnid(CNID_private *db, DB_TXN *ptid, DBT *key, DBT *data) {
@@ -44,28 +49,32 @@ static int add_cnid(CNID_private *db, DB_TXN *ptid, DBT *key, DBT *data) {
     /* We create rc here because using errno is bad.  Why?  Well, if you
      * use errno once, then call another function which resets it, you're
      * screwed. */
-    int rc;
+    int rc, ret, aborts = 0;
 
     memset(&altkey, 0, sizeof(altkey));
     memset(&altdata, 0, sizeof(altdata));
 
+    if (0) {
 retry:
+        if ((rc = txn_abort(tid)) != 0) {
+            return rc;
+        }
+        if (++aborts > MAX_ABORTS) {
+            return DB_LOCK_DEADLOCK;
+        }
+    }
+
     if ((rc = txn_begin(db->dbenv, ptid, &tid, 0)) != 0) {
         return rc;
     }
 
-
     /* main database */
     if ((rc = db->db_cnid->put(db->db_cnid, tid, key, data, DB_NOOVERWRITE))) {
-        int ret;
-        if ((ret = txn_abort(tid)) != 0) {
-            return ret;
-        }
         if (rc == DB_LOCK_DEADLOCK) {
             goto retry;
         }
 
-        return rc;
+        goto abort;
     }
 
 
@@ -75,15 +84,11 @@ retry:
     altdata.data = key->data;
     altdata.size = key->size;
     if ((rc = db->db_devino->put(db->db_devino, tid, &altkey, &altdata, 0))) {
-        int ret;
-        if ((ret = txn_abort(tid)) != 0) {
-            return ret;
-        }
         if (rc == DB_LOCK_DEADLOCK) {
             goto retry;
         }
 
-        return rc;
+        goto abort;
     }
 
 
@@ -91,15 +96,11 @@ retry:
     altkey.data = (char *) data->data + CNID_DEVINO_LEN;
     altkey.size = data->size - CNID_DEVINO_LEN;
     if ((rc = db->db_didname->put(db->db_didname, tid, &altkey, &altdata, 0))) {
-        int ret;
-        if ((ret = txn_abort(tid)) != 0) {
-            return ret;
-        }
         if (rc == DB_LOCK_DEADLOCK) {
             goto retry;
         }
 
-        return rc;
+        goto abort;
     }
 
     if ((rc = txn_commit(tid, 0)) != 0) {
@@ -108,6 +109,13 @@ retry:
         return rc;
     }
     return 0;
+
+abort:
+    if ((ret = txn_abort(tid)) != 0) {
+        return ret;
+    }
+    return rc;
+
 }
 
 cnid_t cnid_add(void *CNID, const struct stat *st,
@@ -117,6 +125,7 @@ cnid_t cnid_add(void *CNID, const struct stat *st,
     CNID_private *db;
     DBT key, data, rootinfo_key, rootinfo_data;
     DB_TXN *tid;
+    struct timeval t;
     cnid_t id, save;
     int rc;
 
@@ -172,26 +181,25 @@ cnid_t cnid_add(void *CNID, const struct stat *st,
         }
     }
 
+    /* We need to create a random sleep interval to prevent deadlocks. */
+    (void)srand(getpid() ^ time(NULL));
+    t.tv_sec = 0;
+
     memset(&rootinfo_key, 0, sizeof(rootinfo_key));
     memset(&rootinfo_data, 0, sizeof(rootinfo_data));
     rootinfo_key.data = ROOTINFO_KEY;
     rootinfo_key.size = ROOTINFO_KEYLEN;
-retry:
-    if ((rc = txn_begin(db->dbenv, NULL, &tid, 0)) != 0) {
-        syslog(LOG_ERR, "cnid_add: Failed to begin transaction: %s",
-               db_strerror(rc));
-        goto cleanup_err;
-    }
 
     /* Get the key. */
-    switch (rc = db->db_didname->get(db->db_didname, tid, &rootinfo_key,
-                                     &rootinfo_data, DB_RMW)) {
+retry_get:
+    switch (rc = db->db_didname->get(db->db_didname, NULL, &rootinfo_key,
+                                     &rootinfo_data, 0)) {
     case DB_LOCK_DEADLOCK:
         if ((rc = txn_abort(tid)) != 0) {
             syslog(LOG_ERR, "cnid_add: txn_abort: %s", db_strerror(rc));
             goto cleanup_err;
         }
-        goto retry;
+        goto retry_get;
     case 0:
         memcpy(&hint, rootinfo_data.data, sizeof(hint));
 #ifdef DEBUG
@@ -208,7 +216,20 @@ retry:
     default:
         syslog(LOG_ERR, "cnid_add: Unable to lookup rootinfo: %s",
                db_strerror(rc));
-        goto cleanup_abort;
+        goto cleanup_err;
+    }
+
+
+retry:
+    t.tv_usec = rand() % 1000000;
+#ifdef DEBUG
+    syslog(LOG_INFO, "cnid_add: Hitting MAX_ABORTS, sleeping");
+#endif
+    (void)select(0, NULL, NULL, NULL, &t);
+    if ((rc = txn_begin(db->dbenv, NULL, &tid, 0)) != 0) {
+        syslog(LOG_ERR, "cnid_add: Failed to begin transaction: %s",
+               db_strerror(rc));
+        goto cleanup_err;
     }
 
     /* Search for a new id.  We keep the first id around to check for
@@ -219,6 +240,13 @@ retry:
         /* Don't use any special CNIDs. */
         if (++id < CNID_START) {
             id = CNID_START;
+        }
+        if (rc == DB_LOCK_DEADLOCK) {
+            if ((rc = txn_abort(tid)) != 0) {
+                syslog(LOG_ERR, "cnid_add: txn_abort: %s", db_strerror(rc));
+                goto cleanup_err;
+            }
+            goto retry;
         }
 
         if ((rc != DB_KEYEXIST) || (save == id)) {

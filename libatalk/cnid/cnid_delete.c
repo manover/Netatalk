@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_delete.c,v 1.9.2.1 2001-12-03 05:05:47 jmarcus Exp $
+ * $Id: cnid_delete.c,v 1.9.2.2 2001-12-03 15:53:39 jmarcus Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -47,7 +47,7 @@ retry:
     /* Get from ain CNID database. */
     key.data = (cnid_t *)&id;
     key.size = sizeof(id);
-    if ((rc = db->db_cnid->get(db->db_cnid, tid, &key, &data, DB_RMW))) {
+    if ((rc = db->db_cnid->get(db->db_cnid, tid, &key, &data, 0))) {
         int ret;
         if ((ret = txn_abort(tid)) != 0) {
             syslog(LOG_ERR, "cnid_delete: txn_abort: %s", db_strerror(ret));

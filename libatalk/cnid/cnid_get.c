@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_get.c,v 1.9.2.1 2001-12-03 05:05:47 jmarcus Exp $
+ * $Id: cnid_get.c,v 1.9.2.2 2001-12-03 15:53:39 jmarcus Exp $
  */
 
 #ifdef HAVE_CONFIG_H
