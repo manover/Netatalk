@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.21 2004-02-20 21:23:13 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.22 2004-02-29 22:59:10 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -2011,7 +2011,7 @@ int wincheck(const struct vol *vol, const char *path)
  */
 static int create_special_folder (const struct vol *vol, const struct _special_folder *folder)
 {
-	char 		*p;
+	char 		*p,*q;
     	struct adouble	ad;
 	u_int16_t	attr;
 	struct stat	st;
@@ -2026,6 +2026,16 @@ static int create_special_folder (const struct vol *vol, const struct _special_f
 	strcpy(p, vol->v_path);
 	strcat(p, "/");
 	strcat(p, folder->name);
+
+	q=p;
+
+	while (*q) {
+    		if ((vol->v_casefold & AFPVOL_MTOUUPPER))
+			*q=toupper(*q);
+    		else if ((vol->v_casefold & AFPVOL_MTOULOWER))
+			*q=tolower(*q);
+		q++;
+	}
 
     	if ( (ret = stat( p, &st )) < 0 ) {
 		if (folder->precreate) {
