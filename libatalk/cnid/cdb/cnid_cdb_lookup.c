@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_cdb_lookup.c,v 1.1.4.1 2003-09-09 16:42:21 didg Exp $
+ * $Id: cnid_cdb_lookup.c,v 1.1.4.2 2003-10-06 15:17:08 didg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -32,10 +32,15 @@ cnid_t cnid_cdb_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t
 {
     char *buf;
     CNID_private *db;
-    DBT key, diddata;
+    DBT key, devdata, diddata;
     dev_t dev;
     ino_t ino;  
-    cnid_t id = 0;
+    int devino = 1, didname = 1; 
+    u_int32_t type_devino  = (unsigned)-1;
+    u_int32_t type_didname = (unsigned)-1;
+    u_int32_t type;
+    int update = 0;
+    cnid_t id_devino, id_didname,id = 0;
     int rc;
 
     if (!cdb || !(db = cdb->_private) || !st || !name) {
@@ -47,46 +52,96 @@ cnid_t cnid_cdb_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t
         return 0;
     }
 
+    memcpy(&type, buf +CNID_TYPE_OFS, sizeof(type));
+    type = ntohl(type);
+
     memset(&key, 0, sizeof(key));
     memset(&diddata, 0, sizeof(diddata));
+    memset(&devdata, 0, sizeof(devdata));
 
     /* Look for a CNID for our did/name */
-    key.data = buf +CNID_DID_OFS;
-    key.size = CNID_DID_LEN + len + 1;
+    key.data = buf +CNID_DEVINO_OFS;
+    key.size = CNID_DEVINO_LEN;
 
     memcpy(&dev, buf + CNID_DEV_OFS, sizeof(dev));
     memcpy(&ino, buf + CNID_INO_OFS, sizeof(ino));
-
-    if (0 != (rc = db->db_didname->get(db->db_didname, NULL, &key, &diddata, 0 )) ) {
+    
+    if (0 != (rc = db->db_didname->get(db->db_devino, NULL, &key, &devdata, 0 )) ) {
         if (rc != DB_NOTFOUND) {
-           LOG(log_error, logtype_default, "cnid_lookup: Unable to get CNID did 0x%x, name %s: %s",
+            LOG(log_error, logtype_default, "cnid_lookup: Unable to get CNID did 0x%x, name %s: %s",
                did, name, db_strerror(rc));
+            return 0;
         }
+        devino = 0;
+    }
+    else {
+        memcpy(&id_devino, devdata.data, sizeof(cnid_t));
+        memcpy(&type_devino, devdata.data +CNID_TYPE_OFS, sizeof(type_devino));
+        type_devino = ntohl(type_devino);
+    }
+
+    buf = make_cnid_data(st, did, name, len);
+    key.data = buf +CNID_DID_OFS;
+    key.size = CNID_DID_LEN + len + 1;
+    
+    if (0 != (rc = db->db_didname->get(db->db_didname, NULL, &key, &diddata, 0 ) ) ) {
+        if (rc != DB_NOTFOUND) {
+            LOG(log_error, logtype_default, "cnid_lookup: Unable to get CNID did 0x%x, name %s: %s",
+               did, name, db_strerror(rc));
+            return 0;
+        }
+        didname = 0;
+    }
+    else {
+        memcpy(&id_didname, diddata.data, sizeof(cnid_t));
+        memcpy(&type_didname, diddata.data +CNID_TYPE_OFS, sizeof(type_didname));
+        type_didname = ntohl(type_didname);
+    }
+
+    if (!devino && !didname) {  
         return 0;
     }
- 
-    memcpy(&id, diddata.data, sizeof(id));
-    /* if dev:ino the same */
-    if (!memcmp(&dev, (char *)diddata.data + CNID_DEV_OFS, sizeof(dev)) &&
-        !memcmp(&ino, (char *)diddata.data + CNID_INO_OFS, sizeof(ino))
-        /* FIXME and type are the same */
-       )
-    {
-        /* then it's what we are looking for */
-        return id;
+
+    if (devino && didname && id_devino == id_didname && type_devino == type) {
+        /* the same */
+        return id_didname;
     }
  
-    /* with have a did:name but it's not one the same dev:inode
-     * it should be always a different file, but in moveandrename with cross/dev
-     * we don't update the db.
-    */
-    if (!memcmp(&dev, (char *)diddata.data + CNID_DEV_OFS, sizeof(dev)))
-       /* FIXME or diff type */
-    {
-       /* dev are the same so it's a copy */
+    if (didname) {
+        id = id_didname;
+        /* we have a did:name 
+         * if it's the same dev or not the same type
+         * just delete it
+        */
+        if (!memcmp(&dev, (char *)diddata.data + CNID_DEV_OFS, sizeof(dev)) ||
+                   type_didname != type) {
+            if (cnid_cdb_delete(cdb, id) < 0) {
+                return 0;
+            }
+        }
+        else {
+            update = 1;
+        }
+    }
+
+    if (devino) {
+        id = id_devino;
+        if (type_devino != type) {
+            /* same dev:inode but not same type one is a folder the other 
+             * is a file,it's an inode reused, delete the record
+            */
+            if (cnid_cdb_delete(cdb, id) < 0) {
+                return 0;
+            }
+        }
+        else {
+            update = 1;
+        }
+    }
+    if (!update) {
         return 0;
     }
-    /* Fix up the database. */
+    /* Fix up the database. assume it was a file move and rename */
     cnid_cdb_update(cdb, id, st, did, name, len);
 
 #ifdef DEBUG

@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_update.c,v 1.1.4.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: dbd_update.c,v 1.1.4.2 2003-10-06 15:17:08 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -27,12 +27,15 @@
 
 int dbd_update(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
 {
-    DBT key, data;
+    DBT key,pkey, data;
     int rc;
     char *buf;                                                                                               
     int notfound = 0;
-    
+    char getbuf[CNID_HEADER_LEN + MAXPATHLEN +1];    
+
     memset(&key, 0, sizeof(key));
+    memset(&pkey, 0, sizeof(pkey));
+    memset(&data, 0, sizeof(data));
 
     rply->namelen = 0;
 
@@ -40,8 +43,15 @@ int dbd_update(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
     key.data = buf +CNID_DEVINO_OFS;
     key.size = CNID_DEVINO_LEN;
 
-    if ((rc = dbif_del(DBIF_IDX_DEVINO, &key, 0) < 0) ) {
+    data.data = getbuf;
+    data.size = CNID_HEADER_LEN + MAXPATHLEN + 1;
+    if ((rc = dbif_pget(DBIF_IDX_DEVINO, &key, &pkey, &data, 0)) < 0 ) {
         goto err_db;
+    }
+    else if  (rc > 0) {
+        if ((rc = dbif_del(DBIF_IDX_DEVINO, &pkey, 0)) < 0 ) {
+            goto err_db;
+        }
     }
     if (!rc) {
        notfound = 1;
@@ -50,9 +60,15 @@ int dbd_update(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
     buf = pack_cnid_data(rqst);
     key.data = buf + CNID_DID_OFS;
     key.size = CNID_DID_LEN + rqst->namelen +1;
+    memset(&pkey, 0, sizeof(pkey));
 
-    if ((rc = dbif_del(DBIF_IDX_DIDNAME, &key, 0) < 0)) {
+    if ((rc = dbif_pget(DBIF_IDX_DIDNAME, &key, &pkey, &data, 0) < 0)) {
         goto err_db;
+    }
+    else if  (rc > 0) {
+        if ((rc = dbif_del(DBIF_IDX_DIDNAME, &pkey, 0)) < 0) {
+            goto err_db;
+        }
     }
     if (!rc) {
        notfound |= 2;

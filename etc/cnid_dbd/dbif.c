@@ -1,5 +1,5 @@
 /*
- * $Id: dbif.c,v 1.1.4.2 2003-09-16 12:21:44 rlewczuk Exp $
+ * $Id: dbif.c,v 1.1.4.3 2003-10-06 15:17:08 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -62,12 +62,12 @@ static int env_init(struct db_param *dbp)
 {
     int ret;
 
+#ifdef CNID_BACKEND_DBD_TXN
     if ((ret = db_env_create(&db_env, 0))) {
         LOG(log_error, logtype_cnid, "error creating DB environment: %s", 
             db_strerror(ret));
         return -1;
     }    
-#ifdef CNID_BACKEND_DBD_TXN
     if (db_errlog != NULL)
         db_env->set_errfile(db_env, db_errlog); 
     db_env->set_verbose(db_env, DB_VERB_RECOVERY, 1);
@@ -129,7 +129,7 @@ static int  db_compat_associate (DB *p, DB *s,
 #if DB_VERSION_MAJOR > 4 || (DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR >= 1)
     return p->associate(p, NULL, s, callback, flags);
 #else
-#if DB_VERSION_MAJOR > 4
+#if (DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR == 0)
     return p->associate(p,       s, callback, flags);
 #else
     return 0;
@@ -294,6 +294,29 @@ int dbif_get(const int dbi, DBT *key, DBT *val, u_int32_t flags)
         return 1;
 }
 
+/* search by secondary return primary */
+int dbif_pget(const int dbi, DBT *key, DBT *pkey, DBT *val, u_int32_t flags)
+{
+    int ret;
+    DB *db = db_table[dbi].db;
+
+    ret = db->pget(db, db_txn, key, pkey, val, flags);
+
+#if DB_VERSION_MAJOR >= 4
+    if (ret == DB_NOTFOUND || ret == DB_SECONDARY_BAD) {
+#else
+    if (ret == DB_NOTFOUND) {
+#endif     
+        return 0;
+    }
+    if (ret) {
+        LOG(log_error, logtype_cnid, "error retrieving value from %s: %s", db_table[dbi].name, db_strerror(errno));
+        return -1;
+    } else 
+        return 1;
+}
+
+/* -------------------------- */
 int dbif_put(const int dbi, DBT *key, DBT *val, u_int32_t flags)
 {
     int ret;

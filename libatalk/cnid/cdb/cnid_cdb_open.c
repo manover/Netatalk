@@ -1,6 +1,6 @@
 
 /*
- * $Id: cnid_cdb_open.c,v 1.1.4.2 2003-09-16 12:20:37 rlewczuk Exp $
+ * $Id: cnid_cdb_open.c,v 1.1.4.3 2003-10-06 15:17:08 didg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -141,7 +141,7 @@ static int  my_associate (DB *p, DB *s,
 #if DB_VERSION_MAJOR > 4 || (DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR >= 1)
     return p->associate(p, NULL, s, callback, flags);
 #else
-#if DB_VERSION_MAJOR > 4
+#if (DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR == 0)
     return p->associate(p,       s, callback, flags);
 #else
     return 0; /* FIXME */
