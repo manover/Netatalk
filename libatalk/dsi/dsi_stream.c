@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_stream.c,v 1.11.6.2 2003-11-11 08:48:33 didg Exp $
+ * $Id: dsi_stream.c,v 1.11.6.3 2004-02-06 13:34:35 didg Exp $
  *
  * Copyright (c) 1998 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -51,7 +51,11 @@ size_t dsi_stream_write(DSI *dsi, void *data, const size_t length, int mode)
 {
   size_t written;
   ssize_t len;
+#if 0
+  /* FIXME sometime it's slower */
   unsigned int flags = (mode)?MSG_MORE:0;
+#endif
+  unsigned int flags = 0;
 
   written = 0;
   while (written < length) {
