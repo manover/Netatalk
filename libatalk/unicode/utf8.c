@@ -123,18 +123,24 @@ static size_t utf8_push(void *cd, char **inbuf, size_t *inbytesleft,
 		len=1;
 
 		if ( uc >= 0x800 ) {
-			if (*outbytesleft < 3) {
-				LOG(log_debug, logtype_default, "short utf8 write");
-				goto toobig;
+			if ( uc >= 0x202a && uc <= 0x202e ) {
+				/* ignore bidi hint characters */
+			   len = 0;
+		 	}
+		 	else {
+				if (*outbytesleft < 3) {
+					LOG(log_debug, logtype_default, "short utf8 write");
+					goto toobig;
+				}
+				c[2] = 0x80 | (uc & 0x3f);
+				uc = uc >> 6;
+				uc |= 0x800;
+                        	c[1] = 0x80 | (uc&0x3f);
+                        	uc = uc >> 6;
+                        	uc |= 0xc0;
+                        	c[0] = uc;
+				len = 3;
 			}
-			c[2] = 0x80 | (uc & 0x3f);
-			uc = uc >> 6;
-			uc |= 0x800;
-                        c[1] = 0x80 | (uc&0x3f);
-                        uc = uc >> 6;
-                        uc |= 0xc0;
-                        c[0] = uc;
-			len = 3;
 		} else if (uc >= 0x80) {
 			if (*outbytesleft < 2) {
 				LOG(log_debug, logtype_default, "short utf8 write");
@@ -148,11 +154,6 @@ static size_t utf8_push(void *cd, char **inbuf, size_t *inbytesleft,
 		} else {
 			c[0] = uc;
 		}
-		else if ( uc >= 0x202a && uc <= 0x202e ) {
-			/* ignore bidi hint characters */
-			olen = 0;
-		}
-
 
 		(*inbytesleft)  -= 2;
 		(*outbytesleft) -= len;
