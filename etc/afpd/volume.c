@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.27 2004-03-20 00:48:28 bfernhomberg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.28 2004-04-06 23:29:37 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1460,7 +1460,8 @@ int 	ibuflen, *rbuflen;
     struct vol		*volume;
     char	*data;
     char		*namebuf;
-    int			vcnt, len;
+    int			vcnt;
+    size_t		len;
 
     load_volumes(obj);
 
@@ -1479,6 +1480,11 @@ int 	ibuflen, *rbuflen;
         if (volume->v_hide) {
             continue;		/* config file changed but the volume was mounted */
         }
+	len = ucs2_to_charset_allocate((utf8_encoding()?CH_UTF8_MAC:obj->options.maccharset),
+					&namebuf, volume->v_name);
+	if (len == (size_t)-1)
+		continue;
+
         /* set password bit if there's a volume password */
         *data = (volume->v_password) ? AFPSRVR_PASSWD : 0;
 
@@ -1490,11 +1496,6 @@ int 	ibuflen, *rbuflen;
            off.. <shirsch@ibm.net> */
         *data |= (volume->v_flags & AFPVOL_A2VOL) ? AFPSRVR_CONFIGINFO : 0;
         *data++ |= 0; /* UNIX PRIVS BIT ..., OSX doesn't seem to use it, so we don't either */
-
-	len = ucs2_to_charset_allocate((utf8_encoding()?CH_UTF8_MAC:obj->options.maccharset),
-					&namebuf, volume->v_name);
-	if (len <= 0)
-		continue;
         *data++ = len;
         memcpy(data, namebuf, len );
         data += len;
