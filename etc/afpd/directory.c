@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.2 2003-09-28 13:58:56 didg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.3 2003-10-30 05:57:44 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -11,27 +11,6 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
-
-#include <atalk/logger.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <sys/time.h>
-#include <sys/param.h>
-#include <netatalk/endian.h>
-#include <atalk/adouble.h>
-#include <atalk/afp.h>
-#include <atalk/util.h>
-#include <atalk/cnid.h>
-#include <utime.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <dirent.h>
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif /* HAVE_FCNTL_H */
-#include <grp.h>
-#include <pwd.h>
 
 /* STDC check */
 #if STDC_HEADERS
@@ -47,6 +26,29 @@ char *strchr (), *strrchr ();
 #define memmove(d,s,n) bcopy ((s), (d), (n))
 #endif /* ! HAVE_MEMCPY */
 #endif /* STDC_HEADERS */
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
+#include <utime.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <dirent.h>
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif /* HAVE_FCNTL_H */
+#include <grp.h>
+#include <pwd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include <sys/time.h>
+#include <sys/param.h>
+#include <netatalk/endian.h>
+#include <atalk/adouble.h>
+#include <atalk/afp.h>
+#include <atalk/util.h>
+#include <atalk/cnid.h>
+#include <atalk/logger.h>
 
 #include "directory.h"
 #include "desktop.h"
@@ -56,7 +58,6 @@ char *strchr (), *strrchr ();
 #include "filedir.h"
 #include "globals.h"
 #include "unix.h"
-
 #include "mangle.h"
 
 struct dir	*curdir;

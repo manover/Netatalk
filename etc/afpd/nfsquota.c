@@ -1,5 +1,5 @@
 /*
- * $Id: nfsquota.c,v 1.10 2002-08-29 17:22:06 jmarcus Exp $
+ * $Id: nfsquota.c,v 1.10.8.1 2003-10-30 05:57:44 bfernhomberg Exp $
  *
  * parts of this are lifted from the bsd quota program and are
  * therefore under the following copyright:
@@ -34,22 +34,24 @@ char *strchr (), *strrchr ();
 #define memmove(d,s,n) bcopy ((s), (d), (n))
 #endif /* ! HAVE_MEMCPY */
 #endif /* STDC_HEADERS */
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/param.h> /* for DEV_BSIZE */
 #include <sys/time.h>  /* <rpc/rpc.h> on ultrix doesn't include this */
-#include <atalk/logger.h>
-
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif /* HAVE_NETDB_H */
 #include <netinet/in.h>
+#ifndef PORTMAP
+#define PORTMAP 1
+#endif
 #include <rpc/rpc.h>
 #include <rpc/pmap_prot.h>
 #include <rpcsvc/rquota.h>
 
+
 #include <atalk/afp.h>
+#include <atalk/logger.h>
 
 #include "unix.h"
 

@@ -40,8 +40,15 @@
 #include <sys/param.h>  
 #include <string.h>
 
+/* FIXME */
+#ifndef SOLARIS
 #ifndef USE_SETRESUID
 #define USE_SETRESUID 1
+#endif
+#else
+#ifndef USE_SETEUID
+#define USE_SETEUID 1
+#endif
 #endif
 
 #include <atalk/logger.h>

@@ -1,5 +1,5 @@
 /*
- * $Id: unix.c,v 1.43.2.1 2003-07-21 05:50:54 didg Exp $
+ * $Id: unix.c,v 1.43.2.1.2.1 2003-10-30 05:57:44 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -12,16 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/param.h>
-#include <sys/stat.h>
-#include <atalk/logger.h>
-#include <netatalk/endian.h>
-#include <dirent.h>
-#include <limits.h>
-#include <atalk/adouble.h>
-#include <atalk/afp.h>
 /* STDC check */
 #ifdef STDC_HEADERS
 #include <string.h>
@@ -36,10 +26,19 @@ char *strchr (), *strrchr ();
 #define memmove(d,s,n) bcopy ((s), (d), (n))
 #endif /* ! HAVE_MEMCPY */
 #endif /* STDC_HEADERS */
-
+#include <errno.h>
+#include <dirent.h>
+#include <limits.h>
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif /* HAVE_FCNTL_H */
+#include <sys/types.h>
+#include <sys/param.h>
+#include <sys/stat.h>
+#include <netatalk/endian.h>
+#include <atalk/logger.h>
+#include <atalk/adouble.h>
+#include <atalk/afp.h>
 #include "auth.h"
 #include "directory.h"
 #include "volume.h"

@@ -1,5 +1,5 @@
 /*
- * $Id: quota.c,v 1.22.8.4 2003-09-24 11:29:13 bfernhomberg Exp $
+ * $Id: quota.c,v 1.22.8.5 2003-10-30 05:57:44 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -28,7 +28,6 @@ char *strchr (), *strrchr ();
 #define memmove(d,s,n) bcopy ((s), (d), (n))
 #endif /* ! HAVE_MEMCPY */
 #endif /* STDC_HEADERS */
-
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/param.h>
@@ -38,15 +37,15 @@ char *strchr (), *strrchr ();
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif /* HAVE_FCNTL_H */
-#include <atalk/logger.h>
 
+#include <atalk/logger.h>
 #include <atalk/afp.h>
 
 #include "auth.h"
 #include "volume.h"
 #include "unix.h"
 
-#define DEBUG_QUOTA 1
+#define DEBUG_QUOTA 0
 #define WANT_USER_QUOTA 0
 #define WANT_GROUP_QUOTA 1
 

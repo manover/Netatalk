@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.9 2003-10-29 23:53:23 bfernhomberg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.10 2003-10-30 05:57:43 bfernhomberg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(etc/afpd/main.c)
@@ -56,7 +56,7 @@ dnl AC_CHECK_LIB(lwp, main)
 dnl Replace `main' with a function in -ln:
 dnl AC_CHECK_LIB(n, main)
 dnl Replace `main' with a function in -lnsl:
-AC_CHECK_LIB(nsl, socket)
+AC_CHECK_LIB(nsl, main)
 dnl Replace `main' with a function in -lprot:
 dnl AC_CHECK_LIB(prot, main)
 dnl Replace `main' with a function in -lrx:

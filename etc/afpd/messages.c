@@ -1,5 +1,5 @@
 /*
- * $Id: messages.c,v 1.16.6.1.2.2 2003-09-11 23:36:44 bfernhomberg Exp $
+ * $Id: messages.c,v 1.16.6.1.2.3 2003-10-30 05:57:44 bfernhomberg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -9,6 +9,9 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif /* HAVE_UNISTD_H */
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -16,16 +19,9 @@
 #include <atalk/afp.h>
 #include <atalk/dsi.h>
 #include <atalk/logger.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif /* HAVE_UNISTD_H */
-#include <atalk/unicode.h>
 #include "globals.h"
 #include "misc.h"
 
-#ifndef MAX
-#define MAX(a,b)     ((a) > (b) ? (a) : (b))
-#endif /* ! MAX */
 
 #define MAXMESGSIZE 199
 

@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.8 2003-10-23 04:29:16 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.9 2003-10-30 05:57:44 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -9,31 +9,20 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include <sys/time.h>
-#include <atalk/logger.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/param.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netatalk/endian.h>
-#include <atalk/asp.h>
-#include <atalk/dsi.h>
-#include <atalk/adouble.h>
-#include <atalk/afp.h>
-#include <atalk/util.h>
-#ifdef CNID_DB
-#include <atalk/cnid.h>
-#endif /* CNID_DB*/
-#include <dirent.h>
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif /* HAVE_FCNTL_H */
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-
+#include <dirent.h>
+#include <pwd.h>
+#include <grp.h>
+#include <utime.h>
+#include <errno.h>
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif /* HAVE_FCNTL_H */
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
 /* STDC check */
 #if STDC_HEADERS
 #include <string.h>
@@ -48,16 +37,28 @@ char *strchr (), *strrchr ();
 #define memmove(d,s,n) bcopy ((s), (d), (n))
 #endif /* ! HAVE_MEMCPY */
 #endif /* STDC_HEADERS */
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/param.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netatalk/endian.h>
+#include <atalk/asp.h>
+#include <atalk/dsi.h>
+#include <atalk/adouble.h>
+#include <atalk/afp.h>
+#include <atalk/util.h>
+#include <atalk/logger.h>
+#ifdef CNID_DB
+#include <atalk/cnid.h>
+#endif /* CNID_DB*/
 
-#include <pwd.h>
-#include <grp.h>
-#include <utime.h>
-#include <errno.h>
-
+#include "globals.h"
 #include "directory.h"
 #include "file.h"
 #include "volume.h"
-#include "globals.h"
 #include "unix.h"
 
 extern int afprun(int root, char *cmd, int *outfd);

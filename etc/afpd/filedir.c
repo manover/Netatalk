@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.45.2.2.2.2 2003-09-28 13:58:57 didg Exp $
+ * $Id: filedir.c,v 1.45.2.2.2.3 2003-10-30 05:57:44 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -9,23 +9,8 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include <errno.h>
-#include <atalk/logger.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/param.h>
-#include <netatalk/endian.h>
-#include <atalk/adouble.h>
-#include <atalk/afp.h>
-#include <atalk/util.h>
-#include <atalk/cnid.h>
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif /* HAVE_FCNTL_H */
-#include <dirent.h>
-
 /* STDC check */
 #if STDC_HEADERS
 #include <string.h>
@@ -40,10 +25,26 @@ char *strchr (), *strrchr ();
 #define memmove(d,s,n) bcopy ((s), (d), (n))
 #endif /* ! HAVE_MEMCPY */
 #endif /* STDC_HEADERS */
-
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif /* HAVE_FCNTL_H */
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
+#include <dirent.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/param.h>
+#include <netatalk/endian.h>
+#include <atalk/adouble.h>
+#include <atalk/afp.h>
+#include <atalk/util.h>
+#include <atalk/cnid.h>
+#include <atalk/logger.h>
 
 #include "directory.h"
 #include "desktop.h"
