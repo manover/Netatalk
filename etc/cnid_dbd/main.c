@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.1.4.9 2004-03-21 23:04:07 lenneis Exp $
+ * $Id: main.c,v 1.1.4.10 2004-03-22 05:31:39 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -218,10 +218,12 @@ int main(int argc, char *argv[])
         LOG(log_error, logtype_cnid, "error in stat for %s: %s", dir, strerror(errno));
         exit(1);
     }
-    LOG(log_info, logtype_cnid, "Setting uid/gid to %i/%i", st.st_uid, st.st_gid);
-    if (setgid(st.st_gid) < 0 || setuid(st.st_uid) < 0) {
-        LOG(log_error, logtype_cnid, "uid/gid: %s", strerror(errno));
-        exit(1);
+    if (!getuid()) {
+        LOG(log_info, logtype_cnid, "Setting uid/gid to %i/%i", st.st_uid, st.st_gid);
+        if (setgid(st.st_gid) < 0 || setuid(st.st_uid) < 0) {
+            LOG(log_error, logtype_cnid, "uid/gid: %s", strerror(errno));
+            exit(1);
+        }
     }
     /* Before we do anything else, check if there is an instance of cnid_dbd
        running already and silently exit if yes. */
