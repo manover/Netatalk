@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.22 2004-02-29 22:59:10 bfernhomberg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.23 2004-03-01 14:01:02 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -2011,7 +2011,7 @@ int wincheck(const struct vol *vol, const char *path)
  */
 static int create_special_folder (const struct vol *vol, const struct _special_folder *folder)
 {
-	char 		*p,*q;
+	char 		*p,*q,*r;
     	struct adouble	ad;
 	u_int16_t	attr;
 	struct stat	st;
@@ -2023,24 +2023,30 @@ static int create_special_folder (const struct vol *vol, const struct _special_f
 		LOG(log_error, logtype_afpd,"malloc failed");
 		exit (-1);
 	}
+
+	q=strdup(folder->name);
+	if ( q == NULL) {
+		LOG(log_error, logtype_afpd,"malloc failed");
+		exit (-1);
+	}
+
 	strcpy(p, vol->v_path);
 	strcat(p, "/");
-	strcat(p, folder->name);
 
-	q=p;
-
-	while (*q) {
+	r=q;
+	while (*r) {
     		if ((vol->v_casefold & AFPVOL_MTOUUPPER))
-			*q=toupper(*q);
+			*r=toupper(*r);
     		else if ((vol->v_casefold & AFPVOL_MTOULOWER))
-			*q=tolower(*q);
-		q++;
+			*r=tolower(*r);
+		r++;
 	}
+	strcat(p, q);
 
     	if ( (ret = stat( p, &st )) < 0 ) {
 		if (folder->precreate) {
 		    if (ad_mkdir(p, folder->mode)) {
-			LOG(log_debug, logtype_afpd,"Creating '%s' failed", folder->name);
+			LOG(log_debug, logtype_afpd,"Creating '%s' failed in %s: %s", p, vol->v_path, strerror(errno));
 			free(p);
 			return -1;
                     }
@@ -2070,6 +2076,7 @@ static int create_special_folder (const struct vol *vol, const struct _special_f
         	ad_close( &ad, ADFLAGS_HF );
 	}
 	free(p);
+	free(q);
 	return 0;
 }
 
