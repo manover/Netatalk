@@ -49,7 +49,7 @@ struct dsi_block {
   u_int32_t dsi_reserved;   /* reserved field */
 };
 
-#define DSI_CMDSIZ        800
+#define DSI_CMDSIZ        8192 
 #define DSI_DATASIZ       8192
 /* child and parent processes might interpret a couple of these
  * differently. */
