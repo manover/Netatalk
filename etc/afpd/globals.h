@@ -1,5 +1,5 @@
 /*
- * $Id: globals.h,v 1.18 2003-04-16 22:45:10 samnoble Exp $
+ * $Id: globals.h,v 1.18.2.1 2003-05-26 11:17:25 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -48,6 +48,13 @@ typedef struct uidgidset_t {
 
 /* a couple of these options could get stuck in unions to save
  * space. */
+struct afp_volume_name {
+    time_t     mtime;
+    char       *name;
+    char       *full_name;
+    int        loaded;
+};
+
 struct afp_options {
     int connections, port, transports, tickleval, timeout, server_notif, flags;
     unsigned char passwdbits, passwdminlen, loginmaxfail;
@@ -55,7 +62,9 @@ struct afp_options {
     char hostname[MAXHOSTNAMELEN + 1], *server, *ipaddr, *configfile;
     struct at_addr ddpaddr;
     char *uampath, *nlspath, *fqdn;
-    char *pidfile, *defaultvol, *systemvol;
+    char *pidfile;
+    struct afp_volume_name defaultvol, systemvol, uservol;
+
     char *guest, *loginmesg, *keyfile, *passwdfile;
     char *uamlist;
     char *authprintdir;

@@ -1,5 +1,5 @@
 /*
- * $Id: afp_options.c,v 1.30 2003-04-16 22:45:08 samnoble Exp $
+ * $Id: afp_options.c,v 1.30.2.1 2003-05-26 11:17:25 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -100,10 +100,21 @@ static char *getoption(char *buf, const char *option)
 void afp_options_free(struct afp_options *opt,
                       const struct afp_options *save)
 {
-    if (opt->defaultvol && (opt->defaultvol != save->defaultvol))
-        free(opt->defaultvol);
-    if (opt->systemvol && (opt->systemvol != save->systemvol))
-        free(opt->systemvol);
+    if (opt->defaultvol.name && (opt->defaultvol.name != save->defaultvol.name))
+        free(opt->defaultvol.name);
+    if (opt->defaultvol.full_name && (opt->defaultvol.full_name != save->defaultvol.full_name))
+        free(opt->defaultvol.full_name);
+
+    if (opt->systemvol.name && (opt->systemvol.name != save->systemvol.name))
+        free(opt->systemvol.name);
+    if (opt->systemvol.full_name && (opt->systemvol.full_name != save->systemvol.full_name))
+        free(opt->systemvol.full_name);
+
+    if (opt->uservol.name && (opt->uservol.name != save->uservol.name))
+        free(opt->uservol.name);
+    if (opt->uservol.full_name && (opt->uservol.full_name != save->uservol.full_name))
+        free(opt->uservol.full_name);
+
     if (opt->loginmesg && (opt->loginmesg != save->loginmesg))
         free(opt->loginmesg);
     if (opt->guest && (opt->guest != save->guest))
@@ -136,8 +147,8 @@ void afp_options_init(struct afp_options *options)
     memset(options, 0, sizeof(struct afp_options));
     options->connections = 20;
     options->pidfile = _PATH_AFPDLOCK;
-    options->defaultvol = _PATH_AFPDDEFVOL;
-    options->systemvol = _PATH_AFPDSYSVOL;
+    options->defaultvol.name = _PATH_AFPDDEFVOL;
+    options->systemvol.name = _PATH_AFPDSYSVOL;
     options->configfile = _PATH_AFPDCONF;
     options->nlspath = _PATH_AFPDNLSPATH;
     options->uampath = _PATH_AFPDUAMPATH;
@@ -227,9 +238,9 @@ int afp_options_parseline(char *buf, struct afp_options *options)
     /* figure out options w/ values. currently, this will ignore the setting
      * if memory is lacking. */
     if ((c = getoption(buf, "-defaultvol")) && (opt = strdup(c)))
-        options->defaultvol = opt;
+        options->defaultvol.name = opt;
     if ((c = getoption(buf, "-systemvol")) && (opt = strdup(c)))
-        options->systemvol = opt;
+        options->systemvol.name = opt;
     if ((c = getoption(buf, "-loginmesg")) && (opt = strdup(c)))
         options->loginmesg = opt;
     if ((c = getoption(buf, "-guestname")) && (opt = strdup(c)))
@@ -459,10 +470,10 @@ int afp_options_parse(int ac, char **av, struct afp_options *options)
             options->server = optarg;
             break;
         case 'f' :
-            options->defaultvol = optarg;
+            options->defaultvol.name = optarg;
             break;
         case 's' :
-            options->systemvol = optarg;
+            options->systemvol.name = optarg;
             break;
         case 'u' :
             options->flags |= OPTION_USERVOLFIRST;

@@ -1,5 +1,5 @@
 /*
- * $Id: enumerate.c,v 1.39.2.1 2003-05-20 14:49:19 didg Exp $
+ * $Id: enumerate.c,v 1.39.2.2 2003-05-26 11:17:25 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -354,7 +354,7 @@ int     ext;
         sd.sd_sindex = 1;
 
         sd.sd_vid = vid;
-        sd.sd_did = did;
+        sd.sd_did = curdir->d_did;
     }
 
     /*

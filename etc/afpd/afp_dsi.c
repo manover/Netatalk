@@ -1,5 +1,5 @@
 /*
- * $Id: afp_dsi.c,v 1.27 2003-03-12 15:07:00 didg Exp $
+ * $Id: afp_dsi.c,v 1.27.2.1 2003-05-26 11:17:25 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -71,7 +71,10 @@ static __inline__ void afp_dsi_close(AFPObj *obj)
     dsi_close(dsi);
 }
 
-/* a little bit of code duplication. */
+/* -------------------------------
+ * SIGTERM
+ * a little bit of code duplication. 
+ */
 static void afp_dsi_die(int sig)
 {
     dsi_attention(child.obj->handle, AFPATTN_SHUTDOWN);
@@ -87,6 +90,9 @@ static void afp_dsi_die(int sig)
     }
 }
 
+/* ---------------------------------
+ * SIGUSR1 down in five mn.
+*/
 static void afp_dsi_timedown()
 {
     struct sigaction	sv;
@@ -118,17 +124,29 @@ static void afp_dsi_timedown()
         afp_dsi_die(1);
     }
 
-    /* ignore SIGHUP */
+    /* ignore myself */
     sv.sa_handler = SIG_IGN;
     sigemptyset( &sv.sa_mask );
     sv.sa_flags = SA_RESTART;
-    if ( sigaction( SIGHUP, &sv, 0 ) < 0 ) {
+    if ( sigaction( SIGUSR1, &sv, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_timedown: sigaction SIGHUP: %s", strerror(errno) );
         afp_dsi_die(1);
     }
 
 }
 
+/* ---------------------------------
+ * SIGHUP reload configuration file
+ * FIXME here or we wait ?
+*/
+volatile reload_request = 0;
+
+static void afp_dsi_reload()
+{
+    reload_request = 1;
+}
+
+/* ---------------------- */
 #ifdef SERVERTEXT
 static void afp_dsi_getmesg (int sig)
 {
@@ -137,6 +155,7 @@ static void afp_dsi_getmesg (int sig)
 }
 #endif /* SERVERTEXT */
 
+/* ---------------------- */
 static void alarm_handler()
 {
 int err;
@@ -155,8 +174,8 @@ int err;
 }
 
 
-/*
- *  Signal handler for SIGUSR1 - set the debug flag and 
+/*  ---------------------------------
+ *  old signal handler for SIGUSR1 - set the debug flag and 
  *  redirect stdout to <tmpdir>/afpd-debug-<pid>.
  */
 void afp_set_debug (int sig)
@@ -170,8 +189,9 @@ void afp_set_debug (int sig)
     return;
 }
 
-
-/* afp over dsi. this never returns. */
+/* -------------------------------------------
+ afp over dsi. this never returns. 
+*/
 void afp_over_dsi(AFPObj *obj)
 {
     DSI *dsi = (DSI *) obj->handle;
@@ -186,22 +206,26 @@ void afp_over_dsi(AFPObj *obj)
     child.obj = obj;
     child.tickle = child.flags = 0;
 
-    /* install SIGTERM and SIGHUP */
     memset(&action, 0, sizeof(action));
-    action.sa_handler = afp_dsi_timedown;
+
+    /* install SIGHUP */
+    action.sa_handler = afp_dsi_reload;
     sigemptyset( &action.sa_mask );
     sigaddset(&action.sa_mask, SIGALRM);
     sigaddset(&action.sa_mask, SIGTERM);
+    sigaddset(&action.sa_mask, SIGUSR1);
     action.sa_flags = SA_RESTART;
     if ( sigaction( SIGHUP, &action, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_over_dsi: sigaction: %s", strerror(errno) );
         afp_dsi_die(1);
     }
 
+    /* install SIGTERM */
     action.sa_handler = afp_dsi_die;
     sigemptyset( &action.sa_mask );
     sigaddset(&action.sa_mask, SIGALRM);
     sigaddset(&action.sa_mask, SIGHUP);
+    sigaddset(&action.sa_mask, SIGUSR1);
     action.sa_flags = SA_RESTART;
     if ( sigaction( SIGTERM, &action, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_over_dsi: sigaction: %s", strerror(errno) );
@@ -220,10 +244,12 @@ void afp_over_dsi(AFPObj *obj)
     }
 #endif /* SERVERTEXT */
 
-    /*  SIGUSR1 - set "debug" flag on this process.  */
-    action.sa_handler = afp_set_debug;
+    /*  SIGUSR1 - set down in 5 minutes  */
+    action.sa_handler = afp_dsi_timedown;
     sigemptyset( &action.sa_mask );
-    sigaddset(&action.sa_mask, SIGUSR1);
+    sigaddset(&action.sa_mask, SIGALRM);
+    sigaddset(&action.sa_mask, SIGHUP);
+    sigaddset(&action.sa_mask, SIGTERM);
     action.sa_flags = SA_RESTART;
     if ( sigaction( SIGUSR1, &action, 0) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_over_dsi: sigaction: %s", strerror(errno) );
@@ -245,6 +271,10 @@ void afp_over_dsi(AFPObj *obj)
     while ((cmd = dsi_receive(dsi))) {
         child.tickle = 0;
         dsi_sleep(dsi, 0); /* wake up */
+        if (reload_request) {
+            reload_request = 0;
+            load_volumes(child.obj);
+        }
 
         if (cmd == DSIFUNC_TICKLE) {
             /* so we don't get killed on the client side. */

@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.20 2002-10-04 15:15:05 srittau Exp $
+ * $Id: main.c,v 1.20.4.1 2003-05-26 11:17:25 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -80,18 +80,21 @@ static void afp_exit(const int i)
 
 static void afp_goaway(int sig)
 {
+
 #ifndef NO_DDP
     asp_kill(sig);
 #endif /* ! NO_DDP */
+
     dsi_kill(sig);
     switch( sig ) {
     case SIGTERM :
         LOG(log_info, logtype_afpd, "shutting down on signal %d", sig );
         break;
+    case SIGUSR1 :
     case SIGHUP :
         /* w/ a configuration file, we can force a re-read if we want */
         nologin++;
-        if ((nologin + 1) & 1) {
+        if (sig == SIGHUP || ((nologin + 1) & 1)) {
             AFPConfig *config;
 
             LOG(log_info, logtype_afpd, "re-reading configuration file");
@@ -113,6 +116,9 @@ static void afp_goaway(int sig)
         } else {
             LOG(log_info, logtype_afpd, "disallowing logins");
             auth_unload();
+        }
+        if (sig == SIGHUP) {
+            nologin = 0;
         }
         break;
     default :
@@ -190,7 +196,12 @@ char	**av;
     sigemptyset( &sv.sa_mask );
     sigaddset(&sv.sa_mask, SIGHUP);
     sigaddset(&sv.sa_mask, SIGTERM);
+    sigaddset(&sv.sa_mask, SIGUSR1);
     sv.sa_flags = SA_RESTART;
+    if ( sigaction( SIGUSR1, &sv, 0 ) < 0 ) {
+        LOG(log_error, logtype_afpd, "main: sigaction: %s", strerror(errno) );
+        afp_exit(1);
+    }
     if ( sigaction( SIGHUP, &sv, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "main: sigaction: %s", strerror(errno) );
         afp_exit(1);

@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.1 2003-05-26 11:04:36 didg Exp $
+ * $Id: volume.c,v 1.51.2.2 2003-05-26 11:17:25 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -77,13 +77,15 @@ extern int afprun(int root, char *cmd, int *outfd);
 #endif /* BYTE_ORDER == BIG_ENDIAN */
 #endif /* ! NO_LARGE_VOL_SUPPORT */
 
-static struct vol *volumes = NULL;
+static struct vol *Volumes = NULL;
 static int		lastvid = 0;
 #ifndef CNID_DB
 static char		*Trash = "\02\024Network Trash Folder";
 #endif /* CNID_DB */
-static struct extmap	*extmap = NULL, *defextmap = NULL;
-static int              extmap_cnt;
+
+static struct extmap	*Extmap = NULL, *Defextmap = NULL;
+static int              Extmap_cnt;
+static void             free_extmap(void);
 
 #define VOLOPT_ALLOW      0  /* user allow list */
 #define VOLOPT_DENY       1  /* user deny list */
@@ -470,6 +472,18 @@ static void volset(struct vol_option *options, struct vol_option *save,
     } 
 }
 
+/* ----------------- */
+static void showvol(const char *name)
+{
+    struct vol	*volume;
+    for ( volume = Volumes; volume; volume = volume->v_next ) {
+        if ( !strcasecmp( volume->v_name, name ) && volume->v_hide) {
+            volume->v_hide = 0;
+            return;
+        }
+    }
+}
+
 /* ------------------------------- */
 static int creatvol(AFPObj *obj, struct passwd *pwd, 
                     char *path, char *name, 
@@ -479,6 +493,7 @@ static int creatvol(AFPObj *obj, struct passwd *pwd,
 {
     struct vol	*volume;
     int		vlen;
+    int         hide = 0;
 
     if ( name == NULL || *name == '\0' ) {
         if ((name = strrchr( path, '/' )) == NULL) {
@@ -490,9 +505,14 @@ static int creatvol(AFPObj *obj, struct passwd *pwd,
             return -1;
     }
 
-    for ( volume = volumes; volume; volume = volume->v_next ) {
+    for ( volume = Volumes; volume; volume = volume->v_next ) {
         if ( strcasecmp( volume->v_name, name ) == 0 ) {
-            return -1;	/* Won't be able to access it, anyway... */
+           if (volume->v_deleted) {
+               hide = 1;
+           }
+           else {
+               return -1;	/* Won't be able to access it, anyway... */
+           }
         }
     }
 
@@ -517,7 +537,7 @@ static int creatvol(AFPObj *obj, struct passwd *pwd,
         free(volume);
         return -1;
     }
-
+    volume->v_hide = hide;
     strcpy( volume->v_name, name);
     strcpy( volume->v_path, path );
 
@@ -583,8 +603,8 @@ static int creatvol(AFPObj *obj, struct passwd *pwd,
         }
     }
 
-    volume->v_next = volumes;
-    volumes = volume;
+    volume->v_next = Volumes;
+    Volumes = volume;
     return 0;
 }
 
@@ -660,26 +680,26 @@ int			user;
     struct extmap	*em;
     int                 cnt;
 
-    if (extmap == NULL) {
-        if (( extmap = calloc(1, sizeof( struct extmap ))) == NULL ) {
+    if (Extmap == NULL) {
+        if (( Extmap = calloc(1, sizeof( struct extmap ))) == NULL ) {
             LOG(log_error, logtype_afpd, "setextmap: calloc: %s", strerror(errno) );
             return;
         }
     }
     ext++;
-    for ( em = extmap, cnt = 0; em->em_ext; em++, cnt++) {
+    for ( em = Extmap, cnt = 0; em->em_ext; em++, cnt++) {
         if ( (strdiacasecmp( em->em_ext, ext )) == 0 ) {
             break;
         }
     }
 
     if ( em->em_ext == NULL ) {
-        if (!(extmap  = realloc( extmap, sizeof( struct extmap ) * (cnt +2))) ) {
+        if (!(Extmap  = realloc( Extmap, sizeof( struct extmap ) * (cnt +2))) ) {
             LOG(log_error, logtype_afpd, "setextmap: realloc: %s", strerror(errno) );
             return;
         }
-        (extmap +cnt +1)->em_ext = NULL;
-        em = extmap +cnt;
+        (Extmap +cnt +1)->em_ext = NULL;
+        em = Extmap +cnt;
     } else if ( !user ) {
         return;
     }
@@ -715,22 +735,52 @@ static void sortextmap( void)
 {
     struct extmap	*em;
 
-    extmap_cnt = 0;
-    if ((em = extmap) == NULL) {
+    Extmap_cnt = 0;
+    if ((em = Extmap) == NULL) {
         return;
     }
     while (em->em_ext) {
         em++;
-        extmap_cnt++;
+        Extmap_cnt++;
     }
-    if (extmap_cnt) {
-        qsort(extmap, extmap_cnt, sizeof(struct extmap), extmap_cmp);
-        defextmap = extmap;
+    if (Extmap_cnt) {
+        qsort(Extmap, Extmap_cnt, sizeof(struct extmap), extmap_cmp);
+        Defextmap = Extmap;
     }
 }
 
+/* ----------------------
+*/
+static void free_extmap( void)
+{
+    if (Extmap) {
+        free(Extmap);
+        Extmap = NULL;
+        Defextmap = Extmap;
+        Extmap_cnt = 0;
+    }
+}
 
-/*
+/* ----------------------
+*/
+static int volfile_changed(struct afp_volume_name *p) 
+{
+    struct stat      st;
+    char *name;
+    
+    if (p->full_name) 
+    	name = p->full_name;
+    else
+        name = p->name;
+        
+    if (!stat( name, &st) && st.st_mtime > p->mtime) {
+        p->mtime = st.st_mtime;
+        return 1;
+    }
+    return 0;
+}
+
+/* ----------------------
  * Read a volume configuration file and add the volumes contained within to
  * the global volume list.  If p2 is non-NULL, the file that is opened is
  * p1/p2
@@ -743,7 +793,8 @@ static void sortextmap( void)
  */
 static int readvolfile(obj, p1, p2, user, pwent)
 AFPObj      *obj;
-char	*p1, *p2;
+struct afp_volume_name 	*p1;
+char        *p2;
 int		user;
 struct passwd *pwent;
 {
@@ -755,18 +806,28 @@ struct passwd *pwent;
     struct passwd	*pw;
     struct vol_option   options[VOLOPT_NUM], save_options[VOLOPT_NUM];
     int                 i;
+    struct stat         st;
+    int                 fd;
 
-    if (!p1)
+    if (!p1->name)
         return -1;
-
-    strcpy( path, p1 );
+    p1->mtime = 0;
+    strcpy( path, p1->name );
     if ( p2 != NULL ) {
         strcat( path, "/" );
         strcat( path, p2 );
+        if (p1->full_name) {
+            free(p1->full_name);
+        }
+        p1->full_name = strdup(path);
     }
 
     if (NULL == ( fp = fopen( path, "r" )) ) {
         return( -1 );
+    }
+    fd = fileno(fp);
+    if (fd != -1 && !fstat( fd, &st) ) {
+        p1->mtime = st.st_mtime;
     }
 
     memset(save_options, 0, sizeof(save_options));
@@ -892,39 +953,90 @@ struct passwd *pwent;
     if ( fclose( fp ) != 0 ) {
         LOG(log_error, logtype_afpd, "readvolfile: fclose: %s", strerror(errno) );
     }
+    p1->loaded = 1;
     return( 0 );
 }
 
-
-static void load_volumes(AFPObj *obj)
+/* ------------------------------- */
+static void volume_free(struct vol *vol)
 {
-    struct passwd	*pwent = getpwnam(obj->username);
+    free(vol->v_name);
+    vol->v_name = NULL;
+    free(vol->v_path);
+    codepage_free(vol);
+    free(vol->v_password);
+    free(vol->v_veto);
+#ifdef CNID_DB
+    free(vol->v_dbpath);
+#endif /* CNID_DB */
+#ifdef FORCE_UIDGID
+    free(vol->v_forceuid);
+    free(vol->v_forcegid);
+#endif /* FORCE_UIDGID */
+}
 
-    if ( (obj->options.flags & OPTION_USERVOLFIRST) == 0 ) {
-        readvolfile(obj, obj->options.systemvol, NULL, 0, pwent);
+/* ------------------------------- */
+static void free_volumes(void )
+{
+    struct vol	*vol;
+    struct vol  *nvol, *ovol;
+
+    for ( vol = Volumes; vol; vol = vol->v_next ) {
+        if (( vol->v_flags & AFPVOL_OPEN ) ) {
+            vol->v_deleted = 1;
+            continue;
+        }
+        volume_free(vol);
     }
 
-    if ((*obj->username == '\0') || (obj->options.flags & OPTION_NOUSERVOL)) {
-        readvolfile(obj, obj->options.defaultvol, NULL, 1, pwent);
-    } else if (pwent) {
-        /*
-        * Read user's AppleVolumes or .AppleVolumes file
-        * If neither are readable, read the default volumes file. if
-        * that doesn't work, create a user share.
-        */
-        if ( readvolfile(obj, pwent->pw_dir, "AppleVolumes", 1, pwent) < 0 &&
-                readvolfile(obj, pwent->pw_dir, ".AppleVolumes", 1, pwent) < 0 &&
-                readvolfile(obj, pwent->pw_dir, "applevolumes", 1, pwent) < 0 &&
-                readvolfile(obj, pwent->pw_dir, ".applevolumes", 1, pwent) < 0 &&
-                obj->options.defaultvol != NULL ) {
-            if (readvolfile(obj, obj->options.defaultvol, NULL, 1, pwent) < 0)
-                creatvol(obj, pwent, pwent->pw_dir, NULL, NULL, 1);
+    for ( vol = Volumes, ovol = NULL; vol; vol = nvol) {
+        nvol = vol->v_next;
+
+        if (vol->v_name == NULL) {
+           if (Volumes == vol) {
+               Volumes = nvol;
+           }
+           if (!ovol) {
+               ovol = Volumes;
+           }
+           else {
+              ovol->v_next = nvol;
+           }
+           free(vol);
+        }
+        else {
+           ovol = vol;
         }
     }
-    if ( obj->options.flags & OPTION_USERVOLFIRST ) {
-        readvolfile(obj, obj->options.systemvol, NULL, 0, pwent );
+}
+
+/* ------------------------------- */
+static void volume_unlink(struct vol *volume)
+{
+struct vol *vol, *ovol, *nvol;
+
+    if (volume == Volumes) {
+        Volumes = Volumes->v_next;
+        return;
+    }
+    for ( vol = Volumes, ovol = NULL; vol; vol = nvol) {
+        nvol = vol->v_next;
+
+        if (vol == volume) {
+           if (!ovol) {
+               ovol = Volumes;
+           }
+           else {
+              ovol->v_next = nvol;
+           }
+           break;
+        }
+        else {
+           ovol = vol;
+        }
     }
 }
+
 
 static int getvolspace( vol, bfree, btotal, xbfree, xbtotal, bsize )
 struct vol	*vol;
@@ -1165,7 +1277,60 @@ int		*buflen;
     return( AFP_OK );
 }
 
-/* ------------------------- */
+/* ------------------------------- */
+void load_volumes(AFPObj *obj)
+{
+    struct passwd	*pwent;
+
+    if (Volumes) {
+        int changed = 0;
+        
+        /* check files date */
+        if (obj->options.defaultvol.loaded) {
+            changed = volfile_changed(&obj->options.defaultvol);
+        }
+        if (obj->options.systemvol.loaded) {
+            changed |= volfile_changed(&obj->options.systemvol);
+        }
+        if (obj->options.uservol.loaded) {
+            changed |= volfile_changed(&obj->options.uservol);
+        }
+        if (!changed)
+            return;
+        
+        free_extmap();
+        free_volumes();
+    }
+    
+    pwent = getpwnam(obj->username);
+    if ( (obj->options.flags & OPTION_USERVOLFIRST) == 0 ) {
+        readvolfile(obj, &obj->options.systemvol, NULL, 0, pwent);
+    }
+
+    if ((*obj->username == '\0') || (obj->options.flags & OPTION_NOUSERVOL)) {
+        readvolfile(obj, &obj->options.defaultvol, NULL, 1, pwent);
+    } else if (pwent) {
+        /*
+        * Read user's AppleVolumes or .AppleVolumes file
+        * If neither are readable, read the default volumes file. if
+        * that doesn't work, create a user share.
+        */
+        obj->options.uservol.name = strdup(pwent->pw_dir);
+        if ( readvolfile(obj, &obj->options.uservol,    "AppleVolumes", 1, pwent) < 0 &&
+                readvolfile(obj, &obj->options.uservol, ".AppleVolumes", 1, pwent) < 0 &&
+                readvolfile(obj, &obj->options.uservol, "applevolumes", 1, pwent) < 0 &&
+                readvolfile(obj, &obj->options.uservol, ".applevolumes", 1, pwent) < 0 &&
+                obj->options.defaultvol.name != NULL ) {
+            if (readvolfile(obj, &obj->options.defaultvol, NULL, 1, pwent) < 0)
+                creatvol(pwent->pw_dir, NULL, NULL);
+        }
+    }
+    if ( obj->options.flags & OPTION_USERVOLFIRST ) {
+        readvolfile(obj, &obj->options.systemvol, NULL, 0, pwent );
+    }
+}
+
+/* ------------------------------- */
 int afp_getsrvrparms(obj, ibuf, ibuflen, rbuf, rbuflen )
 AFPObj      *obj;
 char	*ibuf, *rbuf;
@@ -1178,11 +1343,10 @@ int 	ibuflen, *rbuflen;
     int			vcnt, len;
 
 
-    if (!volumes)
-        load_volumes(obj);
+    load_volumes(obj);
 
     data = rbuf + 5;
-    for ( vcnt = 0, volume = volumes; volume; volume = volume->v_next ) {
+    for ( vcnt = 0, volume = Volumes; volume; volume = volume->v_next ) {
         if ( stat( volume->v_path, &st ) < 0 ) {
             LOG(log_info, logtype_afpd, "afp_getsrvrparms: stat %s: %s",
                 volume->v_path, strerror(errno) );
@@ -1191,7 +1355,10 @@ int 	ibuflen, *rbuflen;
         if (!S_ISDIR(st.st_mode)) {
             continue;		/* not a dir */
         }
-
+        if (volume->v_hide) {
+            continue;		/* config file changed but the volume was mounted */
+        
+        }
         /* set password bit if there's a volume password */
         *data = (volume->v_password) ? AFPSRVR_PASSWD : 0;
 
@@ -1260,10 +1427,9 @@ int		ibuflen, *rbuflen;
     if ((len + 1) & 1) /* pad to an even boundary */
         ibuf++;
 
-    if (!volumes)
-        load_volumes(obj);
+    load_volumes(obj);
 
-    for ( volume = volumes; volume; volume = volume->v_next ) {
+    for ( volume = Volumes; volume; volume = volume->v_next ) {
         if ( strcasecmp( volname, volume->v_name ) == 0 ) {
             break;
         }
@@ -1470,7 +1636,7 @@ int		ibuflen, *rbuflen;
     }
 
     vol->v_flags &= ~AFPVOL_OPEN;
-    for ( ovol = volumes; ovol; ovol = ovol->v_next ) {
+    for ( ovol = Volumes; ovol; ovol = ovol->v_next ) {
         if ( ovol->v_flags & AFPVOL_OPEN ) {
             break;
         }
@@ -1481,7 +1647,29 @@ int		ibuflen, *rbuflen;
             curdir = ovol->v_dir;
         }
     }
-    closevol(vol);
+    dirfree( vol->v_root );
+    vol->v_dir = NULL;
+#ifdef CNID_DB
+    cnid_close(vol->v_db);
+    vol->v_db = NULL;
+#endif /* CNID_DB */
+
+#ifdef AFP3x
+    if (vol->v_utf8toucs2 != (iconv_t)(-1))
+        iconv_close(vol->v_utf8toucs2);
+    if (vol->v_ucs2toutf8 != (iconv_t)(-1))
+        iconv_close(vol->v_ucs2toutf8);
+    if (vol->v_mactoutf8  != (iconv_t)(-1))
+        iconv_close(vol->v_mactoutf8);    
+    if (vol->v_ucs2tomac  != (iconv_t)(-1))
+        iconv_close(vol->v_ucs2tomac);
+#endif        
+
+    if (vol->v_deleted) {
+	showvol(vol->v_name);
+	volume_free(vol);
+	volume_unlink(vol);
+    }
     return( AFP_OK );
 }
 
@@ -1490,7 +1678,7 @@ struct vol *getvolbyvid(const u_int16_t vid )
 {
     struct vol	*vol;
 
-    for ( vol = volumes; vol; vol = vol->v_next ) {
+    for ( vol = Volumes; vol; vol = vol->v_next ) {
         if ( vid == vol->v_vid ) {
             break;
         }
@@ -1519,24 +1707,24 @@ struct extmap *getextmap(const char *path)
     struct extmap *em;
 
     if (NULL == ( p = strrchr( path, '.' )) ) {
-        return( defextmap );
+        return( Defextmap );
     }
     p++;
-    if (!*p || !extmap_cnt) {
-        return( defextmap );
+    if (!*p || !Extmap_cnt) {
+        return( Defextmap );
     }
-    em = bsearch(p, extmap, extmap_cnt, sizeof(struct extmap), ext_cmp_key);
+    em = bsearch(p, Extmap, Extmap_cnt, sizeof(struct extmap), ext_cmp_key);
     if (em) {
         return( em );
     } else {
-        return( defextmap );
+        return( Defextmap );
     }
 }
 
 /* ------------------------- */
 struct extmap *getdefextmap(void)
 {
-    return( defextmap );
+    return( Defextmap );
 }
 
 /* --------------------------
@@ -1555,7 +1743,7 @@ AFPObj *obj;
     if ( gettimeofday( &tv, 0 ) < 0 ) 
          return 0;
 
-    for ( vol = volumes; vol; vol = vol->v_next ) {
+    for ( vol = Volumes; vol; vol = vol->v_next ) {
         if ( (vol->v_flags & AFPVOL_OPEN)  && vol->v_time + 30 < tv.tv_sec) {
             if ( !stat( vol->v_path, &st ) && vol->v_time != st.st_mtime ) {
                 vol->v_time = st.st_mtime;

@@ -1,5 +1,5 @@
 /*
- * $Id: volume.h,v 1.19.2.1 2003-05-26 11:04:36 didg Exp $
+ * $Id: volume.h,v 1.19.2.2 2003-05-26 11:17:25 didg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -77,6 +77,8 @@ struct vol {
     iconv_t             *v_mactoutf8;
     iconv_t             *v_ucs2tomac;
 #endif
+    int                 v_deleted;  /* volume open but deleted in new config file */
+    int                 v_hide;     /* new volume wait open volume */
 
     char                *v_root_preexec;
     char                *v_preexec;
@@ -184,10 +186,13 @@ extern int              ustatfs_getvolspace __P((const struct vol *,
             u_int32_t *));
 extern int              codepage_init __P((struct vol *, const int,
             const int));
+extern void             codepage_free __P((struct vol *vol));
+
 extern int              codepage_read __P((struct vol *, const char *));
 extern union codepage_val codepage_find __P(());
 extern void             setvoltime __P((AFPObj *, struct vol *));
 extern int              pollvoltime __P((AFPObj *));
+extern void             load_volumes __P((AFPObj *obj));
 
 /* FP functions */
 extern int	afp_openvol      __P((AFPObj *, char *, int, char *, int *));
