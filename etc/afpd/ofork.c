@@ -1,5 +1,5 @@
 /*
- * $Id: ofork.c,v 1.20.6.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: ofork.c,v 1.20.6.2 2003-09-30 14:52:45 didg Exp $
  *
  * Copyright (c) 1996 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -66,6 +66,7 @@ static __inline__ void of_unhash(struct ofork *of)
     }
 }
 
+#ifdef DEBUG1
 void of_pforkdesc( f )
 FILE	*f;
 {
@@ -80,6 +81,7 @@ FILE	*f;
         }
     }
 }
+#endif
 
 int of_flush(const struct vol *vol)
 {

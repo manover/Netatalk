@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.44.2.3.2.4 2003-09-25 12:54:45 didg Exp $
+ * $Id: auth.c,v 1.44.2.3.2.5 2003-09-30 14:52:45 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -175,6 +175,7 @@ static int login(AFPObj *obj, struct passwd *pwd, void (*logout)(void))
     LOG(log_info, logtype_afpd, "login %s (uid %d, gid %d) %s", pwd->pw_name,
         pwd->pw_uid, pwd->pw_gid , afp_versions[afp_version_index].av_name);
 
+#ifndef NO_DDP
     if (obj->proto == AFPPROTO_ASP) {
         ASP asp = obj->handle;
         int addr_net = ntohs( asp->asp_sat.sat_addr.s_net );
@@ -211,6 +212,7 @@ static int login(AFPObj *obj, struct passwd *pwd, void (*logout)(void))
             } /* if (addr_net && addr_node ) */
         } /* if (options->authprintdir) */
     } /* if (obj->proto == AFPPROTO_ASP) */
+#endif
 
     if (initgroups( pwd->pw_name, pwd->pw_gid ) < 0) {
 #ifdef RUN_AS_USER
@@ -280,13 +282,10 @@ static int login(AFPObj *obj, struct passwd *pwd, void (*logout)(void))
         }
     }
 #else /* TRU64 */
-#if 0
-        if (setregid(pwd->pw_gid, pwd->pw_gid ) < 0 || setreuid(pwd->pw_uid,pwd->pw_uid ) < 0) {
-#endif        
-        if (setegid( pwd->pw_gid ) < 0 || seteuid( pwd->pw_uid ) < 0) {
-            LOG(log_error, logtype_afpd, "login: %s", strerror(errno) );
-            return AFPERR_BADUAM;
-        }
+    if (setegid( pwd->pw_gid ) < 0 || seteuid( pwd->pw_uid ) < 0) {
+        LOG(log_error, logtype_afpd, "login: %s", strerror(errno) );
+        return AFPERR_BADUAM;
+    }
 #endif /* TRU64 */
 
     /* There's probably a better way to do this, but for now, we just
