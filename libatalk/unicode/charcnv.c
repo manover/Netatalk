@@ -994,12 +994,10 @@ size_t convert_charset ( charset_t from_set, charset_t to_set, charset_t cap_cha
 		
   	/* Do case conversions */	
  	if (CHECK_FLAGS(flags, CONV_TOUPPER)) {
- 	    if (!strupper_w(u)) 
- 	        return (size_t)(-1);
+ 	    strupper_w(u);
   	}
  	if (CHECK_FLAGS(flags, CONV_TOLOWER)) {
- 	    if (!strlower_w(u)) 
- 	        return (size_t)(-1);
+ 	    strlower_w(u);
   	}
 
 	/* Convert UCS2 to to_set */
