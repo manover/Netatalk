@@ -34,6 +34,15 @@ install-exec-hook:
 	done
 
 #
+# uninstall sections for links
+#
+
+uninstall-hook:
+	@list='$(psf_LINKS)'; for l in $$list; do \
+		rm -f $(DESTDIR)$(libexecdir)/$$l; \
+	done
+
+#
 # cleanup
 #
 

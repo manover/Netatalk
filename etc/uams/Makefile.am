@@ -100,10 +100,20 @@ install-exec-hook:
 		$(LN_S) $(UAMS_CLRTXT_LINK) uams_clrtxt.so		&& \
 		$(LN_S) $(UAMS_DHX_LINK) uams_dhx.so			   \
 	)
+
+uninstall-hook:
+	(cd $(DESTDIR)$(uamsdir)					&& \
+		rm -f uams_clrtxt.so uams_dhx.so			   \
+	)
 else
 install-exec-hook:
 	(cd $(DESTDIR)$(uamsdir)					&& \
 		rm -f uams_clrtxt.so					&& \
 		$(LN_S) $(UAMS_CLRTXT_LINK) uams_clrtxt.so		   \
+	)
+
+uninstall-hook:
+	(cd $(DESTDIR)$(uamsdir)					&& \
+		rm -f uams_clrtxt.so 					   \
 	)
 endif
