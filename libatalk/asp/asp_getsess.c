@@ -1,5 +1,5 @@
 /*
- * $Id: asp_getsess.c,v 1.7 2002-06-18 23:45:16 didg Exp $
+ * $Id: asp_getsess.c,v 1.7.8.1 2003-11-11 08:48:33 didg Exp $
  *
  * Copyright (c) 1990,1996 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -135,10 +135,15 @@ ASP asp_getsession(ASP asp, server_child *server_children,
       /* install cleanup pointer */
       server_child_setup(children, CHILD_ASPFORK, child_cleanup);
 
-      /* install tickle handler */
+      /* install tickle handler 
+       * we are the parent process
+       */
       memset(&action, 0, sizeof(action));
       action.sa_handler = tickle_handler;
       sigemptyset(&action.sa_mask);
+      sigaddset(&action.sa_mask, SIGHUP);
+      sigaddset(&action.sa_mask, SIGTERM);
+      sigaddset(&action.sa_mask, SIGCHLD);
       action.sa_flags = SA_RESTART;
 
       timer.it_interval.tv_sec = timer.it_value.tv_sec = tickleval;

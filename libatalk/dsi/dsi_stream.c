@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_stream.c,v 1.11.6.1 2003-10-17 00:01:14 didg Exp $
+ * $Id: dsi_stream.c,v 1.11.6.2 2003-11-11 08:48:33 didg Exp $
  *
  * Copyright (c) 1998 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -89,7 +89,10 @@ size_t dsi_stream_read(DSI *dsi, void *data, const size_t length)
     else if (len > 0)
       stored += len;
     else { /* eof or error */
-      LOG(log_error, logtype_default, "dsi_stream_read(%d): %s", len, (len < 0)?strerror(errno):"unexpected EOF");
+      /* don't log EOF error if it's just after connect (OSX 10.3 probe) */
+      if (len || stored || dsi->read_count) {
+          LOG(log_error, logtype_default, "dsi_stream_read(%d): %s", len, (len < 0)?strerror(errno):"unexpected EOF");
+      }
       break;
     }
   }

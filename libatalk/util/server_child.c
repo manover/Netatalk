@@ -1,5 +1,5 @@
 /*
- * $Id: server_child.c,v 1.7.4.1 2003-07-21 05:50:54 didg Exp $
+ * $Id: server_child.c,v 1.7.4.1.2.1 2003-11-11 08:48:33 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -134,18 +134,18 @@ int server_child_add(server_child *children, const int forkid,
 {
   server_child_fork *fork;
   struct server_child_data *child;
-  sigset_t sig;
+  sigset_t sig, oldsig;
 
   /* we need to prevent deletions from occuring before we get a 
    * chance to add the child in. */
   sigemptyset(&sig);
   sigaddset(&sig, SIGCHLD);
-  sigprocmask(SIG_BLOCK, &sig, NULL);
+  sigprocmask(SIG_BLOCK, &sig, &oldsig);
 
   /* it's possible that the child could have already died before the
    * sigprocmask. we need to check for this. */
   if (kill(pid, 0) < 0) {
-    sigprocmask(SIG_UNBLOCK, &sig, NULL);
+    sigprocmask(SIG_SETMASK, &oldsig, NULL);
     return 1;
   }
 
@@ -153,20 +153,20 @@ int server_child_add(server_child *children, const int forkid,
 
   /* if we already have an entry. just return. */
   if (resolve_child(fork->table, pid)) {
-    sigprocmask(SIG_UNBLOCK, &sig, NULL);
+    sigprocmask(SIG_SETMASK, &oldsig, NULL);
     return 0;
   }
 
   if ((child = (struct server_child_data *) 
        calloc(1, sizeof(struct server_child_data))) == NULL) {
-    sigprocmask(SIG_UNBLOCK, &sig, NULL);
+    sigprocmask(SIG_SETMASK, &oldsig, NULL);
     return -1;
   }
 
   child->pid = pid;
   hash_child(fork->table, child);
   children->count++;
-  sigprocmask(SIG_UNBLOCK, &sig, NULL);
+  sigprocmask(SIG_SETMASK, &oldsig, NULL);
 
   return 0;
 }
@@ -317,7 +317,6 @@ void server_child_setup(server_child *children, const int forkid,
 /* keep track of children. */
 void server_child_handler(server_child *children)
 {
-  server_child_fork *fork;
   int status, i;
   pid_t pid;
   
@@ -328,13 +327,15 @@ void server_child_handler(server_child *children)
   while ((pid = waitpid(WAIT_ANY, &status, WNOHANG)) > 0) {
     for (i = 0; i < children->nforks; i++) {
       if (server_child_remove(children, i, pid)) {
+        server_child_fork *fork;
+        
 	fork = (server_child_fork *) children->fork + i;
 	if (fork->cleanup)
 	  fork->cleanup(pid);
 	break;
       }
     }
-    
+
     if (WIFEXITED(status)) {
       if (WEXITSTATUS(status)) {
 	LOG(log_info, logtype_default, "server_child[%d] %d exited %d", i, pid, 

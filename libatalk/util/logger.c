@@ -246,7 +246,7 @@ bool log_setup(char *filename, enum loglevels loglevel, enum logtypes logtype,
   char lastchar[2];
 
   log_file_data_pair *logs;
-
+  
   log_init();
 
   logs = log_file_arr[logtype];
@@ -523,13 +523,25 @@ void make_log_entry(enum loglevels loglevel, enum logtypes logtype,
 {
   va_list args;
   char log_buffer[MAXLOGSIZE];
+  /* fn is not reentrant but is used in signal handler 
+   * with LOGGER it's a little late source name and line number
+   * are already changed.
+  */
+  static int inlog = 0;
+
 #ifndef DISABLE_LOGGER
   char log_details_buffer[MAXLOGSIZE];
 #ifdef OPEN_LOGS_AS_UID
   uid_t process_uid;
 #endif
   log_file_data_pair *logs;
+#endif
 
+  if (inlog)
+     return;
+  inlog = 1;
+  
+#ifndef DISABLE_LOGGER
   log_init();
 
   logs = log_file_arr[logtype];
@@ -607,6 +619,7 @@ void make_log_entry(enum loglevels loglevel, enum logtypes logtype,
         LOG(log_severe, logtype_logger, "can't open Logfile %s", 
 	    (*logs)[1].log_filename
 	    );
+	inlog = 0;
         return;
       }
     }
@@ -642,6 +655,7 @@ void make_log_entry(enum loglevels loglevel, enum logtypes logtype,
   global_log_data.temp_src_filename = NULL;
   global_log_data.temp_src_linenumber = 0;
 #endif /* DISABLE_LOGGER */
+  inlog = 0;
 }
 
 #ifndef DISABLE_LOGGER
