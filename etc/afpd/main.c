@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.12.2.1 2001-12-03 05:01:04 jmarcus Exp $
+ * $Id: main.c,v 1.12.2.2 2002-01-02 17:27:50 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -62,6 +62,11 @@ static char **argv = NULL;
 #endif /* DID_MTAB */
 
 unsigned char	nologin = 0;
+
+#ifdef DID_MTAB
+/* global mount table; afpd_st_cnid uses this to lookup the right entry.  */
+static struct afpd_mount_table *afpd_mount_table = NULL;
+#endif /* DID_MTAB */
 
 struct afp_options default_options;
 static AFPConfig *configs;

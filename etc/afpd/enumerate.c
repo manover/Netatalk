@@ -1,5 +1,5 @@
 /*
- * $Id: enumerate.c,v 1.9.2.1 2001-12-03 05:01:04 jmarcus Exp $
+ * $Id: enumerate.c,v 1.9.2.2 2002-01-02 17:27:50 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -32,6 +32,7 @@
 #include "volume.h"
 #include "globals.h"
 #include "file.h"
+#include "filedir.h"
 
 /* check for mtab DID code */
 #ifdef DID_MTAB

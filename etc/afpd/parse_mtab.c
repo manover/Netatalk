@@ -1,5 +1,5 @@
 /*
- * $Id: parse_mtab.c,v 1.4.2.1 2001-12-03 05:01:04 jmarcus Exp $
+ * $Id: parse_mtab.c,v 1.4.2.2 2002-01-02 17:27:50 srittau Exp $
  *
  * afpd_mtab_parse & support.  -- rgr, 9-Apr-01.
  */
@@ -39,6 +39,9 @@ char *strchr (), *strrchr ();
 #define COPY_STRING(lval, str) \
 	  (lval) = malloc(1+strlen(str)), strcpy((lval), (str))
 #endif /* COPY_STRING */
+
+/* global mount table; afpd_st_cnid uses this to lookup the right entry.  */
+static struct afpd_mount_table *afpd_mount_table;
 
 static int
 ceil_log_2 __P((int n))

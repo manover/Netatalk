@@ -1,5 +1,5 @@
 /*
- * $Id: messages.c,v 1.9.2.1 2001-12-03 05:01:04 jmarcus Exp $
+ * $Id: messages.c,v 1.9.2.2 2002-01-02 17:27:50 srittau Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -40,7 +40,7 @@ void readmessage(void)
     uid_t euid;
 
     i=0;
-    // Construct file name SERVERTEXT/message.[pid]
+    /* Construct file name SERVERTEXT/message.[pid] */
     filename=malloc(sizeof(SERVERTEXT)+15);
     sprintf(filename, "%s/message.%d", SERVERTEXT, getpid());
 
