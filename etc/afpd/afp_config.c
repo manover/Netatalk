@@ -1,5 +1,5 @@
 /*
- * $Id: afp_config.c,v 1.22.6.7 2004-06-09 01:07:17 bfernhomberg Exp $
+ * $Id: afp_config.c,v 1.22.6.8 2004-06-12 14:36:24 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -253,7 +253,7 @@ static AFPConfig *ASPConfigInit(const struct afp_options *options,
     ATP atp;
     ASP asp;
     char *Obj, *Type = "AFPServer", *Zone = "*";
-    char *convname;
+    char *convname = NULL;
 
     if ((config = (AFPConfig *) calloc(1, sizeof(AFPConfig))) == NULL)
         return NULL;
@@ -273,10 +273,10 @@ static AFPConfig *ASPConfigInit(const struct afp_options *options,
 
     /* register asp server */
     Obj = (char *) options->hostname;
-    if ((size_t)-1 ==(convert_string_allocate( options->unixcharset, options->maccharset,
+    if (options->server && (size_t)-1 ==(convert_string_allocate( options->unixcharset, options->maccharset,
                          options->server, strlen(options->server), &convname)) ) {
         if ((convname = strdup(options->server)) == NULL ) {
-            LOG(log_error, logtype_afpd, "malloc: %m" );
+            LOG(log_error, logtype_afpd, "malloc: %s", strerror(errno) );
             goto serv_free_return;
         }
     }
