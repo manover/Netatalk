@@ -1,14 +1,158 @@
-dnl $Id: db3-check.m4,v 1.11.6.6 2004-04-21 00:56:58 bfernhomberg Exp $
-dnl Autoconf macro to check for the Berkeley DB library
+dnl $Id: db3-check.m4,v 1.11.6.7 2004-05-17 02:24:32 bfernhomberg Exp $
+dnl Autoconf macros to check for the Berkeley DB library
+
+
+AC_DEFUN([NETATALK_BDB_LINK_TRY],
+[if test $atalk_cv_lib_db = no ; then
+	AC_CACHE_CHECK([for Berkeley DB link (]ifelse($2,,default,$2)[)],[$1],
+[
+	atalk_DB_LIB=ifelse($2,,-ldb,$2)
+	atalk_LIBS=$LIBS
+	LIBS="$atalk_DB_LIB $LIBS"
+
+	AC_TRY_LINK([
+#include <db.h>
+],[
+int main(void) {
+	char *version;
+	int major, minor, patch;
+
+	version = db_version( &major, &minor, &patch );
+	return (0);
+}
+],[$1=yes],[$1=no])
+
+	LIBS="$atalk_LIBS"
+])
+
+	if test $$1 = yes ; then
+		atalk_cv_lib_db=ifelse($2,,-ldb,$2)
+	fi
+fi
+])
+
+
+AC_DEFUN([NETATALK_BDB_CHECK_VERSION],
+[
+	atalk_LIBS=$LIBS
+	LIBS="${atalk_cv_lib_db} $LIBS"
+
+	AC_MSG_CHECKING([Berkeley DB library version >= ${DB_MAJOR_REQ}.${DB_MINOR_REQ}.${DB_PATCH_REQ}])
+	AC_TRY_RUN([
+#if STDC_HEADERS
+#include <stdlib.h>
+#endif
+#include <stdio.h>
+#include <db.h>
+
+int main(void) {
+        int major, minor, patch;
+        char *version_str;
+
+        version_str = db_version(&major, &minor, &patch);
+
+        /* check library version */
+        if (major < DB_MAJOR_REQ || minor < DB_MINOR_REQ || patch < DB_PATCH_REQ) {
+                printf("library version too old (%d.%d.%d), ",major, minor, patch);
+                return (2);
+        }
+
+        /* check header and library match */
+        if ( major != DB_VERSION_MAJOR || minor != DB_VERSION_MINOR || patch != DB_VERSION_PATCH) {
+                printf("header/library version mismatch (%d.%d.%d/%d.%d.%d), ",
+                         DB_VERSION_MAJOR, DB_VERSION_MINOR, DB_VERSION_PATCH, major, minor, patch);
+                return (3);
+        }
+
+        printf("%d.%d.%d, ",major, minor, patch);
+        return (0);
+}
+], atalk_cv_bdb_version="yes", atalk_cv_bdb_version="no", atalk_cv_bdb_version="cross")
+
+
+        if test ${atalk_cv_bdb_version} = "yes"; then
+        	AC_MSG_RESULT(yes)
+        else
+		AC_MSG_RESULT(no)
+        fi
+	LIBS="$atalk_LIBS"
+])
+
+
+AC_DEFUN([NETATALK_BDB_HEADER],
+[
+	savedcflags="$CFLAGS"
+	CPPFLAGS="$CFLAGS -I$1"
+	dnl check for header version
+        AC_MSG_CHECKING(ifelse($1,,default,$1)[/db.h version >= ${DB_MAJOR_REQ}.${DB_MINOR_REQ}.${DB_PATCH_REQ}])
+        AC_TRY_RUN([
+#if STDC_HEADERS
+#include <stdlib.h>
+#endif
+#include <stdio.h>
+#include <db.h>
+
+int main(void) {
+
+        /* check header version */
+        if (DB_VERSION_MAJOR < DB_MAJOR_REQ || DB_VERSION_MINOR < DB_MINOR_REQ ||
+            DB_VERSION_PATCH < DB_PATCH_REQ ) {
+                printf("header file version too old (%d.%d.%d), ", DB_VERSION_MAJOR, DB_VERSION_MINOR, DB_VERSION_PATCH);
+                return (1);
+        }
+
+        printf("%d.%d.%d, ", DB_VERSION_MAJOR, DB_VERSION_MINOR, DB_VERSION_PATCH);
+        return (0);
+}
+], atalk_cv_bdbheader="yes", atalk_cv_bdbheader="no", atalk_cv_bdbheader="cross")
+
+        if test ${atalk_cv_bdbheader} = "no"; then
+        	bdbfound=no
+	        AC_MSG_RESULT([no])
+        else
+                AC_MSG_RESULT([yes])
+        fi
+	CPPFLAGS="$savedcflags"
+])
+
+
+AC_DEFUN([NETATALK_BERKELEY_LINK],
+[
+atalk_cv_lib_db=no
+NETATALK_BDB_LINK_TRY(atalk_cv_db_db_4_dot_2,[-ldb-4.2])
+NETATALK_BDB_LINK_TRY(atalk_cv_db_db42,[-ldb42])
+NETATALK_BDB_LINK_TRY(atalk_cv_db_db_42,[-ldb-42])
+NETATALK_BDB_LINK_TRY(atalk_cv_db_db_4_2,[-ldb-4-2])
+NETATALK_BDB_LINK_TRY(atalk_cv_db_db_4_dot_1,[-ldb-4.1])
+NETATALK_BDB_LINK_TRY(atalk_cv_db_db41,[-ldb41])
+NETATALK_BDB_LINK_TRY(atalk_cv_db_db_41,[-ldb-41])
+NETATALK_BDB_LINK_TRY(atalk_cv_db_db_4_1,[-ldb-4-1])
+NETATALK_BDB_LINK_TRY(atalk_cv_db_db_4,[-ldb-4])
+NETATALK_BDB_LINK_TRY(atalk_cv_db_db4,[-ldb4])
+NETATALK_BDB_LINK_TRY(atalk_cv_db_db,[-ldb])
+])
+
 
 AC_DEFUN([AC_PATH_BDB], 
 [
 	trybdbdir=""
 	dobdbsearch=yes
-	bdb_search_dirs="/usr/local/include/db4 /usr/local/include /usr/include/db4 /usr/include"
+	bdb_search_dirs="/usr/local/include /usr/include"
+	search_subdirs="/db4.2 /db4.1 /db4 /"
+
+dnl required BDB version
+	DB_MAJOR_REQ=4
+	DB_MINOR_REQ=1
+	DB_PATCH_REQ=0
 
 dnl make sure atalk_libname is defined beforehand
 [[ -n "$atalk_libname" ]] || AC_MSG_ERROR([internal error, atalk_libname undefined])
+
+dnl define the required BDB version
+	AC_DEFINE_UNQUOTED(DB_MAJOR_REQ, ${DB_MAJOR_REQ}, [Required BDB version, major])
+	AC_DEFINE_UNQUOTED(DB_MINOR_REQ, ${DB_MINOR_REQ}, [Required BDB version, minor])
+	AC_DEFINE_UNQUOTED(DB_PATCH_REQ, ${DB_PATCH_REQ}, [Required BDB version, patch])
+
 
 	AC_ARG_WITH(bdb,
 		[  --with-bdb=PATH         specify path to Berkeley DB installation[[auto]]],
@@ -17,131 +161,67 @@ dnl make sure atalk_libname is defined beforehand
 		elif test "x$withval" = "xyes"; then
 			dobdbsearch=yes
 		else
-			bdb_search_dirs="$withval/include/db4 $withval/include $withval"
+			bdb_search_dirs="$withval/include $withval"
 		fi
 	)
 
+
 	bdbfound=no
+        savedcflags="$CFLAGS"
+	savedldflags="$LDFLAGS"
+	savedcppflags="$CPPFLAGS"
+	savedlibs="$LIBS"
+
 	if test "x$dobdbsearch" = "xyes"; then
 	    for bdbdir in $bdb_search_dirs; do
-		AC_MSG_CHECKING([for Berkeley DB headers in $bdbdir])
-		if test -f "$bdbdir/db.h" ; then
-			AC_MSG_RESULT([yes])
-			bdblibdir="`echo $bdbdir | sed 's/\/include\/db4$//'`"
-			bdblibdir="`echo $bdblibdir | sed 's/\/include$//'`"
-			bdblibdir="${bdblibdir}/${atalk_libname}"
-			bdbbindir="`echo $bdbdir | sed 's/include\/db4$/bin/'`"
-			bdbbindir="`echo $bdbbindir | sed 's/include$/bin/'`"
-
-			savedcflags="$CFLAGS"
-			savedldflags="$LDFLAGS"
-			savedcppflags="$CPPFLAGS"
-			savedlibs="$LIBS"
-			CPPFLAGS="$CFLAGS -I$bdbdir"
-			CFLAGS=""
-			LDFLAGS="-L$bdblibdir $LDFLAGS"
-
-dnl This check breaks if bdb was configured with --with-uniquename, removed for now
-dnl			dnl db_create is BDB >3 specific 
-dnl			AC_CHECK_LIB(db, db_create, [
-dnl				bdbfound=yes
-dnl				LIBS="$LIBS -ldb"
-dnl				BDB_LIBS="-ldb"], [
-dnl			    AC_CHECK_LIB(db4, db_create, [
-dnl					bdbfound=yes
-dnl					LIBS="$LIBS -ldb4"
-dnl					BDB_LIBS="-ldb4"])
-dnl                        ])
-			
-			bdbfound=yes
-			LIBS="$LIBS -ldb"
-			BDB_LIBS="-ldb"
-
-			dnl check for header ... should only fail if the header cannot be compiled
-			dnl it does exist, otherwise we wouldn't be here
-
-			if test "x$bdbfound" = "xyes"; then
-			    AC_CHECK_HEADERS(db.h, bdbfound=yes, bdbfound=no)
-			fi
-
-			if test "x$bdbfound" = "xno"; then
-				AC_MSG_WARN([Berkeley DB libraries found, but required header files cannot be used!!!])
-			fi
-
-			dnl check we have the correct bdb version
-		  	AC_MSG_CHECKING([Berkeley DB version >= 4.1])
- 			AC_TRY_RUN([ 
-#if STDC_HEADERS
-#include <stdlib.h>
-#endif
-#include <stdio.h>
-#include <db.h>
-
-#define DB_MAJOR_REQ	4
-#define DB_MINOR_REQ	1
-#define DB_PATCH_REQ	0
-
-
-int main(void) {
-	int major, minor, patch;
-	char *version_str;
-
-	version_str = db_version(&major, &minor, &patch);
-
-	/* check header version */
-	if (DB_VERSION_MAJOR < DB_MAJOR_REQ || DB_VERSION_MINOR < DB_MINOR_REQ ||
-	    DB_VERSION_PATCH < DB_PATCH_REQ ) {
-		printf("header file version too old (%d.%d.%d), ", DB_VERSION_MAJOR, DB_VERSION_MINOR, DB_VERSION_PATCH);
-		exit (1);
-	}
-		
-	/* check library version */
-	if (major < DB_MAJOR_REQ || minor < DB_MINOR_REQ || patch < DB_PATCH_REQ) {
-		printf("library version too old (%d.%d.%d), ",major, minor, patch);
-		exit (2);
-	}
-
-	/* check header and library match */
-	if ( major != DB_VERSION_MAJOR || minor != DB_VERSION_MINOR || patch != DB_VERSION_PATCH) {
-		printf("header/library version mismatch (%d.%d.%d/%d.%d.%d), ",
-			 DB_VERSION_MAJOR, DB_VERSION_MINOR, DB_VERSION_PATCH, major, minor, patch);
-		exit(3);
-	}
-
-	printf("%d.%d.%d, ",major, minor, patch); 
-	exit (0);
-}
-], atalk_cv_bdbversion="yes", atalk_cv_bdbversion="no", atalk_cv_bdbversion="cross")
-
-
-			if test ${atalk_cv_bdbversion} = "yes"; then
-   				AC_MSG_RESULT(yes)
-			else
-   				AC_MSG_RESULT(no)
-				bdbfound=no
-			fi
-
-			if test "x$bdbfound" = "xyes"; then
-				if test "$bdbdir" != "/usr/include"; then
-				    BDB_CFLAGS="-I$bdbdir"
-				fi
-				if test "$bdblibdir" != "/usr/lib"; then
-				    BDB_LIBS="-L$bdblibdir $BDB_LIBS"
-				fi
-				BDB_BIN=$bdbbindir
-				BDB_PATH="`echo $bdbdir | sed 's,include\/db4$,,'`"
-				BDB_PATH="`echo $BDB_PATH | sed 's,include$,,'`"
-			fi
-			CFLAGS="$savedcflags"
-			LDFLAGS="$savedldflags"
-			CPPFLAGS="$savedcppflags"
-			LIBS="$savedlibs"
+		if test $bdbfound = "yes"; then
 			break;
-		else
-			AC_MSG_RESULT([no])
 		fi
+		for subdir in ${search_subdirs}; do
+		    AC_MSG_CHECKING([for Berkeley DB headers in ${bdbdir}${subdir}])
+		    if test -f "${bdbdir}${subdir}/db.h" ; then
+			AC_MSG_RESULT([yes])
+			NETATALK_BDB_HEADER([${bdbdir}${subdir}])
+			if test ${atalk_cv_bdbheader} != "no"; then
+			
+			  bdblibdir="`echo $bdbdir | sed 's/\/include\/db4\.*.*//'`"
+			  bdblibdir="`echo $bdblibdir | sed 's/\/include$//'`"
+			  bdblibdir="${bdblibdir}/${atalk_libname}"
+			  bdbbindir="`echo $bdbdir | sed 's/include\/db4\.*.*/bin/'`"
+			  bdbbindir="`echo $bdbbindir | sed 's/include$/bin/'`"
+
+			  CPPFLAGS="$CFLAGS -I${bdbdir}${subdir}"
+			  CFLAGS=""
+			  LDFLAGS="-L$bdblibdir $LDFLAGS"
+			  NETATALK_BERKELEY_LINK
+			  if test x"${atalk_cv_lib_db}" != x"no"; then
+				NETATALK_BDB_CHECK_VERSION
+				if test x"${atalk_cv_bdb_version}" != x"no"; then
+				    BDB_LIBS="-L${bdblibdir} ${atalk_cv_lib_db}"
+				    BDB_CFLAGS="-I${bdbdir}${subdir}"
+                                    BDB_BIN=$bdbbindir
+                                    BDB_PATH="`echo $bdbdir | sed 's,include\/db4$,,'`"
+                                    BDB_PATH="`echo $BDB_PATH | sed 's,include$,,'`"
+				    bdbfound=yes
+				    break;
+				fi
+			  fi	
+			  CFLAGS="$savedcflags"
+			  LDFLAGS="$savedldflags"
+			  CPPFLAGS="$savedcppflags"
+			  LIBS="$savedlibs"
+			fi
+		    else
+			AC_MSG_RESULT([no])
+		    fi
+	        done
 	    done
 	fi
+
+        CFLAGS="$savedcflags"
+        LDFLAGS="$savedldflags"
+        CPPFLAGS="$savedcppflags"
+        LIBS="$savedlibs"
 
 	if test "x$bdbfound" = "xyes"; then
 		ifelse([$1], , :, [$1])
@@ -149,6 +229,8 @@ int main(void) {
 		ifelse([$2], , :, [$2])     
 	fi
 
+        CFLAGS_REMOVE_USR_INCLUDE(BDB_CFLAGS)
+        LIB_REMOVE_USR_LIB(BDB_LIBS)
 	AC_SUBST(BDB_CFLAGS)
 	AC_SUBST(BDB_LIBS)
 	AC_SUBST(BDB_BIN)
