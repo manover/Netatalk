@@ -282,11 +282,11 @@ static size_t convert_string_internal(charset_t from, charset_t to,
 
 	/* Terminate the string */
 	if (to == CH_UCS2 && destlen-o_len >= 2) {
-		*outbuf++ = 0;
-		*outbuf++ = 0;
+		*(++outbuf) = 0;
+		*(++outbuf) = 0;
 	}
 	else if ( destlen-o_len > 0)
-		*outbuf++ = 0;
+		*(++outbuf) = 0;
 
 	return destlen-o_len;
 }
@@ -419,12 +419,12 @@ convert:
 
 	/* Terminate the string */
 	if (to == CH_UCS2 && destlen-o_len >= 2) {
-		*outbuf++ = 0;
-		*outbuf++ = 0;
+		*(++outbuf) = 0;
+		*outbuf = 0;
 		*dest = (char *)realloc(ob,destlen+2);
 	}
 	else if ( destlen-o_len > 0) {
-		*outbuf++ = 0;
+		*(++outbuf) = 0;
 		*dest = (char *)realloc(ob,destlen+1);
 	}
 
@@ -935,6 +935,7 @@ conversion_loop:
    	    SAFE_FREE(buf_save);
 	    buflen = 0;
 	    i_len -= 2;
+	    inbuf += 2;
             if (flags) *flags |= CONV_REQESCAPE;
 	    if ( i_len > 0)
             	goto conversion_loop;
