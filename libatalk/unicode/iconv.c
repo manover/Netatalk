@@ -85,34 +85,6 @@ static size_t ascii_pull(void *,char **, size_t *, char **, size_t *);
 static size_t ascii_push(void *,char **, size_t *, char **, size_t *);
 static size_t iconv_copy(void *,char **, size_t *, char **, size_t *);
 
-struct charset_functions charset_ucs2 =
-{
-        "UCS-2",
-        0,
-        iconv_copy,
-        iconv_copy,
-        CHARSET_WIDECHAR | CHARSET_PRECOMPOSED
-};
-
-struct charset_functions charset_ascii =
-{
-        "ASCII",
-        0,
-        ascii_pull,
-        ascii_push,
-        CHARSET_MULTIBYTE | CHARSET_PRECOMPOSED 
-};
-
-struct charset_functions charset_iconv =
-{
-	NULL,
-	0,
-	NULL,
-	NULL,
-	CHARSET_ICONV | CHARSET_PRECOMPOSED
-};
-
-
 extern  struct charset_functions charset_mac_roman;
 extern  struct charset_functions charset_mac_hebrew;
 extern  struct charset_functions charset_mac_centraleurope;
@@ -123,8 +95,9 @@ extern  struct charset_functions charset_utf8_mac;
 
 
 static struct charset_functions builtin_functions[] = {
-	{"UCS-2",   0, iconv_copy, iconv_copy, CHARSET_WIDECHAR},
+	{"UCS-2",   0, iconv_copy, iconv_copy, CHARSET_WIDECHAR | CHARSET_PRECOMPOSED},
 	{"ASCII",     0, ascii_pull, ascii_push, CHARSET_MULTIBYTE | CHARSET_PRECOMPOSED},
+	{"SHIFT_JIS", 1568, NULL, NULL, CHARSET_ICONV | CHARSET_PRECOMPOSED | CHARSET_CLIENT},
 	{NULL, 0, NULL, NULL, 0}
 };
 
@@ -289,10 +262,10 @@ atalk_iconv_t atalk_iconv_open(const char *tocode, const char *fromcode)
 
 	/* check if we have a builtin function for this conversion */
 	from = find_charset_functions(fromcode);
-	if(from)ret->pull = from->pull;
+	if(from && from->pull)ret->pull = from->pull;
 	
 	to = find_charset_functions(tocode);
-	if(to)ret->push = to->push;
+	if(to && to->push)ret->push = to->push;
 
 	/* check if we can use iconv for this conversion */
 #ifdef HAVE_USABLE_ICONV
@@ -318,13 +291,13 @@ atalk_iconv_t atalk_iconv_open(const char *tocode, const char *fromcode)
 	}
 
 	/* check for conversion to/from ucs2 */
-	if (strcasecmp(fromcode, "UCS-2") == 0 && to) {
+	if (strcasecmp(fromcode, "UCS-2") == 0 && to && to->push) {
 		ret->direct = to->push;
 		ret->push = ret->pull = NULL;
 		return ret;
 	}
 
-	if (strcasecmp(tocode, "UCS-2") == 0 && from) {
+	if (strcasecmp(tocode, "UCS-2") == 0 && from && from->pull) {
 		ret->direct = from->pull;
 		ret->push = ret->pull = NULL;
 		return ret;
