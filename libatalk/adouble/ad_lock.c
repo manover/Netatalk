@@ -1,5 +1,5 @@
 /* 
- * $Id: ad_lock.c,v 1.11.6.1 2003-10-26 10:33:37 didg Exp $
+ * $Id: ad_lock.c,v 1.11.6.2 2004-01-28 10:15:39 didg Exp $
  *
  * Copyright (c) 1998,1999 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT for more information.
@@ -500,6 +500,8 @@ int ad_excl_lock(struct adouble *ad, const u_int32_t eid)
   if (eid == ADEID_DFORK) {
     adf = &ad->ad_df;
   } else {
+    /* FIXME it's broken for resource fork */
+    return 0;
     adf = &ad->ad_hf;
   }
   lock.l_start = 0;
