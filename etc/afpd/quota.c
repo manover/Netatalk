@@ -1,5 +1,5 @@
 /*
- * $Id: quota.c,v 1.11.2.3 2002-01-13 18:19:21 jmarcus Exp $
+ * $Id: quota.c,v 1.11.2.4 2002-02-08 02:57:26 jmarcus Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -366,7 +366,7 @@ struct dqblk	*dqblk;
         syslog( LOG_ERR, "overquota: gettimeofday: %s", strerror(errno) );
         return( AFPERR_PARAM );
     }
-    if ( !dqblk->dqb_btimelimit || dqblk->dqb_btimelimit > tv.tv_sec ) {
+    if ( dqblk->dqb_btimelimit && dqblk->dqb_btimelimit > tv.tv_sec ) {
         return( 0 );
     }
 #endif /* ultrix */
@@ -413,9 +413,15 @@ const u_int32_t bsize;
     if (dqblk.dqb_bsoftlimit == 0 && dqblk.dqb_bhardlimit == 0) {
         *btotal = *bfree = ~((VolSpace) 0);
     } else if ( overquota( &dqblk )) {
-        *btotal = tobytes( dqblk.dqb_bhardlimit, bsize );
-        *bfree = tobytes( dqblk.dqb_bhardlimit, bsize ) -
-                 tobytes( dqblk.dqb_curblocks, bsize );
+		if ( tobytes( dqblk.dqb_curblocks, bsize ) > tobytes( dqblk.dqb_bhardlimit, bsize ) ) {
+			*btotal = tobytes( dqblk.dqb_curblocks, bsize );
+			*bfree = 0;
+		}
+		else {
+        	*btotal = tobytes( dqblk.dqb_bhardlimit, bsize );
+        	*bfree = tobytes( dqblk.dqb_bhardlimit, bsize ) -
+                 	tobytes( dqblk.dqb_curblocks, bsize );
+		}
     } else {
         *btotal = tobytes( dqblk.dqb_bsoftlimit, bsize );
         *bfree = tobytes( dqblk.dqb_bsoftlimit, bsize  ) -
