@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_update.c,v 1.1.4.11 2004-01-26 16:11:58 didg Exp $
+ * $Id: dbd_update.c,v 1.1.4.12 2004-03-21 23:04:07 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -60,7 +60,7 @@ int dbd_update(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
     }
     else if  (rc > 0) {
 #ifdef DEBUG
-	memcpy(tmpcnid, pkey.data, sizeof(cnid_t));
+	memcpy(&tmpcnid, pkey.data, sizeof(cnid_t));
 	LOG(log_info, logtype_cnid, "dbd_update: Deleting %u corresponding to dev/ino %s from cnid2.db",
 	    ntohl(tmpcnid), stringify_devino(rqst->dev, rqst->ino));
 #endif
@@ -85,7 +85,7 @@ int dbd_update(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
     }
     else if  (rc > 0) {
 #ifdef DEBUG
-	memcpy(tmpcnid, pkey.data, sizeof(cnid_t));
+	memcpy(&tmpcnid, pkey.data, sizeof(cnid_t));
 	LOG(log_info, logtype_cnid, "dbd_update: Deleting %u corresponding to did %u name %s from cnid2.db",
 	    ntohl(tmpcnid), ntohl(rqst->did), rqst->name);
 #endif

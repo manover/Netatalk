@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_metad.c,v 1.1.4.13 2004-02-09 13:54:29 didg Exp $
+ * $Id: cnid_metad.c,v 1.1.4.14 2004-03-21 23:04:07 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -380,6 +380,8 @@ int main(int argc, char *argv[])
     int    err = 0;
     int    debug = 0;
     int    ret;
+
+    set_processname("cnid_metad");
     
     while (( cc = getopt( argc, argv, "ds:p:h:u:g:")) != -1 ) {
         switch (cc) {
