@@ -1,5 +1,5 @@
 /*
- * $Id: rtmp.c,v 1.8.2.1 2001-12-31 20:05:20 srittau Exp $
+ * $Id: rtmp.c,v 1.8.2.2 2002-03-12 15:39:06 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/syslog.h>
+#include <syslog.h>
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/socket.h>
