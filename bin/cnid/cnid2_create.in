@@ -3,7 +3,7 @@
 #
 # Upgrade version 1 CNID databases to version 2
 #
-# $Id: cnid2_create.in,v 1.1.2.5 2004-01-12 13:52:24 lenneis Exp $
+# $Id: cnid2_create.in,v 1.1.2.6 2004-03-17 15:17:34 lenneis Exp $
 #
 # Copyright (C) Joerg Lenneis 2003
 # All Rights Reserved.  See COPYING.
@@ -224,7 +224,7 @@ sub expand_did_table($$)
 	    # from a non-afpd rename that has not yet been picked up by afpd and is
 	    # fixable. We need a guess at the type, though.
 	    
-	    if (scalar(@{$did_table{$entry->{cnid}}}) > 0) {
+	    if ($did_table{$entry->{cnid}} and scalar(@{$did_table{$entry->{cnid}}}) > 0) {
 
 		# We have entries hanging off this entry in our table,
 		# so this must be a directory
