@@ -6,11 +6,7 @@ SUBDIRS = uams_krb4
 # conditionally build some modules
 #
 
-if USE_GSSAPI
-UAMS_GENERIC = uams_guest.la uams_passwd.la uams_gss.la
-else
 UAMS_GENERIC = uams_guest.la uams_passwd.la
-endif
 
 if USE_DHX
 UAMS_DHX_GENERIC = uams_randnum.la uams_dhx_passwd.la
@@ -25,6 +21,10 @@ UAMS_PAM = uams_pam.la
 if USE_DHX
 UAMS_DHX_PAM = uams_dhx_pam.la
 endif
+endif
+
+if USE_GSSAPI
+UAMS_GSSAPI = uams_gss.la
 endif
 
 # links
@@ -84,7 +84,8 @@ uams_LTLIBRARIES =		\
 	$(UAMS_PGP)		\
 	$(UAMS_PAM)		\
 	$(UAMS_DHX_GENERIC)	\
-	$(UAMS_DHX_PAM)
+	$(UAMS_DHX_PAM)		\
+	$(UAMS_GSSAPI)
 
 #
 # link creation
