@@ -1,5 +1,5 @@
 /*
- * $Id: nfsquota.c,v 1.10 2002-08-29 17:22:06 jmarcus Exp $
+ * $Id: nfsquota.c,v 1.10.2.1 2003-12-28 13:39:53 srittau Exp $
  *
  * parts of this are lifted from the bsd quota program and are
  * therefore under the following copyright:
@@ -163,7 +163,12 @@ int getnfsquota(const struct vol *vol, const int uid, const u_int32_t bsize,
             gq_rslt.GQR_RQUOTA.rq_bhardlimit*NFS_BSIZE;
         dqp->dqb_bsoftlimit =
             gq_rslt.GQR_RQUOTA.rq_bsoftlimit*NFS_BSIZE;
+
+#ifdef HAVE_STRUCT_IF_DQBLK
+	dqp->dqb_curspace =
+#else
         dqp->dqb_curblocks =
+#endif
             gq_rslt.GQR_RQUOTA.rq_curblocks*NFS_BSIZE;
 
 #ifdef ultrix

@@ -1,5 +1,5 @@
 /*
- * $Id: quota.c,v 1.22 2002-08-29 17:22:06 jmarcus Exp $
+ * $Id: quota.c,v 1.22.2.1 2003-12-28 13:39:53 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -277,8 +277,13 @@ struct dqblk        *dq;
     /* set stuff up for group quotas if necessary */
 
     /* max(user blocks, group blocks) */
+#ifdef HAVE_STRUCT_IF_DQBLK
+    if (dqg.dqb_curspace && (dq->dqb_curspace < dqg.dqb_curspace))
+        dq->dqb_curspace = dqg.dqb_curspace;
+#else
     if (dqg.dqb_curblocks && (dq->dqb_curblocks < dqg.dqb_curblocks))
         dq->dqb_curblocks = dqg.dqb_curblocks;
+#endif
 
     /* min(user limit, group limit) */
     if (dqg.dqb_bhardlimit && (!dq->dqb_bhardlimit ||
@@ -395,9 +400,15 @@ struct dqblk	*dqblk;
 {
     struct timeval	tv;
 
-    if ( dqblk->dqb_curblocks < dqblk->dqb_bsoftlimit ) {
-        return( 0 );
+#ifdef HAVE_STRUCT_IF_DQBLK
+    if ( dqblk->dqb_curspace < dqblk->dqb_bsoftlimit ) {
+        return 0;
     }
+#else
+    if ( dqblk->dqb_curblocks < dqblk->dqb_bsoftlimit ) {
+        return 0;
+    }
+#endif
 #ifdef ultrix
     if ( dqblk->dqb_bwarn ) {
         return( 0 );
@@ -454,19 +465,32 @@ const u_int32_t bsize;
     if (dqblk.dqb_bsoftlimit == 0 && dqblk.dqb_bhardlimit == 0) {
         *btotal = *bfree = ~((VolSpace) 0);
     } else if ( overquota( &dqblk )) {
+#ifdef HAVE_STRUCT_IF_DQBLK
+        if ( tobytes( dqblk.dqb_curspace, bsize ) > tobytes( dqblk.dqb_bhardlimit, bsize ) ) {
+            *btotal = tobytes( dqblk.dqb_curspace, bsize );
+#else
         if ( tobytes( dqblk.dqb_curblocks, bsize ) > tobytes( dqblk.dqb_bhardlimit, bsize ) ) {
             *btotal = tobytes( dqblk.dqb_curblocks, bsize );
+#endif
             *bfree = 0;
         }
         else {
             *btotal = tobytes( dqblk.dqb_bhardlimit, bsize );
             *bfree = tobytes( dqblk.dqb_bhardlimit, bsize ) -
+#ifdef HAVE_STRUCT_IF_DQBLK
+                     tobytes( dqblk.dqb_curspace, bsize );
+#else
                      tobytes( dqblk.dqb_curblocks, bsize );
+#endif
         }
     } else {
         *btotal = tobytes( dqblk.dqb_bsoftlimit, bsize );
         *bfree = tobytes( dqblk.dqb_bsoftlimit, bsize  ) -
+#ifdef HAVE_STRUCT_IF_DQBLK
+                 tobytes( dqblk.dqb_curspace, bsize );
+#else
                  tobytes( dqblk.dqb_curblocks, bsize );
+#endif
     }
 
     return( AFP_OK );

@@ -1,5 +1,5 @@
 /*
- * $Id: unix.h,v 1.11 2002-08-30 10:19:19 didg Exp $
+ * $Id: unix.h,v 1.11.2.1 2003-12-28 13:39:53 srittau Exp $
  */
 
 #ifndef AFPD_UNIX_H
@@ -66,6 +66,10 @@ typedef int	mode_t;
 #include <asm/unistd.h>
 #include <linux/quota.h>
 #endif /* ! NEED_QUOTACTL_WRAPPER */
+#ifdef HAVE_STRUCT_IF_DQBLK
+#undef dqblk
+#define dqblk if_dqblk
+#endif
 #endif /* linux || ultrix || HAVE_QUOTA_H */
 
 #ifdef __svr4__ 
