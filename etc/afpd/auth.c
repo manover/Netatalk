@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.44.2.3.2.1 2003-09-11 23:49:30 bfernhomberg Exp $
+ * $Id: auth.c,v 1.44.2.3.2.2 2003-09-12 06:53:18 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -732,15 +732,26 @@ int		ibuflen, *rbuflen;
     if ((len + 1) & 1) /* pad byte */
         ibuf++;
 
-    len = (unsigned char) *ibuf++;
-    if ( len > sizeof(username) - 1) {
-        return AFPERR_PARAM;
+    if ( afp_version < 30) {
+        len = (unsigned char) *ibuf++;
+        if ( len > sizeof(username) - 1) {
+            return AFPERR_PARAM;
+        }
+        memcpy(username, ibuf, len);
+        username[ len ] = '\0';
+        ibuf += len;
+        if ((len + 1) & 1) /* pad byte */
+            ibuf++;
+    } else {
+	/* AFP > 3.0 doesn't pass the username, APF 3.1 specs page 124 */
+	if ( ibuf[0] != '\0' || ibuf[1] != '\0')
+	    return AFPERR_PARAM;
+        ibuf += 2;
+	len = MIN(sizeof(username), strlen(obj->username));
+        memcpy(username, obj->username, len);
+	username[ len ] = '\0';
     }
-    memcpy(username, ibuf, len);
-    username[ len ] = '\0';
-    ibuf += len;
-    if ((len + 1) & 1) /* pad byte */
-        ibuf++;
+        
 
     LOG(log_info, logtype_afpd, "changing password for <%s>", username);
 
