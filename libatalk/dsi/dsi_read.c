@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_read.c,v 1.3.14.4 2004-05-04 14:26:14 didg Exp $
+ * $Id: dsi_read.c,v 1.3.14.5 2004-07-01 02:08:16 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -36,7 +36,9 @@
 ssize_t dsi_readinit(DSI *dsi, void *buf, const size_t buflen,
 		    const size_t size, const int err)
 {
+#ifdef TIMER_ON_WRITE
   const struct itimerval none = {{0, 0}, {0, 0}};
+#endif
 
   dsi->noreply = 1; /* we will handle our own replies */
   dsi->header.dsi_flags = DSIFL_REPLY;
