@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.7 2003-10-26 20:13:02 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.8 2004-01-02 18:14:52 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -142,7 +142,7 @@ char *set_name(const struct vol *vol, char *data, cnid_t pid, char *name, cnid_t
         if (aint > 255)  /* FIXME safeguard, anyway if no ascii char it's game over*/
            aint = 255;
 
-        utf8 = htonl(vol->v_mac->kTextEncoding);         /* htonl(utf8) */
+        utf8 = vol->v_mac?htonl(vol->v_mac->kTextEncoding):0;         /* htonl(utf8) */
         memcpy(data, &utf8, sizeof(utf8));
         data += sizeof(utf8);
         
@@ -1371,7 +1371,7 @@ const int   noadouble;
     err = AFP_OK;
     if (ad_close( &add, adflags ) <0) {
 	deletefile(NULL, dst, 0);
-        return AFPERR_PARAM;  // FIXME
+        return AFPERR_PARAM;  /* FIXME */
     } else {
 	ad_init(&add, 0);
 	if (ad_open(dst , adflags | noadouble, O_RDWR, 0666, &add) < 0) {
