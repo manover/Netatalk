@@ -85,6 +85,14 @@ typedef struct DSI {
   char srvloc_url[512];
 #endif 
 
+  /* buffer for OSX deadlock */
+  int noblocking;
+  char *buffer;
+  char *start;
+  char *eof;
+  char *end;
+  int  maxsize;
+
 } DSI;
   
 /* DSI flags */
@@ -122,8 +130,8 @@ typedef struct DSI {
 /* server and client quanta */
 #define DSI_DEFQUANT        2           /* default attention quantum size */
 #define DSI_SERVQUANT_MAX   0xffffffffL /* server quantum */
-#define DSI_SERVQUANT_MIN   0x0004A2E0L /* minimum server quantum */
-#define DSI_SERVQUANT_DEF   DSI_SERVQUANT_MIN /* default server quantum */
+#define DSI_SERVQUANT_MIN   32000       /* minimum server quantum */
+#define DSI_SERVQUANT_DEF   0x0004A2E0L /* default server quantum */
 
 /* default port number */
 #define DSI_AFPOVERTCP_PORT 548
@@ -149,6 +157,9 @@ extern int dsi_tickle __P((DSI *));
 extern void dsi_getstatus __P((DSI *));
 extern void dsi_close __P((DSI *));
 extern void dsi_sleep __P((DSI *, const int ));
+
+/* set, unset socket blocking mode */
+extern int dsi_block __P((DSI *, const int));
 
 /* low-level stream commands -- in dsi_stream.c */
 extern size_t dsi_stream_write __P((DSI *, void *, const size_t, const int mode));

@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_read.c,v 1.3.14.1 2003-10-17 00:01:14 didg Exp $
+ * $Id: dsi_read.c,v 1.3.14.2 2004-02-10 10:21:50 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -19,6 +19,7 @@
 #include <sys/time.h>
 
 #include <atalk/dsi.h>
+#include <sys/ioctl.h> 
 
 #ifndef min
 #define min(a,b)   ((a) < (b) ? (a) : (b))
@@ -57,6 +58,24 @@ void dsi_readdone(DSI *dsi)
   setitimer(ITIMER_REAL, &dsi->savetimer, NULL);
   sigprocmask(SIG_SETMASK, &dsi->oldset, NULL);
   dsi->sigblocked = 0;
+}
+
+/* */
+int dsi_block(DSI *dsi, const int mode)
+{
+#if 0
+    dsi->noblocking = mode;
+    return 0;
+#else
+    int adr = mode;
+    int ret;
+    
+    ret = ioctl(dsi->socket, FIONBIO, &adr);
+    if (!ret) {
+        dsi->noblocking = mode;
+    }
+    return ret;
+#endif    
 }
 
 /* send off the data */

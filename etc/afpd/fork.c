@@ -1,5 +1,5 @@
 /*
- * $Id: fork.c,v 1.51.2.2.2.4 2003-10-17 00:01:11 didg Exp $
+ * $Id: fork.c,v 1.51.2.2.2.5 2004-02-10 10:21:35 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -256,11 +256,9 @@ static int fork_setmode(struct adouble *adp, int eid, int access, int ofrefnum)
                 return ret;
         }
     }
-
     if ( access == (OPENACC_WR | OPENACC_RD | OPENACC_DWR | OPENACC_DRD)) {
         return ad_excl_lock(adp, eid);
     }
-
     return 0;
 }
 
@@ -891,6 +889,7 @@ int is64;
     int			cc, err, eid, xlate = 0;
     u_int16_t		ofrefnum;
     u_char		nlmask, nlchar;
+    int                 non_blocking = 0;
     
     ibuf += 2;
     memcpy(&ofrefnum, ibuf, sizeof( ofrefnum ));
@@ -989,7 +988,8 @@ int is64;
 
         /* due to the nature of afp packets, we have to exit if we get
            an error. we can't do this with translation on. */
-#ifdef WITH_SENDFILE
+#if 0 /* idef WITH_SENDFILE */
+        /* FIXME with OS X deadlock partial workaround we can't use sendfile */
         if (!(xlate || Debug(obj) )) {
             if (ad_readfile(ofork->of_ad, eid, dsi->socket, offset, dsi->datasize) < 0) {
                 if (errno == EINVAL || errno == ENOSYS)
@@ -1007,6 +1007,12 @@ int is64;
 afp_read_loop:
 #endif 
 
+        /* fill up our buffer. */
+        if (*rbuflen) {
+            /* set to non blocking mode */
+            non_blocking = 1;
+            dsi_block(dsi, 1);
+        }
         /* fill up our buffer. */
         while (*rbuflen > 0) {
             cc = read_file(ofork, eid, offset, nlmask, nlchar, rbuf,rbuflen, xlate);
@@ -1037,6 +1043,11 @@ afp_read_exit:
     }
 
 afp_read_done:
+    if (non_blocking) {
+        DSI *dsi = obj->handle;
+        /* set back to blocking mode */
+        dsi_block(dsi, 0);
+    }
     ad_tmplock(ofork->of_ad, eid, ADLOCK_CLR, saveoff, savereqcount,ofork->of_refnum);
     return err;
 

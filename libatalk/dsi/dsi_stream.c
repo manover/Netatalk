@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_stream.c,v 1.11.6.3 2004-02-06 13:34:35 didg Exp $
+ * $Id: dsi_stream.c,v 1.11.6.4 2004-02-10 10:21:50 didg Exp $
  *
  * Copyright (c) 1998 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -44,7 +44,65 @@
 #define MSG_MORE 0x8000
 #endif
 
-/* write raw data. return actual bytes read. checks against EINTR
+#ifndef MSG_DONTWAIT
+#define MSG_DONTWAIT 0x40
+#endif
+
+/* ------------------------- 
+ * we don't use a circular buffer.
+*/
+const void dsi_buffer(DSI *dsi)
+{
+    fd_set readfds, writefds;
+    int    len;
+    int    maxfd;
+
+    FD_ZERO(&readfds);
+    FD_ZERO(&writefds);
+    FD_SET( dsi->socket, &readfds);
+    FD_SET( dsi->socket, &writefds);
+    maxfd = dsi->socket +1;
+    if (select( maxfd, &readfds, &writefds, NULL, NULL) <= 0)
+        return;
+
+    if ( !FD_ISSET(dsi->socket, &readfds)) {
+        /* nothing waiting in the queue */
+        return;
+    }
+    if (!dsi->buffer) {
+        /* XXX config options */
+        dsi->maxsize = 6 * dsi->server_quantum;
+        if (!dsi->maxsize)
+            dsi->maxsize = 6 * DSI_SERVQUANT_DEF;
+        dsi->buffer = malloc(dsi->maxsize);
+        if (!dsi->buffer) {
+           /* fall back to blocking IO */
+            dsi_block(dsi, 0);
+            return;
+        }
+        dsi->start = dsi->buffer;
+        dsi->eof = dsi->buffer;
+        dsi->end = dsi->buffer + dsi->maxsize;
+    }
+    len = dsi->end - dsi->eof;
+
+    if (len <= 0) {
+        /* ouch, our buffer is full ! 
+         * fall back to blocking IO 
+         * could block and disconnect but it's better than a cpu hog
+        */
+        dsi_block(dsi, 0);
+        return;
+    }
+
+    len = read(dsi->socket, dsi->eof, len);
+    if (len <= 0)
+        return;
+    dsi->eof += len;
+}
+
+/* ------------------------------
+ * write raw data. return actual bytes read. checks against EINTR
  * aren't necessary if all of the signals have SA_RESTART
  * specified. */
 size_t dsi_stream_write(DSI *dsi, void *data, const size_t length, int mode)
@@ -57,6 +115,14 @@ size_t dsi_stream_write(DSI *dsi, void *data, const size_t length, int mode)
 #endif
   unsigned int flags = 0;
 
+#if 0
+  /* XXX there's no MSG_DONTWAIT in recv ?? so we have to play with ioctl
+  */ 
+  if (dsi->noblocking) {
+      flags |= MSG_DONTWAIT;
+  }
+#endif
+  
   written = 0;
   while (written < length) {
     if ((-1 == (len = send(dsi->socket, (u_int8_t *) data + written,
@@ -65,15 +131,62 @@ size_t dsi_stream_write(DSI *dsi, void *data, const size_t length, int mode)
       continue;
 
     if (len < 0) {
-      LOG(log_error, logtype_default, "dsi_stream_write: %s", strerror(errno));
-      break;
+      if (dsi->noblocking && errno ==  EAGAIN) {
+         /* non blocking mode but will block 
+          * read data in input queue.
+          * 
+         */
+         dsi_buffer(dsi);
+      }
+      else {
+          LOG(log_error, logtype_default, "dsi_stream_write: %s", strerror(errno));
+          break;
+      }
     }
-    
-    written += len;
+    else {
+        written += len;
+    }
   }
 
   dsi->write_count += written;
   return written;
+}
+
+/* ---------------------------------
+*/
+static ssize_t buf_read(DSI *dsi, u_int8_t *buf, size_t count)
+{
+    ssize_t nbe = 0;
+    ssize_t ret;
+    
+    if (!count)
+        return 0;
+        
+    if (dsi->start) {        
+        nbe = dsi->eof - dsi->start;
+
+        if (nbe > 0) {
+           nbe = min((size_t)nbe, count);
+           memcpy(buf, dsi->start, nbe);
+           dsi->start += nbe;
+
+           if (dsi->eof == dsi->start) 
+               dsi->start = dsi->eof = dsi->buffer;
+
+           if (nbe == count)
+               return nbe;
+           count -= nbe;
+           buf += nbe;
+        }
+        else 
+           nbe = 0;
+    }
+  
+    ret = read(dsi->socket, buf, count);
+    if (ret <= 0)
+        return ret;
+
+    return ret +nbe;
 }
 
 /* ---------------------------------------
@@ -87,7 +200,7 @@ size_t dsi_stream_read(DSI *dsi, void *data, const size_t length)
   
   stored = 0;
   while (stored < length) {
-    len = read(dsi->socket, (u_int8_t *) data + stored, length - stored);
+    len = buf_read(dsi, (u_int8_t *) data + stored, length - stored);
     if (len == -1 && errno == EINTR)
       continue;
     else if (len > 0)
