@@ -1,5 +1,5 @@
 /*
- * $Id: afp_asp.c,v 1.18.6.4 2004-01-10 07:44:39 didg Exp $
+ * $Id: afp_asp.c,v 1.18.6.5 2004-04-25 23:19:06 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -123,6 +123,9 @@ static __inline__ void afp_authprint_remove(AFPObj *obj)
     }
 }
 
+/* ------------------------
+ * SIGTERM
+*/
 static void afp_asp_die(const int sig)
 {
     ASP asp = child->handle;
@@ -139,6 +142,9 @@ static void afp_asp_die(const int sig)
         exit(sig);
 }
 
+/* -----------------------------
+ * SIGUSR1
+ */
 static void afp_asp_timedown()
 {
     struct sigaction	sv;
@@ -160,20 +166,32 @@ static void afp_asp_timedown()
     memset(&sv, 0, sizeof(sv));
     sv.sa_handler = afp_asp_die;
     sigemptyset( &sv.sa_mask );
+    sigaddset(&sv.sa_mask, SIGHUP);
+    sigaddset(&sv.sa_mask, SIGTERM);
     sv.sa_flags = SA_RESTART;
     if ( sigaction( SIGALRM, &sv, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_timedown: sigaction: %s", strerror(errno) );
         afp_asp_die(1);
     }
 
-    /* ignore SIGHUP */
+    /* ignore myself */
     sv.sa_handler = SIG_IGN;
     sigemptyset( &sv.sa_mask );
     sv.sa_flags = SA_RESTART;
-    if ( sigaction( SIGHUP, &sv, 0 ) < 0 ) {
-        LOG(log_error, logtype_afpd, "afp_timedown: sigaction SIGHUP: %s", strerror(errno) );
+    if ( sigaction( SIGUSR1, &sv, 0 ) < 0 ) {
+        LOG(log_error, logtype_afpd, "afp_timedown: sigaction SIGUSR1: %s", strerror(errno) );
         afp_asp_die(1);
     }
+}
+
+/* ---------------------------------
+ * SIGHUP reload configuration file
+*/
+extern volatile int reload_request;
+
+static void afp_asp_reload()
+{
+    reload_request = 1;
 }
 
 /* ---------------------- */
@@ -185,7 +203,7 @@ static void afp_asp_getmesg (int sig)
 }
 #endif /* SERVERTEXT */
 
-
+/* ---------------------- */
 void afp_over_asp(AFPObj *obj)
 {
     ASP asp;
@@ -201,18 +219,33 @@ void afp_over_asp(AFPObj *obj)
     child = obj;
     asp = (ASP) obj->handle;
 
-    /* install signal handlers */
+    /* install signal handlers 
+     * With ASP tickle handler is done in the parent process
+    */
     memset(&action, 0, sizeof(action));
-    action.sa_handler = afp_asp_timedown;
+
+    /* install SIGHUP */
+    action.sa_handler = afp_asp_reload; 
     sigemptyset( &action.sa_mask );
+    sigaddset(&action.sa_mask, SIGTERM);
+    sigaddset(&action.sa_mask, SIGUSR1);
+#ifdef SERVERTEXT
+    sigaddset(&action.sa_mask, SIGUSR2);
+#endif    
     action.sa_flags = SA_RESTART;
     if ( sigaction( SIGHUP, &action, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_over_asp: sigaction: %s", strerror(errno) );
         afp_asp_die(1);
     }
 
+    /*  install SIGTERM */
     action.sa_handler = afp_asp_die;
     sigemptyset( &action.sa_mask );
+    sigaddset(&action.sa_mask, SIGHUP);
+    sigaddset(&action.sa_mask, SIGUSR1);
+#ifdef SERVERTEXT
+    sigaddset(&action.sa_mask, SIGUSR2);
+#endif    
     action.sa_flags = SA_RESTART;
     if ( sigaction( SIGTERM, &action, 0 ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_over_asp: sigaction: %s", strerror(errno) );
@@ -223,7 +256,9 @@ void afp_over_asp(AFPObj *obj)
     /* Added for server message support */
     action.sa_handler = afp_asp_getmesg;
     sigemptyset( &action.sa_mask );
-    sigaddset(&action.sa_mask, SIGUSR2);
+    sigaddset(&action.sa_mask, SIGTERM);
+    sigaddset(&action.sa_mask, SIGUSR1);
+    sigaddset(&action.sa_mask, SIGHUP);
     action.sa_flags = SA_RESTART;
     if ( sigaction( SIGUSR2, &action, 0) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_over_asp: sigaction: %s", strerror(errno) );
@@ -231,6 +266,19 @@ void afp_over_asp(AFPObj *obj)
     }
 #endif /* SERVERTEXT */
 
+    /*  SIGUSR1 - set down in 5 minutes  */
+    action.sa_handler = afp_asp_timedown; 
+    sigemptyset( &action.sa_mask );
+    sigaddset(&action.sa_mask, SIGHUP);
+    sigaddset(&action.sa_mask, SIGTERM);
+#ifdef SERVERTEXT
+    sigaddset(&action.sa_mask, SIGUSR2);
+#endif    
+    action.sa_flags = SA_RESTART;
+    if ( sigaction( SIGUSR1, &action, 0 ) < 0 ) {
+        LOG(log_error, logtype_afpd, "afp_over_asp: sigaction: %s", strerror(errno) );
+        afp_asp_die(1);
+    }
 
     LOG(log_info, logtype_afpd, "session from %u.%u:%u on %u.%u:%u",
         ntohs( asp->asp_sat.sat_addr.s_net ),
@@ -240,6 +288,10 @@ void afp_over_asp(AFPObj *obj)
         atp_sockaddr( asp->asp_atp )->sat_port );
 
     while ((reply = asp_getrequest(asp))) {
+        if (reload_request) {
+            reload_request = 0;
+            load_volumes(child);
+        }
         switch (reply) {
         case ASPFUNC_CLOSE :
             afp_asp_close(obj);
