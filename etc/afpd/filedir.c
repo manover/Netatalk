@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.45.2.2.2.4 2003-11-15 00:00:34 bfernhomberg Exp $
+ * $Id: filedir.c,v 1.45.2.2.2.5 2004-01-08 03:50:56 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -413,11 +413,11 @@ int         isdir;
 
         /* deal with case insensitive, case-preserving filesystems. */
         if ((stat(upath, st) == 0)) {
-	    if ((size_t)-1 == (convert_string_allocate(CH_UCS2, vol->v_volcharset, oldname,
+	    if ((size_t)-1 == (convert_string_allocate(vol->v_volcharset, CH_UCS2, oldname,
                                 strlen(oldname), (char**) &oldname_w)) ) {
                 return AFPERR_MISC; /* conversion error has already been logged */
             }
-	    if ((size_t)-1 == (convert_string_allocate(CH_UCS2, vol->v_volcharset, newname, 
+	    if ((size_t)-1 == (convert_string_allocate(vol->v_volcharset, CH_UCS2, newname, 
                                 strlen(newname), (char**) &newname_w)) ) {
                 free(oldname_w);
                 return AFPERR_MISC; /* conversion error has already been logged */
