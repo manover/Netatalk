@@ -489,25 +489,19 @@ int main(int argc, char *argv[])
 		cnid_type = DEFAULT_CNID_SCHEME;
 	
 
-	/* check path */
+	/* get path */
 	strlcpy(path, argv[optind], sizeof(path));
 
-	if (path[0] != '/') {
-		/* deal with relative path */	
-		if (chdir(path)) {
-                        fprintf (stderr, "ERROR: cannot chdir to '%s'\n", path);
-                        return (-1);
-		}
-		path[0] = 0;
+	/* deal with relative path */	
+	if (chdir(path)) {
+                fprintf (stderr, "ERROR: cannot chdir to '%s'\n", path);
+                return (-1);
 	}
 
-	if (path[0] == 0) {
-		/* no path or relative path specified */
-                if (NULL == (getcwd(path, sizeof(path))) ) {
-                        fprintf (stderr, "ERROR: getcwd failed\n");
-                        return (-1);
-                }
-	} 
+        if (NULL == (getcwd(path, sizeof(path))) ) {
+                fprintf (stderr, "ERROR: getcwd failed\n");
+                return (-1);
+        }
 
 	/* set charsets */
 	atalk_register_charset(&charset_iso8859_adapted);
