@@ -1,5 +1,5 @@
 /*
- * $Id: unix.c,v 1.38 2002-09-29 15:42:14 didg Exp $
+ * $Id: unix.c,v 1.38.2.1 2003-02-04 19:10:35 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -133,15 +133,18 @@ mode_t mode;
 
     ma->ma_owner = utombits( mode );
 
-    /* ma_user is a union of all permissions */
-    ma->ma_user = 0;
+    /* ma_user is a union of all permissions but we must follow
+     * unix perm 
+    */
     if ( (uuid == stat->st_uid) || (uuid == 0)) {
         ma->ma_user = ma->ma_owner | AR_UOWN;
     }
-    if ( gmem( stat->st_gid )) {
-        ma->ma_user |= ma->ma_group;
+    else if ( gmem( stat->st_gid )) {
+        ma->ma_user = ma->ma_group;
     } 
-    ma->ma_user |= ma->ma_world;
+    else {
+        ma->ma_user = ma->ma_world;
+    }
 
     /*
      * There are certain things the mac won't try if you don't have

@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.41.2.2 2002-11-07 17:10:02 srittau Exp $
+ * $Id: directory.c,v 1.41.2.3 2003-02-04 19:10:24 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -791,8 +791,10 @@ char	**cpath;
             	   fail here.
             	   
             	*/
-    		    if ( dir->d_did == DIRDID_ROOT_PARENT) 
-			        return NULL;    		
+            	if ( dir->d_did == DIRDID_ROOT_PARENT) 
+            	    return NULL;
+            	if (errno != ENOENT && errno != ENOTDIR)   
+            	    return NULL;
             	cdir = dir->d_parent;
             	dir_invalidate(vol, dir);
             	if (*path != '\0' || u == NULL) {
@@ -881,8 +883,10 @@ char	**cpath;
                     	/* dir is not valid anymore 
                     	   we delete dir from the cache and abort.
                     	*/
-                    	if ( dir->d_did != DIRDID_ROOT_PARENT) 
-                    	    dir_invalidate(vol, dir);
+                    	if ( dir->d_did != DIRDID_ROOT_PARENT &&
+                    	        (errno == ENOENT || errno == ENOTDIR)) {
+                    	     dir_invalidate(vol, dir);
+                    	}
                         return( NULL );
                     }
                     cdir = extenddir( vol, dir, path );
@@ -921,6 +925,7 @@ struct dir	*dir;
         return( 0 );
     }
     if ( dir->d_did == DIRDID_ROOT_PARENT) {
+        errno = 0;    /* errno is checked in file.c */
         return( -1 );
     }
 
@@ -1789,18 +1794,18 @@ int pathlen;
 
             /* bail if it's not a symlink */
             if ((lstat(de->d_name, &st) == 0) && !S_ISLNK(st.st_mode)) {
+                closedir(dp);
                 return AFPERR_DIRNEMPT;
             }
 
-            if (unlink(de->d_name) < 0) {
+            if (unlink(de->d_name) < 0 && errno != ENOENT) {
+                closedir(dp);
                 switch (errno) {
                 case EPERM:
                 case EACCES :
                     return( AFPERR_ACCESS );
                 case EROFS:
                     return AFPERR_VLOCK;
-                case ENOENT :
-                    continue;
                 default :
                     return( AFPERR_PARAM );
                 }

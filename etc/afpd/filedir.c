@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.32.2.1 2003-01-26 16:55:03 srittau Exp $
+ * $Id: filedir.c,v 1.32.2.2 2003-02-04 19:10:34 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -165,6 +165,7 @@ int		ibuflen, *rbuflen;
     ibuf += sizeof( did );
 
     if (( dir = dirlookup( vol, did )) == NULL ) {
+        /* FIXME: EACCES */
         return( AFPERR_NOOBJ );
     }
 
@@ -175,17 +176,25 @@ int		ibuflen, *rbuflen;
     dbitmap = ntohs( dbitmap );
     ibuf += sizeof( dbitmap );
 
-    if (( path = cname( vol, dir, &ibuf )) == NULL) {
-        return( AFPERR_NOOBJ );
-    }
-
-    if ( stat( mtoupath(vol, path ), &st ) < 0 ) {
-        return( AFPERR_NOOBJ );
+    if (( path = cname( vol, dir, &ibuf )) == NULL || 
+          stat( mtoupath(vol, path ), &st ) < 0 ) {
+        switch (errno) {
+        case EACCES:
+        case EPERM:
+            return AFPERR_ACCESS;
+        default:
+            return AFPERR_NOOBJ;
+        }
     }
 
     buflen = 0;
     if (S_ISDIR(st.st_mode)) {
         if (dbitmap) {
+            if (*path != '\0') {
+            	/* the dir wasn't in the cache and we weren't able to chdir in it.
+            	*/
+            	return AFPERR_ACCESS;
+            }
             ret = getdirparams(vol, dbitmap, ".", curdir,
                                &st, rbuf + 3 * sizeof( u_int16_t ), &buflen );
             if (ret != AFP_OK )

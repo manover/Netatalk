@@ -1,5 +1,5 @@
 /*
- * $Id: enumerate.c,v 1.26 2002-10-17 18:01:54 didg Exp $
+ * $Id: enumerate.c,v 1.23.2.1 2003-02-04 19:10:30 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <dirent.h>
 #include <errno.h>
 
 #include <atalk/logger.h>
@@ -31,37 +32,45 @@
 #include "volume.h"
 #include "globals.h"
 #include "file.h"
-#include "fork.h"
 #include "filedir.h"
 
 #define min(a,b)	((a)<(b)?(a):(b))
 
-/* ---------------------------- */
 struct dir *
-            adddir( vol, dir, path)
-struct vol	*vol;
+            adddir( vol, dir, name, namlen, upath, upathlen, st )
+            struct vol	*vol;
 struct dir	*dir;
-struct path     *path;
+char	*name, *upath;
+int		namlen, upathlen;
+struct stat *st;
 {
     struct dir	*cdir, *edir;
-    int		upathlen;
-    char        *name;
-    char        *upath;
+#if AD_VERSION > AD_VERSION1
+    struct adouble ad;
+#endif /* AD_VERSION > AD_VERSION1 */
+
 #ifndef USE_LASTDID
     struct stat lst, *lstp;
 #endif /* USE_LASTDID */
-    struct stat *st;
 
-    upath = path->u_name;
-    name  = path->m_name;    
-    st    = &path->st;
-    upathlen = strlen(upath);
-    if ((cdir = dirnew(name, upath)) == NULL) {
+    if ((cdir = dirnew(namlen + 1)) == NULL) {
         LOG(log_error, logtype_afpd, "adddir: malloc: %s", strerror(errno) );
         return NULL;
     }
+    strcpy( cdir->d_name, name );
+    cdir->d_name[namlen] = '\0';
 
     cdir->d_did = 0;
+
+#if AD_VERSION > AD_VERSION1
+    /* look in AD v2 header */
+    memset(&ad, 0, sizeof(ad));
+    if (ad_open(upath, ADFLAGS_HF|ADFLAGS_DIR, O_RDONLY, 0, &ad) >= 0) {
+        /* if we can parse the AppleDouble header, retrieve the DID entry into cdir->d_did */
+        memcpy(&cdir->d_did, ad_entry(&ad, ADEID_DID), sizeof(cdir->d_did));
+        ad_close(&ad, ADFLAGS_HF);
+    }
+#endif /* AD_VERSION */
 
 #ifdef CNID_DB
     /* add to cnid db */
@@ -93,10 +102,36 @@ struct path     *path;
     }
 
     if ((edir = dirinsert( vol, cdir ))) {
-        edir->d_m_name = cdir->d_m_name;
-        edir->d_u_name = cdir->d_u_name;
+#ifndef CNID_DB
+        if (edir->d_name) {
+            if (strcmp(edir->d_name, cdir->d_name)) {
+                LOG(log_info, logtype_afpd, "WARNING: DID conflict for '%s' and '%s'. Are these the same file?", edir->d_name, cdir->d_name);
+            }
+            free(cdir->d_name);
+            free(cdir);
+            return edir;
+        }
+#endif /* CNID_DB */
+        /* it's not possible with LASTDID
+           for CNID:
+           - someone else have moved the directory.
+           - it's a symlink inside the share.
+           - it's an ID reused, the old directory was deleted but not
+             the cnid record and the server reused the inode for 
+             the new dir.
+           for HASH (we should get ride of HASH) 
+           - someone else have moved the directory.
+           - it's an ID reused as above
+           - it's a hash duplicate and we are in big trouble
+        */
+        edir->d_name = cdir->d_name;
         free(cdir);
         cdir = edir;
+        if (!cdir->d_parent || cdir->d_parent == dir) 
+            return cdir;
+            
+        /* the old was not in the same folder, remove and add to the new */
+    	dirchildremove(cdir->d_parent, cdir);
     }
 
     /* parent/child directories */
@@ -104,119 +139,37 @@ struct path     *path;
     dirchildadd(dir, cdir);
     return( cdir );
 }
+
 /*
  * Struct to save directory reading context in. Used to prevent
  * O(n^2) searches on a directory.
  */
 struct savedir {
-    u_short	 sd_vid;
-    u_int32_t	 sd_did;
-    int		 sd_buflen;
-    char	 *sd_buf;
-    char	 *sd_last;
-    unsigned int sd_sindex;
+    u_short	sd_vid;
+    int		sd_did;
+    int		sd_buflen;
+    char	*sd_buf;
+    char	*sd_last;
+    int		sd_sindex;
 };
 #define SDBUFBRK	1024
 
-static int enumerate_loop(struct dirent *de, char *mname, void *data)
+int afp_enumerate(obj, ibuf, ibuflen, rbuf, rbuflen )
+AFPObj      *obj;
+char	*ibuf, *rbuf;
+int		ibuflen, *rbuflen;
 {
-    struct savedir *sd = data; 
-    char *start, *end;
-    int  len;
-    
-    end = sd->sd_buf + sd->sd_buflen;
-    len = strlen(de->d_name);
-    *(sd->sd_last)++ = len;
-
-    if ( sd->sd_last + len + 2 > end ) {
-        char *buf;
-
-        start = sd->sd_buf;
-        if (!(buf = realloc( sd->sd_buf, sd->sd_buflen +SDBUFBRK )) ) {
-            LOG(log_error, logtype_afpd, "afp_enumerate: realloc: %s",
-                        strerror(errno) );
-            errno = ENOMEM;
-            return -1;
-        }
-        sd->sd_buf = buf;
-        sd->sd_buflen += SDBUFBRK;
-        sd->sd_last = ( sd->sd_last - start ) + sd->sd_buf;
-        end = sd->sd_buf + sd->sd_buflen;
-    }
-
-    memcpy( sd->sd_last, de->d_name, len + 1 );
-    sd->sd_last += len + 1;
-    return 0;
-}
-
-/* ----------------------------- */
-char *check_dirent(const struct vol *vol, char *name)
-{
-    char *m_name = NULL;
-
-    if (!strcmp(name, "..") || !strcmp(name, "."))
-        return NULL;
-
-    if (!(validupath(vol, name)))
-        return NULL;
-
-    /* check for vetoed filenames */
-    if (veto_file(vol->v_veto, name))
-        return NULL;
-
-    /* now check against too big a file */
-    if (strlen(m_name = utompath(vol, name)) > vol->max_filename)
-        return NULL;
-
-    return m_name;
-}
-
-/* ----------------------------- */
-int 
-for_each_dirent(const struct vol *vol, char *name, dir_loop fn, void *data)
-{
-    DIR             *dp;
-    struct dirent	*de;
-    char            *m_name;
-    int             ret;
-    
-    if (( dp = opendir( name)) == NULL ) {
-        return -1;
-    }
-    ret = 0;
-    for ( de = readdir( dp ); de != NULL; de = readdir( dp )) {
-        if (!(m_name = check_dirent(vol, de->d_name)))
-            continue;
-
-        ret++;
-        if (fn && fn(de,m_name, data) < 0) {
-           closedir(dp);
-           return -1;
-        }
-    }
-    closedir(dp);
-    return ret;
-}
-
-/* ----------------------------- */
-static int enumerate(obj, ibuf, ibuflen, rbuf, rbuflen, ext )
-AFPObj       *obj;
-char	     *ibuf, *rbuf;
-unsigned int ibuflen, *rbuflen;
-int     ext;
-{
+    struct stat			st;
     static struct savedir	sd = { 0, 0, 0, NULL, NULL, 0 };
     struct vol			*vol;
     struct dir			*dir;
+    struct dirent		*de;
+    DIR				*dp;
     int				did, ret, esz, len, first = 1;
-    char                        *data, *start;
+    char			*path, *data, *end, *start;
     u_int16_t			vid, fbitmap, dbitmap, reqcnt, actcnt = 0;
-    u_int16_t			temp16;
-    u_int32_t			sindex, maxsz, sz = 0;
-    struct path                 *o_path;
-    struct path                 s_path;
-    int                         header;
-        
+    u_int16_t			sindex, maxsz, sz = 0;
+
     if ( sd.sd_buflen == 0 ) {
         if (( sd.sd_buf = (char *)malloc( SDBUFBRK )) == NULL ) {
             LOG(log_error, logtype_afpd, "afp_enumerate: malloc: %s", strerror(errno) );
@@ -265,45 +218,22 @@ int     ext;
     reqcnt = ntohs( reqcnt );
     ibuf += sizeof( reqcnt );
 
-    if (ext == 2) {
-        memcpy( &sindex, ibuf, sizeof( sindex ));
-        sindex = ntohs( sindex );
-        ibuf += sizeof( sindex );
-    }
-    else {
-        memcpy( &temp16, ibuf, sizeof( temp16 ));
-        sindex = ntohs( temp16 );
-        ibuf += sizeof( temp16 );
-    }
-    
-    if (ext == 2) {
-        memcpy( &maxsz, ibuf, sizeof( maxsz ));
-        maxsz = ntohs( maxsz );
-        ibuf += sizeof( maxsz );
-    }
-    else {
-        memcpy( &temp16, ibuf, sizeof( temp16 ));
-        maxsz = ntohs( temp16 );
-        ibuf += sizeof( temp16 );
-    }
-    
-    header = (ext)?4:2;
-    header *=sizeof( u_char );
-    
+    memcpy( &sindex, ibuf, sizeof( sindex ));
+    sindex = ntohs( sindex );
+    ibuf += sizeof( sindex );
+
+    memcpy( &maxsz, ibuf, sizeof( maxsz ));
+    maxsz = ntohs( maxsz );
+    ibuf += sizeof( maxsz );
+
     maxsz = min(maxsz, *rbuflen);
 
-    if (( o_path = cname( vol, dir, &ibuf )) == NULL) {
+    if (( path = cname( vol, dir, &ibuf )) == NULL ) {
         *rbuflen = 0;
         return( AFPERR_NODIR );
     }
-
-    if ( *o_path->m_name != '\0') {
-        *rbuflen = 0;
-        return( AFPERR_BADTYPE );
-    }
-
     data = rbuf + 3 * sizeof( u_int16_t );
-    sz = 3 * sizeof( u_int16_t );	/* fbitmap, dbitmap, reqcount */
+    sz = 3 * sizeof( u_int16_t );
 
     /*
      * Read the directory into a pre-malloced buffer, stored
@@ -312,38 +242,58 @@ int     ext;
      */
     if ( sindex == 1 || curdir->d_did != sd.sd_did || vid != sd.sd_vid ) {
         sd.sd_last = sd.sd_buf;
-        if ( !o_path->st_valid && stat( ".", &o_path->st ) < 0 ) {
-            switch (errno) {
-            case EACCES:
-		return AFPERR_ACCESS;
-            case ENOTDIR:
-                return AFPERR_BADTYPE;
-            case ENOMEM:
-                return AFPERR_MISC;
-            default:
-                return AFPERR_NODIR;
-            }
-        }
-        curdir->ctime  = o_path->st.st_ctime; /* play safe */
-        if ((ret = for_each_dirent(vol, ".", enumerate_loop, (void *)&sd)) < 0) {
+
+        if (( dp = opendir( mtoupath(vol, path ))) == NULL ) {
             *rbuflen = 0;
-            switch (errno) {
-            case EACCES:
-		return AFPERR_ACCESS;
-            case ENOTDIR:
-                return AFPERR_BADTYPE;
-            case ENOMEM:
-                return AFPERR_MISC;
-            default:
-                return AFPERR_NODIR;
-            }
+            return (errno == ENOTDIR) ? AFPERR_BADTYPE : AFPERR_NODIR;
         }
-        curdir->offcnt = ret;
+
+        end = sd.sd_buf + sd.sd_buflen;
+        for ( de = readdir( dp ); de != NULL; de = readdir( dp )) {
+            if (!strcmp(de->d_name, "..") || !strcmp(de->d_name, "."))
+                continue;
+
+            if (!(validupath(vol, de->d_name)))
+                continue;
+
+            /* check for vetoed filenames */
+            if (veto_file(vol->v_veto, de->d_name))
+                continue;
+
+            /* now check against too big a file */
+            if (strlen(utompath(vol, de->d_name)) > MACFILELEN)
+                continue;
+
+            len = strlen(de->d_name);
+            *(sd.sd_last)++ = len;
+
+            if ( sd.sd_last + len + 2 > end ) {
+                char *buf;
+
+                start = sd.sd_buf;
+                if ((buf = (char *) realloc( sd.sd_buf, sd.sd_buflen +
+                                             SDBUFBRK )) == NULL ) {
+                    LOG(log_error, logtype_afpd, "afp_enumerate: realloc: %s",
+                        strerror(errno) );
+                    closedir(dp);
+                    *rbuflen = 0;
+                    return AFPERR_MISC;
+                }
+                sd.sd_buf = buf;
+                sd.sd_buflen += SDBUFBRK;
+                sd.sd_last = ( sd.sd_last - start ) + sd.sd_buf;
+                end = sd.sd_buf + sd.sd_buflen;
+            }
+
+            memcpy( sd.sd_last, de->d_name, len + 1 );
+            sd.sd_last += len + 1;
+        }
         *sd.sd_last = 0;
 
         sd.sd_last = sd.sd_buf;
         sd.sd_sindex = 1;
 
+        closedir( dp );
         sd.sd_vid = vid;
         sd.sd_did = did;
     }
@@ -358,7 +308,7 @@ int     ext;
     while ( sd.sd_sindex < sindex ) {
         len = *(sd.sd_last)++;
         if ( len == 0 ) {
-            sd.sd_did = 0;	/* invalidate sd struct to force re-read */
+            sd.sd_did = -1;	/* invalidate sd struct to force re-read */
             *rbuflen = 0;
             return( AFPERR_NOOBJ );
         }
@@ -386,8 +336,8 @@ int     ext;
             sd.sd_last += len + 1;
             continue;
         }
-        s_path.u_name = sd.sd_last;
-        if (of_stat( &s_path) < 0 ) {
+
+        if (stat( sd.sd_last, &st ) < 0 ) {
             /*
              * Somebody else plays with the dir, well it can be us with 
             * "Empty Trash..."
@@ -395,7 +345,7 @@ int     ext;
 
             /* so the next time it won't try to stat it again
              * another solution would be to invalidate the cache with 
-             * sd.sd_did = 0 but if it's not ENOENT error it will start again
+             * sd.sd_did = -1 but if it's not ENOENT error it will start again
              */
             *sd.sd_last = 0;
             sd.sd_last += len + 1;
@@ -407,29 +357,28 @@ int     ext;
          * inaccurate, since that means /dev/null is a file, /dev/printer
          * is a file, etc.
          */
-        if ( S_ISDIR(s_path.st.st_mode)) {
+        if ( S_ISDIR(st.st_mode)) {
             if ( dbitmap == 0 ) {
                 sd.sd_last += len + 1;
                 continue;
             }
+            path = utompath(vol, sd.sd_last);
             dir = curdir->d_child;
-            s_path.m_name = NULL;
             while (dir) {
-                if ( strcmp( dir->d_u_name, s_path.u_name ) == 0 ) {
+                if ( strcmp( dir->d_name, path ) == 0 ) {
                     break;
                 }
                 dir = (dir == curdir->d_child->d_prev) ? NULL : dir->d_next;
             }
-            if (!dir) {
-                s_path.m_name = utompath(vol, s_path.u_name);
-                if ((dir = adddir( vol, curdir, &s_path)) == NULL) {
-                    *rbuflen = 0;
-                    return AFPERR_MISC;
-                }
+            if (!dir && ((dir = adddir( vol, curdir, path, strlen( path ),
+                                        sd.sd_last, len, &st)) == NULL)) {
+                *rbuflen = 0;
+                return AFPERR_MISC;
             }
 
-            if (( ret = getdirparams(vol, dbitmap, &s_path, dir,
-                                     data + header , &esz )) != AFP_OK ) {
+
+            if (( ret = getdirparams(vol, dbitmap, sd.sd_last, dir,
+                                     &st, data + 2 * sizeof( u_char ), &esz )) != AFP_OK ) {
                 *rbuflen = 0;
                 return( ret );
             }
@@ -439,9 +388,10 @@ int     ext;
                 sd.sd_last += len + 1;
                 continue;
             }
-            s_path.m_name = utompath(vol, s_path.u_name);
-            if (( ret = getfilparams(vol, fbitmap, &s_path, curdir, 
-                                     data + header , &esz )) != AFP_OK ) {
+
+            if (( ret = getfilparams(vol, fbitmap, utompath(vol, sd.sd_last),
+                                     curdir, &st, data + 2 * sizeof( u_char ), &esz )) !=
+                    AFP_OK ) {
                 *rbuflen = 0;
                 return( ret );
             }
@@ -451,15 +401,15 @@ int     ext;
          * Make sure entry is an even length, possibly with a null
          * byte on the end.
          */
-        if ( (esz + header) & 1 ) {
-            *(data + header + esz ) = '\0';
+        if ( esz & 1 ) {
+            *(data + 2 * sizeof( u_char ) + esz ) = '\0';
             esz++;
         }
 
         /*
          * Check if we've exceeded the size limit.
          */
-        if ( maxsz < sz + esz + header) {
+        if ( maxsz < sz + esz + 2 * sizeof( u_char )) {
             if (first) { /* maxsz can't hold a single reply */
                 *rbuflen = 0;
                 return AFPERR_PARAM;
@@ -471,20 +421,9 @@ int     ext;
         if (first)
             first = 0;
 
-        sz += esz + header;
-        if (ext) {
-            temp16 = htons( esz + header );
-            memcpy( data, &temp16, sizeof( temp16 ));
-            data += sizeof(temp16);
-        }
-        else {
-            *data++ = esz + header;
-        }
-
-        *data++ = S_ISDIR(s_path.st.st_mode) ? FILDIRBIT_ISDIR : FILDIRBIT_ISFILE;
-        if (ext) {
-             *data++ = 0;
-        }
+        sz += esz + 2 * sizeof( u_char );
+        *data++ = esz + 2 * sizeof( u_char );
+        *data++ = S_ISDIR(st.st_mode) ? FILDIRBIT_ISDIR : FILDIRBIT_ISFILE;
         data += esz;
         actcnt++;
         sd.sd_last += len + 1;
@@ -492,7 +431,7 @@ int     ext;
 
     if ( actcnt == 0 ) {
         *rbuflen = 0;
-        sd.sd_did = 0;		/* invalidate sd struct to force re-read */
+        sd.sd_did = -1;		/* invalidate sd struct to force re-read */
         return( AFPERR_NOOBJ );
     }
     sd.sd_sindex = sindex + actcnt;
@@ -513,30 +452,4 @@ int     ext;
     return( AFP_OK );
 }
 
-/* ----------------------------- */
-int afp_enumerate(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj       *obj;
-char	     *ibuf, *rbuf;
-unsigned int ibuflen, *rbuflen;
-{
-    return enumerate(obj, ibuf,ibuflen ,rbuf,rbuflen , 0);
-}
-
-/* ----------------------------- */
-int afp_enumerate_ext(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj       *obj;
-char	     *ibuf, *rbuf;
-unsigned int ibuflen, *rbuflen;
-{
-    return enumerate(obj, ibuf,ibuflen ,rbuf,rbuflen , 1);
-}
-
-/* ----------------------------- */
-int afp_enumerate_ext2(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj       *obj;
-char	     *ibuf, *rbuf;
-unsigned int ibuflen, *rbuflen;
-{
-    return enumerate(obj, ibuf,ibuflen ,rbuf,rbuflen , 2);
-}
 
