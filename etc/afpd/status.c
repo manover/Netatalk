@@ -1,5 +1,5 @@
 /*
- * $Id: status.c,v 1.13.6.6 2004-06-09 02:07:15 bfernhomberg Exp $
+ * $Id: status.c,v 1.13.6.7 2004-06-20 15:25:45 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -234,6 +234,7 @@ static int status_netaddress(char *data, int *servoffset,
 {
     char               *begin;
     u_int16_t          offset;
+    size_t             addresses_len = 0;
 
     begin = data;
 
@@ -265,6 +266,7 @@ static int status_netaddress(char *data, int *servoffset,
             memcpy(data, &inaddr->sin_addr.s_addr,
                    sizeof(inaddr->sin_addr.s_addr));
             data += sizeof(inaddr->sin_addr.s_addr);
+            addresses_len += 7;
         } else {
             /* ip address + port */
             *data++ = 8;
@@ -274,16 +276,20 @@ static int status_netaddress(char *data, int *servoffset,
             data += sizeof(inaddr->sin_addr.s_addr);
             memcpy(data, &inaddr->sin_port, sizeof(inaddr->sin_port));
             data += sizeof(inaddr->sin_port);
+            addresses_len += 9;
         }
     }
 
     /* handle DNS names */
     if (options->fqdn && dsi) {
         int len = strlen(options->fqdn);
-        *data++ = len +2;
-        *data++ = 0x04;
-        memcpy(data, options->fqdn, len);
-        data += len;
+        if ( len + 2 + addresses_len < maxstatuslen - offset) {
+            *data++ = len +2;
+            *data++ = 0x04;
+            memcpy(data, options->fqdn, len);
+            data += len;
+            addresses_len += len+2;
+        }
 
         /* Annouce support for SSH tunneled AFP session, 
          * this feature is available since 10.3.2.
@@ -291,11 +297,13 @@ static int status_netaddress(char *data, int *servoffset,
          * be an IP+Port style value, but it only works with 
          * a FQDN. OSX Server uses FQDN as well.
          */
-        if (options->flags & OPTION_ANNOUNCESSH) {
-            *data++ = len +2;
-            *data++ = 0x05;
-            memcpy(data, options->fqdn, len);
-            data += len;
+        if ( len + 2 + addresses_len < maxstatuslen - offset) {
+            if (options->flags & OPTION_ANNOUNCESSH) {
+                *data++ = len +2;
+                *data++ = 0x05;
+                memcpy(data, options->fqdn, len);
+                data += len;
+            }
         }
     }
 
@@ -354,6 +362,7 @@ static int status_directorynames(char *data, int *diroffset,
 	len+=2; /* '/' and '@' */
 	if ( len+2 > maxstatuslen - offset) {
 	    *data++ = 0;
+	    LOG ( log_error, logtype_afpd, "status: could not set directory service list, no more room");
 	}	 
 	else {
 	    *data++ = 1; /* DirectoryNamesCount */
@@ -410,6 +419,7 @@ static int status_utf8servername(char *data, int *nameoffset,
 
 	/* set offset to 0 */
 	memset(begin + *nameoffset, 0, sizeof(offset));
+        data = begin;
     }
     else {
     	namelen = htons(len);
@@ -463,31 +473,44 @@ void status_reset()
     Id = 0;
 }
 
+
 /* ---------------------
-*/
-void status_init(AFPConfig *aspconfig, AFPConfig *dsiconfig,
-                 const struct afp_options *options)
+ * returns 1 if both packets (ASP and DSI) could be set
+ * forceasp 1 enforces build of ASP packet
+ */
+static int do_status_init(AFPConfig *aspconfig, AFPConfig *dsiconfig,
+                 const struct afp_options *options, int forceasp)
 {
     ASP asp;
     DSI *dsi;
     char *status = NULL;
     int statuslen, c, sigoff;
+    int ret = 0;
 
     if (!(aspconfig || dsiconfig) || !options)
-        return;
+        return ret;
+
+    if (forceasp) {
+        if (!aspconfig)
+            return ret;
+        status = aspconfig->status;
+    	maxstatuslen=ATP_MAXDATA-4;
+    } 
+    else /* dsi */
+    {
+	if (!dsiconfig)
+            return ret;
+         status = dsiconfig->status;
+    	 maxstatuslen=sizeof(dsiconfig->status);
+    }
 
     if (aspconfig) {
         asp = aspconfig->obj.handle;
-        status = aspconfig->status;
-    	maxstatuslen=sizeof(aspconfig->status);
     } else
         asp = NULL;
 
     if (dsiconfig) {
         dsi = dsiconfig->obj.handle;
-        if (!aspconfig)
-            status = dsiconfig->status;
-    	    maxstatuslen=sizeof(dsiconfig->status);
     } else
         dsi = NULL;
 
@@ -539,26 +562,41 @@ void status_init(AFPConfig *aspconfig, AFPConfig *dsiconfig,
         statuslen = status_utf8servername(status, &c, dsi, options);
 
 #ifndef NO_DDP
-    if (aspconfig) {
+    if (forceasp) {
         asp_setstatus(asp, status, statuslen);
         aspconfig->signature = status + sigoff;
         aspconfig->statuslen = statuslen;
     }
 #endif /* ! NO_DDP */
 
-    if (dsiconfig) {
-        if (aspconfig) { /* copy to dsiconfig */
-            memcpy(dsiconfig->status, status, ATP_MAXDATA);
-            status = dsiconfig->status;
-        }
-
+    if (!forceasp) {
         if ((options->flags & OPTION_CUSTOMICON) == 0) {
             status_icon(status, apple_tcp_icon, sizeof(apple_tcp_icon), 0);
+        }
+        if (aspconfig && statuslen <= ATP_MAXDATA-4) { /* set ASP as well, lenght matches */
+            memcpy(aspconfig->status, status, ATP_MAXDATA);
+            ret = 1;
         }
         dsi_setstatus(dsi, status, statuslen);
         dsiconfig->signature = status + sigoff;
         dsiconfig->statuslen = statuslen;
     }
+
+    return ret;
+}
+
+void status_init(AFPConfig *aspconfig, AFPConfig *dsiconfig,
+                 const struct afp_options *options)
+{
+     int ret = 0;
+
+     if (dsiconfig) {
+         ret = do_status_init(aspconfig, dsiconfig, options, 0);
+         if (!ret)
+             LOG(log_warning, logtype_afpd, "status packet to long for ASP, buildling extra packet");
+     }
+     if (!ret && aspconfig)
+         do_status_init(aspconfig, dsiconfig, options, 1);
 }
 
 /* this is the same as asp/dsi_getstatus */
