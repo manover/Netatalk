@@ -1,5 +1,5 @@
 /*
- * $Id: fork.c,v 1.51.2.2.2.10 2004-05-04 15:38:25 didg Exp $
+ * $Id: fork.c,v 1.51.2.2.2.10.2.1 2004-10-30 22:42:06 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -781,23 +781,18 @@ struct ofork	*of;
 {
     struct extmap	*em;
 
-    if ( ad_hfileno( of->of_ad ) == -1 ||
-            memcmp( ufinderi, ad_entry( of->of_ad, ADEID_FINDERI ),
-                    8) == 0 ) {
-        if (NULL == ( em = getextmap( of->of_name )) ||
-                memcmp( "TEXT", em->em_type, sizeof( em->em_type )) == 0 ) {
-            return( 1 );
-        } else {
-            return( 0 );
-        }
-    } else {
-        if ( memcmp( ufinderi,
-                     ad_entry( of->of_ad, ADEID_FINDERI ), 4 ) == 0 ) {
-            return( 1 );
-        } else {
-            return( 0 );
-        }
+    if ( ad_hfileno( of->of_ad ) == -1 || !memcmp( ufinderi, ad_entry( of->of_ad, ADEID_FINDERI),8)) {
+        /* no resource fork or no finderinfo, use our files extension mapping */
+        if (!( em = getextmap( of->of_name )) || memcmp( "TEXT", em->em_type, sizeof( em->em_type ))) {
+            return 0;
+        } 
+        /* file type is TEXT */
+        return 1;
+
+    } else if ( !memcmp( "TEXT", ad_entry( of->of_ad, ADEID_FINDERI ), 4 )) {
+        return 1;
     }
+    return 0;
 }
 
 
