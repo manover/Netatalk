@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.1 2003-04-28 10:12:53 didg Exp $
+dnl $Id: configure.in,v 1.179.2.2 2003-05-28 05:04:53 didg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(bin/adv1tov2/adv1tov2.c)
@@ -531,12 +531,22 @@ if test x"$this_os" = "xlinux"; then
 	dnl ----- see etc/afpd/quota.c
 	AC_DEFINE(HAVE_BROKEN_DBTOB, 1, [Define if dbtob is broken])
 
-	dnl --- added by Yoshinobu Ishizaki (2001.03.13) ---
-	dnl ----- check if version is newer than 2.2.x
-	changequote(<<,>>)
-	majorvers="`uname -r | sed 's/\([0-9]\)..*/\1/'`"
-	minorvers="`uname -r | sed 's/[0-9]\.\([0-9]\)\..*/\1/'`"
-	if [ $majorvers -ge 2 ]; then
+	linux_sendfile=no
+        AC_ARG_ENABLE(sendfile,
+	    [  --enable-sendfile       use sendfile syscall default (no) ],
+	    if test "$enableval" = "yes"; then
+	  	linux_sendfile=yes
+	    fi
+	    AC_MSG_RESULT([enabling sendfile syscall])
+        )
+
+	if test x"$linux_sendfile" = "xyes"; then 
+	    dnl --- added by Yoshinobu Ishizaki (2001.03.13) ---
+	    dnl ----- check if version is newer than 2.2.x
+	    changequote(<<,>>)
+	    majorvers="`uname -r | sed 's/\([0-9]\)..*/\1/'`"
+	    minorvers="`uname -r | sed 's/[0-9]\.\([0-9]\)\..*/\1/'`"
+	    if [ $majorvers -ge 2 ]; then
 		if [ $minorvers -ge 2 ]; then
 			changequote([,])
 			AC_MSG_RESULT([ * found Linux 2.2.x or higher])
@@ -544,6 +554,7 @@ if test x"$this_os" = "xlinux"; then
 		else
 			AC_MSG_RESULT([ * found Linux 2.0.x ]) 
 		fi
+            fi
 	fi
 
 	dnl ----- Linux/alpha specific -----
@@ -552,6 +563,8 @@ if test x"$this_os" = "xlinux"; then
 		AC_DEFINE(HAVE_GCC_MEMCPY_BUG, 1, [Define if memcpy is buggy])
 	fi
 	need_dash_r=no
+
+
 fi
 
 dnl ----- Mac OSX specific -----
