@@ -1,6 +1,6 @@
 
 /*
- * $Id: cnid_db3_open.c,v 1.1.4.2 2003-10-21 16:23:54 didg Exp $
+ * $Id: cnid_db3_open.c,v 1.1.4.3 2004-01-10 06:25:18 bfernhomberg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -377,7 +377,7 @@ struct _cnid_db *cnid_db3_open(const char *dir, mode_t mask)
     }
 
     /*db->db_didname->set_bt_compare(db->db_didname, &compare_unix); */
-    if ((rc = my_open(db->db_didname, DBDIDNAME, NULL, DB_HASH, open_flag, 0666 & ~mask))) {
+    if ((rc = my_open(db->db_didname, DBDIDNAME, NULL, DB_BTREE, open_flag, 0666 & ~mask))) {
         LOG(log_error, logtype_default, "cnid_open: Failed to open did/name database: %s", db_strerror(rc));
         goto fail_appinit;
     }
@@ -455,7 +455,7 @@ struct _cnid_db *cnid_db3_open(const char *dir, mode_t mask)
         goto fail_appinit;
     }
 
-    if ((rc = my_open(db->db_devino, DBDEVINO, NULL, DB_HASH, open_flag, 0666 & ~mask))) {
+    if ((rc = my_open(db->db_devino, DBDEVINO, NULL, DB_BTREE, open_flag, 0666 & ~mask))) {
         LOG(log_error, logtype_default, "cnid_open: Failed to open devino database: %s", db_strerror(rc));
         goto fail_appinit;
     }
@@ -466,7 +466,7 @@ struct _cnid_db *cnid_db3_open(const char *dir, mode_t mask)
         goto fail_appinit;
     }
 
-    if ((rc = my_open(db->db_cnid, DBCNID, NULL, DB_HASH, open_flag, 0666 & ~mask))) {
+    if ((rc = my_open(db->db_cnid, DBCNID, NULL, DB_BTREE, open_flag, 0666 & ~mask))) {
         LOG(log_error, logtype_default, "cnid_open: Failed to open dev/ino database: %s", db_strerror(rc));
         goto fail_appinit;
     }

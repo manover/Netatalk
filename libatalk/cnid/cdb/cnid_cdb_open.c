@@ -1,6 +1,6 @@
 
 /*
- * $Id: cnid_cdb_open.c,v 1.1.4.5 2003-12-16 23:06:32 lenneis Exp $
+ * $Id: cnid_cdb_open.c,v 1.1.4.6 2004-01-10 06:25:18 bfernhomberg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -141,6 +141,17 @@ static int my_open(DB * p, const char *f, const char *d, DBTYPE t, u_int32_t fla
 static struct _cnid_db *cnid_cdb_new(const char *volpath)
 {
     struct _cnid_db *cdb;
+    int major, minor, patch;
+    char *version_str;
+
+    version_str = db_version(&major, &minor, &patch);
+
+    /* check library match, ignore if only patch level changed */
+    if ( major != DB_VERSION_MAJOR || minor != DB_VERSION_MINOR)
+    {
+        LOG(log_error, logtype_cnid, "cnid_cdb_new: the Berkeley DB library version used does not match the version compiled with: (%u.%u)/(%u.%u)", DB_VERSION_MAJOR, DB_VERSION_MINOR, major, minor); 
+	return NULL;
+    }
 
     if ((cdb = (struct _cnid_db *) calloc(1, sizeof(struct _cnid_db))) == NULL)
         return NULL;
@@ -290,7 +301,7 @@ struct _cnid_db *cnid_cdb_open(const char *dir, mode_t mask)
         goto fail_appinit;
     }
 
-    if ((rc = my_open(db->db_cnid, DBCNID, DBCNID, DB_HASH, open_flag, 0666 & ~mask)) != 0) {
+    if ((rc = my_open(db->db_cnid, DBCNID, DBCNID, DB_BTREE, open_flag, 0666 & ~mask)) != 0) {
         LOG(log_error, logtype_default, "cnid_open: Failed to open dev/ino database: %s",
             db_strerror(rc));
         goto fail_appinit;
@@ -305,7 +316,7 @@ struct _cnid_db *cnid_cdb_open(const char *dir, mode_t mask)
         goto fail_appinit;
     }
 
-    if ((rc = my_open(db->db_didname, DBCNID, DBDIDNAME,DB_HASH, open_flag, 0666 & ~mask))) {
+    if ((rc = my_open(db->db_didname, DBCNID, DBDIDNAME, DB_BTREE, open_flag, 0666 & ~mask))) {
         LOG(log_error, logtype_default, "cnid_open: Failed to open did/name database: %s",
             db_strerror(rc));
         goto fail_appinit;
@@ -320,7 +331,7 @@ struct _cnid_db *cnid_cdb_open(const char *dir, mode_t mask)
         goto fail_appinit;
     }
 
-    if ((rc = my_open(db->db_devino, DBCNID, DBDEVINO, DB_HASH, open_flag, 0666 & ~mask)) != 0) {
+    if ((rc = my_open(db->db_devino, DBCNID, DBDEVINO, DB_BTREE, open_flag, 0666 & ~mask)) != 0) {
         LOG(log_error, logtype_default, "cnid_open: Failed to open devino database: %s",
             db_strerror(rc));
         goto fail_appinit;
