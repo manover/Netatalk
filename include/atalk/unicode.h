@@ -2,9 +2,20 @@
 #ifndef _ATALK_UNICODE_H
 #define _ATALK_UNICODE_H 1
 
+#include <sys/cdefs.h>
 #include <atalk/list.h>
 
-#define ucs2_t	u_int16_t
+#define ucs2_t u_int16_t
+
+#ifndef MIN
+#define MIN(a,b)     ((a)<(b)?(a):(b))
+#endif /* ! MIN */
+
+#ifndef MAX
+#define MAX(a,b)     ((a)>(b)?(a):(b))
+#endif /* ! MIN */
+
+#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); x=NULL;} } while(0)
 
 /* generic iconv conversion structure */
 typedef struct {
@@ -120,6 +131,5 @@ extern size_t 	utf8_decompose  __P(( char *, size_t, char *, size_t));
 extern charset_t add_charset __P((char* name));
 
 
-#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); x=NULL;} } while(0)
 
 #endif
