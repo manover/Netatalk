@@ -1,5 +1,5 @@
 /* 
- * $Id: cnid.h,v 1.9.6.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: cnid.h,v 1.9.6.2 2004-01-03 22:21:09 didg Exp $
  *
  * Copyright (c) 2003 the Netatalk Team
  * Copyright (c) 2003 Rafal Lewczuk <rlewczuk@pronet.pl>
@@ -32,6 +32,7 @@
 #define CNID_FLAG_MANGLING     0x02      /* This backend has name mangling feature. */
 #define CNID_FLAG_SETUID       0x04      /* Set db owner to parent folder owner. */
 #define CNID_FLAG_BLOCK        0x08      /* block signals in update. */
+#define CNID_FLAG_NODEV        0x10      /* don't use device number only inode */
 
 #define CNID_INVALID   0
 
@@ -49,8 +50,9 @@ struct _cnid_db {
 	u_int32_t flags;        /* Flags describing some CNID backend aspects. */
 	char *volpath;          /* Volume path this particular CNID db refers to. */
 	void *_private;             /* back-end speficic data */
+#if 0
 	char *stamp[ADEDLEN_PRIVSYN];
-	
+#endif	
 	/* */
 	cnid_t (*cnid_add)(struct _cnid_db *cdb, const struct stat *st, const cnid_t did, 
 			const char *name, const int len, cnid_t hint);
@@ -84,7 +86,7 @@ typedef struct _cnid_module cnid_module;
 void cnid_register(struct _cnid_module *module);
 
 /* This function opens a CNID database for selected volume. */
-struct _cnid_db *cnid_open(const char *volpath, mode_t mask, char *type);
+struct _cnid_db *cnid_open(const char *volpath, mode_t mask, char *type, int flags);
 
 cnid_t cnid_add(struct _cnid_db *cdb, const struct stat *st, const cnid_t did, 
 			const char *name, const int len, cnid_t hint);
@@ -110,7 +112,11 @@ void cnid_close(struct _cnid_db *db);
 
 /*
  * $Log: cnid.h,v $
- * Revision 1.9.6.1  2003-09-09 16:42:20  didg
+ * Revision 1.9.6.2  2004-01-03 22:21:09  didg
+ *
+ * add nodev volume option (always use 0 for device number).
+ *
+ * Revision 1.9.6.1  2003/09/09 16:42:20  didg
  *
  * big merge for db frontend and unicode.
  *

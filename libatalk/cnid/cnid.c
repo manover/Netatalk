@@ -1,5 +1,5 @@
 /* 
- * $Id: cnid.c,v 1.1.4.6 2003-11-12 16:00:08 didg Exp $
+ * $Id: cnid.c,v 1.1.4.7 2004-01-03 22:21:09 didg Exp $
  *
  * Copyright (c) 2003 the Netatalk Team
  * Copyright (c) 2003 Rafal Lewczuk <rlewczuk@pronet.pl>
@@ -86,7 +86,7 @@ static int cnid_dir(const char *dir, mode_t mask)
 }
 
 /* Opens CNID database using particular back-end */
-struct _cnid_db *cnid_open(const char *volpath, mode_t mask, char *type)
+struct _cnid_db *cnid_open(const char *volpath, mode_t mask, char *type, int flags)
 {
     struct _cnid_db *db;
     cnid_module *mod = NULL;
@@ -105,6 +105,7 @@ struct _cnid_db *cnid_open(const char *volpath, mode_t mask, char *type)
         LOG(log_error, logtype_afpd, "Cannot find module named [%s] in registered module list!", type);
         return NULL;
     }
+
     if ((mod->flags & CNID_FLAG_SETUID)) {
         uid = geteuid();
         gid = getegid();
@@ -122,6 +123,10 @@ struct _cnid_db *cnid_open(const char *volpath, mode_t mask, char *type)
     }
 
     db = mod->cnid_open(volpath, mask);
+    /* FIXME should module know about it ? */
+    if (flags) {
+        db->flags |= CNID_FLAG_NODEV;
+    }
 
     if ((mod->flags & CNID_FLAG_SETUID)) {
         seteuid(0);

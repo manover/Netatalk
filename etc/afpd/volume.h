@@ -1,5 +1,5 @@
 /*
- * $Id: volume.h,v 1.19.2.5.2.4 2003-11-15 00:00:37 bfernhomberg Exp $
+ * $Id: volume.h,v 1.19.2.5.2.5 2004-01-03 22:21:09 didg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -48,6 +48,7 @@ struct vol {
 
     char                *v_cnidscheme;
     char                *v_dbpath;
+    dev_t               v_dev;              /* Unix volume device */
     struct _cnid_db     *v_cdb;
     char                v_stamp[ADEDLEN_PRIVSYN];
     mode_t		v_umask;
@@ -106,8 +107,13 @@ this is going away. */
 #define AFPVOL_MAPASCII  (1 << 13)  /* map the ascii range as well */
 #define AFPVOL_DROPBOX   (1 << 14)  /* dropkludge dropbox support */
 #define AFPVOL_NOFILEID  (1 << 15)  /* don't advertise createid resolveid and deleteid calls */
-#define AFPVOL_NOSTAT    (1 << 16)  /* unix name are in UTF8 */
+#define AFPVOL_NOSTAT    (1 << 16)  /* advertise the volume even if we can't stat() it
+                                     * maybe because it will be mounted later in preexec */
 #define AFPVOL_UNIX_PRIV (1 << 17)  /* support unix privileges */
+#define AFPVOL_NODEV     (1 << 18)  /* always use 0 for device number in cnid calls 
+                                     * help if device number is notconsistent across reboot 
+                                     * NOTE symlink to a different device will return an ACCESS error
+                                     */
 
 /* FPGetSrvrParms options */
 #define AFPSRVR_CONFIGINFO     (1 << 0)
@@ -164,6 +170,9 @@ int wincheck(const struct vol *vol, const char *path);
 #else
 #define utf8_encoding() (0)
 #endif
+
+#define vol_nodev(vol) (((vol)->v_flags & AFPVOL_NODEV) ? 1 : 0)
+
 #define vol_unix_priv(vol) (afp_version >= 30 && ((vol)->v_flags & AFPVOL_UNIX_PRIV))
 
 extern struct vol	*getvolbyvid __P((const u_int16_t));

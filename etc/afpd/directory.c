@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.5 2003-11-15 00:00:30 bfernhomberg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.6 2004-01-03 22:21:08 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1929,7 +1929,10 @@ setdirparam_done:
 
     if ( isad ) {
         if (path->st_valid && !path->st_errno) {
-            ad_setid(&ad, &path->st, curdir->d_did, vol->v_stamp);
+            struct stat *st = &path->st;
+
+            ad_setid(&ad,(vol->v_flags & AFPVOL_NODEV)?0:st->st_dev, 
+                         st->st_ino,  curdir->d_did, vol->v_stamp);
         }
     
         ad_flush( &ad, ADFLAGS_HF );
@@ -2024,7 +2027,10 @@ int		ibuflen, *rbuflen;
     ad_setentrylen( &ad, ADEID_NAME, strlen( s_path->m_name ));
     memcpy( ad_entry( &ad, ADEID_NAME ), s_path->m_name,
             ad_getentrylen( &ad, ADEID_NAME ));
-    ad_setid( &ad, &s_path->st, dir->d_did, vol->v_stamp);
+
+    ad_setid( &ad, (vol->v_flags & AFPVOL_NODEV)?0:s_path->st.st_dev,
+                   s_path->st.st_ino, dir->d_did, vol->v_stamp);
+
     ad_flush( &ad, ADFLAGS_HF );
     ad_close( &ad, ADFLAGS_HF );
 

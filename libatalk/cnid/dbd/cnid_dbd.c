@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_dbd.c,v 1.1.4.8 2003-11-25 00:41:31 lenneis Exp $
+ * $Id: cnid_dbd.c,v 1.1.4.9 2004-01-03 22:21:09 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -350,7 +350,11 @@ cnid_t cnid_dbd_add(struct _cnid_db *cdb, const struct stat *st,
 
     RQST_RESET(&rqst);
     rqst.op = CNID_DBD_OP_ADD;
-    rqst.dev = st->st_dev;
+
+    if (!(cdb->flags & CNID_FLAG_NODEV)) {
+        rqst.dev = st->st_dev;
+    }
+
     rqst.ino = st->st_ino;
     rqst.type = S_ISDIR(st->st_mode)?1:0;
     rqst.did = did;
@@ -510,7 +514,11 @@ cnid_t cnid_dbd_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t
 
     RQST_RESET(&rqst);
     rqst.op = CNID_DBD_OP_LOOKUP;
-    rqst.dev = st->st_dev;
+
+    if (!(cdb->flags & CNID_FLAG_NODEV)) {
+        rqst.dev = st->st_dev;
+    }
+
     rqst.ino = st->st_ino;
     rqst.type = S_ISDIR(st->st_mode)?1:0;
     rqst.did = did;
@@ -564,7 +572,9 @@ int cnid_dbd_update(struct _cnid_db *cdb, const cnid_t id, const struct stat *st
     RQST_RESET(&rqst);
     rqst.op = CNID_DBD_OP_UPDATE;
     rqst.cnid = id;
-    rqst.dev = st->st_dev;
+    if (!(cdb->flags & CNID_FLAG_NODEV)) {
+        rqst.dev = st->st_dev;
+    }
     rqst.ino = st->st_ino;
     rqst.type = S_ISDIR(st->st_mode)?1:0;
     rqst.did = did;
@@ -644,7 +654,6 @@ int cnid_dbd_getstamp(struct _cnid_db *cdb, void *buffer, const int len)
 
     RQST_RESET(&rqst);
     rqst.op = CNID_DBD_OP_GETSTAMP;
-
     memset(buffer, 0, len);
 
     rply.name = buffer;
@@ -665,7 +674,6 @@ int cnid_dbd_getstamp(struct _cnid_db *cdb, void *buffer, const int len)
     default:
         abort();
     }
-
     return 0;
 }
 

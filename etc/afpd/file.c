@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.8 2004-01-02 18:14:52 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.9 2004-01-03 22:21:08 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -192,7 +192,10 @@ char   stamp[ADEDLEN_PRIVSYN];
             if (sizeof(stamp) == ad_getentrylen(adp,ADEID_PRIVSYN)) {
                 memcpy(stamp, ad_entry(adp, ADEID_PRIVSYN), sizeof(stamp));
 
-                if (dev == st->st_dev && ino == st->st_ino && !memcmp(vol->v_stamp, stamp, sizeof(stamp))) {
+                if (   ((vol->v_flags & AFPVOL_NODEV) || dev == st->st_dev)
+                       && ino == st->st_ino && 
+                       !memcmp(vol->v_stamp, stamp, sizeof(stamp)) ) 
+                {
                     memcpy(&aint, ad_entry(adp, ADEID_DID), sizeof(aint));
                     return aint;
                 }
@@ -224,7 +227,7 @@ char   stamp[ADEDLEN_PRIVSYN];
             /* update the ressource fork
              * for a folder adp is always null
              */
-            ad_setid(adp, st, aint, vol->v_stamp);
+            ad_setid(adp,(vol->v_flags & AFPVOL_NODEV)?0:st->st_dev, st->st_ino, aint, vol->v_stamp);
             ad_flush(adp, ADFLAGS_HF);
         }
 #endif    

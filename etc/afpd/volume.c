@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.14 2003-12-17 17:19:20 lenneis Exp $
+ * $Id: volume.c,v 1.51.2.7.2.15 2004-01-03 22:21:09 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -447,6 +447,8 @@ static void volset(struct vol_option *options, struct vol_option *save,
 		options[VOLOPT_ROOTPREEXEC].i_value = 1;
             else if (strcasecmp(p, "upriv") == 0)
                 options[VOLOPT_FLAGS].i_value |= AFPVOL_UNIX_PRIV;
+            else if (strcasecmp(p, "nodev") == 0)
+                options[VOLOPT_FLAGS].i_value |= AFPVOL_NODEV;
 
             p = strtok(NULL, ",");
         }
@@ -1360,9 +1362,11 @@ int static stat_vol(u_int16_t bitmap, struct vol *vol, char *rbuf, int *rbuflen)
         *rbuflen = 0;
         return( AFPERR_PARAM );
     }
+    /* save the volume device number */
+    vol->v_dev = st.st_dev;
 
     buflen = *rbuflen - sizeof( bitmap );
-    if (( ret = getvolparams(bitmap, vol, &st,
+    if (( ret = getvolparams( bitmap, vol, &st,
                               rbuf + sizeof( bitmap ), &buflen )) != AFP_OK ) {
         *rbuflen = 0;
         return( ret );
@@ -1646,9 +1650,9 @@ int		ibuflen, *rbuflen;
                volume->v_path);
     }
     if (volume->v_dbpath)
-        volume->v_cdb = cnid_open (volume->v_dbpath, volume->v_umask, volume->v_cnidscheme);
+        volume->v_cdb = cnid_open (volume->v_dbpath, volume->v_umask, volume->v_cnidscheme, (volume->v_flags & AFPVOL_NODEV));
     else
-        volume->v_cdb = cnid_open (volume->v_path, volume->v_umask, volume->v_cnidscheme);
+        volume->v_cdb = cnid_open (volume->v_path, volume->v_umask, volume->v_cnidscheme, (volume->v_flags & AFPVOL_NODEV));
     if (volume->v_cdb == NULL) {
         LOG(log_error, logtype_afpd, "Fatal error: cannot open CNID or invalid CNID backend for %s: %s", 
 	    volume->v_path, volume->v_cnidscheme);

@@ -1,5 +1,5 @@
 /*
- * $Id: ad_attr.c,v 1.4.8.1 2003-09-09 16:42:21 didg Exp $
+ * $Id: ad_attr.c,v 1.4.8.2 2004-01-03 22:21:09 didg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -48,15 +48,15 @@ int ad_setattr(const struct adouble *ad, const u_int16_t attr)
  * save file/folder ID in AppleDoubleV2 netatalk private parameters
 */
 #if AD_VERSION == AD_VERSION2
-int ad_setid (struct adouble *adp, const struct stat *st, const u_int32_t id, const void *stamp)
+int ad_setid (struct adouble *adp, const dev_t dev, const ino_t ino , const u_int32_t id, const void *stamp)
 {
     if (adp->ad_flags == AD_VERSION2 && sizeof(dev_t) == ADEDLEN_PRIVDEV && sizeof(ino_t) == ADEDLEN_PRIVINO) 
     {
         ad_setentrylen( adp, ADEID_PRIVDEV, sizeof(dev_t));
-        memcpy(ad_entry( adp, ADEID_PRIVDEV ), &st->st_dev, sizeof(dev_t));
+        memcpy(ad_entry( adp, ADEID_PRIVDEV ), &dev, sizeof(dev_t));
 
         ad_setentrylen( adp, ADEID_PRIVINO, sizeof(ino_t));
-        memcpy(ad_entry( adp, ADEID_PRIVINO ), &st->st_ino, sizeof(ino_t));
+        memcpy(ad_entry( adp, ADEID_PRIVINO ), &ino, sizeof(ino_t));
 
         ad_setentrylen( adp, ADEID_DID, sizeof(id));
         memcpy(ad_entry( adp, ADEID_DID ), &id, sizeof(id));

@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.3 2003-11-25 05:05:43 didg Exp $
+ * $Id: adouble.h,v 1.21.6.4 2004-01-03 22:21:09 didg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -419,9 +419,9 @@ extern int ad_setattr __P((const struct adouble *, const u_int16_t));
 extern int ad_getattr __P((const struct adouble *, u_int16_t *));
 
 #if AD_VERSION == AD_VERSION2
-extern int ad_setid __P((struct adouble *, const struct stat *, const u_int32_t, const void *));
+extern int ad_setid __P((struct adouble *, const dev_t dev,const ino_t ino, const u_int32_t, const void *));
 #else
-#define ad_setid(a, b, c, d)
+#define ad_setid(a, b, c)
 #endif
 
 #ifdef WITH_SENDFILE
