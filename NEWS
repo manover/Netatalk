@@ -6,6 +6,7 @@ Changes from 1.5.4
 * NEW: Allow SLP to be disabled per afpd process by adding a new -noslp flag
        to afpd.conf.
 * FIX: Use server name (if not NULL) for the SLP URL.
+* FIX: papd: buffer overflow during config file read (Olaf Hering)
 
 Changes from 1.5.3
 ==================
