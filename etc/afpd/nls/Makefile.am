@@ -10,8 +10,7 @@ parsecode_SOURCES = parsecode.c
 
 MACCODES = maccode.437 maccode.850 maccode.iso8859-1 maccode.iso8859-1.adapted maccode.koi8-r
 
-CFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/sys -I$(top_srcdir)/etc/afpd \
-	@CFLAGS@
+INCLUDES = -I$(top_srcdir)/include -I$(top_srcdir)/sys -I$(top_srcdir)/etc/afpd
 
 $(MACCODES): makecode
 	./makecode

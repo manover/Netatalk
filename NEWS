@@ -3,6 +3,7 @@ Changes in 1.6.3
 
 * FIX: afpd: Files could be opened for writing on read-only filesystems.
 * FIX: shell_utils: Don't distribute generated files.
+* FIX: automake build fixes
 
 Changes in 1.6.2
 ================
