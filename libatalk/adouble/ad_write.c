@@ -1,5 +1,5 @@
 /*
- * $Id: ad_write.c,v 1.7.6.2 2003-10-13 22:05:17 didg Exp $
+ * $Id: ad_write.c,v 1.7.6.3 2003-10-17 00:01:13 didg Exp $
  *
  * Copyright (c) 1990,1995 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -96,7 +96,7 @@ ssize_t ad_write( ad, eid, off, end, buf, buflen )
  * the caller set the locks
  * ftruncate is undefined when the file length is smaller than 'size'
  */
-static int sys_ftruncate(int fd, off_t length)
+int sys_ftruncate(int fd, off_t length)
 {
 
 #ifndef  HAVE_PWRITE

@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_stream.c,v 1.11 2003-03-12 15:07:06 didg Exp $
+ * $Id: dsi_stream.c,v 1.11.6.1 2003-10-17 00:01:14 didg Exp $
  *
  * Copyright (c) 1998 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -19,15 +19,20 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif /* HAVE_UNISTD_H */
+#endif
+
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <sys/socket.h>
+
 #ifdef USE_WRITEV
 #include <sys/uio.h>
-#endif /* USE_WRITEV */
+#endif
+
 #include <atalk/logger.h>
 
 #include <atalk/dsi.h>
@@ -35,19 +40,23 @@
 
 #define min(a,b)  ((a) < (b) ? (a) : (b))
 
+#ifndef MSG_MORE
+#define MSG_MORE 0x8000
+#endif
 
 /* write raw data. return actual bytes read. checks against EINTR
  * aren't necessary if all of the signals have SA_RESTART
  * specified. */
-size_t dsi_stream_write(DSI *dsi, void *data, const size_t length)
+size_t dsi_stream_write(DSI *dsi, void *data, const size_t length, int mode)
 {
   size_t written;
   ssize_t len;
+  unsigned int flags = (mode)?MSG_MORE:0;
 
   written = 0;
   while (written < length) {
-    if ((-1 == (len = write(dsi->socket, (u_int8_t *) data + written,
-		      length - written)) && errno == EINTR) ||
+    if ((-1 == (len = send(dsi->socket, (u_int8_t *) data + written,
+		      length - written, flags)) && errno == EINTR) ||
 	!len)
       continue;
 
@@ -63,8 +72,10 @@ size_t dsi_stream_write(DSI *dsi, void *data, const size_t length)
   return written;
 }
 
-/* read raw data. return actual bytes read. this will wait until 
- * it gets length bytes */
+/* ---------------------------------------
+ * read raw data. return actual bytes read. this will wait until 
+ * it gets length bytes 
+ */
 size_t dsi_stream_read(DSI *dsi, void *data, const size_t length)
 {
   size_t stored;
@@ -87,17 +98,34 @@ size_t dsi_stream_read(DSI *dsi, void *data, const size_t length)
   return stored;
 }
 
+/* ---------------------------------------
+*/
 void dsi_sleep(DSI *dsi, const int state)
 {
     dsi->asleep = state;
 }
 
-/* write data. 0 on failure. this assumes that dsi_len will never
- * cause an overflow in the data buffer. */
+/* ---------------------------------------
+*/
+static void block_sig(DSI *dsi)
+{
+  if (!dsi->sigblocked) sigprocmask(SIG_BLOCK, &dsi->sigblockset, &dsi->oldset);
+}
+
+/* ---------------------------------------
+*/
+static void unblock_sig(DSI *dsi)
+{
+  if (!dsi->sigblocked) sigprocmask(SIG_SETMASK, &dsi->oldset, NULL);
+}
+
+/* ---------------------------------------
+ * write data. 0 on failure. this assumes that dsi_len will never
+ * cause an overflow in the data buffer. 
+ */
 int dsi_stream_send(DSI *dsi, void *buf, size_t length)
 {
   char block[DSI_BLOCKSIZ];
-  sigset_t oldset;
 #ifdef USE_WRITEV
   struct iovec iov[2];
   size_t towrite;
@@ -114,11 +142,11 @@ int dsi_stream_send(DSI *dsi, void *buf, size_t length)
 	 sizeof(dsi->header.dsi_reserved));
 
   /* block signals */
-  sigprocmask(SIG_BLOCK, &dsi->sigblockset, &oldset);
+  block_sig(dsi);
 
   if (!length) { /* just write the header */
-    length = (dsi_stream_write(dsi, block, sizeof(block)) == sizeof(block));
-    sigprocmask(SIG_SETMASK, &oldset, NULL);
+    length = (dsi_stream_write(dsi, block, sizeof(block), 0) == sizeof(block));
+    unblock_sig(dsi);
     return length; /* really 0 on failure, 1 on success */
   }
   
@@ -139,7 +167,7 @@ int dsi_stream_send(DSI *dsi, void *buf, size_t length)
       break;
     else if (len < 0) { /* error */
       LOG(log_error, logtype_default, "dsi_stream_send: %s", strerror(errno));
-      sigprocmask(SIG_SETMASK, &oldset, NULL);
+      unblock_sig(dsi);
       return 0;
     }
     
@@ -159,19 +187,20 @@ int dsi_stream_send(DSI *dsi, void *buf, size_t length)
   
 #else /* USE_WRITEV */
   /* write the header then data */
-  if ((dsi_stream_write(dsi, block, sizeof(block)) != sizeof(block)) ||
-      (dsi_stream_write(dsi, buf, length) != length)) {
-    sigprocmask(SIG_SETMASK, &oldset, NULL);
-    return 0;
+  if ((dsi_stream_write(dsi, block, sizeof(block), 1) != sizeof(block)) ||
+            (dsi_stream_write(dsi, buf, length, 0) != length)) {
+      unblock_sig(dsi);
+      return 0;
   }
 #endif /* USE_WRITEV */
 
-  sigprocmask(SIG_SETMASK, &oldset, NULL);
+  unblock_sig(dsi);
   return 1;
 }
 
 
-/* read data. function on success. 0 on failure. data length gets
+/* ---------------------------------------
+ * read data. function on success. 0 on failure. data length gets
  * stored in length variable. this should really use size_t's, but
  * that would require changes elsewhere. */
 int dsi_stream_receive(DSI *dsi, void *buf, const size_t ilength,

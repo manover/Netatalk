@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.1 2003-09-09 16:42:21 didg Exp $
+ * $Id: ad_open.c,v 1.30.6.2 2003-10-17 00:01:12 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -49,6 +49,7 @@
 
 #include <netatalk/endian.h>
 #include <atalk/adouble.h>
+#include <atalk/util.h>
 
 #include "ad_private.h"
 
@@ -243,7 +244,7 @@ static int ad_v1tov2(struct adouble *ad, const char *path)
     goto bail_lock;
   
   if (fstat(fd, &st) ||
-      ftruncate(fd, st.st_size + SHIFTDATA) < 0) {
+      sys_ftruncate(fd, st.st_size + SHIFTDATA) < 0) {
     goto bail_open;
   }
   if (st.st_size > 0x7fffffff) {
@@ -324,7 +325,7 @@ static int ad_v1tov2(struct adouble *ad, const char *path)
   return 0;
   
 bail_truncate:
-  ftruncate(fd, st.st_size);
+  sys_ftruncate(fd, st.st_size);
 bail_open:
   close(fd);
 bail_lock:

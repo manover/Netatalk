@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_attn.c,v 1.5 2003-03-12 15:07:05 didg Exp $
+ * $Id: dsi_attn.c,v 1.5.6.1 2003-10-17 00:01:14 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -54,7 +54,7 @@ int dsi_attention(DSI *dsi, AFPUserBytes flags)
 
   /* send an attention */
   sigprocmask(SIG_BLOCK, &dsi->sigblockset, &oldset);
-  len = dsi_stream_write(dsi, block, DSI_BLOCKSIZ + len);
+  len = dsi_stream_write(dsi, block, DSI_BLOCKSIZ + len, 0);
   sigprocmask(SIG_SETMASK, &oldset, NULL);
 
   return len;

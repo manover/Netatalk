@@ -57,8 +57,11 @@ typedef struct DSI {
   dsi_proto protocol;
   struct dsi_block header;
   struct sockaddr_in server, client;
-  sigset_t sigblockset;
+  
+  sigset_t sigblockset, oldset;
+  int      sigblocked;
   struct itimerval timer, savetimer;
+  
   u_int32_t attn_quantum, datasize, server_quantum;
   u_int16_t serverID, clientID;
   u_int8_t *status, commands[DSI_CMDSIZ], data[DSI_DATASIZ];
@@ -142,7 +145,7 @@ extern void dsi_close __P((DSI *));
 extern void dsi_sleep __P((DSI *, const int ));
 
 /* low-level stream commands -- in dsi_stream.c */
-extern size_t dsi_stream_write __P((DSI *, void *, const size_t));
+extern size_t dsi_stream_write __P((DSI *, void *, const size_t, const int mode));
 extern size_t dsi_stream_read __P((DSI *, void *, const size_t));
 extern int dsi_stream_send __P((DSI *, void *, size_t));
 extern int dsi_stream_receive __P((DSI *, void *, const size_t, size_t *));

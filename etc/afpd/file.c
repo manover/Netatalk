@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.3 2003-09-28 13:58:57 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.4 2003-10-17 00:01:11 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1262,30 +1262,39 @@ static int copy_fd(int dfd, int sfd)
     ssize_t cc;
     int     err = AFP_OK;
     char    filebuf[8192];
-
+    
 #ifdef SENDFILE_FLAVOR_LINUX
+    off_t   offset = 0;
+    size_t  size;
     struct stat         st;
+    #define BUF 128*1024*1024
 
     if (fstat(sfd, &st) == 0) {
-        if ((cc = sendfile(dfd, sfd, NULL, st.st_size)) < 0) {
-            switch (errno) {
-            case EINVAL:  /* there's no guarantee that all fs support sendfile */
-                break;
-            case EDQUOT:
-            case EFBIG:
-            case ENOSPC:
-                return AFPERR_DFULL;
-            case EROFS:
-                return AFPERR_VLOCK;
-            default:
-                return AFPERR_PARAM;
+        
+        while (1) {
+            if ( offset >= st.st_size) {
+               return AFP_OK;
+            }
+            size = (st.st_size -offset > BUF)?BUF:st.st_size -offset;
+            if ((cc = sys_sendfile(dfd, sfd, &offset, size)) < 0) {
+                switch (errno) {
+                case ENOSYS:
+                case EINVAL:  /* there's no guarantee that all fs support sendfile */
+                    goto no_sendfile;
+                case EDQUOT:
+                case EFBIG:
+                case ENOSPC:
+                    return AFPERR_DFULL;
+                case EROFS:
+                    return AFPERR_VLOCK;
+                default:
+                    return AFPERR_PARAM;
+                }
             }
         }
-        else {
-           return AFP_OK;
-        }
     }
-#endif /* SENDFILE_FLAVOR_LINUX */
+    no_sendfile:
+#endif 
 
     while (1) {
         if ((cc = read(sfd, filebuf, sizeof(filebuf))) < 0) {

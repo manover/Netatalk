@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_dbd.c,v 1.1.4.3 2003-09-22 07:21:34 bfernhomberg Exp $
+ * $Id: cnid_dbd.c,v 1.1.4.4 2003-10-17 00:01:13 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -203,6 +203,13 @@ static int transmit(CNID_private *db, struct cnid_dbd_rqst *rqst, struct cnid_db
         return 0;
  
  transmit_fail:
+{
+        struct timeval tv;
+            tv.tv_usec = 0;
+            tv.tv_sec  = 5;
+            select(0, NULL, NULL, NULL, &tv);
+}
+
         if (db->fd != -1) {
             close(db->fd);
         }
@@ -471,7 +478,7 @@ char *cnid_dbd_resolve(struct _cnid_db *cdb, cnid_t *id, void *buffer, u_int32_t
 }
 
 /* ---------------------- */
-int cnid_dbd_getstamp(struct _cnid_db *cdb, void *buffer, u_int32_t len)
+int cnid_dbd_getstamp(struct _cnid_db *cdb, void *buffer, const int len)
 {
     CNID_private *db;
     struct cnid_dbd_rqst rqst;

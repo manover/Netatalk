@@ -1,5 +1,5 @@
 /*
- * $Id: util.h,v 1.7.10.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: util.h,v 1.7.10.2 2003-10-17 00:01:12 didg Exp $
  */
 
 #ifndef _ATALK_UTIL_H
@@ -11,6 +11,12 @@
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 #include <netatalk/at.h>
+
+extern int     sys_ftruncate __P((int fd, off_t length));
+
+#ifdef WITH_SENDFILE
+extern ssize_t sys_sendfile __P((int __out_fd, int __in_fd, off_t *__offset,size_t __count));
+#endif
 
 extern const int _diacasemap[], _dialowermap[];
 

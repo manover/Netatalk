@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: adouble.h,v 1.21.6.2 2003-10-17 00:01:12 didg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -67,42 +67,6 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <netatalk/endian.h>
-
-/* XXX: this is the wrong place to put this. 
- * NOTE: as of 2.2.1, linux can't do a sendfile from a socket. 
- * and it doesn't have 64 bits sendfile
- */
-#ifdef SENDFILE_FLAVOR_LINUX
-
-#if _FILE_OFFSET_BITS == 64 
-
-#undef SENDFILE_FLAVOR_LINUX
-
-#else /* _FILE_OFFSET_BITS != 64 */
-
-#define HAVE_SENDFILE_READ
-#define HAVE_SENDFILE_WRITE
-#include <asm/unistd.h>
-
-#ifdef __NR_sendfile
-#ifdef ATACC
-extern int sendfile __P((int , int , off_t *, size_t ));
-#else /* !ATACC */
-static __inline__ int sendfile(int fdout, int fdin, off_t *off, size_t count)
-{
-  return syscall(__NR_sendfile, fdout, fdin, off, count);
-}
-#endif /* ATACC */
-
-#else /* !__NR_sendfile */
-#include <sys/sendfile.h>
-#endif /* __NR_sendfile */
-#endif /* _FILE_OFFSET_BITS */
-#endif /* SENDFILE_FLAVOR_LINUX */
-
-#ifdef SENDFILE_FLAVOR_BSD
-#define HAVE_SENDFILE_READ
-#endif
 
 /* version info */
 #define AD_VERSION1	0x00010000
@@ -450,7 +414,7 @@ extern int ad_setid __P((struct adouble *, const struct stat *, const u_int32_t,
 #define ad_setid(a, b, c)
 #endif
 
-#ifdef HAVE_SENDFILE_READ
+#ifdef WITH_SENDFILE
 extern ssize_t ad_readfile __P((const struct adouble *, const int, 
 				const int, off_t, const size_t));
 #endif

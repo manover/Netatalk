@@ -1,5 +1,5 @@
 /*
- * $Id: fork.c,v 1.51.2.2.2.3 2003-09-28 13:58:57 didg Exp $
+ * $Id: fork.c,v 1.51.2.2.2.4 2003-10-17 00:01:11 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -44,6 +44,12 @@
 #include "directory.h"
 #include "desktop.h"
 #include "volume.h"
+
+#ifdef DEBUG1
+#define Debug(a) ((a)->options.flags & OPTION_DEBUG)
+#else
+#define Debug(a) (0)
+#endif
 
 struct ofork		*writtenfork;
 extern int getmetadata(struct vol *vol,
@@ -951,8 +957,7 @@ int is64;
 
 #define min(a,b)	((a)<(b)?(a):(b))
     *rbuflen = min( reqcount, *rbuflen );
-    err = read_file(ofork, eid, offset, nlmask, nlchar, rbuf, rbuflen,
-                    xlate);
+    err = read_file(ofork, eid, offset, nlmask, nlchar, rbuf, rbuflen, xlate);
     if (err < 0)
         goto afp_read_done;
 
@@ -963,8 +968,7 @@ int is64;
 
 #ifdef DEBUG1
         if (obj->options.flags & OPTION_DEBUG) {
-            printf( "(read) reply: %d/%d, %d\n", *rbuflen,
-                    (int) reqcount, dsi->clientID);
+            printf( "(read) reply: %d/%d, %d\n", *rbuflen,(int) reqcount, dsi->clientID);
             bprint(rbuf, *rbuflen);
         }
 #endif        
@@ -985,11 +989,10 @@ int is64;
 
         /* due to the nature of afp packets, we have to exit if we get
            an error. we can't do this with translation on. */
-#ifdef HAVE_SENDFILE_READ
-        if (!(xlate || (obj->options.flags & OPTION_DEBUG))) {
-            if (ad_readfile(ofork->of_ad, eid, dsi->socket, offset,
-                            dsi->datasize) < 0) {
-                if (errno == EINVAL)
+#ifdef WITH_SENDFILE
+        if (!(xlate || Debug(obj) )) {
+            if (ad_readfile(ofork->of_ad, eid, dsi->socket, offset, dsi->datasize) < 0) {
+                if (errno == EINVAL || errno == ENOSYS)
                     goto afp_read_loop;
                 else {
                     LOG(log_error, logtype_afpd, "afp_read: ad_readfile: %s", strerror(errno));
@@ -1002,12 +1005,11 @@ int is64;
         }
 
 afp_read_loop:
-#endif /* HAVE_SENDFILE_READ */
+#endif 
 
         /* fill up our buffer. */
         while (*rbuflen > 0) {
-            cc = read_file(ofork, eid, offset, nlmask, nlchar, rbuf,
-                           rbuflen, xlate);
+            cc = read_file(ofork, eid, offset, nlmask, nlchar, rbuf,rbuflen, xlate);
             if (cc < 0)
                 goto afp_read_exit;
 
@@ -1347,8 +1349,7 @@ int                 is64;
 
             /* find out what we have already and write it out. */
             cc = dsi_writeinit(dsi, rbuf, *rbuflen);
-            if (!cc ||
-                    (cc = write_file(ofork, eid, offset, rbuf, cc, xlate)) < 0) {
+            if (!cc || (cc = write_file(ofork, eid, offset, rbuf, cc, xlate)) < 0) {
                 dsi_writeflush(dsi);
                 *rbuflen = 0;
                 ad_tmplock(ofork->of_ad, eid, ADLOCK_CLR, saveoff, reqcount, ofork->of_refnum);

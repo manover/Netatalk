@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_dbd.h,v 1.1.4.1 2003-09-09 16:42:21 didg Exp $
+ * $Id: cnid_dbd.h,v 1.1.4.2 2003-10-17 00:01:14 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -24,7 +24,7 @@ extern cnid_t cnid_dbd_add __P((struct _cnid_db *, const struct stat *, const cn
 			    const char *, const int, cnid_t));
 extern cnid_t cnid_dbd_get __P((struct _cnid_db *, const cnid_t, const char *, const int)); 
 extern char *cnid_dbd_resolve __P((struct _cnid_db *, cnid_t *, void *, u_int32_t )); 
-extern int cnid_dbd_getstamp __P((struct _cnid_db *, void *, u_int32_t )); 
+extern int cnid_dbd_getstamp __P((struct _cnid_db *, void *, const int )); 
 extern cnid_t cnid_dbd_lookup __P((struct _cnid_db *, const struct stat *, const cnid_t,
 			       const char *, const int));
 extern int cnid_dbd_update __P((struct _cnid_db *, const cnid_t, const struct stat *,

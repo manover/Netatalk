@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_tickle.c,v 1.5 2003-03-12 15:07:07 didg Exp $
+ * $Id: dsi_tickle.c,v 1.5.6.1 2003-10-17 00:01:14 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -39,7 +39,7 @@ int dsi_tickle(DSI *dsi)
   /* code = len = reserved = 0 */
 
   sigprocmask(SIG_BLOCK, &dsi->sigblockset, &oldset);
-  ret = dsi_stream_write(dsi, block, DSI_BLOCKSIZ) == DSI_BLOCKSIZ;
+  ret = dsi_stream_write(dsi, block, DSI_BLOCKSIZ, 0) == DSI_BLOCKSIZ;
   sigprocmask(SIG_SETMASK, &oldset, NULL);
   return ret;
 }

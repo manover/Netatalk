@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_read.c,v 1.3 2001-06-29 14:14:46 rufustfirefly Exp $
+ * $Id: dsi_read.c,v 1.3.14.1 2003-10-17 00:01:14 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -40,8 +40,10 @@ ssize_t dsi_readinit(DSI *dsi, void *buf, const size_t buflen,
   dsi->header.dsi_len = htonl(size);
   dsi->header.dsi_code = htonl(err);
 
-  sigprocmask(SIG_BLOCK, &dsi->sigblockset, NULL);
+  sigprocmask(SIG_BLOCK, &dsi->sigblockset, &dsi->oldset);
+  dsi->sigblocked = 1;
   setitimer(ITIMER_REAL, &none, &dsi->savetimer);
+  
   if (dsi_stream_send(dsi, buf, buflen)) {
     dsi->datasize = size - buflen;
     return min(dsi->datasize, buflen);
@@ -53,13 +55,17 @@ ssize_t dsi_readinit(DSI *dsi, void *buf, const size_t buflen,
 void dsi_readdone(DSI *dsi)
 {
   setitimer(ITIMER_REAL, &dsi->savetimer, NULL);
-  sigprocmask(SIG_UNBLOCK, &dsi->sigblockset, NULL);
+  sigprocmask(SIG_SETMASK, &dsi->oldset, NULL);
+  dsi->sigblocked = 0;
 }
 
 /* send off the data */
 ssize_t dsi_read(DSI *dsi, void *buf, const size_t buflen)
 {
-  size_t len = dsi_stream_write(dsi, buf, buflen);
+  size_t len;
+  int delay = (dsi->datasize != buflen)?1:0;
+  
+  len  = dsi_stream_write(dsi, buf, buflen, delay);
 
   if (len == buflen) {
     dsi->datasize -= len;

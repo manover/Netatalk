@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.4 2003-09-28 13:58:55 didg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.5 2003-10-17 00:01:10 didg Exp $
  *
  * See COPYRIGHT.
  *
@@ -528,22 +528,20 @@ int		ibuflen, *rbuflen;
         /* do to the streaming nature, we have to exit if we encounter
          * a problem. much confusion results otherwise. */
         while (*rbuflen > 0) {
-#if defined(SENDFILE_FLAVOR_LINUX) || defined(SENDFILE_FLAVOR_BSD)
+#ifdef WITH_SENDFILE
             if (!obj->options.flags & OPTION_DEBUG) {
-#ifdef SENDFILE_FLAVOR_LINUX
-                if (sendfile(dsi->socket, si.sdt_fd, &offset, dsi->datasize) < 0)
-                    goto geticon_exit;
-#endif /* SENDFILE_FLAVOR_LINUX */
-
-#ifdef SENDFILE_FLAVOR_BSD
-                if (sendfile(si.sdt_fd, dsi->socket, offset, rc, NULL, NULL, 0) < 0)
-                    goto geticon_exit;
-#endif /* SENDFILE_FLAVOR_BSD */
-
+                if (sys_sendfile(dsi->socket, si.sdt_fd, &offset, dsi->datasize) < 0) {
+                    switch (errno) {
+                    case ENOSYS:
+                    case EINVAL:  /* there's no guarantee that all fs support sendfile */
+                        break;
+                    default:
+                        goto geticon_exit;
+                    }
+                }
                 goto geticon_done;
             }
-#endif /* SENDFILE_FLAVOR_LINUX || SENDFILE_FLAVOR_BSD */
-
+#endif
             buflen = read(si.sdt_fd, rbuf, *rbuflen);
             if (buflen < 0)
                 goto geticon_exit;
@@ -577,11 +575,11 @@ geticon_exit:
             return( AFPERR_PARAM );
         }
         *rbuflen = rc;
-        return AFP_OK;
     }
+    return AFP_OK;
 }
 
-
+/* ---------------------- */
 static char		hexdig[] = "0123456789abcdef";
 char *dtfile(const struct vol *vol, u_char creator[], char *ext )
 {
