@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.36.2.3 2002-11-11 22:18:48 srittau Exp $
+ * $Id: volume.c,v 1.36.2.4 2003-06-14 16:56:27 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -298,10 +298,14 @@ static void volset(struct vol_option *options, char *volname, int vlen,
 {
     char *val;
 
-    val = strchr(tmp, ':');
-    LOG(log_debug, logtype_afpd, "Parsing volset %s", val);
+    LOG(log_debug, logtype_afpd, "Parsing volset %s", tmp);
 
-    if (optionok(tmp, "allow:", val)) {
+    val = strchr(tmp, ':');
+    if (!val) {
+        /* we'll assume it's a volume name. */
+        strncpy(volname, tmp, vlen);
+
+    } else if (optionok(tmp, "allow:", val)) {
         if (options[VOLOPT_ALLOW].c_value)
             free(options[VOLOPT_ALLOW].c_value);
         options[VOLOPT_ALLOW].c_value = strdup(val + 1);
@@ -414,13 +418,10 @@ static void volset(struct vol_option *options, char *volname, int vlen,
 
 #endif /* FORCE_UIDGID */
 
-    } else if (val) {
+    } else {
         /* ignore unknown options */
         LOG(log_debug, logtype_afpd, "ignoring unknown volume option: %s", tmp);
 
-    } else {
-        /* we'll assume it's a volume name. */
-        strncpy(volname, tmp, vlen);
     }
 }
 
@@ -537,7 +538,7 @@ FILE	*fp;
     int		c;
 
     p = buf;
-    while ((( c = getc( fp )) != EOF ) && ( size > 0 )) {
+    while ((EOF != ( c = getc( fp )) ) && ( size > 0 )) {
         if ( c == '\n' || c == '\r' ) {
             *p++ = '\n';
             break;
@@ -604,7 +605,6 @@ int			user;
             LOG(log_error, logtype_afpd, "setextmap: calloc: %s", strerror(errno) );
             return;
         }
-
     }
     ext++;
     for ( em = extmap, cnt = 0; em->em_ext; em++, cnt++) {
@@ -705,7 +705,7 @@ struct passwd *pwent;
         strcat( path, p2 );
     }
 
-    if (( fp = fopen( path, "r" )) == NULL ) {
+    if (NULL == ( fp = fopen( path, "r" )) ) {
         return( -1 );
     }
 
@@ -727,9 +727,8 @@ struct passwd *pwent;
                                    path + VOLOPT_DEFAULT_LEN) < 0)
                         break;
                     volset(save_options, tmp, sizeof(tmp) - 1,
-		    	obj->options.nlspath, path + VOLOPT_DEFAULT_LEN,
-			obj, pwent);
-
+			   obj->options.nlspath, path + VOLOPT_DEFAULT_LEN,
+			   obj, pwent);
                 }
             }
             break;
@@ -791,7 +790,7 @@ struct passwd *pwent;
                     break;
 
                 volset(options, volname, sizeof(volname) - 1,
-			obj->options.nlspath, tmp, obj, pwent);
+		       obj->options.nlspath, tmp, obj, pwent);
             }
 
             /* check allow/deny lists:
@@ -1286,7 +1285,7 @@ int		ibuflen, *rbuflen;
     *rbuflen = 0;
     ibuf += 2;
     memcpy(&vid, ibuf, sizeof( vid ));
-    if (( vol = getvolbyvid( vid )) == NULL ) {
+    if (NULL == ( vol = getvolbyvid( vid )) ) {
         return( AFPERR_PARAM );
     }
 
@@ -1302,7 +1301,6 @@ int		ibuflen, *rbuflen;
             curdir = ovol->v_dir;
         }
     }
-
     dirfree( vol->v_root );
     vol->v_dir = NULL;
 #ifdef CNID_DB
@@ -1344,7 +1342,7 @@ struct extmap *getextmap(const char *path)
     char	  *p;
     struct extmap *em;
 
-    if (( p = strrchr( path, '.' )) == NULL ) {
+    if (NULL == ( p = strrchr( path, '.' )) ) {
         return( defextmap );
     }
     p++;
@@ -1439,7 +1437,7 @@ int		ibuflen, *rbuflen;
     memcpy(&bitmap, ibuf, sizeof( bitmap ));
     bitmap = ntohs( bitmap );
 
-    if (( vol = getvolbyvid( vid )) == NULL ) {
+    if (NULL == ( vol = getvolbyvid( vid )) ) {
         *rbuflen = 0;
         return( AFPERR_PARAM );
     }
