@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.126.2.14 2002-02-07 23:50:21 srittau Exp $
+dnl $Id: configure.in,v 1.126.2.15 2002-02-08 16:30:16 jmarcus Exp $
 dnl configure.in for netatalk
 
 AC_INIT(bin/adv1tov2/adv1tov2.c)
@@ -19,6 +19,8 @@ AC_PROG_MAKE_SET
 AC_LIBTOOL_DLOPEN
 AM_PROG_LIBTOOL
 NETATALK_PROG_PERL
+AC_PROG_GREP
+AC_PROG_PS
 
 dnl *********************************************************************
 dnl FIXME! FIXME! These should be selectable properly, and should produce
