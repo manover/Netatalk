@@ -1,3 +1,30 @@
+Changes in 2.0.2
+================
+
+* NEW: cnid: Add an indexes check and rebuild, optional for dbd 
+       (parameter check default no), standalone program cnid_index for
+       cdb.
+* UPD: Enhanced afpd's -v command line switch and added -V for more 
+       verbose information
+* UPD: uams_gss: build the principal used by uams_gss.so from afpd's
+       configuration, don't use GSS_C_NT_HOSTBASED_SERVICE
+* UPD: cnid_dbd: add process id in syslog and small clean up
+* REM: remove netatalkshorternamelinks.pl cf. SF bug [ 1061396 ]
+       netatalkshorternamelinks.pl broken
+* FIX: afpd: check for DenyRead on FPCopyFile
+* FIX: afpd: add missing flush for AD2 Metadata on FPCopyFile, SF bug 
+       [ 1055691 ] Word 98 OS 9 Saving an existing file
+* FIX: afpd: Deal with AFP3 connection and type 2 (non-UTF8) names.
+       reported by Gair Heaton, HI RESOLUTION SYSTEMS
+* FIX: afpd: Broken 'crlf' option
+* FIX: afpd: fix SF bug [ 1079622 ] afpd/dhx memory bug, 
+       by Ralf Schuchardt
+* FIX: afpd: Return an error if we cannot get the db stamp in 
+       afp_openvol.
+* FIX: afpd: Fix slp registration with Solaris9 slpd, from
+       hat at fa2.so-net.ne.jp
+        
+
 Changes in 2.0.1
 ================
 
