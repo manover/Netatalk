@@ -1,5 +1,5 @@
 /*
- * $Id: quota.c,v 1.22.8.1 2003-09-09 18:18:54 bfernhomberg Exp $
+ * $Id: quota.c,v 1.22.8.2 2003-09-24 09:15:19 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -188,7 +188,7 @@ uid_t euser_id;
 struct dqblk *dp;
 {
 	int ret = -1;
-#ifdef HAVE_LINUX_XQM_H
+#ifdef 0
 	struct fs_disk_quota D;
 	
 	memset (&D, 0, sizeof(fs_disk_quota));
