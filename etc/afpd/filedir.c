@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.45.2.2.2.13 2004-09-25 14:46:22 didg Exp $
+ * $Id: filedir.c,v 1.45.2.2.2.14 2004-10-06 20:05:14 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -337,15 +337,13 @@ int         isdir;
     char            *p;
     char            *upath;
     int             rc;
-    struct stat     *st;
+    struct stat     *st, nst;
     int             adflags;
     struct adouble	ad;
     struct adouble	*adp;
     struct ofork	*opened = NULL;
     struct path         path;
     cnid_t      id;
-    ucs2_t *oldname_w, *newname_w;
-    void *oldname_w_p = &oldname_w, *newname_w_p = &newname_w;
 
     ad_init(&ad, vol->v_adouble);
     adp = &ad;
@@ -401,28 +399,16 @@ int         isdir;
     }
 
     /* source == destination. we just silently accept this. */
-    if (curdir == sdir) {
+    if ((!isdir && curdir == sdir) || (isdir && curdir == sdir->d_parent)) {
         if (strcmp(oldname, newname) == 0)
             return AFP_OK;
 
-        /* deal with case insensitive, case-preserving filesystems. */
-        if ((stat(upath, st) == 0)) {
-	    if ((size_t)-1 == (convert_string_allocate(vol->v_volcharset, CH_UCS2, oldname,
-                                strlen(oldname), oldname_w_p)) ) {
-                return AFPERR_MISC; /* conversion error has already been logged */
-            }
-	    if ((size_t)-1 == (convert_string_allocate(vol->v_volcharset, CH_UCS2, newname, 
-                                strlen(newname), newname_w_p)) ) {
-                free(oldname_w);
-                return AFPERR_MISC; /* conversion error has already been logged */
-            }
-	    if (strcasecmp_w(oldname_w, newname_w)) {
-		free(oldname_w);
-		free(newname_w);
+        if (stat(upath, st) == 0) {
+            if (!stat(p, &nst) && !(nst.st_dev == st->st_dev && nst.st_ino == st->st_ino) ) {
+                /* not the same file */
                 return AFPERR_EXIST;
-	    }
-	    free (oldname_w);	
-	    free (newname_w);	
+            }
+            errno = 0;
         }
     } else if (stat(upath, st ) == 0)
         return AFPERR_EXIST;
