@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.1.4.4 2003-11-25 00:41:31 lenneis Exp $
+ * $Id: main.c,v 1.1.4.5 2003-12-04 21:33:25 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -12,6 +12,9 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif /* HAVE_FCNTL_H */
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -48,19 +51,6 @@ static void sig_exit(int signo)
     return;
 }
 
-/* 
-   The dbd_XXX and comm_XXX functions all obey the same protocol for return values:
-   
-   1: Success, if transactions are used commit.
-   0: Failure, but we continue to serve requests. If transactions are used abort/rollback.
-  -1: Fatal error, either from the database or from the socket. Abort the transaction if applicable 
-      (which might fail as well) and then exit.
-
-  We always try to notify the client process about the outcome, the result field
-  of the cnid_dbd_rply structure contains further details.
-
- */
-
 static void block_sigs_onoff(int block)
 {
     sigset_t set;
@@ -75,6 +65,18 @@ static void block_sigs_onoff(int block)
     return;
 }
 
+/* 
+   The dbd_XXX and comm_XXX functions all obey the same protocol for return values:
+   
+   1: Success, if transactions are used commit.
+   0: Failure, but we continue to serve requests. If transactions are used abort/rollback.
+  -1: Fatal error, either from the database or from the socket. Abort the transaction if applicable 
+      (which might fail as well) and then exit.
+
+  We always try to notify the client process about the outcome, the result field
+  of the cnid_dbd_rply structure contains further details.
+
+ */
 
 static int loop(struct db_param *dbp)
 {
@@ -194,6 +196,7 @@ int main(int argc, char *argv[])
     int err = 0;
     struct stat st;
     int lockfd;
+    struct flock lock;
     char *dir;
         
     if (argc  != 2) {
@@ -218,22 +221,28 @@ int main(int argc, char *argv[])
 #endif    
     /* Before we do anything else, check if there is an instance of cnid_dbd
        running already and silently exit if yes. */
-    if ((lockfd = open(LOCKFILENAME, O_RDONLY | O_CREAT, 0644)) < 0) {
-        LOG(log_error, logtype_cnid, "main: error opening lockfile: %s", strerror(errno));
-        exit(1);
-    }
-#ifndef SOLARIS /* FIXME: Solaris doesn't have an flock implementation */
-    if (flock(lockfd, LOCK_EX | LOCK_NB) < 0) {
-        if (errno == EWOULDBLOCK) {
-            exit(0);
-        } else {
-            LOG(log_error, logtype_cnid, "main: error in flock: %s", strerror(errno));
-            exit(1);
-        }
-    }
-#endif
-    LOG(log_info, logtype_cnid, "Startup, DB dir %s", dir);
 
+    if ((lockfd = open(LOCKFILENAME, O_RDWR | O_CREAT, 0644)) < 0) {
+	LOG(log_error, logtype_cnid, "main: error opening lockfile: %s", strerror(errno));
+	exit(1);
+    }
+    
+    lock.l_start  = 0;
+    lock.l_whence = SEEK_SET;
+    lock.l_len    = 0;
+    lock.l_type   = F_WRLCK;
+
+    if (fcntl(lockfd, F_SETLK, &lock) < 0) {
+	if (errno == EACCES || errno == EAGAIN) {
+	    exit(0);
+	} else {
+	    LOG(log_error, logtype_cnid, "main: fcntl F_WRLCK lockfile: %s", strerror(errno));
+	    exit(1);
+	}
+    }
+    
+    LOG(log_info, logtype_cnid, "Startup, DB dir %s", dir);
+    sleep(3600);
     sv.sa_handler = sig_exit;
     sv.sa_flags = 0;
     sigemptyset(&sv.sa_mask);
@@ -299,9 +308,8 @@ int main(int argc, char *argv[])
     if (dbif_close() < 0)
         err++;
 
-#ifndef SOLARIS /* FIXME */
-    flock(lockfd, LOCK_UN);
-#endif
+    lock.l_type = F_UNLCK;
+    fcntl(lockfd, F_SETLK, &lock);
     close(lockfd);
     
     if (err)
