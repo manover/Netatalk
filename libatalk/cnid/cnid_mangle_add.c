@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_mangle_add.c,v 1.4.2.1 2003-02-08 03:16:53 jmarcus Exp $
+ * $Id: cnid_mangle_add.c,v 1.4.2.2 2003-09-16 14:21:44 bfernhomberg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -23,7 +23,7 @@
 #include "cnid_private.h"
 
 #ifdef CNID_DB_CDB
-    #define tid    NULL
+#define tid    NULL
 #endif /* CNID_DB_CDB */
 
 /* Add a mangled filename. */

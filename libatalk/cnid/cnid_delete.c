@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_delete.c,v 1.14 2002-08-30 03:12:52 jmarcus Exp $
+ * $Id: cnid_delete.c,v 1.14.2.1 2003-09-16 14:21:44 bfernhomberg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -25,7 +25,7 @@
 #include "cnid_private.h"
 
 #ifdef CNID_DB_CDB
-    #define tid    NULL
+#define tid    NULL
 #endif /* CNID_DB_CDB */
 
 int cnid_delete(void *CNID, const cnid_t id) {

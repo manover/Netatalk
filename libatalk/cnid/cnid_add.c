@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_add.c,v 1.30.2.3 2003-03-19 11:50:17 didg Exp $
+ * $Id: cnid_add.c,v 1.30.2.4 2003-09-16 14:21:44 bfernhomberg Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -40,7 +40,7 @@
 #include "cnid_private.h"
 
 #ifdef CNID_DB_CDB
-    #define tid    NULL
+#define tid    NULL
 #endif /* CNID_DB_CDB */
 
 /* add an entry to the CNID databases. we do this as a transaction

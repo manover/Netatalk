@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_update.c,v 1.20 2002-08-30 03:12:52 jmarcus Exp $
+ * $Id: cnid_update.c,v 1.20.2.1 2003-09-16 14:21:44 bfernhomberg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -22,7 +22,7 @@
 #include "cnid_private.h"
 
 #ifdef CNID_DB_CDB
-    #define tid    NULL
+#define tid    NULL
 #endif /* CNID_DB_CDB */
 
 /* cnid_update: takes the given cnid and updates the metadata.  To
