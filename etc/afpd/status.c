@@ -1,5 +1,5 @@
 /*
- * $Id: status.c,v 1.13.6.4 2004-01-22 19:37:46 bfernhomberg Exp $
+ * $Id: status.c,v 1.13.6.5 2004-06-09 01:31:14 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -254,15 +254,6 @@ static int status_netaddress(char *data, int *servoffset,
        we turn off the status flag for tcp/ip. */
     *data++ = ((fqdn && dsi)? 1 : 0) + (dsi ? 1 : 0) + (asp ? 1 : 0);
 
-    /* handle DNS names */
-    if (fqdn && dsi) {
-        int len = strlen(fqdn);
-        *data++ = len +2;
-        *data++ = 0x04;
-        memcpy(data, fqdn, len);
-        data += len;
-    }
-
     /* ip address */
     if (dsi) {
         const struct sockaddr_in *inaddr = &dsi->server;
@@ -283,6 +274,15 @@ static int status_netaddress(char *data, int *servoffset,
             memcpy(data, &inaddr->sin_port, sizeof(inaddr->sin_port));
             data += sizeof(inaddr->sin_port);
         }
+    }
+
+    /* handle DNS names */
+    if (fqdn && dsi) {
+        int len = strlen(fqdn);
+        *data++ = len +2;
+        *data++ = 0x04;
+        memcpy(data, fqdn, len);
+        data += len;
     }
 
 #ifndef NO_DDP
