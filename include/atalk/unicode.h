@@ -16,6 +16,10 @@
 
 #define SAFE_FREE(x) do { if ((x) != NULL) {free(x); x=NULL;} } while(0)
 
+#ifndef EILSEQ
+#define EILSEQ       84      /* Illegal byte sequence.  */
+#endif
+
 /* generic iconv conversion structure */
 typedef struct {
         size_t (*direct)(void *cd, char **inbuf, size_t *inbytesleft,

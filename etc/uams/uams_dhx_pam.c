@@ -1,5 +1,5 @@
 /*
- * $Id: uams_dhx_pam.c,v 1.24.6.3 2003-10-30 00:21:46 bfernhomberg Exp $
+ * $Id: uams_dhx_pam.c,v 1.24.6.4 2003-11-01 02:38:09 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -20,8 +20,13 @@
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 #include <errno.h>
-
+#ifdef HAVE_SECURITY_PAM_APPL_H
 #include <security/pam_appl.h>
+#endif
+#ifdef HAVE_PAM_PAM_APPL_H
+#include <pam/pam_appl.h>
+#endif
+
 
 #if defined(GNUTLS_DHX)
 #include <gnutls/openssl.h>

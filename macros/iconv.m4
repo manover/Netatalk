@@ -18,7 +18,7 @@ dnl	# check for libiconv support
 	    LDFLAGS="$LDFLAGS -L$withval/lib"
 	    AC_CHECK_LIB(iconv, iconv_open, [
                                 ICONV_CFLAGS="-I$withval/include"
-                                ICONV_LIBS ="-L$withval/lib -liconv"
+                                ICONV_LIBS="-L$withval/lib -liconv"
             ])
 	    AC_DEFINE_UNQUOTED(WITH_LIBICONV, "${withval}",[Path to iconv])
 	    ;;

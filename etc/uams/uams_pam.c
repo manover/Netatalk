@@ -1,5 +1,5 @@
 /*
- * $Id: uams_pam.c,v 1.15.2.1.2.3 2003-10-30 00:21:47 bfernhomberg Exp $
+ * $Id: uams_pam.c,v 1.15.2.1.2.4 2003-11-01 02:38:09 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -34,7 +34,12 @@ char *strchr (), *strrchr ();
 
 #include <atalk/logger.h>
 
+#ifdef HAVE_SECURITY_PAM_APPL_H
 #include <security/pam_appl.h>
+#endif
+#ifdef HAVE_PAM_PAM_APPL_H
+#include <pam/pam_appl.h>
+#endif
 
 #include <atalk/afp.h>
 #include <atalk/uam.h>

@@ -1,5 +1,5 @@
 /*
- * $Id: ofork.c,v 1.20.6.2 2003-09-30 14:52:45 didg Exp $
+ * $Id: ofork.c,v 1.20.6.3 2003-11-01 02:38:09 bfernhomberg Exp $
  *
  * Copyright (c) 1996 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -11,6 +11,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 #include <string.h>
 #include <sys/stat.h> /* works around a bug */
 #include <sys/param.h>
