@@ -1,5 +1,5 @@
 /*
- * $Id: aep.c,v 1.4.2.1 2001-12-31 20:05:20 srittau Exp $
+ * $Id: aep.c,v 1.4.2.2 2002-03-12 15:31:12 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -11,8 +11,8 @@
 
 #include <string.h>
 #include <errno.h>
+#include <syslog.h>
 
-#include <sys/syslog.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netatalk/at.h>
