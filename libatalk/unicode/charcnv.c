@@ -610,7 +610,7 @@ size_t ucs2_to_charset_allocate(charset_t ch, char **dest, const ucs2_t *src)
 
 size_t utf8_to_charset_allocate(charset_t ch, char **dest, const char *src)
 {
-	size_t src_len = strlen(src);
+	size_t src_len = strlen(src)+1;
 	*dest = NULL;
 	return convert_string_allocate(CH_UTF8, ch, src, src_len, dest);	
 }
@@ -750,19 +750,9 @@ conversion_loop:
 	
 	retval = atalk_iconv(descriptor,  &inbuf, &i_len, &outbuf, &o_len);
 	if(retval==(size_t)-1) {
-		if (errno == EILSEQ && flags && (*flags & CONV_IGNORE)) {
-				if (o_len < 2) {
-					errno = E2BIG;
-					return (size_t) -1;
-				}
-				o_save[destlen-o_len]   = '_';
-				o_save[destlen-o_len+1] = 0x0;
-				o_len -= 2;
-				outbuf = o_save + destlen - o_len;
-				inbuf += 1;
-				i_len -= 1;
+	    if (errno == EILSEQ && flags && (*flags & CONV_IGNORE)) {
 				*flags |= CONV_REQMANGLE;
-				goto conversion_loop;
+				return destlen-o_len;
 	    }
 	    else
 	    	return (size_t) -1;
@@ -790,17 +780,8 @@ unhex_char:
 			h_buf = (const char*) h;
 			if ((size_t) -1 == (retval = atalk_iconv(descriptor_cap, &h_buf, &hlen, &outbuf, &o_len)) ) {
 				if (errno == EILSEQ && CHECK_FLAGS(flags, CONV_IGNORE)) {
-					if (o_len < hlen) {
-						errno = E2BIG;
-						return retval;
-					}
-					while ( hlen > 0) {
-						*outbuf++ = '_';
-						*outbuf++ = 0;
-						o_len -= 2;
-						hlen -= 1;
-						*flags |= CONV_REQMANGLE;
-					}
+					*flags |= CONV_REQMANGLE;
+					return destlen-o_len;
 				}
 				else {
 					return retval;
@@ -810,12 +791,8 @@ unhex_char:
 		else {
 			/* We have an invalid :xx sequence */
 			if (CHECK_FLAGS(flags, CONV_IGNORE)) {
-				*outbuf++ = '_';
-				*outbuf++ = 0;
-				inbuf++;
-				o_len -= 2;
-				j -= 1;
 				*flags |= CONV_REQMANGLE;
+				return destlen-o_len;
 			}
 			else {
 				errno=EILSEQ;
@@ -827,6 +804,8 @@ unhex_char:
 		if (i_len > 0)
 			goto conversion_loop;
 	}
+
+
 
 	return destlen-o_len;
 }
@@ -868,7 +847,7 @@ static size_t push_charset_flags (charset_t to_set, charset_t cap_set, char* src
     o_len=destlen;
     o_save=outbuf;
     
-    if (*inbuf == '.' && flags && (*flags & CONV_ESCAPEDOTS)) {
+    if (inbuf[0] == '.' && inbuf[1] == 0 && flags && (*flags & CONV_ESCAPEDOTS)) {
         if (o_len < 3) {
             errno = E2BIG;
             return (size_t) -1;
@@ -886,31 +865,23 @@ static size_t push_charset_flags (charset_t to_set, charset_t cap_set, char* src
 conversion_loop:
     if ( flags && (*flags & CONV_ESCAPEHEX)) {
         for ( i = 0; i < i_len; i+=2) {
-            if ( inbuf[i] == '/' ) {
+            if ( inbuf[i] == '/' && inbuf[i+1] == 0) {
                 j = i_len - i;
                 if ( 0 == ( i_len = i))
                     goto escape_slash;
                 break;
-            }
+            } else if ( inbuf[i] == ':' && inbuf[i+1] == 0) {
+		errno = EILSEQ;
+		return (size_t) -1;
+	    }
         }
     }
     
     retval = atalk_iconv(descriptor,  &inbuf, &i_len, &outbuf, &o_len);
     if (retval==(size_t)-1) {
-        if (errno == EILSEQ && flags && (*flags & CONV_IGNORE)) {
-            if (o_len == 0) {
-                errno = E2BIG;
-                return (size_t) -1;
-            }
-            o_save[destlen-o_len] = '_';
-            o_len -=1;
-            outbuf = o_save + destlen - o_len;
-            inbuf += 2;
-            i_len -= 2;
-            if (flags ) 
-                *flags |= CONV_REQMANGLE;
-	    if (i_len)
-                goto conversion_loop;
+        if (errno == EILSEQ && CHECK_FLAGS(flags, CONV_IGNORE)) {
+            *flags |= CONV_REQMANGLE;
+    	    return destlen -o_len;
         }
         else if ( errno == EILSEQ && flags && (*flags & CONV_ESCAPEHEX)) {
             if (o_len < 3) {
