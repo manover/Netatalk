@@ -1,5 +1,5 @@
 /* 
- * $Id: uams_randnum.c,v 1.12.6.2 2004-01-10 08:01:36 bfernhomberg Exp $
+ * $Id: uams_randnum.c,v 1.12.6.3 2004-02-25 00:37:19 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -300,44 +300,28 @@ static int randpass(const struct passwd *pwd, const char *file,
   return i;
 }
 
-  
 /* randnum sends an 8-byte number and uses the user's password to
  * check against the encrypted reply. */
-static int randnum_login(void *obj, struct passwd **uam_pwd,
-			 char *ibuf, int ibuflen,
-			 char *rbuf, int *rbuflen)
+static int rand_login(void *obj, char *username, int ulen, struct passwd **uam_pwd,
+                        char *ibuf, int ibuflen,
+                        char *rbuf, int *rbuflen)
 {
-  char *username, *passwdfile;
+
+  char *passwdfile;
   u_int16_t sessid;
-  int len, ulen, err;
-  
-  *rbuflen = 0;
-  
-  if (uam_afpserver_option(obj, UAM_OPTION_USERNAME, 
-			   (void *) &username, &ulen) < 0)
-    return AFPERR_PARAM;
-
-  len = UAM_PASSWD_FILENAME;
-  if (uam_afpserver_option(obj, UAM_OPTION_PASSWDOPT, 
-			     (void *) &passwdfile, &len) < 0)
-    return AFPERR_PARAM;
-
-  len = (unsigned char) *ibuf++;
-  if ( len > ulen ) {
-	return AFPERR_PARAM;
-  }
-  memcpy(username, ibuf, len );
-  ibuf += len;
-  username[ len ] = '\0';
-  if ((unsigned long) ibuf & 1) /* padding */
-    ++ibuf;
-  
+  int len, err;
+ 
   if (( randpwd = uam_getname(obj, username, ulen)) == NULL )
     return AFPERR_PARAM; /* unknown user */
   
   LOG(log_info, logtype_uams, "randnum/rand2num login: %s", username);
   if (uam_checkuser(randpwd) < 0)
     return AFPERR_NOTAUTH;
+
+  len = UAM_PASSWD_FILENAME;
+  if (uam_afpserver_option(obj, UAM_OPTION_PASSWDOPT,
+                             (void *) &passwdfile, &len) < 0)
+    return AFPERR_PARAM;
 
   if ((err = randpass(randpwd, passwdfile, seskey,
 		      sizeof(seskey), 0)) != AFP_OK)
@@ -507,17 +491,81 @@ static int randnum_changepw(void *obj, const char *username,
   return( AFP_OK );
 }
 
+/* randnum login */
+static int randnum_login(void *obj, struct passwd **uam_pwd,
+                        char *ibuf, int ibuflen,
+                        char *rbuf, int *rbuflen)
+{
+    char *username;
+    int len, ulen;
+
+    *rbuflen = 0;
+
+    if (uam_afpserver_option(obj, UAM_OPTION_USERNAME,
+                             (void *) &username, &ulen) < 0)
+        return AFPERR_MISC;
+
+    if (ibuflen <= 1) {
+        return( AFPERR_PARAM );
+    }
+
+    len = (unsigned char) *ibuf++;
+    ibuflen--;
+    if (!len || len > ibuflen || len > ulen ) {
+        return( AFPERR_PARAM );
+    }
+    memcpy(username, ibuf, len );
+    ibuf += len;
+    ibuflen -=len;
+    username[ len ] = '\0';
+
+    if ((unsigned long) ibuf & 1) { /* pad character */
+        ++ibuf;
+        ibuflen--;
+    }
+    return (rand_login(obj, username, ulen, uam_pwd, ibuf, ibuflen, rbuf, rbuflen));
+}
+
+/* randnum login ext */
+static int randnum_login_ext(void *obj, char *uname, struct passwd **uam_pwd,
+                        char *ibuf, int ibuflen,
+                        char *rbuf, int *rbuflen)
+{
+    char       *username;
+    int        len, ulen;
+    u_int16_t  temp16;
+
+    *rbuflen = 0;
+
+    if (uam_afpserver_option(obj, UAM_OPTION_USERNAME,
+                             (void *) &username, &ulen) < 0)
+        return AFPERR_MISC;
+
+    if (*uname != 3)
+        return AFPERR_PARAM;
+    uname++;
+    memcpy(&temp16, uname, sizeof(temp16));
+    len = ntohs(temp16);
+    if (!len || len > ulen ) {
+        return( AFPERR_PARAM );
+    }
+    memcpy(username, uname +2, len );
+    username[ len ] = '\0';
+    return (rand_login(obj, username, ulen, uam_pwd, ibuf, ibuflen, rbuf, rbuflen));
+}
+
 static int uam_setup(const char *path)
 {
-  if (uam_register(UAM_SERVER_LOGIN, path, "Randnum exchange", 
-		   randnum_login, randnum_logincont, NULL) < 0)
+  if (uam_register(UAM_SERVER_LOGIN_EXT, path, "Randnum exchange", 
+		   randnum_login, randnum_logincont, NULL, randnum_login_ext) < 0)
     return -1;
-  if (uam_register(UAM_SERVER_LOGIN, path, "2-Way Randnum exchange",
-		   randnum_login, rand2num_logincont, NULL) < 0) {
+
+  if (uam_register(UAM_SERVER_LOGIN_EXT, path, "2-Way Randnum exchange",
+		   randnum_login, rand2num_logincont, NULL, randnum_login_ext) < 0) {
     uam_unregister(UAM_SERVER_LOGIN, "Randnum exchange");
     return -1;
   }
-    
+
   if (uam_register(UAM_SERVER_CHANGEPW, path, "Randnum Exchange", 
 		   randnum_changepw) < 0) {
     uam_unregister(UAM_SERVER_LOGIN, "Randnum exchange");
