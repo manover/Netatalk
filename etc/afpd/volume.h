@@ -1,5 +1,5 @@
 /*
- * $Id: volume.h,v 1.19.2.3 2003-05-26 17:02:48 didg Exp $
+ * $Id: volume.h,v 1.19.2.4 2003-06-23 10:25:08 didg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <netatalk/endian.h>
 
+#include "atalk/unicode.h"
 #ifdef HAVE_USABLE_ICONV
 #include <iconv.h>
 #endif
@@ -71,12 +72,9 @@ struct vol {
     char		*v_forcegid;
 #endif 
 
-#ifdef HAVE_USABLE_ICONV
-    iconv_t             *v_utf8toucs2;
-    iconv_t             *v_ucs2toutf8;
-    iconv_t             *v_mactoutf8;
-    iconv_t             *v_ucs2tomac;
-#endif
+    char                *v_encoding;
+    charset_t		v_maccharset;
+
     int                 v_deleted;  /* volume open but deleted in new config file */
     int                 v_hide;     /* new volume wait open volume */
 

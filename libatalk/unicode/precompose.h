@@ -1,6 +1,6 @@
 /*
  * Canonical Compositions
- *
+ * from xfree86 project
  */
 /* $XFree86: xc/programs/xterm/precompose.c,v 1.2 2000/11/01 01:12:41 dawes Exp $ */
 
@@ -1993,51 +1993,3 @@ static const struct {
 { 0xFB4D, 0x05DB, 0x05BF},
 { 0xFB4E, 0x05E4, 0x05BF},
 };
-
-/* ------------------------ */
-unsigned int do_precomposition(unsigned int base, unsigned int comb) {
-  int min = 0;
-  int max = sizeof(precompositions) / sizeof(precompositions[0]) - 1;
-  int mid;
-  unsigned int sought = (base << 16) | comb, that;
-
-  /* binary search */
-  while (max >= min) {
-    mid = (min + max) / 2;
-    that = (precompositions[mid].base << 16) | (precompositions[mid].comb);
-    if (that < sought) {
-      min = mid + 1;
-    } else if (that > sought) {
-      max = mid - 1;
-    } else {
-      return precompositions[mid].replacement;
-    }
-  }
-  /* no match */
-  return 0;
-}
-
-/* -------------------------- */
-unsigned int do_decomposition(unsigned int base) {
-  int min = 0;
-  int max = sizeof(decompositions) / sizeof(decompositions[0]) - 1;
-  int mid;
-  unsigned int sought = base;
-  unsigned int result, that;
-
-  /* binary search */
-  while (max >= min) {
-    mid = (min + max) / 2;
-    that = decompositions[mid].replacement;
-    if (that < sought) {
-      min = mid + 1;
-    } else if (that > sought) {
-      max = mid - 1;
-    } else {
-      result = (decompositions[mid].base << 16) | (decompositions[mid].comb);
-      return result;
-    }
-  }
-  /* no match */
-  return 0;
-}

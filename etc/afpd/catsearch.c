@@ -99,8 +99,8 @@ struct scrit {
 	u_int32_t pdid;             /* Parent DID */
         u_int16_t offcnt;           /* Offspring count */
 	struct finderinfo finfo;    /* Finder info */
-	char lname[32];             /* Long name */
-	char utf8name[256];         /* UTF8 name */
+	char lname[64];             /* Long name */ 
+	char utf8name[512];         /* UTF8 name */
 };
 
 /*
@@ -277,6 +277,9 @@ static int crit_check(struct vol *vol, struct path *path, int cidx) {
 	struct finderinfo *finfo = NULL, finderinfo;
 	struct adouble *adp = NULL;
 	time_t c_date, b_date;
+	static char convbuf[512];
+	static char convbuf2[512];
+	size_t len;
 
 	if (S_ISDIR(path->st.st_mode)) {
 		r = 2;
@@ -294,20 +297,28 @@ static int crit_check(struct vol *vol, struct path *path, int cidx) {
 
 	/* Check for filename */
 	if (c1.rbitmap & (1<<DIRPBIT_LNAME)) { 
+		if ( (size_t)(-1) == (len = convert_string(vol->v_maccharset, CH_UCS2, path->m_name, strlen(path->m_name), convbuf, 512)) )
+			goto crit_check_ret;
+		convbuf[len] = 0; 
 		if (c1.rbitmap & (1<<CATPBIT_PARTIAL)) {
-			if (strcasestr(path->u_name, c1.lname) == NULL)
+			if (strcasestr_w( (ucs2_t*) convbuf, (ucs2_t*) c1.lname) == NULL)
 				goto crit_check_ret;
 		} else
-			if (strcasecmp(path->u_name, c1.lname) != 0)
+			if (strcasecmp_w((ucs2_t*) convbuf, (ucs2_t*) c1.lname) != 0)
 				goto crit_check_ret;
 	} /* if (c1.rbitmap & ... */
 	
 	if ((c1.rbitmap & (1<<FILPBIT_PDINFO))) { 
+		if ( (size_t)(-1) == (len = utf8_precompose( path->m_name, strlen(path->m_name), convbuf2, 512)) )
+			goto crit_check_ret;
+		if ( (size_t)(-1) == (len = convert_string( CH_UTF8, CH_UCS2, convbuf2, len, convbuf, 512)) )
+			goto crit_check_ret;
+		convbuf[len] = 0; 
 		if (c1.rbitmap & (1<<CATPBIT_PARTIAL)) {
-			if (strcasestr(path->u_name, c1.utf8name) == NULL)
+			if (strcasestr_w((ucs2_t *) convbuf, (ucs2_t*)c1.utf8name) == NULL)
 				goto crit_check_ret;
 		} else
-			if (strcasecmp(path->u_name, c1.utf8name) != 0)
+			if (strcasecmp_w((ucs2_t *)convbuf, (ucs2_t*)c1.utf8name) != 0)
 				goto crit_check_ret;
 	} /* if (c1.rbitmap & ... */
 
@@ -822,9 +833,19 @@ int catsearch_afp(AFPObj *obj, char *ibuf, int ibuflen,
 
     /* Long name */
     if (c1.rbitmap & (1 << FILPBIT_LNAME)) {
+	char  		tmppath[256];
+	size_t		len;
         /* Get the long filename */	
-	memcpy(c1.lname, bspec1 + spec1[1] + 1, (bspec1 + spec1[1])[0]);
-	c1.lname[(bspec1 + spec1[1])[0]]= 0;
+/*	memcpy(c1.lname, bspec1 + spec1[1] + 1, (bspec1 + spec1[1])[0]);
+	c1.lname[(bspec1 + spec1[1])[0]]= 0;*/
+	memcpy(tmppath, bspec1 + spec1[1] + 1, (bspec1 + spec1[1])[0]);
+	tmppath[(bspec1 + spec1[1])[0]]= 0;
+	len = convert_string ( vol->v_maccharset, CH_UCS2, tmppath, strlen(tmppath), c1.lname, 64);
+        if (len == (size_t)(-1))
+            return AFPERR_PARAM;
+	c1.lname[len] = 0;
+
+	
 #if 0	
 	for (i = 0; c1.lname[i] != 0; i++)
 		c1.lname[i] = tolower(c1.lname[i]);
@@ -839,7 +860,8 @@ int catsearch_afp(AFPObj *obj, char *ibuf, int ibuflen,
     }
         /* UTF8 Name */
     if (c1.rbitmap & (1 << FILPBIT_PDINFO)) {
-	char * 		tmppath;
+	char  		tmppath[256];
+	size_t		len;
 	u_int16_t	namelen;
 
 	/* offset */
@@ -857,10 +879,12 @@ int catsearch_afp(AFPObj *obj, char *ibuf, int ibuflen,
 	memcpy (c1.utf8name, spec1+2, namelen);
 	c1.utf8name[(namelen+1)] =0;
 
-	/* convert charset */	
-	tmppath = mtoupath(vol, c1.utf8name, 1);
-	memset (c1.utf8name, 0, 256);
-	memcpy (c1.utf8name, tmppath, MIN(strlen(tmppath), 255));
+ 	/* convert charset */
+ 	len = utf8_precompose( c1.utf8name, namelen, tmppath, 256); 
+ 	len = convert_string(CH_UTF8, CH_UCS2, tmppath, namelen, c1.utf8name, 512);
+        if (len == (size_t)(-1))
+            return AFPERR_PARAM;
+ 	c1.utf8name[len]=0;
     }
     
     /* Call search */

@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.2 2003-05-12 22:02:08 didg Exp $
+ * $Id: desktop.c,v 1.26.2.3 2003-06-23 10:25:07 didg Exp $
  *
  * See COPYRIGHT.
  *
@@ -52,6 +52,7 @@
 
 #ifdef AFP3x
 #include <iconv.h>
+#include <atalk/unicode.h>
 #endif
 
 int afp_opendt(obj, ibuf, ibuflen, rbuf, rbuflen )
@@ -749,95 +750,6 @@ static char *old_utompath(const struct vol *vol, char *upath)
     return((changed)? m:upath );
 }
 
-/* --------------- */
-extern unsigned int do_precomposition(unsigned int base, unsigned int comb);
-
-static char comp[MAXPATHLEN +1];
-
-static char *precompose(u_int16_t  *name, size_t inplen, size_t *outlen)
-{
-size_t i;
-u_int16_t base, comb;
-u_int16_t *in, *out;
-u_int16_t result;
-
-    if (!inplen || (inplen & 1) || inplen > sizeof(comp)/sizeof(u_int16_t))
-        return NULL;
-    i = 0;
-    in  = name;
-    out = (u_int16_t *)comp;
-    *outlen = 0;
-    
-    base = *in;
-    while (1) {
-        i += 2;
-        in++;
-        if (i == inplen) {
-           *out = base;
-           *outlen += 2;
-           return comp;
-        }
-        comb = *in;
-        if (comb >= 0x300 && (result = do_precomposition(base, comb))) {
-           *out = result;
-           out++;
-           *outlen += 2;
-           i += 2;
-           in++;
-           if (i == inplen) 
-              return comp;
-           base = *in;
-        }
-        else {
-           *out = base;
-           out++;
-           *outlen += 2;
-           base = comb;
-        }
-    }
-}
-
-/* --------------- */
-extern unsigned int do_decomposition(unsigned int base);
-
-static char *decompose(u_int16_t  *name, size_t inplen, size_t *outlen)
-{
-size_t i;
-u_int16_t base;
-u_int16_t *in, *out;
-unsigned int result;
-
-    if (!inplen || (inplen & 1))
-        return NULL;
-    i = 0;
-    in  = name;
-    out = (u_int16_t *)comp;
-    *outlen = 0;
-    
-    while (i < inplen) {
-        if (*outlen >= sizeof(comp)/sizeof(u_int16_t) +2) {
-            return NULL;
-        }
-        base = *in;
-        if ((result = do_decomposition(base))) {
-           *out = result  >> 16;
-           out++;
-           *outlen += 2;
-           *out = result & 0xffff;
-           out++;
-           *outlen += 2;
-        }
-        else {
-           *out = base;
-           out++;
-           *outlen += 2;
-        }
-        i += 2;
-        in++;
-     }
-     return comp;
-}
-
 /* --------------------------- */
 char *mtoupath(const struct vol *vol, char *mpath, int utf8)
 {
@@ -864,8 +776,7 @@ char *mtoupath(const struct vol *vol, char *mpath, int utf8)
     u = upath;
     while ( *m != '\0' ) {
         if ( (!(vol->v_flags & AFPVOL_NOHEX) && *m == '/') ||
-             (!(vol->v_flags & AFPVOL_USEDOTS) && i == 0 && *m == '.') ||
-             (!utf8 && (unsigned char)*m == 0xf0) /* Apple logo */
+             (!(vol->v_flags & AFPVOL_USEDOTS) && i == 0 && *m == '.') 
         ) {
           /* do hex conversion. */
           *u++ = ':';
@@ -884,32 +795,21 @@ char *mtoupath(const struct vol *vol, char *mpath, int utf8)
     outlen = MAXPATHLEN;
     r = ucs2;
     if (!utf8) {
-        if ((size_t)(-1) == iconv(vol->v_mactoutf8, 0,0,0,0) )
-            return NULL;
         /* assume precompose */
-        if ((size_t)(-1) == iconv(vol->v_mactoutf8, &u, &inplen, &r, &outlen))
+        if ((size_t)(-1) == (outlen = convert_string ( vol->v_maccharset, CH_UTF8, u, inplen, r, outlen)) )
             return NULL;
         u = ucs2;
     }
     else { 
-        if ((size_t)(-1) == iconv(vol->v_utf8toucs2, 0,0,0,0) )
-            return NULL;
 
-        if ((size_t)(-1) == iconv(vol->v_utf8toucs2, &u, &inplen, &r, &outlen))
-            return NULL;
+	r = upath;
+	
+        if ((size_t)(-1) == (outlen = utf8_precompose(  u, inplen, r, outlen)) )
+	    return NULL;
 
-        u = precompose((u_int16_t *)ucs2, MAXPATHLEN -outlen, &inplen);
-
-        if ((size_t)(-1) == iconv(vol->v_ucs2toutf8, 0,0,0,0))
-            return NULL;
-            
-        outlen = MAXPATHLEN;
-        r = upath;
-        if ((size_t)(-1) == iconv(vol->v_ucs2toutf8, &u, &inplen, &r, &outlen))
-            return NULL;
-        u = upath;
+        u = upath; 
     }
-    u[MAXPATHLEN -outlen] = 0;
+    u[outlen] = 0;
 #endif
 #ifdef DEBUG
     LOG(log_debug, logtype_afpd, "mtoupath: '%s':'%s'", mpath, upath);
@@ -920,10 +820,9 @@ char *mtoupath(const struct vol *vol, char *mpath, int utf8)
 /* --------------- */
 char *utompath(const struct vol *vol, char *upath, int utf8)
 {
-    char        *m, *u, *r;
+    char        *m, *u;
     int          h;
     int          mangleflag = 0;
-    size_t       inplen;
     size_t       outlen;
 
     if (!vol_utf8(vol))
@@ -946,46 +845,16 @@ char *utompath(const struct vol *vol, char *upath, int utf8)
     *m = '\0';
     m = mpath;
 #ifdef AFP3x    
-    if ((size_t)(-1) == iconv(vol->v_utf8toucs2, 0,0,0,0) )
-        return NULL;
-    inplen = strlen(mpath);
-    outlen = MAXPATHLEN;
-    r = ucs2;
-    if ((size_t)(-1) == iconv(vol->v_utf8toucs2, &m, &inplen, &r, &outlen))
-        return NULL;
-
     if (utf8) {
-        if ( NULL == (m = decompose((u_int16_t *)ucs2, MAXPATHLEN -outlen, &inplen)))
-            return NULL;
-
-        if ((size_t)(-1) == iconv(vol->v_ucs2toutf8, 0,0,0,0))
-            return NULL;
-            
-        outlen = MAXPATHLEN;
-        r = mpath;
-        if ((size_t)(-1) == iconv(vol->v_ucs2toutf8, &m, &inplen, &r, &outlen))
-            return NULL;
+	if ((size_t)(-1) == ( outlen = utf8_decompose ( mpath, strlen (mpath), mpath, MAXPATHLEN)) )
+	   return NULL;
     }
     else {
-        m = precompose((u_int16_t *)ucs2, MAXPATHLEN -outlen, &inplen);
+        if ((size_t)(-1) == ( outlen = utf8_to_mac_charset ( vol->v_maccharset,  mpath, strlen(mpath), mpath, MAXPATHLEN, &mangleflag)) ) 
+		return NULL;
+   }
+   mpath[outlen] = 0; 
 
-        if ((size_t)(-1) == iconv(vol->v_ucs2tomac, 0,0,0,0))
-            return NULL;
-            
-        outlen = MAXPATHLEN;
-        r = mpath;
-        if ((size_t)(-1) == iconv(vol->v_ucs2tomac, &m, &inplen, &r, &outlen)) {
-            switch (errno) {
-            case EILSEQ:
-                if (outlen != MAXPATHLEN) {
-                    mangleflag = 1;
-                }
-            default:
-                return NULL;
-            }
-        }
-    }
-    mpath[MAXPATHLEN -outlen] = 0;
 #endif
 #ifdef FILE_MANGLING
     m = mangle(vol, mpath, upath, mangleflag);

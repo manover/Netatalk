@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.2 2003-05-28 05:04:53 didg Exp $
+dnl $Id: configure.in,v 1.179.2.3 2003-06-23 10:25:07 didg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(bin/adv1tov2/adv1tov2.c)
@@ -752,6 +752,7 @@ AC_OUTPUT([Makefile
 	libatalk/nbp/Makefile
 	libatalk/netddp/Makefile
 	libatalk/util/Makefile
+	libatalk/unicode/Makefile
 	macros/Makefile
 	man/Makefile
 	man/man1/Makefile

@@ -1,5 +1,5 @@
 /*
- * $Id: afp_dsi.c,v 1.27.2.1 2003-05-26 11:17:25 didg Exp $
+ * $Id: afp_dsi.c,v 1.27.2.2 2003-06-23 10:25:07 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -139,7 +139,7 @@ static void afp_dsi_timedown()
  * SIGHUP reload configuration file
  * FIXME here or we wait ?
 */
-volatile reload_request = 0;
+volatile int reload_request = 0;
 
 static void afp_dsi_reload()
 {

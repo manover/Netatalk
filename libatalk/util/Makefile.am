@@ -13,4 +13,6 @@ libutil_la_SOURCES = \
 	server_child.c	\
 	server_lock.c	\
 	strcasestr.c    \
-	strdicasecmp.c
+	strdicasecmp.c	
+
+#	util_unicode.c

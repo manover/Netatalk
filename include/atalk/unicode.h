@@ -1,0 +1,99 @@
+
+#ifndef _ATALK_UNICODE_H
+#define _ATALK_UNICODE_H 1
+
+
+
+#define ucs2_t	u_int16_t
+
+/* generic iconv conversion structure */
+typedef struct {
+        size_t (*direct)(void *cd, char **inbuf, size_t *inbytesleft,
+                         char **outbuf, size_t *outbytesleft);
+        size_t (*pull)(void *cd, char **inbuf, size_t *inbytesleft,
+                       char **outbuf, size_t *outbytesleft);
+        size_t (*push)(void *cd, char **inbuf, size_t *inbytesleft,
+                       char **outbuf, size_t *outbytesleft);
+        void *cd_direct, *cd_pull, *cd_push;
+        char *from_name, *to_name;
+} *atalk_iconv_t;
+
+
+/* this defines the charset types used in samba */
+typedef enum {CH_UCS2=0, CH_UTF8=1, CH_MAC=2, CH_UNIX=3} charset_t;
+
+#define NUM_CHARSETS 4
+
+/*
+ *   for each charset we have a function that pulls from that charset to
+ *     a ucs2 buffer, and a function that pushes to a ucs2 buffer
+ *     */
+
+struct charset_functions {
+        const char *name;
+        size_t (*pull)(void *, char **inbuf, size_t *inbytesleft,
+                                   char **outbuf, size_t *outbytesleft);
+        size_t (*push)(void *, char **inbuf, size_t *inbytesleft,
+                                   char **outbuf, size_t *outbytesleft);
+        struct charset_functions *prev, *next;
+};
+
+
+extern atalk_iconv_t 	atalk_iconv_open __P((const char *, const char *));
+extern size_t 		atalk_iconv __P((atalk_iconv_t, const char **, size_t *, char **, size_t *));
+extern size_t 		atalk_iconv_ignore __P((atalk_iconv_t, const char **, size_t *, char **, size_t *, int*));
+extern int 		atalk_iconv_close __P((atalk_iconv_t));
+
+extern ucs2_t 	toupper_w  __P((ucs2_t));
+extern ucs2_t 	tolower_w  __P((ucs2_t));
+extern int 	strupper_w __P((ucs2_t *));
+extern int 	strlower_w __P((ucs2_t *));
+extern int 	islower_w  __P((ucs2_t));
+extern int 	islower_w  __P((ucs2_t));
+extern size_t 	strlen_w   __P((const ucs2_t *));
+extern size_t 	strnlen_w  __P((const ucs2_t *, size_t));
+extern ucs2_t* 	strchr_w   __P((const ucs2_t *, ucs2_t));
+extern int 	strcmp_w   __P((const ucs2_t *, const ucs2_t *));
+extern int 	strncmp_w  __P((const ucs2_t *, const ucs2_t *, size_t));
+extern int      strcasecmp_w  __P((const ucs2_t *, const ucs2_t *));
+extern int	strncasecmp_w __P((const ucs2_t *, const ucs2_t *, size_t));
+extern ucs2_t   *strcasestr_w __P((const ucs2_t *, const ucs2_t *));
+extern ucs2_t 	*strndup_w __P((const ucs2_t *, size_t));
+extern ucs2_t  	*strdup_w  __P((const ucs2_t *));
+extern ucs2_t 	*strncpy_w __P((ucs2_t *, const ucs2_t *, const size_t));
+extern ucs2_t 	*strncat_w __P((ucs2_t *, const ucs2_t *, const size_t));
+extern ucs2_t 	*strcat_w  __P((ucs2_t *, const ucs2_t *));
+
+extern char 	*precompose_w __P((ucs2_t *, size_t, size_t *));
+extern char 	*decompose_w  __P((ucs2_t *, size_t, size_t *));
+extern size_t 	utf8_charlen __P(( char* ));
+extern size_t 	utf8_strlen_validate __P(( char *));
+
+extern void 	init_iconv __P((void));
+extern size_t 	convert_string __P((charset_t, charset_t, void const *, size_t, void *, size_t));
+extern size_t	convert_string_allocate __P((charset_t, charset_t, void const *, size_t, void **));
+
+extern size_t 	utf8_strupper __P((const char *, size_t, char *, size_t));
+extern size_t 	utf8_strlower __P((const char *, size_t, char *, size_t));
+extern size_t 	 mac_strupper __P((const char *, size_t, char *, size_t));
+extern size_t 	 mac_strlower __P((const char *, size_t, char *, size_t));
+extern size_t 	unix_strupper __P((const char *, size_t, char *, size_t));
+extern size_t 	unix_strlower __P((const char *, size_t, char *, size_t));
+
+extern size_t 	mac_to_ucs2_allocate __P((ucs2_t **dest, const char *src));
+extern size_t 	mac_to_utf8_allocate __P((char **dest, const char *src));
+extern size_t	ucs2_to_mac_allocate __P((char **dest, const ucs2_t *src));
+extern size_t 	utf8_to_mac_allocate __P((void **dest, const char *src));
+
+extern size_t 	utf8_to_mac __P((char *, size_t, char *, size_t));
+extern size_t 	utf8_to_mac_charset __P((charset_t, char *, size_t, char *, size_t, int*));
+
+extern size_t 	utf8_precompose __P(( char *, size_t, char *, size_t));
+extern size_t 	utf8_decompose  __P(( char *, size_t, char *, size_t));
+
+extern charset_t add_charset __P((char* name));
+
+
+#define SAFE_FREE(x) do { if ((x) != NULL) {free(x); x=NULL;} } while(0)
+
+#endif

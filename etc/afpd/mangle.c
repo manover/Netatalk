@@ -1,5 +1,5 @@
 /* 
- * $Id: mangle.c,v 1.16 2003-03-09 20:37:27 didg Exp $ 
+ * $Id: mangle.c,v 1.16.2.1 2003-06-23 10:25:08 didg Exp $ 
  *
  * Copyright (c) 2002. Joe Marcus Clarke (marcus@marcuscom.com)
  * All Rights Reserved.  See COPYRIGHT.
@@ -15,6 +15,11 @@
 
 #ifdef FILE_MANGLING
 #include "mangle.h"
+
+#ifndef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif /* ! MIN */
+
 
 char *
 demangle(const struct vol *vol, char *mfilename) {
@@ -79,8 +84,8 @@ mangle(const struct vol *vol, char *filename, char *uname, int flags) {
     /* Check to see if we already have a mangled filename by this name. */
     while (1) {
 	m = mfilename;
-    	strncpy(m, filename, MAX_LENGTH - strlen(MANGLE_CHAR) - MANGLE_LENGTH - ext_len);
-	m[MAX_LENGTH - strlen(MANGLE_CHAR) - MANGLE_LENGTH - ext_len] = '\0';
+    	strncpy(m, filename, MIN(MAX_LENGTH - strlen(MANGLE_CHAR) - MANGLE_LENGTH - ext_len, strlen(filename)-ext_len));
+	m[MIN(MAX_LENGTH - strlen(MANGLE_CHAR) - MANGLE_LENGTH - ext_len, strlen(filename)-ext_len)] = '\0';
 
     	strcat(m, MANGLE_CHAR);
     	(void)sprintf(mangle_suffix, "%03d", mangle_suffix_int);

@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.5 2003-05-28 04:42:46 didg Exp $
+ * $Id: volume.c,v 1.51.2.6 2003-06-23 10:25:08 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -112,15 +112,17 @@ m=u -> map both ways
 
 #define VOLOPT_POSTEXEC      13  /* postexec command */
 #define VOLOPT_ROOTPOSTEXEC  14  /* root postexec command */
+
+#define VOLOPT_ENCODING      15  /* mac encoding (pre OSX)*/
 #ifdef FORCE_UIDGID
 #warning UIDGID
 #include "uid.h"
 
-#define VOLOPT_FORCEUID  15  /* force uid for username x */
-#define VOLOPT_FORCEGID  16  /* force gid for group x */
-#define VOLOPT_UMASK     17
+#define VOLOPT_FORCEUID  16  /* force uid for username x */
+#define VOLOPT_FORCEGID  17  /* force gid for group x */
+#define VOLOPT_UMASK     18
 #else 
-#define VOLOPT_UMASK     15
+#define VOLOPT_UMASK     16
 #endif /* FORCE_UIDGID */
 
 #define VOLOPT_MAX       (VOLOPT_UMASK +1)
@@ -374,7 +376,8 @@ static void volset(struct vol_option *options, struct vol_option *save,
             free(options[VOLOPT_CODEPAGE].c_value);
         }
         options[VOLOPT_CODEPAGE].c_value = get_codepage_path(nlspath, val + 1);
-
+    } else if (optionok(tmp, "encoding:", val)) {
+        setoption(options, save, VOLOPT_ENCODING, val);
     } else if (optionok(tmp, "veto:", val)) {
         setoption(options, save, VOLOPT_VETO, val);
     } else if (optionok(tmp, "casefold:", val)) {
@@ -567,6 +570,8 @@ static int creatvol(AFPObj *obj, struct passwd *pwd,
         if (options[VOLOPT_VETO].c_value)
             volume->v_veto = strdup(options[VOLOPT_VETO].c_value);
 
+        if (options[VOLOPT_ENCODING].c_value)
+            volume->v_encoding = strdup(options[VOLOPT_ENCODING].c_value);
 #ifdef CNID_DB
         if (options[VOLOPT_DBPATH].c_value)
             volume->v_dbpath = volxlate(obj, NULL, MAXPATHLEN, options[VOLOPT_DBPATH].c_value, pwd, path);
@@ -968,6 +973,7 @@ static void volume_free(struct vol *vol)
     codepage_free(vol);
     free(vol->v_password);
     free(vol->v_veto);
+    free(vol->v_encoding);
 #ifdef CNID_DB
     free(vol->v_dbpath);
 #endif /* CNID_DB */
@@ -1434,7 +1440,7 @@ int		ibuflen, *rbuflen;
 #endif
     struct vol	*volume;
     struct dir	*dir;
-    int		len, ret, buflen;
+    int		len, ret;
     u_int16_t	bitmap;
 
     ibuf += 2;
@@ -1496,13 +1502,6 @@ int		ibuflen, *rbuflen;
 #endif
     volume->v_dir = volume->v_root = NULL;
 
-#ifdef AFP3x
-    volume->v_utf8toucs2 = (iconv_t)(-1);
-    volume->v_ucs2toutf8 = (iconv_t)(-1);
-    volume->v_mactoutf8  = (iconv_t)(-1);
-    volume->v_ucs2tomac  = (iconv_t)(-1);
-#endif
-
     /* FIXME unix name != mac name */
     if ((dir = dirnew(volume->v_name, volume->v_name) ) == NULL) {
         LOG(log_error, logtype_afpd, "afp_openvol: malloc: %s", strerror(errno) );
@@ -1560,26 +1559,8 @@ int		ibuflen, *rbuflen;
     }
 #endif
 
-#ifdef AFP3x
-    if (vol_utf8(volume)) {
-        if ((iconv_t)(-1) == (volume->v_utf8toucs2 = iconv_open("UCS-2LE", "UTF-8"))) {
-            LOG(log_error, logtype_afpd, "openvol: no UTF8 to UCS-2LE");
-            goto openvol_err;
-        }
-        if ((iconv_t)(-1) == (volume->v_ucs2toutf8 = iconv_open("UTF-8", "UCS-2LE"))) {
-            LOG(log_error, logtype_afpd, "openvol: no UCS-2LE to UTF-8");
-            goto openvol_err;
-        }
-        if ((iconv_t)(-1) == (volume->v_mactoutf8 = iconv_open("UTF-8", "MAC"))) {
-            LOG(log_error, logtype_afpd, "openvol: no MAC to UTF-8");
-            goto openvol_err;
-        }
-        if ((iconv_t)(-1) == (volume->v_ucs2tomac = iconv_open("MAC", "UCS-2LE"))) {
-            LOG(log_error, logtype_afpd, "openvol:  no UCS-2LE to MAC");
-            goto openvol_err;
-        }
-    }
-#endif
+    if ( 0 == ( volume->v_maccharset = add_charset(volume->v_encoding?volume->v_encoding:"MAC")) )
+	volume->v_maccharset = CH_MAC;
 
     ret  = stat_vol(bitmap, volume, rbuf, rbuflen);
     if (ret == AFP_OK) {
@@ -1598,16 +1579,6 @@ int		ibuflen, *rbuflen;
     }
 
 openvol_err:
-#ifdef AFP3x
-    if (volume->v_utf8toucs2 != (iconv_t)(-1))
-        iconv_close(volume->v_utf8toucs2);
-    if (volume->v_ucs2toutf8 != (iconv_t)(-1))
-        iconv_close(volume->v_ucs2toutf8);
-    if (volume->v_mactoutf8  != (iconv_t)(-1))
-        iconv_close(volume->v_mactoutf8);    
-    if (volume->v_ucs2tomac  != (iconv_t)(-1))
-        iconv_close(volume->v_ucs2tomac);
-#endif        
     if (volume->v_dir) {
         dirfree( volume->v_dir );
         volume->v_dir = volume->v_root = NULL;
@@ -1637,17 +1608,6 @@ static void closevol(struct vol	*vol)
     cnid_close(vol->v_db);
     vol->v_db = NULL;
 #endif /* CNID_DB */
-
-#ifdef AFP3x
-    if (vol->v_utf8toucs2 != (iconv_t)(-1))
-        iconv_close(vol->v_utf8toucs2);
-    if (vol->v_ucs2toutf8 != (iconv_t)(-1))
-        iconv_close(vol->v_ucs2toutf8);
-    if (vol->v_mactoutf8  != (iconv_t)(-1))
-        iconv_close(vol->v_mactoutf8);
-    if (vol->v_ucs2tomac  != (iconv_t)(-1))
-        iconv_close(vol->v_ucs2tomac);
-#endif
 
     if (vol->v_postexec) {
 	afprun(0, vol->v_postexec, NULL);

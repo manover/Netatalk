@@ -1,5 +1,5 @@
 /*
- * $Id: file.h,v 1.16 2003-03-09 19:55:34 didg Exp $
+ * $Id: file.h,v 1.16.2.1 2003-06-23 10:25:07 didg Exp $
  *
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
@@ -74,6 +74,51 @@ struct extmap {
 };
 
 #define kTextEncodingUTF8 0x08000103
+
+typedef enum {
+                                        /* Mac OS encodings*/
+  kTextEncodingMacRoman         = 0L,
+  kTextEncodingMacJapanese      = 1,
+  kTextEncodingMacChineseTrad   = 2,
+  kTextEncodingMacKorean        = 3,
+  kTextEncodingMacArabic        = 4,
+  kTextEncodingMacHebrew        = 5,
+  kTextEncodingMacGreek         = 6,
+  kTextEncodingMacCyrillic      = 7,
+  kTextEncodingMacDevanagari    = 9,
+  kTextEncodingMacGurmukhi      = 10,
+  kTextEncodingMacGujarati      = 11,
+  kTextEncodingMacOriya         = 12,
+  kTextEncodingMacBengali       = 13,
+  kTextEncodingMacTamil         = 14,
+  kTextEncodingMacTelugu        = 15,
+  kTextEncodingMacKannada       = 16,
+  kTextEncodingMacMalayalam     = 17,
+  kTextEncodingMacSinhalese     = 18,
+  kTextEncodingMacBurmese       = 19,
+  kTextEncodingMacKhmer         = 20,
+  kTextEncodingMacThai          = 21,
+  kTextEncodingMacLaotian       = 22,
+  kTextEncodingMacGeorgian      = 23,
+  kTextEncodingMacArmenian      = 24,
+  kTextEncodingMacChineseSimp   = 25,
+  kTextEncodingMacTibetan       = 26,
+  kTextEncodingMacMongolian     = 27,
+  kTextEncodingMacEthiopic      = 28,
+  kTextEncodingMacCentralEurRoman = 29,
+  kTextEncodingMacVietnamese    = 30,
+  kTextEncodingMacExtArabic     = 31,   /* The following use script code 0, smRoman*/
+  kTextEncodingMacSymbol        = 33,
+  kTextEncodingMacDingbats      = 34,
+  kTextEncodingMacTurkish       = 35,
+  kTextEncodingMacCroatian      = 36,
+  kTextEncodingMacIcelandic     = 37,
+  kTextEncodingMacRomanian      = 38,
+  kTextEncodingMacCeltic        = 39,
+  kTextEncodingMacGaelic        = 40,
+  kTextEncodingMacKeyboardGlyphs = 41,
+} kTextEncoding_t;
+
 extern char *set_name   __P((const struct vol *, char *, char *, u_int32_t ) );
 
 extern struct extmap	*getextmap __P((const char *));
