@@ -1,5 +1,5 @@
 /*
- * $Id: unix.h,v 1.12.2.1.2.1 2003-09-09 18:18:54 bfernhomberg Exp $
+ * $Id: unix.h,v 1.12.2.1.2.2 2004-01-07 13:33:03 lenneis Exp $
  */
 
 #ifndef AFPD_UNIX_H
@@ -31,7 +31,8 @@ typedef int	mode_t;
 #if defined(TRU64)
 #define f_frsize f_fsize
 #else /* TRU64 */
-#if defined(HAVE_SYS_STATVFS_H) || defined(__svr4__)
+/* temp fix, was: defined(HAVE_SYS_STATVFS) || defined(__svr4__) */
+#if defined(__svr4__)
 #include <sys/statvfs.h>
 #define statfs statvfs
 #else /* HAVE_SYS_STATVFS || __svr4__ */
