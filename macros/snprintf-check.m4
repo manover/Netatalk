@@ -27,6 +27,7 @@ AC_DEFUN([NETATALK_SNPRINTF_CHECK], [
 		#endif
 		#ifdef HAVE_ERRNO_H
 		#include <errno.h>
+		#endif
 		],[return(sys_nerr);],
 			ac_cv_decl_errno=yes, ac_cv_decl_errno=no)
 		])
