@@ -61,6 +61,11 @@ replay database changes and are not automatically removed. Please see the sectio
 Log file removal\fR and the documentation of the \fI
 db_archive\fR command line utility in the Berkeley DB Tutorial and Reference
 for information when and how it is safe to remove these files.
+.PP
+Do not use cnid_dbd for databases on NFS mounted file
+systems. It makes the whole point of securing database changes properly moot. Use
+the dbdir: Option in the appropriate \fIAppleVolumes\fR
+configuration file to put the database onto a local disk.
 .SH CONFIGURATION
 cnid_dbd reads configuration information from the
 file \fIdb_param\fR in the database directory
@@ -133,4 +138,3 @@ disable the timeout.
 .SH SEE\ ALSO
 \fBcnid_metad\fR(1),
 \fBafpd\fR(8)
-

@@ -4,21 +4,22 @@ AppleVolumes.default \- Configuration file used by afpd(8) to  determine the sha
 .SH DESCRIPTION
 \fB:ETCDIR:/AppleVolumes.default\fR is the
 configuration file used by afpd to determine what
-portions of the file system will be shared via Appletalk, as well as their
-behavior. Any line not prefixed with # is interpreted. The configuration
-lines are composed like:
+portions of the file system will be shared via Apple Filing Protocol, as
+well as their behaviour. Any line not prefixed with # is interpreted. The
+configuration lines are composed like:
 .PP
-path [ chooser name ] [ options ]
+\fBpath\fR \fI[ volume name ] [ options ]\fR
 .PP
 The path name must be a fully qualified path name, or a path name
 using either the ~ shell shorthand or any of the substitution variables,
 which are listed below.
 .PP
-The chooser name is the name that appears in the Chooser on
-Macintoshes to represent the appropriate share. If there are spaces in the
-name, it should be in quotes (i.e. "File Share"). The chooser name
-may not exceed 27 characters in length, and cannot contain the
-\fB\&':'\fR character.
+The volume name is the name that appears in the Chooser ot the
+"connect to server" dialog on Macintoshes to represent the
+appropriate share. If there are spaces in the name, it should be in quotes
+(i.e. "File Share"). The volume name may not exceed 27 characters
+in length, and cannot contain the \fB':'\fR
+character.
 .RS 
 \fBNote\fR
 .PP
@@ -69,7 +70,7 @@ older Macintoshes using newer Appleshare clients.
 .TP 
 ro
 Specifies the share as being read only for all users.
-\&.AppleDB has to be writeable, you can use the
+The .AppleDB directory has to be writeable, you can use the
 \fB\-dbpath\fR option to relocate it.
 .TP 
 usedots
@@ -80,16 +81,19 @@ files created on the unix side are marked invisible.
 .TP 
 root_preexec_close
 a non\-zero return code from root_preexec closes the
-volume being mounted.
+volume immediately, preventing clients to mount/see the volume
+in question
 .TP 
 preexec_close
 a non\-zero return code from preexec close the volume
-being mounted.
+being immediately, preventing clients to mount/see the volume
+in question
 .RE
 .TP 
 password:\fI[password]\fR
 This option allows you to set a volume password, which can be
-a maximum of 8 characters long.
+a maximum of 8 characters long (using ASCII strongly recommended at
+the time of this writing)
 .TP 
 preexec:\fI[command]\fR
 command to be run when the volume is mounted, ignored for user
@@ -172,11 +176,25 @@ appletalk zone (may not exist)
 .TP 
 $$
 prints dollar sign ($)
+.PP
+When using variable substitution in the volume name, always keep in
+mind, not to exceed the 27 characters limit
+.PP
+\fBUsing variable substitution when defining volumes\fR
+.PP
+.nf
+/home/groups/$g "Groupdir for $g"
+~ "$f is the best one"
+.fi
+
+We define "groupdirs"
+for each primary group and use a personalized server name for homedir
+shares.
 .SH CNID\ BACKENDS
 The AFP protocol mostly refers to files and directories by ID and
 not by name. Netatalk needs a way to store these ID's in a persistent
 way, to achieve this several different CNID backends are available. The
-CNID Databases are by default located in the .\fBAppleDB\fR
+CNID Databases are by default located in the \fB.AppleDB\fR
 folder in the volume root.
 .TP 
 cdb
@@ -189,7 +207,7 @@ is, that the crash of a single afpd process might
 corrupt the database.
 .TP 
 dbd
-Access to the CNID database is restricted to a the
+Access to the CNID database is restricted to the
 cnid_metad daemon process. afpd
 processes communicate with the daemon for database reads and
 updates. If built with Berkeley DB transactions the probability for
@@ -304,7 +322,13 @@ delimited format. The available options are:
 .RS 
 .TP 
 crlf
-Enables crlf translation for TEXT files.
+Enables crlf translation for TEXT files, automatically
+converting macintosh line breaks into Unix ones. Use of this
+option might be dangerous since some older programs store
+binary data files as type "TEXT" when saving and
+switch the filetype in a second step. Afpd
+will potentially destroy such files when "erroneously"
+changing bytes in order to do line break translation
 .TP 
 dropbox
 Allows a volume to be declared as being a
@@ -320,11 +344,25 @@ you fully understand this option before using it.
 .TP 
 noadouble
 Forces afpd to not create
-\&.AppleDouble unless a resource fork needs to be created.
+\&.AppleDouble directories unless macintosh metadata needs to be
+written. This option is only useful if you want to share files
+mostly used NOT by macs, causing afpd to
+not automatically create .AppleDouble subdirs containing AD
+header files in every directory it enters (which will it do by
+default).
+
+In case, you save or change files from mac clients, AD
+metadata files have to be written even in case you set this
+option. So you can't avoid the creation of .AppleDouble
+directories and its contents when you give macs write access
+to a share and they make use of it.
+
+Try to avoid \fBnoadouble\fR whenever
+possible
 .TP 
 nodev
 always use 0 for device number, helps when the device
-number is not constant across a reboot, cluster, ....
+number is not constant across a reboot, cluster, ...
 .TP 
 nofileid
 don't advertise createfileid, resolveid, deleteid
@@ -344,9 +382,10 @@ list, useful for automounting or volumes created by a preexec
 script.
 .TP 
 upriv
-use AFP3 unix privileges
+use AFP3 unix privileges. Become familiar with the new
+"unix privileges" AFP permissions concepts in MacOS X
+before using this option.
 .RE
 .SH SEE\ ALSO
 \fBafpd.conf\fR(5),
 \fBafpd\fR(8)
-
