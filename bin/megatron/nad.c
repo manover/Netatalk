@@ -1,5 +1,5 @@
 /*
- * $Id: nad.c,v 1.8 2001-06-29 14:14:46 rufustfirefly Exp $
+ * $Id: nad.c,v 1.8.2.1 2002-03-12 13:39:55 srittau Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -15,7 +15,6 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <syslog.h>
 #include <dirent.h>
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
