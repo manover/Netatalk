@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.29 2004-06-09 01:25:52 bfernhomberg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.30 2004-06-09 01:43:08 bfernhomberg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(etc/afpd/main.c)
@@ -1023,6 +1023,7 @@ AC_OUTPUT([Makefile
 	contrib/shell_utils/apple_cp
 	contrib/shell_utils/apple_mv
 	contrib/shell_utils/apple_rm
+	contrib/shell_utils/asip-status.pl
 	contrib/shell_utils/cleanappledouble.pl
 	contrib/shell_utils/netatalkshorternamelinks.pl
 	contrib/timelord/Makefile

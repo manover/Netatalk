@@ -8,7 +8,8 @@ PERLSCRIPTS = \
 	afpd-mtab.pl			\
 	apple_cp apple_mv apple_rm	\
 	cleanappledouble.pl		\
-	netatalkshorternamelinks.pl
+	netatalkshorternamelinks.pl	\
+	asip-status.pl
 
 SUFFIXES = .tmpl .
 
