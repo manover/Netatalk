@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7 2003-07-21 05:50:54 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.1 2003-09-09 16:42:20 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -79,9 +79,7 @@ extern int afprun(int root, char *cmd, int *outfd);
 
 static struct vol *Volumes = NULL;
 static int		lastvid = 0;
-#ifndef CNID_DB
 static char		*Trash = "\02\024Network Trash Folder";
-#endif /* CNID_DB */
 
 static struct extmap	*Extmap = NULL, *Defextmap = NULL;
 static int              Extmap_cnt;
@@ -114,15 +112,18 @@ m=u -> map both ways
 #define VOLOPT_ROOTPOSTEXEC  14  /* root postexec command */
 
 #define VOLOPT_ENCODING      15  /* mac encoding (pre OSX)*/
+#define VOLOPT_MACCHARSET    16
+#define VOLOPT_CNIDSCHEME    17
+#define VOLOPT_ADOUBLE       18  /* adouble version */
 #ifdef FORCE_UIDGID
 #warning UIDGID
 #include "uid.h"
 
-#define VOLOPT_FORCEUID  16  /* force uid for username x */
-#define VOLOPT_FORCEGID  17  /* force gid for group x */
-#define VOLOPT_UMASK     18
+#define VOLOPT_FORCEUID  19  /* force uid for username x */
+#define VOLOPT_FORCEGID  20  /* force gid for group x */
+#define VOLOPT_UMASK     21
 #else 
-#define VOLOPT_UMASK     16
+#define VOLOPT_UMASK     19
 #endif /* FORCE_UIDGID */
 
 #define VOLOPT_MAX       (VOLOPT_UMASK +1)
@@ -251,7 +252,7 @@ static char *volxlate(AFPObj *obj, char *dest, size_t destlen,
             if (path) {
                 struct adouble ad;
 
-                memset(&ad, 0, sizeof(ad));
+		ad_init(&ad, 0);
                 if (ad_open(path, ADFLAGS_HF, O_RDONLY, 0, &ad) < 0)
                     goto no_volname;
 
@@ -376,10 +377,14 @@ static void volset(struct vol_option *options, struct vol_option *save,
             free(options[VOLOPT_CODEPAGE].c_value);
         }
         options[VOLOPT_CODEPAGE].c_value = get_codepage_path(nlspath, val + 1);
-    } else if (optionok(tmp, "encoding:", val)) {
+    } else if (optionok(tmp, "volcharset:", val)) {
         setoption(options, save, VOLOPT_ENCODING, val);
+    } else if (optionok(tmp, "maccharset:", val)) {
+        setoption(options, save, VOLOPT_MACCHARSET, val);
     } else if (optionok(tmp, "veto:", val)) {
         setoption(options, save, VOLOPT_VETO, val);
+    } else if (optionok(tmp, "cnidscheme:", val)) {
+        setoption(options, save, VOLOPT_CNIDSCHEME, val);
     } else if (optionok(tmp, "casefold:", val)) {
         if (strcasecmp(val + 1, "tolower") == 0)
             options[VOLOPT_CASEFOLD].i_value = AFPVOL_UMLOWER;
@@ -389,7 +394,13 @@ static void volset(struct vol_option *options, struct vol_option *save,
             options[VOLOPT_CASEFOLD].i_value = AFPVOL_UUPPERMLOWER;
         else if (strcasecmp(val + 1, "xlateupper") == 0)
             options[VOLOPT_CASEFOLD].i_value = AFPVOL_ULOWERMUPPER;
-
+    } else if (optionok(tmp, "adouble:", val)) {
+        if (strcasecmp(val + 1, "v1") == 0)
+            options[VOLOPT_ADOUBLE].i_value = AD_VERSION1;
+#if AD_VERSION == AD_VERSION2            
+        else if (strcasecmp(val + 1, "v2") == 0)
+            options[VOLOPT_ADOUBLE].i_value = AD_VERSION2;
+#endif
     } else if (optionok(tmp, "options:", val)) {
         char *p;
 
@@ -424,8 +435,6 @@ static void volset(struct vol_option *options, struct vol_option *save,
                 options[VOLOPT_FLAGS].i_value |= AFPVOL_DROPBOX;
             else if (strcasecmp(p, "nofileid") == 0)
                 options[VOLOPT_FLAGS].i_value |= AFPVOL_NOFILEID;
-            else if (strcasecmp(p, "utf8") == 0)
-                options[VOLOPT_FLAGS].i_value |= AFPVOL_UTF8;
             else if (strcasecmp(p, "nostat") == 0)
                 options[VOLOPT_FLAGS].i_value |= AFPVOL_NOSTAT;
             else if (strcasecmp(p, "preexec_close") == 0)
@@ -438,11 +447,8 @@ static void volset(struct vol_option *options, struct vol_option *save,
             p = strtok(NULL, ",");
         }
 
-#ifdef CNID_DB
-
     } else if (optionok(tmp, "dbpath:", val)) {
         setoption(options, save, VOLOPT_DBPATH, val);
-#endif /* CNID_DB */
 
     } else if (optionok(tmp, "umask:", val)) {
 	options[VOLOPT_UMASK].i_value = (int)strtol(val, (char **)NULL, 8);
@@ -553,7 +559,6 @@ static int creatvol(AFPObj *obj, struct passwd *pwd,
     volume->v_qfd = -1;
 #endif /* __svr4__ */
     volume->v_vid = lastvid++;
-    volume->v_lastdid = 17;
 
     /* handle options */
     if (options) {
@@ -574,15 +579,24 @@ static int creatvol(AFPObj *obj, struct passwd *pwd,
             volume->v_veto = strdup(options[VOLOPT_VETO].c_value);
 
         if (options[VOLOPT_ENCODING].c_value)
-            volume->v_encoding = strdup(options[VOLOPT_ENCODING].c_value);
-#ifdef CNID_DB
+            volume->v_volcodepage = strdup(options[VOLOPT_ENCODING].c_value);
+
+        if (options[VOLOPT_MACCHARSET].c_value)
+            volume->v_maccodepage = strdup(options[VOLOPT_MACCHARSET].c_value);
+
         if (options[VOLOPT_DBPATH].c_value)
             volume->v_dbpath = volxlate(obj, NULL, MAXPATHLEN, options[VOLOPT_DBPATH].c_value, pwd, path);
-#endif
+
+       if (options[VOLOPT_CNIDSCHEME].c_value)
+           volume->v_cnidscheme = strdup(options[VOLOPT_CNIDSCHEME].c_value);
 
 	if (options[VOLOPT_UMASK].i_value)
 	    volume->v_umask = (mode_t)options[VOLOPT_UMASK].i_value;
 
+	if (options[VOLOPT_ADOUBLE].i_value)
+	    volume->v_adouble = options[VOLOPT_ADOUBLE].i_value;
+	else 
+	    volume->v_adouble = AD_VERSION;
 #ifdef FORCE_UIDGID
         if (options[VOLOPT_FORCEUID].c_value) {
             volume->v_forceuid = strdup(options[VOLOPT_FORCEUID].c_value);
@@ -657,6 +671,18 @@ FILE	*fp;
  *      0: list exists, but name isn't in it
  *      1: in list
  */
+
+#ifndef NO_REAL_USER_NAME
+/* authentication is case insensitive 
+ * FIXME should we do the same with group name?
+*/
+#define access_strcmp strcasecmp
+
+#else
+#define access_strcmp strcmp
+
+#endif
+
 static int accessvol(args, name)
 const char *args;
 const char *name;
@@ -675,7 +701,7 @@ const char *name;
         if (*p == '@') { /* it's a group */
             if ((gr = getgrnam(p + 1)) && gmem(gr->gr_gid))
                 return 1;
-        } else if (strcmp(p, name) == 0) /* it's a user name */
+        } else if (access_strcmp(p, name) == 0) /* it's a user name */
             return 1;
         p = strtok(NULL, ",");
     }
@@ -976,10 +1002,9 @@ static void volume_free(struct vol *vol)
     codepage_free(vol);
     free(vol->v_password);
     free(vol->v_veto);
-    free(vol->v_encoding);
-#ifdef CNID_DB
+    free(vol->v_volcodepage);
+    free(vol->v_maccodepage);
     free(vol->v_dbpath);
-#endif /* CNID_DB */
 #ifdef FORCE_UIDGID
     free(vol->v_forceuid);
     free(vol->v_forcegid);
@@ -1120,7 +1145,7 @@ int		*buflen;
      * For MacOS8.x support we need to create the
      * .Parent file here if it doesn't exist. */
 
-    memset(&ad, 0, sizeof(ad));
+    ad_init(&ad, vol->v_adouble);
     if ( ad_open( vol->v_path, vol_noadouble(vol) |
                   ADFLAGS_HF|ADFLAGS_DIR, O_RDWR | O_CREAT,
                   0666, &ad) < 0 ) {
@@ -1162,11 +1187,10 @@ int		*buflen;
         switch ( bit ) {
         case VOLPBIT_ATTR :
             ashort = 0;
-#ifdef CNID_DB
-            if (0 == (vol->v_flags & AFPVOL_NOFILEID) && vol->v_db != NULL) {
+            if (0 == (vol->v_flags & AFPVOL_NOFILEID) && vol->v_cdb != NULL &&
+                           (vol->v_cdb->flags & CNID_FLAG_PERSISTENT)) {
                 ashort = VOLPBIT_ATTR_FILEID;
             }
-#endif /* CNID_DB */
             /* check for read-only.
              * NOTE: we don't actually set the read-only flag unless
              *       it's passed in that way as it's possible to mount
@@ -1441,9 +1465,7 @@ int		ibuflen, *rbuflen;
 {
     struct stat	st;
     char	*volname;
-#ifndef CNID_DB
     char        *p;
-#endif
     struct vol	*volume;
     struct dir	*dir;
     int		len, ret;
@@ -1503,9 +1525,6 @@ int		ibuflen, *rbuflen;
         volume->max_filename = MACFILELEN;
     }
 
-#ifdef CNID_DB
-    volume->v_db = NULL;
-#endif
     volume->v_dir = volume->v_root = NULL;
 
     /* FIXME unix name != mac name */
@@ -1519,6 +1538,7 @@ int		ibuflen, *rbuflen;
     dir->d_color = DIRTREE_COLOR_BLACK; /* root node is black */
     volume->v_dir = volume->v_root = dir;
     volume->v_flags |= AFPVOL_OPEN;
+    volume->v_cdb = NULL;  
 
     if (volume->v_root_preexec) {
 	if ((ret = afprun(1, volume->v_root_preexec, NULL)) && volume->v_root_preexec_close) {
@@ -1550,37 +1570,76 @@ int		ibuflen, *rbuflen;
         goto openvol_err;
     }
     curdir = volume->v_dir;
-
-#ifdef CNID_DB
-    if (volume->v_dbpath)
-        volume->v_db = cnid_open (volume->v_dbpath, volume->v_umask);
-    if (volume->v_db == NULL)
-        volume->v_db = cnid_open (volume->v_path, volume->v_umask);
-    if (volume->v_db == NULL) {
-        /* FIXME config option? 
-         * - mount the volume readonly
-         * - return an error
-         * - read/write with other scheme
-         */
+    if (volume->v_cnidscheme == NULL) {
+        volume->v_cnidscheme = strdup(DEFAULT_CNID_SCHEME);
+        LOG(log_warning, logtype_afpd, "Warning: No CNID scheme for volume %s. Using default.",
+               volume->v_path);
     }
-#endif
+    if (volume->v_dbpath)
+        volume->v_cdb = cnid_open (volume->v_dbpath, volume->v_umask, volume->v_cnidscheme);
+    if (volume->v_cdb == NULL)
+        volume->v_cdb = cnid_open (volume->v_path, volume->v_umask, volume->v_cnidscheme);
+    if (volume->v_cdb == NULL) {
+        volume->v_cdb = cnid_open (volume->v_path, volume->v_umask, DEFAULT_CNID_SCHEME);
+        LOG(log_error, logtype_afpd, "Error: invalid CNID backend for %s: %s", volume->v_path,
+            volume->v_cnidscheme);
+    }
+    if (volume->v_cdb == NULL) {
+        LOG(log_error, logtype_afpd, "Fatal error: cannot open CNID for %s", volume->v_path);
+        ret = AFPERR_MISC;
+        goto openvol_err;
+    }
 
-    if ( 0 == ( volume->v_maccharset = add_charset(volume->v_encoding?volume->v_encoding:"MAC")) )
-	volume->v_maccharset = CH_MAC;
+    /* Codepages */
+
+    if (!volume->v_volcodepage)
+	volume->v_volcodepage = strdup("UTF8");
+
+    if ( (charset_t) -1 == ( volume->v_volcharset = add_charset(volume->v_volcodepage)) ) {
+	LOG (log_error, logtype_afpd, "Setting codepage %s as volume codepage failed", volume->v_volcodepage);
+	ret = AFPERR_MISC;
+	goto openvol_err;
+    }
+
+    if ( NULL == ( volume->v_vol = find_charset_functions(volume->v_volcodepage)) || volume->v_vol->flags & CHARSET_ICONV ) {
+	LOG (log_warning, logtype_afpd, "WARNING: volume encoding %s is *not* supported by netatalk, expect problems !!!!", volume->v_volcodepage);
+    }	
+
+    if (!volume->v_maccodepage)
+	volume->v_maccodepage = strdup(obj->options.maccodepage);
+
+    if ( (charset_t) -1 == ( volume->v_maccharset = add_charset(volume->v_maccodepage)) ) {
+	LOG (log_error, logtype_afpd, "Setting codepage %s as mac codepage failed", volume->v_maccodepage);
+	ret = AFPERR_MISC;
+	goto openvol_err;
+    }
+
+    if ( NULL == ( volume->v_mac = find_charset_functions(volume->v_maccodepage)) || ! (volume->v_mac->flags & CHARSET_CLIENT) ) {
+	LOG (log_error, logtype_afpd, "Fatal error: mac charset %s not supported", volume->v_maccodepage);
+	ret = AFPERR_MISC;
+	goto openvol_err;
+    }	
 
     ret  = stat_vol(bitmap, volume, rbuf, rbuflen);
     if (ret == AFP_OK) {
-#ifndef CNID_DB
         /*
          * If you mount a volume twice, the second time the trash appears on
          * the desk-top.  That's because the Mac remembers the DID for the
          * trash (even for volumes in different zones, on different servers).
          * Just so this works better, we prime the DID cache with the trash,
          * fixing the trash at DID 17.
+         * FIXME (RL): should it be done inside a CNID backend ? (always returning Trash DID when asked) ?
          */
+        if ((volume->v_cdb->flags & CNID_FLAG_PERSISTENT)) {
+
+            /* FIXME find db time stamp */
+            if (!cnid_getstamp(volume->v_cdb, volume->v_stamp, sizeof(volume->v_stamp)) ) {
+                LOG(log_error, logtype_afpd, "stamp %x", *(unsigned *)volume->v_stamp);
+            
+            }
         p = Trash;
         cname( volume, volume->v_dir, &p );
-#endif
+        }
         return( AFP_OK );
     }
 
@@ -1591,13 +1650,10 @@ openvol_err:
     }
 
     volume->v_flags &= ~AFPVOL_OPEN;
-
-#ifdef CNID_DB
-    if (volume->v_db != NULL) {
-        cnid_close(volume->v_db);
-        volume->v_db = NULL;
+    if (volume->v_cdb != NULL) {
+        cnid_close(volume->v_cdb);
+        volume->v_cdb = NULL;
     }
-#endif
     *rbuflen = 0;
     return ret;
 }
@@ -1610,10 +1666,10 @@ static void closevol(struct vol	*vol)
 
     dirfree( vol->v_root );
     vol->v_dir = NULL;
-#ifdef CNID_DB
-    cnid_close(vol->v_db);
-    vol->v_db = NULL;
-#endif /* CNID_DB */
+    if (vol->v_cdb != NULL) {
+        cnid_close(vol->v_cdb);
+        vol->v_cdb = NULL;
+    }
 
     if (vol->v_postexec) {
 	afprun(0, vol->v_postexec, NULL);
@@ -1843,7 +1899,7 @@ int		ibuflen, *rbuflen;
     if (bitmap != (1 << VOLPBIT_BDATE))
         return AFPERR_BITMAP;
 
-    memset(&ad, 0, sizeof(ad));
+    ad_init(&ad, vol->v_adouble);
     if ( ad_open( vol->v_path, ADFLAGS_HF|ADFLAGS_DIR, O_RDWR,
                   0666, &ad) < 0 ) {
         if (errno == EROFS)

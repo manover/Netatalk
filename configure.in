@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3 2003-06-23 10:25:07 didg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.1 2003-09-09 16:42:19 didg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(bin/adv1tov2/adv1tov2.c)
@@ -27,43 +27,50 @@ dnl FIXME! FIXME! These should be selectable properly, and should produce
 dnl the proper flags and defines...
 dnl *********************************************************************
 
+############################################
+# we need dlopen/dlclose/dlsym/dlerror for PAM, the password database plugins and the plugin loading code
+#AC_SEARCH_LIBS(dlopen, [dl])
+# dlopen/dlclose/dlsym/dlerror will be checked again later and defines will be set then
+
 dnl Checks for libraries.
 dnl Replace `main' with a function in -labs:
-AC_CHECK_LIB(abs, main)
+dnl AC_CHECK_LIB(abs, main)
 dnl Replace `main' with a function in -laudit:
-AC_CHECK_LIB(audit, main)
+dnl AC_CHECK_LIB(audit, main)
 dnl Replace `main' with a function in -lauth:
-AC_CHECK_LIB(auth, main)
+dnl AC_CHECK_LIB(auth, main)
 dnl Replace `main' with a function in -lcmd:
-AC_CHECK_LIB(cmd, main)
+dnl AC_CHECK_LIB(cmd, main)
 dnl Replace `main' with a function in -lcrypt:
-AC_CHECK_LIB(crypt, main)
+dnl AC_CHECK_LIB(crypt, main)
 dnl Replace `main' with a function in -ld:
-AC_CHECK_LIB(d, main)
+dnl AC_CHECK_LIB(d, main)
 dnl Replace `main' with a function in -ldl:
-AC_CHECK_LIB(dl, main)
+AC_CHECK_LIB(dl, dlopen)
 dnl Replace `main' with a function in -lkauth:
-AC_CHECK_LIB(kauth, main)
+dnl AC_CHECK_LIB(kauth, main)
 dnl Replace `main' with a function in -lkrb:
-AC_CHECK_LIB(krb, main)
+dnl AC_CHECK_LIB(krb, main)
 dnl Replace `main' with a function in -llwp:
-AC_CHECK_LIB(lwp, main)
+dnl AC_CHECK_LIB(lwp, main)
 dnl Replace `main' with a function in -ln:
-AC_CHECK_LIB(n, main)
+dnl AC_CHECK_LIB(n, main)
 dnl Replace `main' with a function in -lnsl:
-AC_CHECK_LIB(nsl, main)
+AC_CHECK_LIB(nsl, socket)
 dnl Replace `main' with a function in -lprot:
-AC_CHECK_LIB(prot, main)
+dnl AC_CHECK_LIB(prot, main)
 dnl Replace `main' with a function in -lrx:
-AC_CHECK_LIB(rx, main)
+dnl AC_CHECK_LIB(rx, main)
 dnl Replace `main' with a function in -lrxkad:
-AC_CHECK_LIB(rxkad, main)
+dnl AC_CHECK_LIB(rxkad, main)
 dnl Replace `main' with a function in -lsocket:
-AC_CHECK_LIB(socket, main)
+AC_CHECK_LIB(socket, socket)
 dnl Replace `main' with a function in -lsys:
-AC_CHECK_LIB(sys, main)
+dnl AC_CHECK_LIB(sys, main)
 dnl Replace `main' with a function in -lubik:
-AC_CHECK_LIB(ubik, main)
+dnl AC_CHECK_LIB(ubik, main)
+
+AC_MSG_RESULT([    LIBS = $LIBS])
 
 #
 # Check presence of some functions
@@ -84,6 +91,7 @@ AC_CHECK_HEADER(sys/cdefs.h,,
 	AC_MSG_RESULT([enabling generic cdefs.h from tree])
 	CFLAGS="-I\$(top_srcdir)/sys/generic $CFLAGS"
 )
+AC_CHECK_HEADERS(langinfo.h locale.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -108,9 +116,14 @@ AC_FUNC_UTIME_NULL
 AC_FUNC_WAIT3
 AC_CHECK_FUNCS(getcwd gethostname gettimeofday getusershell mkdir rmdir select socket strdup strcasestr strstr strtoul setpgrp strchr memcpy)
 AC_FUNC_SETPGRP
+AC_CHECK_FUNCS(backtrace_symbols)
+AC_CHECK_FUNCS(setlocale nl_langinfo)
+AC_CHECK_FUNCS(dlopen dlclose dlsym dlerror waitpid getcwd strdup strndup strnlen strtoul strerror chown fchown chmod fchmod chroot link mknod mknod64)
+
 
 dnl Checks for (v)snprintf
 NETATALK_SNPRINTF_CHECK
+AC_MSG_RESULT([    LIBS = $LIBS])
 
 dnl --------------------------------------------------------------------------
 dnl specific configuration comes in here:
@@ -200,6 +213,7 @@ if test "$afp3" = "yes"; then
 	AM_ICONV
         AC_SYS_LARGEFILE
 fi
+NETATALK_GSSAPI_CHECK
 
 
 dnl ----------- A NOTE ABOUT DROPKLUDGE
@@ -228,82 +242,212 @@ AC_ARG_ENABLE(force-uidgid,
 dnl Don't use BDB unless it's needed
 bdb_required=no
 
-dnl Determine DID scheme
-AC_MSG_CHECKING([for DID scheme to use])
-AC_ARG_WITH(did,
-	[  --with-did=SCHEME       set DID scheme (cnid,last,hash)],
-	[ did_scheme="$withval" ],
-	[ did_scheme="cnid" ]
-)
-
-if test "x$did_scheme" = "xlast"; then
-	AC_DEFINE(USE_LASTDID, 1, [Define if the last DID scheme should be used])
-	AC_MSG_RESULT([last])
-elif test "x$did_scheme" = "xhash"; then
-	AC_DEFINE(USE_HASHDID, 1, [Define if the hash DID scheme should be used, only one dev])
-	AC_MSG_RESULT([hash])
-elif test "x$did_scheme" = "xcnid"; then
-	bdb_required="yes"
-	AC_DEFINE(CNID_DB, 1, [Define if the CNID DB DID scheme should be used])
-	AC_MSG_RESULT([enabling build with CNID DB support])
-else
-	AC_MSG_ERROR([unknown DID scheme])
-fi
-AM_CONDITIONAL(COMPILE_CNID, test "x$did_scheme" = "xcnid")
-
-dnl Determine whether or not to use filename mangling
-AC_MSG_CHECKING([whether or not to use filename mangling])
-AC_ARG_WITH(mangling,
-	[  --with-mangling         enable filename mangling],
-	[
-		if test "x$withval" = "xyes"; then
-			if test "x$did_scheme" != "xcnid"; then
-				AC_MSG_ERROR([DID scheme must be CNID to use filename mangling])
+dnl Determine whether or not to use DB3 Concurrent Data Store
+AC_MSG_CHECKING([whether or not to use DB3 Concurrent Data Store])
+AC_ARG_WITH(cnid-cdb-backend,
+	[  --with-cnid-cdb-backend	enable CNID with Concurrent DB3 Data Store],
+	if test x"$withval" = x"no"; then
+	    use_cdb_backend=no
 			else
-				AC_DEFINE(FILE_MANGLING, 1, [Define if file name mangling should be used])
-				AC_MSG_RESULT([yes])
-			fi
-		else
-			AC_MSG_RESULT([no])
-		fi
-	], [
-		if test "x$did_scheme" = "xcnid"; then
-			AC_DEFINE(FILE_MANGLING, 1, [Define if file name mangling should be used])
-			AC_MSG_RESULT([yes])
-		else
-			AC_MSG_RESULT([no])
-		fi
-	]
+	    use_cdb_backend=yes
+	fi
+	,use_cdb_backend=yes
 )
 
-if test "$did_scheme" = "cnid"; then
-    USE_CDB="yes"
+if test $use_cdb_backend = yes; then
+				AC_MSG_RESULT([yes])
+    AC_DEFINE(CNID_BACKEND_CDB, 1, [Define if CNID Concurrent DB3 backend should be compiled.])	    
+    DEFAULT_CNID_SCHEME=cdb
+    bdb_required=yes
 else
-    USE_CDB="no"
-fi
+    AC_MSG_RESULT([no])
+			fi
 
-dnl Determine whether or not to use CDB or transactional DB store
-AC_MSG_CHECKING([whether or not to use CNID with Concurrent Data Store])
-AC_ARG_WITH(cdb,
-	[  --with-cdb              enable CNID with Concurrent Data Store],
-	if test "$withval" = "no"; then
-	    if test "x$did_scheme" != "xcnid"; then
-		USE_CDB="no"
-		AC_MSG_ERROR([DID scheme must be CNID to use CDB])
-	    else
-		USE_CDB="no"
-	        AC_MSG_RESULT([no])
-	    fi
-	else
-	    USE_CDB="yes"
+dnl Determine whether or not to use Database Daemon CNID backend
+AC_MSG_CHECKING([whether or not to use Database Daemon CNID backend])
+AC_ARG_WITH(cnid-dbd-backend,
+	[  --with-cnid-dbd-backend      enable CNID with Database Daemon Data Store],
+	if test x"$withval" = x"no"; then
+	    AC_MSG_RESULT([no])
+	    use_dbd_backend=no
+		else
+	    use_dbd_backend=yes
 	    AC_MSG_RESULT([yes])
 	fi
-	, AC_MSG_RESULT([yes])
+	,use_dbd_backend=no
+        AC_MSG_RESULT([no])
 )
 
-if test "$USE_CDB" = "yes"; then
-    AC_DEFINE(CNID_DB_CDB, 1, [Define if CNID should be used with Concurrent Data Store])
+dnl Determine whether or not to use with transaction support in Database Daemon
+AC_MSG_CHECKING([whether or not to use Database Daemon with transaction support])
+AC_ARG_WITH(cnid-dbd-txn,
+        [  --with-cnid-dbd-txn          enable transaction support for dbd backend],
+	if test x"$withval" = x"no"; then
+	    AC_MSG_RESULT([no])
+	    use_dbd_txn=no
+	else
+	    use_dbd_txn=yes
+	    AC_MSG_RESULT([yes])
+	fi
+	,use_dbd_txn=no
+			AC_MSG_RESULT([no])
+)
+
+if test $use_dbd_txn = yes; then
+    use_dbd_backend=yes
+    AC_DEFINE(CNID_BACKEND_DBD_TXN, 1, [Define if CNID Database Daemon backend has transaction support])
+else
+    if test x"$use_dbd_backend" = x; then    
+        use_dbd_backend=no
+    fi
 fi
+
+if test $use_dbd_backend = yes; then
+    AC_DEFINE(CNID_BACKEND_DBD, 1, [Define if CNID Database Daemon backend should be compiled.])
+    if test x"$DEFAULT_CNID_SCHEME" = x; then
+        DEFAULT_CNID_SCHEME=dbd
+    fi
+    bdb_required=yes
+fi
+
+dnl Determine whether or not to use DB3 transactional data store
+AC_MSG_CHECKING([whether or not to use DB3 transactional DB store])
+AC_ARG_WITH(cnid-db3-backend,
+        [  --with-cnid-db3-backend	enable CNID with transactional DB3 Data Store],
+	if test x"$withval" = x"no"; then
+	    use_db3_backend=no
+	else
+	    use_db3_backend=yes
+		fi
+	,use_db3_backend=no
+)
+
+if test $use_db3_backend = yes; then
+			AC_MSG_RESULT([yes])
+    AC_DEFINE(CNID_BACKEND_DB3, 1, [Define if CNID transactional DB3 backend should be compiled.])
+    if test x"$DEFAULT_CNID_SCHEME" = x; then
+	DEFAULT_CNID_SCHEME=db3
+    fi
+    bdb_required=yes
+		else
+			AC_MSG_RESULT([no])
+		fi
+
+dnl Determine whether or not to use LAST DID scheme
+AC_MSG_CHECKING([whether or not to use LAST DID scheme])
+AC_ARG_WITH(cnid-last-backend,
+	[  --with-cnid-last-backend	enable LAST CNID scheme],
+	if test x"$withval" = x"no"; then
+	    use_last_backend=no
+	else
+	    use_last_backend=yes
+	fi
+	,use_last_backend=no
+)
+
+if test $use_last_backend = yes; then
+    AC_MSG_RESULT([yes])
+    AC_DEFINE(CNID_BACKEND_LAST, 1, [Define if CNID LAST scheme backend should be compiled.])
+    if test x"$DEFAULT_CNID_SCHEME" = x; then
+	DEFAULT_CNID_SCHEME=last
+    fi
+else
+    AC_MSG_RESULT([no])
+fi
+
+dnl Determine whether or not to use HASH DID scheme
+AC_MSG_CHECKING([whether or not to use HASH DID scheme])
+AC_ARG_WITH(cnid-hash-backend,
+	[  --with-cnid-hash-backend	enable HASH CNID scheme],
+	if test x"$withval" = x"no"; then
+	    use_hash_backend=no
+	else
+	    use_hash_backend=yes
+	fi
+	,use_hash_backend=no
+)
+
+if test $use_hash_backend = yes; then
+    AC_MSG_RESULT([yes])
+    AC_DEFINE(CNID_BACKEND_HASH, 1, [Define if CNID HASH scheme backend should be compiled.])
+    if test x"$DEFAULT_CNID_SCHEME" = x; then
+	DEFAULT_CNID_SCHEME=hash
+    fi
+	    else
+	        AC_MSG_RESULT([no])
+	    fi
+
+dnl Determine whether or not to use TDB DID scheme
+AC_MSG_CHECKING([whether or not to use TDB DID scheme])
+AC_ARG_WITH(cnid-tdb-backend,
+	[  --with-cnid-tdb-backend	enable DID CNID scheme],
+	if test x"$withval" = x"no"; then
+	    use_tdb_backend=no
+	else
+	    use_tdb_backend=yes
+	fi
+	,use_tdb_backend=no
+)
+
+if test $use_tdb_backend = yes; then
+	    AC_MSG_RESULT([yes])
+    AC_DEFINE(CNID_BACKEND_TDB, 1, [Define if CNID TDB scheme backend should be compiled.])
+    if test x"$DEFAULT_TDB_SCHEME" = x; then
+	DEFAULT_TDB_SCHEME=tdb
+	fi
+else
+    AC_MSG_RESULT([no])
+fi
+
+dnl Determine whether or not to use MTAB DID scheme
+AC_MSG_CHECKING([whether or not to use MTAB DID scheme])
+AC_ARG_WITH(cnid-mtab-backend,
+	[  --with-cnid-mtab-backend	enable MTAB CNID scheme],
+	if test x"$withval" = x"no"; then
+	    use_mtab_backend=no
+	else
+	    use_mtab_backend=yes
+	fi
+	,use_mtab_backend=no
+)
+
+if test $use_mtab_backend = yes; then
+    AC_MSG_RESULT([yes])
+    AC_DEFINE(CNID_BACKEND_MTAB, 1, [Define if CNID MTAB scheme backend should be compiled.])
+    if test x"$DEFAULT_CNID_SCHEME" = x; then
+	DEFAULT_CNID_SCHEME=mtab
+fi
+else		
+    AC_MSG_RESULT([no])
+fi
+
+dnl Set default DID scheme
+AC_MSG_CHECKING([default DID scheme])
+AC_ARG_WITH(cnid-default-backend,
+	[  --with-cnid-default-backend=val	set default DID scheme],
+	if test x"$withval" = x; then
+	    AC_MSG_RESULT([ignored])
+	else
+	    DEFAULT_CNID_SCHEME=$withval
+	    AC_MSG_RESULT($DEFAULT_CNID_SCHEME)
+	fi
+	,AC_MSG_RESULT($DEFAULT_CNID_SCHEME)
+)
+
+if test x"$DEFAULT_CNID_SCHEME" = x; then
+    AC_MSG_ERROR([No DID schemes compiled in ])
+fi
+
+#eval "default_scheme_selected=\$use_$DEFAULT_CNID_SCHEME_backend"
+#echo "default_scheme_selected=[$default_scheme_selected]"
+#if test x"$default_scheme_selected" = xyes; then
+#   AC_MSG_CHECKING([Checking whether default CNID scheme has been activated])
+#   AC_MSG_RESULT([yes])
+#else
+#   AC_MSG_ERROR([Default CNID scheme is disabled ! Enable it or select other as default.])
+#fi
+
+AC_DEFINE_UNQUOTED(DEFAULT_CNID_SCHEME, "$DEFAULT_CNID_SCHEME", [Default CNID scheme to be used])
 
 dnl Check for Berkeley DB library
 if test "x$bdb_required" = "xyes"; then
@@ -316,6 +460,7 @@ AC_CHECK_QUOTA
 dnl Check for optional server location protocol support (used by MacOS X)
 NETATALK_SRVLOC
 
+AC_MSG_RESULT([    LIBS = $LIBS])
 dnl Check for PAM libs
 AC_PATH_PAM([
 	PAPD_LIBS="$PAPD_LIBS $PAM_LIBS"
@@ -344,14 +489,16 @@ AC_ARG_ENABLE(shell-check,
 	fi
 )
 
-AC_ARG_WITH(tcp-wrappers,
-	[  --with-tcp-wrappers     enable TCP wrappers support],
-	AC_CHECK_LIB(wrap, tcpd_warn,
-		AC_DEFINE(TCPWRAP, 1, [Define if TCP wrappers should be used])
-		AFPD_LIBS="$AFPD_LIBS -lwrap"
-		AC_MSG_RESULT([enabling TCP wrappers support])
-	)
-)
+#AC_ARG_WITH(tcp-wrappers,
+#	[  --with-tcp-wrappers     enable TCP wrappers support],[
+#	AC_CHECK_HEADERS(tcpd.h)
+#	AC_CHECK_LIB(wrap, tcpd_warn,
+#		AC_DEFINE(TCPWRAP, 1, [Define if TCP wrappers should be used])
+#		AFPD_LIBS="$AFPD_LIBS -lwrap"
+#		AC_MSG_RESULT([enabling TCP wrappers support])
+#	)
+#])
+NETATALK_TCP_WRAPPERS
 
 AC_ARG_ENABLE(redhat,
 	[  --enable-redhat         use redhat-style sysv configuration ],
@@ -636,6 +783,7 @@ if test x"$this_os" = "xtru64"; then
 fi
 
 dnl -- look for openssl
+AC_MSG_RESULT([    LIBS = $LIBS])
 AC_PATH_SSL
 
 dnl --------------------- check for building PGP UAM module
@@ -736,6 +884,7 @@ AC_OUTPUT([Makefile
 	etc/afpd/Makefile
 	etc/afpd/nls/Makefile
 	etc/atalkd/Makefile
+	etc/cnid_dbd/Makefile
 	etc/uams/Makefile
 	etc/uams/uams_krb4/Makefile
 	etc/papd/Makefile
@@ -747,12 +896,21 @@ AC_OUTPUT([Makefile
 	libatalk/asp/Makefile
 	libatalk/atp/Makefile
 	libatalk/cnid/Makefile
+	libatalk/cnid/db3/Makefile
+	libatalk/cnid/cdb/Makefile
+	libatalk/cnid/last/Makefile
+	libatalk/cnid/mtab/Makefile
+	libatalk/cnid/dbd/Makefile
+	libatalk/cnid/hash/Makefile
+	libatalk/cnid/tdb/Makefile
 	libatalk/compat/Makefile
 	libatalk/dsi/Makefile
 	libatalk/nbp/Makefile
 	libatalk/netddp/Makefile
 	libatalk/util/Makefile
+	libatalk/tdb/Makefile
 	libatalk/unicode/Makefile
+	libatalk/unicode/charsets/Makefile
 	macros/Makefile
 	man/Makefile
 	man/man1/Makefile
@@ -773,4 +931,18 @@ AC_OUTPUT([Makefile
 	],
 	[chmod a+x distrib/config/netatalk-config contrib/shell_utils/apple_*]
 )
+
+
+#################################################
+# Display summary of libraries detected
+
+AC_MSG_RESULT([Using libraries:])
+AC_MSG_RESULT([    LIBS = $LIBS])
+AC_MSG_RESULT([    SSL_LIBS = $SSL_LIBS])
+AC_MSG_RESULT([    GSSAPI_LIBS = $GSSAPI_LIBS])
+AC_MSG_RESULT([    BDB_LIBS = $BDB_LIBS])
+AC_MSG_RESULT([    AFPD_LIBS= $AFPD_LIBS])
+AC_MSG_RESULT([    PAPD_LIBS= $PAPD_LIBS])
+AC_MSG_RESULT([    CFLAGS = $CFLAGS])
+
 

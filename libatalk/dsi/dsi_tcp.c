@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_tcp.c,v 1.9 2002-01-24 16:27:31 jmarcus Exp $
+ * $Id: dsi_tcp.c,v 1.9.10.1 2003-09-09 16:42:22 didg Exp $
  *
  * Copyright (c) 1997, 1998 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -93,6 +93,11 @@ static void timeout_handler()
   exit(1);
 }
 
+#ifdef ATACC
+#define fork aTaC_fork
+#endif
+
+static struct itimerval itimer;
 /* accept the socket and do a little sanity checking */
 static int dsi_tcp_open(DSI *dsi)
 {
@@ -120,7 +125,8 @@ static int dsi_tcp_open(DSI *dsi)
   if (dsi->socket < 0)
     return -1;
 
-  if ((pid = fork()) == 0) { /* child */
+  getitimer(ITIMER_PROF, &itimer);
+  if (0 == (pid = fork()) ) { /* child */
     static const struct itimerval timer = {{0, 0}, {DSI_TCPTIMEOUT, 0}};
     struct sigaction newact, oldact;
     u_int8_t block[DSI_BLOCKSIZ];
@@ -136,6 +142,8 @@ static int dsi_tcp_open(DSI *dsi)
     newact.sa_flags = 0;
     sigemptyset(&oldact.sa_mask);
     oldact.sa_flags = 0;
+    setitimer(ITIMER_PROF, &itimer, NULL);
+
     if ((sigaction(SIGALRM, &newact, &oldact) < 0) ||
         (setitimer(ITIMER_REAL, &timer, NULL) < 0)) {
 	LOG(log_error, logtype_default, "dsi_tcp_open: %s", strerror(errno));

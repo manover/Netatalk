@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21 2003-03-09 19:55:35 didg Exp $
+ * $Id: adouble.h,v 1.21.6.1 2003-09-09 16:42:20 didg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -104,6 +104,11 @@ static __inline__ int sendfile(int fdout, int fdin, off_t *off, size_t count)
 #define HAVE_SENDFILE_READ
 #endif
 
+/* version info */
+#define AD_VERSION1	0x00010000
+#define AD_VERSION2	0x00020000
+#define AD_VERSION	AD_VERSION2
+
 /*
  * AppleDouble entry IDs. 
  */
@@ -123,17 +128,25 @@ static __inline__ int sendfile(int fdout, int fdin, off_t *off, size_t count)
 #define ADEID_AFPFILEI		14 /* where the rest of the FILEI info goes */
 #define ADEID_DID		15
 
+#if AD_VERSION == AD_VERSION1
 #define ADEID_MAX		16
+#else
+/* netatalk private note fileid reused DID */
+#define ADEID_PRIVDEV           16
+#define ADEID_PRIVINO           17
+#define ADEID_PRIVSYN           18 /* in synch with database */
+
+#define AD_DEV                  0x80444556
+#define AD_INO                  0x80494E4F
+#define AD_SYN                  0x8053594E
+#define ADEID_MAX		19
+#endif
 
 /* magic */
 #define AD_APPLESINGLE_MAGIC 0x00051600
 #define AD_APPLEDOUBLE_MAGIC 0x00051607
 #define AD_MAGIC	     AD_APPLEDOUBLE_MAGIC
 
-/* version info */
-#define AD_VERSION1	0x00010000
-#define AD_VERSION2	0x00020000
-#define AD_VERSION	AD_VERSION1
 
 /* sizes of relevant entry bits */
 #define ADEDLEN_MAGIC       4
@@ -141,6 +154,7 @@ static __inline__ int sendfile(int fdout, int fdin, off_t *off, size_t count)
 #define ADEDLEN_FILLER      16
 #define ADEDLEN_NENTRIES    2
 
+/* 26 */
 #define AD_HEADER_LEN       (ADEDLEN_MAGIC + ADEDLEN_VERSION + \
 			     ADEDLEN_FILLER + ADEDLEN_NENTRIES)
 #define AD_ENTRY_LEN        12  /* size of a single entry header */
@@ -159,10 +173,26 @@ static __inline__ int sendfile(int fdout, int fdin, off_t *off, size_t count)
 #define ADEDLEN_PRODOSFILEI     8
 #define ADEDLEN_MSDOSFILEI      2
 #define ADEDLEN_DID             4
+#define ADEDLEN_PRIVDEV         8
+#define ADEDLEN_PRIVINO         8
+#define ADEDLEN_PRIVSYN         8
 
+#define ADEID_NUM_V1         5 
+#define ADEID_NUM_V2         12  
 
-#define AD_DATASZ1      589  
-#define AD_DATASZ2      665  /* v1 + 4 new entries (entry desc. + entry) */
+/* 589 */
+#define AD_DATASZ1      (AD_HEADER_LEN + ADEDLEN_NAME + ADEDLEN_COMMENT +ADEDLEN_FILEI +ADEDLEN_FINDERI+\
+ADEID_NUM_V1*AD_ENTRY_LEN)
+
+#if AD_DATASZ1 != 589
+#error bad size for AD_DATASZ1
+#endif
+
+#define AD_NEWSZ2       (ADEDLEN_DID + ADEDLEN_AFPFILEI +ADEDLEN_SHORTNAME +ADEDLEN_PRODOSFILEI \
++ADEDLEN_PRIVDEV +ADEDLEN_PRIVINO +ADEDLEN_PRIVSYN)
+
+/* 725 */
+#define AD_DATASZ2      (AD_DATASZ1 + (ADEID_NUM_V2 -ADEID_NUM_V1)*AD_ENTRY_LEN)
 #define AD_DATASZ_MAX   1024
 #if AD_VERSION == AD_VERSION1
 #define AD_DATASZ	AD_DATASZ1 /* hold enough for the entries */
@@ -349,8 +379,11 @@ extern char *ad_dir   __P((const char *));
 extern char *ad_path  __P((const char *, int));
 extern int ad_mode    __P((const char *, int));
 extern int ad_mkdir   __P((const char *, int));
+extern void ad_init   __P((struct adouble *, int ));
+
 extern int ad_open    __P((const char *, int, int, int, struct adouble *)); 
 extern int ad_refresh __P((struct adouble *));
+extern int ad_stat    __P((const char *, struct stat *));
 
 /* extend header to RW if R or W (W if R for locking),
  */ 
@@ -410,6 +443,12 @@ extern int ad_getdate __P((const struct adouble *, unsigned int, u_int32_t *));
 /* ad_attr.c */
 extern int ad_setattr __P((const struct adouble *, const u_int16_t));
 extern int ad_getattr __P((const struct adouble *, u_int16_t *));
+
+#if AD_VERSION == AD_VERSION2
+extern int ad_setid __P((struct adouble *, const struct stat *, const u_int32_t, const void *));
+#else
+#define ad_setid(a, b, c)
+#endif
 
 #ifdef HAVE_SENDFILE_READ
 extern ssize_t ad_readfile __P((const struct adouble *, const int, 

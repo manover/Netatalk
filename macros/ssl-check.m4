@@ -1,4 +1,4 @@
-dnl $Id: ssl-check.m4,v 1.8 2003-01-29 00:16:31 srittau Exp $
+dnl $Id: ssl-check.m4,v 1.8.6.1 2003-09-09 16:42:22 didg Exp $
 dnl Autoconf macro to check for SSL or OpenSSL
 
 AC_DEFUN([AC_PATH_SSL], [
@@ -20,6 +20,7 @@ AC_DEFUN([AC_PATH_SSL], [
 
 	SSL_CFLAGS=""
 	SSL_LIBS=""
+	saved_LIBS=$LIBS
 	compile_ssl=no
 
 	if test "$tryssl" = "yes"; then
@@ -49,6 +50,9 @@ dnl FIXME: The following looks crude and probably doesn't work properly.
 			AC_MSG_RESULT([no])
 		fi
 	fi
+	CFLAGS_REMOVE_USR_INCLUDE(SSL_CFLAGS)
+	LIB_REMOVE_USR_LIB(SSL_LIBS)
 	AC_SUBST(SSL_CFLAGS)
 	AC_SUBST(SSL_LIBS)
+	LIBS=$saved_LIBS
 ])

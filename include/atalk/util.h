@@ -1,5 +1,5 @@
 /*
- * $Id: util.h,v 1.7 2002-02-01 07:03:49 morgana Exp $
+ * $Id: util.h,v 1.7.10.1 2003-09-09 16:42:20 didg Exp $
  */
 
 #ifndef _ATALK_UTIL_H
@@ -25,6 +25,7 @@ extern int strdiacasecmp  __P((const char *, const char *));
 extern int strndiacasecmp __P((const char *, const char *, size_t));
 extern pid_t server_lock  __P((char * /*program*/, char * /*file*/, 
 			       int /*debug*/));
+extern void fault_setup	  __P((void (*fn)(void *)));
 #define server_unlock(x)  (unlink(x))
 
 #ifndef HAVE_DLFCN_H

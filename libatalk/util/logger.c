@@ -235,12 +235,14 @@ bool log_setup(char *filename, enum loglevels loglevel, enum logtypes logtype,
 {
 #ifndef DISABLE_LOGGER
 
+#ifdef CHECK_STAT_ON_NEW_FILES
   struct stat statbuf;
   int firstattempt;
   int retval;
   gid_t gid;
   uid_t uid;
   int access;
+#endif
   char lastchar[2];
 
   log_file_data_pair *logs;

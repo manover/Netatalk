@@ -1,5 +1,5 @@
 /*
- * $Id: uams_dhx_pam.c,v 1.24 2003-01-08 22:16:24 didg Exp $
+ * $Id: uams_dhx_pam.c,v 1.24.6.1 2003-09-09 16:42:20 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -37,6 +37,7 @@
 
 #include <atalk/afp.h>
 #include <atalk/uam.h>
+#include <atalk/unicode.h>
 
 #define KEYSIZE 16
 #define PASSWDLEN 64
@@ -351,6 +352,7 @@ static int pam_login(void *obj, struct passwd **uam_pwd,
     memcpy(username, ibuf, len );
     ibuf += len;
     username[ len ] = '\0';
+    len = convert_charset(CH_MAC, CH_UNIX, username, len, username, ulen, 0);
 
     if ((unsigned long) ibuf & 1) /* pad to even boundary */
       ++ibuf;
@@ -389,6 +391,7 @@ static int pam_login_ext(void *obj, char *uname, struct passwd **uam_pwd,
     }
     memcpy(username, uname +2, len );
     username[ len ] = '\0';
+    len = convert_charset(CH_UTF8_MAC, CH_UNIX, username, len, username, ulen, 0);
 
     return (login(obj, username, ulen, uam_pwd, ibuf, ibuflen, rbuf, rbuflen));
 }

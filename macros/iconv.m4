@@ -28,6 +28,9 @@ dnl	# check for libiconv support
 	  esac ],
 	  AC_MSG_RESULT(no)
 	)
+
+	CFLAGS_REMOVE_USR_INCLUDE(ICONV_CFLAGS)
+	LIB_REMOVE_USR_LIB(ICONV_LIBS)
 	AC_SUBST(ICONV_CFLAGS)
 	AC_SUBST(ICONV_LIBS)
 

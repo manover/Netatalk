@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.45.2.2 2003-07-21 05:50:54 didg Exp $
+ * $Id: filedir.c,v 1.45.2.2.2.1 2003-09-09 16:42:20 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -18,9 +18,7 @@
 #include <atalk/adouble.h>
 #include <atalk/afp.h>
 #include <atalk/util.h>
-#ifdef CNID_DB
 #include <atalk/cnid.h>
-#endif /* CNID_DB */
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef HAVE_FCNTL_H
@@ -351,22 +349,18 @@ int         isdir;
     struct adouble	*adp;
     struct ofork	*opened = NULL;
     struct path         path;
-#ifdef CNID_DB
     cnid_t      id;
-#endif /* CNID_DB */
 
-    memset(&ad, 0, sizeof(ad));
+    ad_init(&ad, vol->v_adouble);
     adp = &ad;
     adflags = 0;
     
     if (!isdir) {
-#ifdef CNID_DB
         p = mtoupath(vol, oldname, utf8_encoding());
         if (!p) { 
             return AFPERR_PARAM; /* can't convert */
         }
-        id = cnid_get(vol->v_db, sdir->d_did, p, strlen(p));
-#endif /* CNID_DB */
+        id = cnid_get(vol->v_cdb, sdir->d_did, p, strlen(p));
         p = ctoupath( vol, sdir, oldname );
         if (!p) { 
             return AFPERR_PARAM; /* pathname too long */
@@ -379,9 +373,7 @@ int         isdir;
         }
     }
     else {
-#ifdef CNID_DB
         id = sdir->d_did; /* we already have the CNID */
-#endif /* CNID_DB */
         p = ctoupath( vol, sdir->d_parent, oldname );
         if (!p) {
             return AFPERR_PARAM;
@@ -437,15 +429,13 @@ int         isdir;
     } else {
         rc = renamedir(p, upath, sdir, curdir, newname, vol_noadouble(vol));
     }
-    if ( rc == AFP_OK ) {
-#ifdef CNID_DB
+    if ( rc == AFP_OK && id ) {
         /* renaming may have moved the file/dir across a filesystem */
         if (stat(upath, st) < 0)
             return AFPERR_MISC;
 
         /* fix up the catalog entry */
-        cnid_update(vol->v_db, id, st, curdir->d_did, upath, strlen(upath));
-#endif /* CNID_DB */
+        cnid_update(vol->v_cdb, id, st, curdir->d_did, upath, strlen(upath));
     }
 
     return rc;

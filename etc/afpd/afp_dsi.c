@@ -1,5 +1,5 @@
 /*
- * $Id: afp_dsi.c,v 1.27.2.3 2003-07-21 05:50:53 didg Exp $
+ * $Id: afp_dsi.c,v 1.27.2.3.2.1 2003-09-09 16:42:19 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -60,6 +60,7 @@ static __inline__ void afp_dsi_close(AFPObj *obj)
 {
     DSI *dsi = obj->handle;
 
+    close_all_vol();
     if (obj->logout)
         (*obj->logout)();
 
@@ -156,7 +157,7 @@ static void afp_dsi_reload()
 #ifdef SERVERTEXT
 static void afp_dsi_getmesg (int sig)
 {
-    readmessage();
+    readmessage(child.obj);
     dsi_attention(child.obj->handle, AFPATTN_MESG | AFPATTN_TIME(5));
 }
 #endif /* SERVERTEXT */
@@ -275,6 +276,8 @@ void afp_over_dsi(AFPObj *obj)
             (setitimer(ITIMER_REAL, &dsi->timer, NULL) < 0)) {
         afp_dsi_die(1);
     }
+
+    fault_setup((void (*)(void *))afp_dsi_die);
 
     /* get stuck here until the end */
     while ((cmd = dsi_receive(dsi))) {

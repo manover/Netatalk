@@ -28,9 +28,15 @@
 #include <stdlib.h>
 
 #include <sys/types.h>
+#define __USE_GNU 1
 #include <unistd.h>
+
 #include <errno.h>
+
+#ifdef HAVE_SYS_WAIT_H 
 #include <sys/wait.h>
+#endif
+
 #include <sys/param.h>  
 #include <string.h>
 

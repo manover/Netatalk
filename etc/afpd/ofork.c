@@ -1,5 +1,5 @@
 /*
- * $Id: ofork.c,v 1.20 2002-10-11 14:18:34 didg Exp $
+ * $Id: ofork.c,v 1.20.6.1 2003-09-09 16:42:20 didg Exp $
  *
  * Copyright (c) 1996 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -215,7 +215,7 @@ struct stat     *st;
 
         /* initialize to zero. This is important to ensure that
            ad_open really does reinitialize the structure. */
-        memset( ad, 0, sizeof( struct adouble ) );
+        ad_init(ad, vol->v_adouble);
     } else {
         /* Increase the refcount on this struct adouble. This is
            decremented again in oforc_dealloc. */

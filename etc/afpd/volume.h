@@ -1,5 +1,5 @@
 /*
- * $Id: volume.h,v 1.19.2.5 2003-07-21 05:50:54 didg Exp $
+ * $Id: volume.h,v 1.19.2.5.2.1 2003-09-09 16:42:20 didg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -20,6 +20,8 @@
 #include "globals.h"
 
 #define AFPVOL_NAMELEN   27
+
+#include <atalk/cnid.h>
 
 struct codepage_hash {
     unsigned char *from, *to;
@@ -49,7 +51,6 @@ struct vol {
 #endif /*__svr4__*/
     char		*v_gvs;
     time_t		v_time;
-    int			v_lastdid;
     u_int16_t		v_vid;
     void                *v_nfsclient;
     int                 v_nfs;
@@ -61,10 +62,10 @@ struct vol {
     char                *v_password;
     char                *v_veto;
 
-#ifdef CNID_DB
-    void                *v_db;
+    char                *v_cnidscheme;
     char                *v_dbpath;
-#endif 
+    struct _cnid_db     *v_cdb;
+    char                v_stamp[ADEDLEN_PRIVSYN];
     mode_t		v_umask;
 
 #ifdef FORCE_UIDGID
@@ -72,11 +73,16 @@ struct vol {
     char		*v_forcegid;
 #endif 
 
-    char                *v_encoding;
+    char                *v_volcodepage;
+    charset_t		v_volcharset;	
+    struct charset_functions	*v_vol;
+    char		*v_maccodepage;
     charset_t		v_maccharset;
+    struct charset_functions	*v_mac;
 
     int                 v_deleted;  /* volume open but deleted in new config file */
     int                 v_hide;     /* new volume wait open volume */
+    int                 v_adouble;  /* default adouble format */
 
     char                *v_root_preexec;
     char                *v_preexec;
@@ -116,9 +122,8 @@ this is going away. */
 #define AFPVOL_MAPASCII  (1 << 13)  /* map the ascii range as well */
 #define AFPVOL_DROPBOX   (1 << 14)  /* dropkludge dropbox support */
 #define AFPVOL_NOFILEID  (1 << 15)  /* don't advertise createid resolveid and deleteid calls */
-#define AFPVOL_UTF8      (1 << 16)  /* unix name are in UTF8 */
-#define AFPVOL_NOSTAT    (1 << 17)  /* unix name are in UTF8 */
-#define AFPVOL_UNIX_PRIV (1 << 18)  /* support unix privileges */
+#define AFPVOL_NOSTAT    (1 << 16)  /* unix name are in UTF8 */
+#define AFPVOL_UNIX_PRIV (1 << 17)  /* support unix privileges */
 
 /* FPGetSrvrParms options */
 #define AFPSRVR_CONFIGINFO     (1 << 0)
@@ -171,12 +176,9 @@ int wincheck(const struct vol *vol, const char *path);
 
 #define vol_noadouble(vol) (((vol)->v_flags & AFPVOL_NOADOUBLE) ? \
 			    ADFLAGS_NOADOUBLE : 0)
-
 #ifdef AFP3x
-#define vol_utf8(vol) ((vol)->v_flags & AFPVOL_UTF8)
 #define utf8_encoding() (afp_version >= 30)
 #else
-#define vol_utf8(vol) (0)
 #define utf8_encoding() (0)
 #endif
 #define vol_unix_priv(vol) (afp_version >= 30 && ((vol)->v_flags & AFPVOL_UNIX_PRIV))

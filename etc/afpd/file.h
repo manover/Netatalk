@@ -1,5 +1,5 @@
 /*
- * $Id: file.h,v 1.16.2.2 2003-07-21 05:50:54 didg Exp $
+ * $Id: file.h,v 1.16.2.2.2.1 2003-09-09 16:42:20 didg Exp $
  *
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
@@ -120,7 +120,7 @@ typedef enum {
   kTextEncodingMacKeyboardGlyphs = 41,
 } kTextEncoding_t;
 
-extern char *set_name   __P((const struct vol *, char *, char *, u_int32_t ) );
+extern char *set_name   __P((const struct vol *, char *, char *, cnid_t, u_int32_t ) );
 
 extern struct extmap	*getextmap __P((const char *));
 extern struct extmap	*getdefextmap __P((void));
@@ -144,14 +144,8 @@ extern int      afp_exchangefiles __P((AFPObj *, char *, int, char *, int *));
 extern int	afp_setfilparams __P((AFPObj *, char *, int, char *, int *));
 extern int	afp_copyfile __P((AFPObj *, char *, int, char *, int *));
 extern int	afp_createfile __P((AFPObj *, char *, int, char *, int *));
-#ifdef CNID_DB
 extern int      afp_createid __P((AFPObj *, char *, int, char *, int *));
 extern int      afp_resolveid __P((AFPObj *, char *, int, char *, int *));
 extern int      afp_deleteid __P((AFPObj *, char *, int, char *, int *));
-#else /* CNID_DB */
-#define afp_createid      afp_null
-#define afp_resolveid     afp_null
-#define afp_deleteid      afp_null
-#endif /* AD_VERSION > AD_VERSION1 */
 
 #endif

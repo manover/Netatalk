@@ -1,0 +1,22 @@
+# Makefile.am for etc/cnid_dbd/
+
+sbin_PROGRAMS = cnid_dbd cnid_metad
+
+cnid_dbd_SOURCES = dbif.c pack.c comm.c usockfd.c db_param.c main.c \
+                   dbd_add.c dbd_get.c dbd_resolve.c dbd_lookup.c \
+                   dbd_update.c dbd_delete.c
+
+cnid_dbd_LDADD = $(top_builddir)/libatalk/libatalk.la
+
+cnid_metad_SOURCES = cnid_metad.c usockfd.c db_param.c
+
+cnid_metad_LDADD = $(top_builddir)/libatalk/libatalk.la
+
+noinst_HEADERS = dbif.h pack.h db_param.h dbd.h usockfd.h comm.h
+
+EXTRA_DIST = README
+
+LIBS = @LIBS@ @BDB_LIBS@
+
+
+CFLAGS = -I$(top_srcdir)/include @CFLAGS@ @BDB_CFLAGS@ 

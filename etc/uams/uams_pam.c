@@ -1,5 +1,5 @@
 /*
- * $Id: uams_pam.c,v 1.15.2.1 2003-09-03 20:40:50 didg Exp $
+ * $Id: uams_pam.c,v 1.15.2.1.2.1 2003-09-09 16:42:20 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -35,6 +35,7 @@ char *strchr (), *strrchr ();
 #include <atalk/logger.h>
 
 #include <security/pam_appl.h>
+#include <atalk/unicode.h>
 
 #include <atalk/afp.h>
 #include <atalk/uam.h>
@@ -53,6 +54,8 @@ static pam_handle_t *pamh = NULL;
 static char *hostname;
 static char *PAM_username;
 static char *PAM_password;
+
+extern void append(void *, const char *, int);
 
 /* PAM conversation function
  * Here we assume (for now, at least) that echo on means login name, and
@@ -226,6 +229,10 @@ static int pam_login(void *obj, struct passwd **uam_pwd,
     ibuf += len;
 
     username[ len ] = '\0';
+
+    len = convert_charset(CH_MAC, CH_UNIX, username, len, username, ulen, 0);
+
+
     if ((unsigned long) ibuf & 1)  /* pad character */
       ++ibuf;
     return (login(obj, username, ulen, uam_pwd, ibuf, ibuflen, rbuf, rbuflen));
@@ -256,6 +263,8 @@ static int pam_login_ext(void *obj, char *uname, struct passwd **uam_pwd,
     }
     memcpy(username, uname +2, len );
     username[ len ] = '\0';
+    
+    len = convert_charset(CH_UTF8_MAC, CH_UNIX, username, len, username, ulen, 0);
 
     return (login(obj, username, ulen, uam_pwd, ibuf, ibuflen, rbuf, rbuflen));
 }

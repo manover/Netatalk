@@ -242,8 +242,10 @@ static int resolve_dir(struct vol *vol, int cidx)
 	return 1;
 } /* resolve_dir */
 
-/* Looks up for an opened adouble structure, opens resource fork of selected file. */
-static struct adouble *adl_lkup(struct path *path)
+/* Looks up for an opened adouble structure, opens resource fork of selected file. 
+ * FIXME What about noadouble?
+*/
+static struct adouble *adl_lkup(struct vol *vol, struct path *path)
 {
 	static struct adouble ad;
 	struct adouble *adp;
@@ -253,7 +255,7 @@ static struct adouble *adl_lkup(struct path *path)
 	if (!isdir && (of = of_findname(path))) {
 		adp = of->of_ad;
 	} else {
-		memset(&ad, 0, sizeof(ad));
+		ad_init(&ad, vol->v_adouble);
 		adp = &ad;
 	} 
 
@@ -273,12 +275,11 @@ static struct adouble *adl_lkup(struct path *path)
  */
 static int crit_check(struct vol *vol, struct path *path, int cidx) {
 	int r = 0;
-	u_int16_t attr;
+	u_int16_t attr, flags = CONV_PRECOMPOSE;
 	struct finderinfo *finfo = NULL, finderinfo;
 	struct adouble *adp = NULL;
 	time_t c_date, b_date;
 	static char convbuf[512];
-	static char convbuf2[512];
 	size_t len;
 
 	if (S_ISDIR(path->st.st_mode)) {
@@ -297,6 +298,9 @@ static int crit_check(struct vol *vol, struct path *path, int cidx) {
 
 	/* Check for filename */
 	if (c1.rbitmap & (1<<DIRPBIT_LNAME)) { 
+#ifdef DEBUG
+		LOG(log_debug, logtype_afpd, "Crit check: comparing %s/%s to %s", path->m_name, path->u_name, c1.lname);
+#endif
 		if ( (size_t)(-1) == (len = convert_string(vol->v_maccharset, CH_UCS2, path->m_name, strlen(path->m_name), convbuf, 512)) )
 			goto crit_check_ret;
 		convbuf[len] = 0; 
@@ -309,9 +313,10 @@ static int crit_check(struct vol *vol, struct path *path, int cidx) {
 	} /* if (c1.rbitmap & ... */
 	
 	if ((c1.rbitmap & (1<<FILPBIT_PDINFO))) { 
-		if ( (size_t)(-1) == (len = utf8_precompose( path->m_name, strlen(path->m_name), convbuf2, 512)) )
-			goto crit_check_ret;
-		if ( (size_t)(-1) == (len = convert_string( CH_UTF8, CH_UCS2, convbuf2, len, convbuf, 512)) )
+#ifdef DEBUG
+		LOG(log_debug, logtype_afpd, "Crit check: comparing %s to %s", path->m_name, c1.utf8name);
+#endif
+		if ( (size_t)(-1) == (len = convert_charset( CH_UTF8_MAC, CH_UCS2, path->m_name, strlen(path->m_name), convbuf, 512, &flags)) )
 			goto crit_check_ret;
 		convbuf[len] = 0; 
 		if (c1.rbitmap & (1<<CATPBIT_PARTIAL)) {
@@ -339,7 +344,7 @@ static int crit_check(struct vol *vol, struct path *path, int cidx) {
 
 	/* Check for creation date... */
 	if (c1.rbitmap & (1<<DIRPBIT_CDATE)) {
-		if (adp || (adp = adl_lkup(path))) {
+		if (adp || (adp = adl_lkup(vol, path))) {
 			if (ad_getdate(adp, AD_DATE_CREATE, (u_int32_t*)&c_date) >= 0)
 				c_date = AD_DATE_TO_UNIX(c_date);
 			else c_date = path->st.st_mtime;
@@ -350,7 +355,7 @@ static int crit_check(struct vol *vol, struct path *path, int cidx) {
 
 	/* Check for backup date... */
 	if (c1.rbitmap & (1<<DIRPBIT_BDATE)) {
-		if (adp || (adp == adl_lkup(path))) {
+		if (adp || (adp == adl_lkup(vol, path))) {
 			if (ad_getdate(adp, AD_DATE_BACKUP, (u_int32_t*)&b_date) >= 0)
 				b_date = AD_DATE_TO_UNIX(b_date);
 			else b_date = path->st.st_mtime;
@@ -361,7 +366,7 @@ static int crit_check(struct vol *vol, struct path *path, int cidx) {
 				
 	/* Check attributes */
 	if ((c1.rbitmap & (1<<DIRPBIT_ATTR)) && c2.attr != 0) {
-		if (adp || (adp = adl_lkup(path))) {
+		if (adp || (adp = adl_lkup(vol, path))) {
 			ad_getattr(adp, &attr);
 			if ((attr & c2.attr) != c1.attr)
 				goto crit_check_ret;
@@ -371,7 +376,7 @@ static int crit_check(struct vol *vol, struct path *path, int cidx) {
         /* Check file type ID */
 	if ((c1.rbitmap & (1<<DIRPBIT_FINFO)) && c2.finfo.f_type != 0) {
 	        if (!adp)
-	        	adp = adl_lkup(path);
+	        	adp = adl_lkup(vol, path);
 	        finfo = get_finderinfo(path->m_name, adp, &finderinfo);
 		if (finfo->f_type != c1.finfo.f_type)
 			goto crit_check_ret;
@@ -381,7 +386,7 @@ static int crit_check(struct vol *vol, struct path *path, int cidx) {
 	if ((c1.rbitmap & (1<<DIRPBIT_FINFO)) && c2.finfo.creator != 0) {
 		if (!finfo) {
 	        	if (!adp)
-	        		adp = adl_lkup(path);
+	        		adp = adl_lkup(vol, path);
 	        	finfo = get_finderinfo(path->m_name, adp, &finderinfo);
 		}
 		if (finfo->creator != c1.finfo.creator)
@@ -392,7 +397,7 @@ static int crit_check(struct vol *vol, struct path *path, int cidx) {
 	if ((c1.rbitmap & (1<<DIRPBIT_FINFO)) && c2.finfo.attrs != 0) {
 		u_int8_t attrs = 0;
 
-		if (adp || (adp = adl_lkup(path))) {
+		if (adp || (adp = adl_lkup(vol, path))) {
 			finfo = (struct finderinfo*)ad_entry(adp, ADEID_FINDERI);
 			attrs = finfo->attrs;
 		}
@@ -406,7 +411,7 @@ static int crit_check(struct vol *vol, struct path *path, int cidx) {
 	
 	/* Check label */
 	if ((c1.rbitmap & (1<<DIRPBIT_FINFO)) && c2.finfo.label != 0) {
-		if (adp || (adp = adl_lkup(path))) {
+		if (adp || (adp = adl_lkup(vol, path))) {
 			finfo = (struct finderinfo*)ad_entry(adp, ADEID_FINDERI);
 			if ((finfo->label & c2.finfo.label) != c1.finfo.label)
 				goto crit_check_ret;
@@ -603,6 +608,14 @@ static int catsearch(struct vol *vol, struct dir *dir,
 			if (!(fname = path.m_name = check_dirent(vol, entry->d_name)))
 			   continue;
 
+			if (NULL == (fname = path.m_name = utompath(vol, entry->d_name, 0, utf8_encoding())))
+			   continue;
+
+		       /* now check against too big a file */
+    			if (strlen(path.m_name) > vol->max_filename)
+        		   continue;
+
+
 			path.u_name = entry->d_name;
 			if (of_stat(&path) != 0) {
 				switch (errno) {
@@ -702,6 +715,10 @@ int catsearch_afp(AFPObj *obj, char *ibuf, int ibuflen,
     int ret, rsize;
     u_int32_t nrecs = 0;
     unsigned char *spec1, *spec2, *bspec1, *bspec2;
+    size_t	len;
+    u_int16_t	namelen;
+    u_int16_t	flags;
+    char  	tmppath[256];
 
     memset(&c1, 0, sizeof(c1));
     memset(&c2, 0, sizeof(c2));
@@ -833,11 +850,7 @@ int catsearch_afp(AFPObj *obj, char *ibuf, int ibuflen,
 
     /* Long name */
     if (c1.rbitmap & (1 << FILPBIT_LNAME)) {
-	char  		tmppath[256];
-	size_t		len;
         /* Get the long filename */	
-/*	memcpy(c1.lname, bspec1 + spec1[1] + 1, (bspec1 + spec1[1])[0]);
-	c1.lname[(bspec1 + spec1[1])[0]]= 0;*/
 	memcpy(tmppath, bspec1 + spec1[1] + 1, (bspec1 + spec1[1])[0]);
 	tmppath[(bspec1 + spec1[1])[0]]= 0;
 	len = convert_string ( vol->v_maccharset, CH_UCS2, tmppath, strlen(tmppath), c1.lname, 64);
@@ -845,24 +858,14 @@ int catsearch_afp(AFPObj *obj, char *ibuf, int ibuflen,
             return AFPERR_PARAM;
 	c1.lname[len] = 0;
 
-	
 #if 0	
-	for (i = 0; c1.lname[i] != 0; i++)
-		c1.lname[i] = tolower(c1.lname[i]);
-#endif		
 	/* FIXME: do we need it ? It's always null ! */
 	memcpy(c2.lname, bspec2 + spec2[1] + 1, (bspec2 + spec2[1])[0]);
 	c2.lname[(bspec2 + spec2[1])[0]]= 0;
-#if 0
-	for (i = 0; c2.lname[i] != 0; i++)
-		c2.lname[i] = tolower(c2.lname[i]);
 #endif
     }
         /* UTF8 Name */
     if (c1.rbitmap & (1 << FILPBIT_PDINFO)) {
-	char  		tmppath[256];
-	size_t		len;
-	u_int16_t	namelen;
 
 	/* offset */
 	memcpy(&namelen, spec1, sizeof(namelen));
@@ -880,8 +883,8 @@ int catsearch_afp(AFPObj *obj, char *ibuf, int ibuflen,
 	c1.utf8name[(namelen+1)] =0;
 
  	/* convert charset */
- 	len = utf8_precompose( c1.utf8name, namelen, tmppath, 256); 
- 	len = convert_string(CH_UTF8, CH_UCS2, tmppath, namelen, c1.utf8name, 512);
+	flags = CONV_PRECOMPOSE;
+ 	len = convert_charset(CH_UTF8_MAC, CH_UCS2, c1.utf8name, namelen, c1.utf8name, 512, &flags);
         if (len == (size_t)(-1))
             return AFPERR_PARAM;
  	c1.utf8name[len]=0;

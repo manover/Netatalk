@@ -30,6 +30,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/param.h>
+#include <ctype.h>
 #include <sys/stat.h>
 #include <atalk/logger.h>
 #include <errno.h>
@@ -39,6 +40,14 @@
 
 #ifdef HAVE_USABLE_ICONV
 #include <iconv.h>
+#endif
+
+#if HAVE_LOCALE_H
+#include <locale.h>
+#endif
+
+#if HAVE_LANGINFO_H
+#include <langinfo.h>
 #endif
 
 
@@ -60,15 +69,13 @@
 
 #define MAX_CHARSETS 10
 
+#define CHECK_FLAGS(a,b) (((a)!=NULL) ? (*(a) & (b)) : 0 )
+
 static atalk_iconv_t conv_handles[MAX_CHARSETS][MAX_CHARSETS];
-
 static char* charset_names[MAX_CHARSETS];
-
-struct charset {
-        const char *name;
-	charset_t ch_charset_t;
-        struct charset *prev, *next;
-};
+static struct charset_functions* charsets[MAX_CHARSETS];
+static char hexdig[] = "0123456789abcdef";
+#define hextoint( c )   ( isdigit( c ) ? c - '0' : c + 10 - 'a' )
 
 /**
  * Return the name of a charset to give to iconv().
@@ -78,16 +85,51 @@ static const char *charset_name(charset_t ch)
 	const char *ret = NULL;
 
 	if (ch == CH_UCS2) ret = "UCS-2LE";
-	else if (ch == CH_UNIX) ret = "ASCII"; /*lp_unix_charset();*/
-	else if (ch == CH_MAC) ret = "MAC"; /*lp_display_charset();*/
+	else if (ch == CH_UNIX) ret = "LOCALE"; /*lp_unix_charset();*/
+	else if (ch == CH_MAC) ret = "MAC_ROMAN"; /*lp_display_charset();*/
 	else if (ch == CH_UTF8) ret = "UTF8";
+	else if (ch == CH_UTF8_MAC) ret = "UTF8-MAC";
 
 	if (!ret)
 		ret = charset_names[ch];
 
+#if defined(HAVE_NL_LANGINFO) && defined(CODESET)
+	if (ret && strcasecmp(ret, "LOCALE") == 0) {
+		const char *ln = NULL;
+
+#ifdef HAVE_SETLOCALE
+		setlocale(LC_ALL, "");
+#endif
+		ln = nl_langinfo(CODESET);
+		if (ln) {
+			/* Check whether the charset name is supported
+			   by iconv */
+			atalk_iconv_t handle = atalk_iconv_open(ln,"UCS-2LE");
+			if (handle == (atalk_iconv_t) -1) {
+				LOG(log_debug, logtype_default, "Locale charset '%s' unsupported, using ASCII instead", ln);
+				ln = NULL;
+			} else {
+				atalk_iconv_close(handle);
+			}
+		}
+		ret = ln;
+	}
+#endif
+
 	if (!ret || !*ret) ret = "ASCII";
 	return ret;
 }
+
+struct charset_functions* get_charset_functions (charset_t ch)
+{
+	if (charsets[ch] != NULL)
+		return charsets[ch];
+
+	charsets[ch] = find_charset_functions(charset_name(ch));
+
+	return charsets[ch];
+}
+	
 
 void lazy_initialize_conv(void)
 {
@@ -103,35 +145,37 @@ charset_t add_charset(char* name)
 {
 	static charset_t max_charset_t = NUM_CHARSETS-1;
 	charset_t cur_charset_t = max_charset_t+1;
-	int c1, c2;
+	unsigned int c1, c2;
+
+	lazy_initialize_conv();
 
 	for (c1=0; c1<=max_charset_t;c1++) {
-		if ( strcmp(name, charset_name(c1)) == 0)
+		if ( strcasecmp(name, charset_name(c1)) == 0)
 			return (c1);
 	}
 
 	if ( cur_charset_t >= MAX_CHARSETS )  {
 		LOG (log_debug, logtype_default, "Adding charset %s failed, too many charsets (max. %u allowed)", 
 			name, MAX_CHARSETS);
-		return 0;
+		return (charset_t) -1;
 	}
 
 	/* First try to setup the required conversions */
 
 	conv_handles[cur_charset_t][CH_UCS2] = atalk_iconv_open( charset_name(CH_UCS2), name);
         if (conv_handles[cur_charset_t][CH_UCS2] == (atalk_iconv_t)-1) {
-		LOG(log_error, logtype_default, "Required conversion from %s to %s not supported\n",
+		LOG(log_error, logtype_default, "Required conversion from %s to %s not supported",
 			name,  charset_name(CH_UCS2));
 		conv_handles[cur_charset_t][CH_UCS2] = NULL;
-		return 0;
+		return (charset_t) -1;
 	}
 
 	conv_handles[CH_UCS2][cur_charset_t] = atalk_iconv_open( name, charset_name(CH_UCS2));
         if (conv_handles[CH_UCS2][cur_charset_t] == (atalk_iconv_t)-1) {
-		LOG(log_error, logtype_default, "Required conversion from %s to %s not supported\n",
+		LOG(log_error, logtype_default, "Required conversion from %s to %s not supported",
 			charset_name(CH_UCS2), name);
 		conv_handles[CH_UCS2][cur_charset_t] = NULL;
-		return 0;
+		return (charset_t) -1;
 	}
 
 	/* register the new charset_t name */
@@ -152,16 +196,31 @@ charset_t add_charset(char* name)
 
 			conv_handles[c1][c2] = atalk_iconv_open(n2,n1);
 			if (conv_handles[c1][c2] == (atalk_iconv_t)-1) {
-				LOG(log_debug, logtype_default, "Conversion from %s to %s not supported\n",
+#ifdef DEBUG
+				LOG(log_debug, logtype_default, "Conversion from %s to %s not supported",
 					 charset_name((charset_t)c1), charset_name((charset_t)c2));
+#endif /* DEBUG */
 				conv_handles[c1][c2] = NULL;
 			}
+#ifdef DEBUG
+			else
+				LOG(log_debug, logtype_default, "Added conversion from %s to %s", n1, n2);
+#endif /* DEBUG */
 		}
+		charsets[c1] = get_charset_functions (c1);
 	}
 
 	max_charset_t++;
 
+#ifdef DEBUG
 	LOG(log_debug, logtype_default, "Added charset %s with handle %u", name, cur_charset_t);
+
+	for (c1=0; c1 <= cur_charset_t; c1++) {
+		for (c2=0; c2 <=cur_charset_t; c2++) {
+			LOG ( log_debug, logtype_default, "Conversion descriptor[%u][%u] = [%s][%s]", c1,c2,conv_handles[c1][c2]->from_name, conv_handles[c1][c2]->to_name );
+		}
+	}
+#endif /* DEBUG */
 	return (cur_charset_t);
 }
 
@@ -202,7 +261,14 @@ void init_iconv(void)
 					 charset_name((charset_t)c1), charset_name((charset_t)c2));
 				conv_handles[c1][c2] = NULL;
 			}
+#ifdef DEBUG
+			else
+				LOG(log_debug, logtype_default, "Added conversion from %s to %s",
+					 n1, n2);
+#endif
+				
 		}
+		charsets[c1] = get_charset_functions (c1);
 	}
 }
 
@@ -346,15 +412,14 @@ convert:
 	return destlen;
 }
 
-
-size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
+size_t charset_strupper(charset_t ch, const char *src, size_t srclen, char *dest, size_t destlen)
 {
 	size_t size;
 	ucs2_t *buffer;
 	
-	size = convert_string_allocate(CH_UNIX, CH_UCS2, src, srclen,
+	size = convert_string_allocate(ch, CH_UCS2, src, srclen,
 				       (void **) &buffer);
-	if (size == -1) {
+	if (size == (size_t)-1) {
 		free(buffer);
 		return size;
 	}
@@ -363,30 +428,41 @@ size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 		return srclen;
 	}
 	
-	size = convert_string(CH_UCS2, CH_UNIX, buffer, size, dest, destlen);
+	size = convert_string(CH_UCS2, ch, buffer, size, dest, destlen);
 	free(buffer);
 	return size;
 }
 
-size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
+size_t charset_strlower(charset_t ch, const char *src, size_t srclen, char *dest, size_t destlen)
 {
 	size_t size;
 	ucs2_t *buffer;
 	
-	size = convert_string_allocate(CH_UNIX, CH_UCS2, src, srclen,
+	size = convert_string_allocate(ch, CH_UCS2, src, srclen,
 				       (void **) &buffer);
-	if (size == -1) {
+	if (size == (size_t)-1) {
 		free(buffer);
 		return size;
-	/*	smb_panic("failed to create UCS2 buffer");*/
 	}
 	if (!strlower_w(buffer) && (dest == src)) {
 		free(buffer);
 		return srclen;
 	}
-	size = convert_string(CH_UCS2, CH_UNIX, buffer, size, dest, destlen);
+	
+	size = convert_string(CH_UCS2, ch, buffer, size, dest, destlen);
 	free(buffer);
 	return size;
+}
+
+
+size_t unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
+{
+	return charset_strupper( CH_UNIX, src, srclen, dest, destlen);
+}
+
+size_t unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
+{
+	return charset_strlower( CH_UNIX, src, srclen, dest, destlen);
 }
 
 size_t utf8_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
@@ -396,7 +472,7 @@ size_t utf8_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 	
 	size = convert_string_allocate(CH_UTF8, CH_UCS2, src, srclen,
 				       (void **) &buffer);
-	if (size == -1) {
+	if (size == (size_t) -1) {
 		free(buffer);
 		return size;
 	}
@@ -417,7 +493,7 @@ size_t utf8_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 	
 	size = convert_string_allocate(CH_UTF8, CH_UCS2, src, srclen,
 				       (void **) &buffer);
-	if (size == -1) {
+	if (size == (size_t)-1) {
 		free(buffer);
 		return size;
 	}
@@ -438,7 +514,7 @@ size_t mac_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 	
 	size = convert_string_allocate(CH_MAC, CH_UCS2, src, srclen,
 				       (void **) &buffer);
-	if (size == -1) {
+	if (size == (size_t)-1) {
 		free(buffer);
 		return size;
 	}
@@ -459,7 +535,7 @@ size_t mac_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 	
 	size = convert_string_allocate(CH_MAC, CH_UCS2, src, srclen,
 				       (void **) &buffer);
-	if (size == -1) {
+	if (size == (size_t)-1) {
 		free(buffer);
 		return size;
 	}
@@ -529,6 +605,7 @@ size_t ucs2_to_mac_allocate(char **dest, const ucs2_t *src)
  * @returns The number of bytes occupied by the string in the destination
  **/
 
+#if 0
 static char convbuf[MAXPATHLEN+1];
 size_t utf8_to_mac_allocate(void **dest, const char *src)
 {
@@ -543,27 +620,6 @@ size_t utf8_to_mac ( char* src, size_t src_len, char* dest, size_t dest_len)
 {
 	src_len = utf8_precompose ( (char *) src, src_len, convbuf, MAXPATHLEN);	
 	return convert_string(CH_UTF8, CH_MAC, convbuf, src_len, dest, dest_len);	
-}
-
-static char  debugbuf[ MAXPATHLEN +1 ];
-char * debug_out ( char * seq, size_t len)
-{
-        size_t i = 0;
-        unsigned char *p;
-        char *q;
-
-        p = (unsigned char*) seq;
-        q = debugbuf;
-
-        for ( i = 0; i<=(len-1); i++)
-        {
-                sprintf(q, "%2.2x.", *p);
-                q += 3;
-                p++;
-        }
-        *q=0;
-        q = debugbuf;
-        return q;
 }
 
 
@@ -637,4 +693,468 @@ size_t utf8_to_mac_charset ( charset_t ch, char* src, size_t src_len, char* dest
 	dest[dest_len-o_len] = 0;
 	return dest_len-o_len;
 }
+#endif
 
+
+static char  debugbuf[ MAXPATHLEN +1 ];
+char * debug_out ( char * seq, size_t len)
+{
+        size_t i = 0;
+        unsigned char *p;
+        char *q;
+
+        p = (unsigned char*) seq;
+        q = debugbuf;
+
+        for ( i = 0; i<=(len-1); i++)
+        {
+                sprintf(q, "%2.2x.", *p);
+                q += 3;
+                p++;
+        }
+        *q=0;
+        q = debugbuf;
+        return q;
+}
+
+/* 
+ * Convert from MB to UCS2 charset 
+ * Flags:
+ *		CONV_UNESCAPEHEX:	 ':XXXX' will be converted to an UCS2 character
+ *		CONV_IGNORE:	 	unconvertable characters will be replaced with '_'
+ * FIXME:
+ *		This will *not* work if the destination charset is not multibyte, i.e. UCS2->UCS2 will fail
+ *		The (un)escape scheme is not compatible to the old cap style escape. This is bad, we need it 
+ *		for e.g. HFS cdroms.
+ */
+
+size_t pull_charset_flags (charset_t from_set, char* src, size_t srclen, char* dest, size_t destlen, u_int16_t *flags)
+{
+	size_t i_len, o_len;
+	size_t retval, j = 0;
+	const char* inbuf = (const char*)src;
+	char* outbuf = (char*)dest;
+	atalk_iconv_t descriptor;
+	char *o_save, *s;
+
+	if (srclen == (size_t)-1)
+		srclen = strlen(src)+1;
+
+	lazy_initialize_conv();
+
+	descriptor = conv_handles[from_set][CH_UCS2];
+
+	if (descriptor == (atalk_iconv_t)-1 || descriptor == (atalk_iconv_t)0) {
+		return (size_t) -1;
+	}
+
+	i_len=srclen;
+	o_len=destlen;
+	o_save=outbuf;
+	
+conversion_loop:
+	if ( flags && (*flags & CONV_UNESCAPEHEX)) {
+		if ( NULL != (s = strchr ( inbuf, ':'))) {
+			j = i_len - (s - inbuf);
+			if ( 0 == (i_len = (s - inbuf)))
+				goto unhex_char;
+	}
+	}
+	
+	retval = atalk_iconv(descriptor,  &inbuf, &i_len, &outbuf, &o_len);
+	if(retval==(size_t)-1) {
+		if (errno == EILSEQ && flags && (*flags & CONV_IGNORE)) {
+				if (o_len < 2) {
+					errno = E2BIG;
+					return (size_t) -1;
+				}
+				o_save[destlen-o_len]   = '_';
+				o_save[destlen-o_len+1] = 0x0;
+				o_len -= 2;
+				outbuf = o_save + destlen - o_len;
+				inbuf += 1;
+				i_len -= 1;
+				*flags |= CONV_REQMANGLE;
+				goto conversion_loop;
+	    }
+	    else
+	    	return (size_t) -1;
+    }
+    
+unhex_char:
+	if (j && flags && (*flags & CONV_UNESCAPEHEX )) {
+		/* we're at the start on an hex encoded ucs2 char */
+		if (o_len < 2) {
+			errno = E2BIG;
+			return (size_t) -1;
+		}
+		inbuf++;
+		o_save[destlen-o_len]   = hextoint( *inbuf ) << 4;
+		inbuf++;
+		o_save[destlen-o_len]  |= hextoint( *inbuf );			
+		inbuf++;
+		o_save[destlen-o_len+1] = hextoint( *inbuf ) << 4;
+		inbuf++;
+		o_save[destlen-o_len+1]|= hextoint( *inbuf );
+		inbuf++;
+		o_len  -= 2;
+		outbuf += 2;
+		i_len  = j-5;
+		j = 0;
+		goto conversion_loop;
+	}
+
+	return destlen-o_len;
+}
+
+/* 
+ * Convert from UCS2 to MB charset 
+ * Flags:
+ * 		CONV_ESCAPEDOTS: escape leading dots
+ *		CONV_ESCAPEHEX:	 unconvertable characters and '/' will be escaped to :XXXX
+ *		CONV_IGNORE:	 unconvertable characters will be replaced with '_'
+ * FIXME:
+ *		CONV_IGNORE and CONV_ESCAPEHEX can't work together. Should we check this ?
+ *		This will *not* work if the destination charset is not multibyte, i.e. UCS2->UCS2 will fail
+ *		The escape scheme is not compatible to the old cap style escape. This is bad, we need it 
+ *		for e.g. HFS cdroms.
+ */
+
+
+size_t push_charset_flags (charset_t to_set, char* src, size_t srclen, char* dest, size_t destlen, u_int16_t *flags)
+{
+    size_t i_len, o_len, i;
+    size_t retval, j = 0;
+    const char* inbuf = (const char*)src;
+    char* outbuf = (char*)dest;
+    atalk_iconv_t descriptor;
+    char *o_save;
+    
+    lazy_initialize_conv();
+    
+    descriptor = conv_handles[CH_UCS2][to_set];
+    
+    if (descriptor == (atalk_iconv_t)-1 || descriptor == (atalk_iconv_t)0) {
+        return (size_t) -1;
+    }
+    
+    i_len=srclen;
+    o_len=destlen;
+    o_save=outbuf;
+    
+    if (*inbuf == '.' && flags && (*flags & CONV_ESCAPEDOTS)) {
+        if (o_len < 5) {
+            errno = E2BIG;
+            return (size_t) -1;
+        }
+        o_save[0] = ':';
+        o_save[1] = '2';
+        o_save[2] = 'e';
+        o_save[3] = o_save[4] = '0';
+        o_len -= 5;
+        inbuf += 2;
+        i_len -= 2;
+        outbuf = o_save + 5;
+        if (flags) *flags |= CONV_REQESCAPE;
+    }
+	
+conversion_loop:
+    if ( flags && (*flags & CONV_ESCAPEHEX)) {
+        for ( i = 0; i < i_len; i+=2) {
+            if ( inbuf[i] == '/' ) {
+                j = i_len - i;
+                if ( 0 == ( i_len = i))
+                    goto escape_slash;
+                break;
+            }
+        }
+    }
+    
+    retval = atalk_iconv(descriptor,  &inbuf, &i_len, &outbuf, &o_len);
+    if (retval==(size_t)-1) {
+        if (errno == EILSEQ && flags && (*flags & CONV_IGNORE)) {
+            if (o_len == 0) {
+                errno = E2BIG;
+                return (size_t) -1;
+            }
+            o_save[destlen-o_len] = '_';
+            o_len -=1;
+            outbuf = o_save + destlen - o_len;
+            inbuf += 2;
+            i_len -= 2;
+            if (flags ) *flags |= CONV_REQMANGLE;
+                goto conversion_loop;
+        }
+        else if ( errno == EILSEQ && flags && (*flags & CONV_ESCAPEHEX)) {
+            if (o_len < 5) {
+                errno = E2BIG;
+                return (size_t) -1;
+            }
+            i = destlen-o_len;
+            o_save[i++]   = ':';
+            o_save[i++] = hexdig[ ( *inbuf & 0xf0 ) >> 4 ];
+            o_save[i++] = hexdig[ *inbuf & 0x0f ];
+            inbuf++;
+            o_save[i++] = hexdig[ ( *inbuf & 0xf0 ) >> 4 ];
+            o_save[i++] = hexdig[ *inbuf & 0x0f ];
+            inbuf++;
+            o_len -= 5;
+            outbuf = o_save + destlen - o_len;
+            i_len -= 2;
+            if (flags) *flags |= CONV_REQESCAPE;
+            goto conversion_loop;
+        }
+        else
+           return (size_t)(-1);	
+    }
+	
+escape_slash:
+    if (j && flags && (*flags & CONV_ESCAPEHEX)) {
+        if (o_len < 5) {
+            errno = E2BIG;
+            return (size_t) -1;
+        }
+        o_save[destlen -o_len]   = ':';
+        o_save[destlen -o_len+1] = '2';
+        o_save[destlen -o_len+2] = 'f';
+        o_save[destlen -o_len+3] = '0';
+        o_save[destlen -o_len+4] = '0';
+        inbuf  += 2;
+        i_len   = j-2;
+        o_len  -= 5;
+        outbuf += 5;
+        j = 0;
+        goto conversion_loop;
+    }
+    return destlen -o_len;
+}
+
+size_t convert_charset ( charset_t from_set, charset_t to_set, char* src, size_t src_len, char* dest, size_t dest_len, u_int16_t *flags)
+{
+	size_t i_len, o_len;
+	char *u;
+ 	char buffer[MAXPATHLEN];
+ 	char buffer2[MAXPATHLEN];
+ 	int composition = 0;
+	
+	lazy_initialize_conv();
+
+	/* convert from_set to UCS2 */
+ 	if ((size_t)(-1) == ( o_len = pull_charset_flags( from_set, src, src_len, buffer, MAXPATHLEN, flags)) ) {
+		LOG(log_error, logtype_default, "Conversion failed ( %s to CH_UCS2 )", charset_name(from_set));
+		return (size_t) -1;
+	}
+
+	/* Do pre/decomposition */
+	if (CHECK_FLAGS(flags, CONV_PRECOMPOSE) || 
+		((!(charsets[to_set])   || !(charsets[to_set]->flags & CHARSET_DECOMPOSED)) && 
+		(!(charsets[from_set]) || (charsets[from_set]->flags & CHARSET_DECOMPOSED))))
+ 	    composition = 1;
+ 	if (CHECK_FLAGS(flags, CONV_DECOMPOSE) || (charsets[to_set] && charsets[to_set]->flags & CHARSET_DECOMPOSED) )
+ 	    composition = 2;
+ 
+	i_len = MAXPATHLEN;
+	u = buffer2;
+
+ 	if ( composition == 1 ) { 
+            if ( (size_t)-1 == (i_len = precompose_w((ucs2_t *)buffer, o_len, (ucs2_t *)u, &i_len)) )
+ 	        return (size_t)(-1);
+  	}
+ 	if ( composition == 2 ) {
+            if ( (size_t)-1 == (i_len = decompose_w((ucs2_t *)buffer, o_len, (ucs2_t *)u, &i_len)) )
+ 	        return (size_t)(-1);
+  	}
+ 	if (composition == 0 ) {
+ 	    u = buffer;
+ 	    i_len = o_len;
+  	}
+  
+  	/* Do case conversions */	
+ 	if (CHECK_FLAGS(flags, CONV_TOUPPER)) {
+ 	    if (!strupper_w((ucs2_t *) u)) 
+ 	        return (size_t)(-1);
+  	}
+ 	if (CHECK_FLAGS(flags, CONV_TOLOWER)) {
+ 	    if (!strlower_w((ucs2_t *) u)) 
+ 	        return (size_t)(-1);
+  	}
+
+	/* Convert UCS2 to to_set */
+	if ((size_t)(-1) == ( o_len = push_charset_flags( to_set, u, i_len, dest, dest_len, flags )) ) {
+		LOG(log_error, logtype_default, "Conversion failed (CH_UCS2 to %s):%s", charset_name(to_set), strerror(errno));
+		return (size_t) -1;
+	}
+
+	return o_len;
+}
+
+/* ----------------- */
+
+size_t decode_cap (charset_t ch_mac, char* src, size_t src_len, char* dest, size_t dest_len, u_int16_t *flags)
+{
+	size_t i_len, o_len;
+	char* inbuf = src;
+	char* outbuf = dest;
+	char h[MAXPATHLEN];
+	char *buf, *buf_save;
+	size_t buflen, hlen;
+	/* Convert old style cap format to new escape format */
+	
+	i_len = src_len;
+	o_len = dest_len;
+	
+	while ( i_len > 0 && o_len >> 0)
+	{
+		if ( *inbuf == ':') {
+		   if ( i_len >= 3 && isxdigit( *(inbuf+1)) && isxdigit( *(inbuf+2))) {
+			if (i_len < 3) {
+				errno = E2BIG;
+				return (size_t) -1;
+			} 
+			hlen = 0;
+			while ( *inbuf == ':' && isxdigit( *(inbuf+1)) && isxdigit( *(inbuf+2))) {
+				if (i_len < 3) {
+					errno = E2BIG;
+					return (size_t) -1;
+				} 
+				++inbuf;
+				h[hlen] = hextoint( *inbuf ) << 4;
+				++inbuf;	
+				h[hlen] |= hextoint( *inbuf );
+				++inbuf;
+				hlen++;
+				i_len -= 3;
+			}
+			/* FIXME: What should we do if this fails ? */
+			if ((size_t) -1 == (buflen = convert_string_allocate ( ch_mac, CH_UCS2, &h, hlen, (void**) &buf)) ) 
+			{
+				errno = EILSEQ;
+				return buflen;
+			}					
+			buf_save = buf;
+			while ( buflen > 0) {
+				if (o_len < 5) {
+					errno=E2BIG;
+					return (size_t) -1;
+				}
+				*outbuf = ':';
+				outbuf++;
+				*outbuf = hexdig[ ( *buf & 0xf0 ) >> 4 ];
+				outbuf++;
+				*outbuf = hexdig[ *buf & 0x0f ];
+				outbuf++;
+				buf++;
+				*outbuf = hexdig[ ( *buf & 0xf0 ) >> 4 ];
+				outbuf++;
+				*outbuf = hexdig[ *buf & 0x0f ];
+				outbuf++;
+				buflen -= 2;
+				o_len -= 5;
+			}
+			SAFE_FREE(buf_save);
+			buflen = 0;
+		   }
+		   else {
+			/* We have an invalid :xx sequence */
+			if (CHECK_FLAGS(flags, CONV_IGNORE)) {
+				*outbuf++ = '_';
+				inbuf++;
+				o_len -= 1;
+				i_len -= 1;
+				*flags |= CONV_REQMANGLE;
+			}
+			else {
+				errno=EILSEQ;
+				return (size_t) -1;
+			}
+		   }
+		
+		}
+		else {
+			*outbuf = *inbuf;
+			outbuf++;
+			inbuf++;
+			i_len--;
+			o_len--;
+		}
+	}
+	
+	*outbuf = 0;
+	return dest_len - o_len;
+}
+
+size_t encode_cap ( charset_t mac_set, char* src, size_t src_len, char* dest, size_t dest_len)
+{
+	size_t i_len, o_len;
+	char* inbuf = src;
+	char* outbuf = dest;
+	char h[MAXPATHLEN];
+	char  *buf, *buf_save;
+	size_t buflen, hlen;
+	/* Convert new escape format to old style cap format */
+	
+	i_len = src_len;
+	o_len = dest_len;
+	
+	while ( i_len > 0 && o_len > 0)
+	{
+		if ( *inbuf == ':' ) {
+		    if ( i_len >= 5 && 
+			isxdigit( *(inbuf+1)) && isxdigit( *(inbuf+2)) && isxdigit( *(inbuf+3)) && isxdigit( *(inbuf+4))) {
+			hlen = 0;
+			while ( *inbuf == ':' && i_len >=5 && 
+				isxdigit( *(inbuf+1)) && isxdigit( *(inbuf+2)) && 
+				isxdigit( *(inbuf+3)) && isxdigit( *(inbuf+4))) {
+				if ( i_len < 5) {
+					errno = E2BIG;
+					return (size_t)-1;
+				}
+				inbuf++;
+				h[hlen]   = hextoint( *inbuf ) << 4;
+				inbuf++;
+				h[hlen++] |= hextoint( *inbuf );			
+				inbuf++;
+				h[hlen]   = hextoint( *inbuf ) << 4;
+				inbuf++;
+				h[hlen++] |= hextoint( *inbuf );
+				inbuf++;
+				i_len -= 5;
+			}
+			if ((size_t) -1 == (buflen = convert_string_allocate(CH_UCS2, mac_set, &h, hlen, (void**) &buf)) ) 
+				return buflen;
+			buf_save = buf;
+			while (buflen > 0) {
+				if ( o_len < 3) {
+					errno = E2BIG;
+					return (size_t) -1;
+				}
+				*outbuf++ = ':';
+				*outbuf++ = hexdig[ ( *buf & 0xf0 ) >> 4 ];
+          			*outbuf++ = hexdig[ *buf & 0x0f ];
+          			buf++;
+				o_len -= 3;
+				buflen--;
+			}
+			SAFE_FREE(buf_save);
+			buflen = 0;
+		    }
+		    else {
+			/* We have an invalid :xxxx sequence, use as is */
+			*outbuf = *inbuf;
+			outbuf++;
+			inbuf++;
+			i_len--;
+			o_len--;
+		    }
+		}
+		else {
+			*outbuf = *inbuf;
+			outbuf++;
+			inbuf++;
+			i_len--;
+			o_len--;
+		}
+	}
+	*outbuf = 0;
+	return dest_len - o_len;
+}

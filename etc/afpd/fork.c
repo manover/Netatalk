@@ -1,5 +1,5 @@
 /*
- * $Id: fork.c,v 1.51.2.2 2003-08-24 14:00:43 didg Exp $
+ * $Id: fork.c,v 1.51.2.2.2.1 2003-09-09 16:42:20 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -36,9 +36,7 @@
 #include <atalk/afp.h>
 #include <atalk/adouble.h>
 #include <atalk/util.h>
-#ifdef CNID_DB
 #include <atalk/cnid.h>
-#endif
 
 #include "fork.h"
 #include "file.h"

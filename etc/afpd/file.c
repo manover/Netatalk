@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2 2003-07-21 05:50:54 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.1 2003-09-09 16:42:20 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -48,9 +48,7 @@ char *strchr (), *strrchr ();
 #include <atalk/adouble.h>
 #include <atalk/afp.h>
 #include <atalk/util.h>
-#ifdef CNID_DB
 #include <atalk/cnid.h>
-#endif /* CNID_DB */
 #include "directory.h"
 #include "desktop.h"
 #include "volume.h"
@@ -90,9 +88,10 @@ const u_char ufinderi[] = {
 void *get_finderinfo(const char *mpath, struct adouble *adp, void *data)
 {
     struct extmap	*em;
+    void                *ad_finder;
 
-    if (adp) {
-        memcpy(data, ad_entry(adp, ADEID_FINDERI), 32);
+    if (adp && (ad_finder = ad_entry(adp, ADEID_FINDERI))) {
+        memcpy(data, ad_finder, 32);
     }
     else {
         memcpy(data, ufinderi, 32);
@@ -109,7 +108,7 @@ void *get_finderinfo(const char *mpath, struct adouble *adp, void *data)
 
 /* ---------------------
 */
-char *set_name(const struct vol *vol, char *data, char *name, u_int32_t utf8) 
+char *set_name(const struct vol *vol, char *data, char *name, cnid_t id, u_int32_t utf8) 
 {
     u_int32_t   aint;
     char        *tp = NULL;
@@ -124,7 +123,7 @@ char *set_name(const struct vol *vol, char *data, char *name, u_int32_t utf8)
            
             /* global static variable... */
             tp = strdup(name);
-            if (!(u = mtoupath(vol, name, 1)) || !(m = utompath(vol, u, 0))) {
+            if (!(u = mtoupath(vol, name, 1)) || !(m = utompath(vol, u, id, 0))) {
                aint = 0;
             }
             else {
@@ -143,7 +142,7 @@ char *set_name(const struct vol *vol, char *data, char *name, u_int32_t utf8)
         if (aint > 255)  /* FIXME safeguard, anyway if no ascii char it's game over*/
            aint = 255;
 
-        utf8 = 0;         /* htonl(utf8) */
+        utf8 = htonl(vol->v_mac->kTextEncoding);         /* htonl(utf8) */
         memcpy(data, &utf8, sizeof(utf8));
         data += sizeof(utf8);
         
@@ -179,9 +178,30 @@ u_int32_t get_id(struct vol *vol, struct adouble *adp,  const struct stat *st,
 {
 u_int32_t aint = 0;
 
-#ifdef CNID_DB
+#if AD_VERSION > AD_VERSION1
+dev_t  dev;
+ino_t  ino;
+char   stamp[ADEDLEN_PRIVSYN];
+    /* look in AD v2 header 
+     * note inode and device are opaques and not in network order
+    */
+    if (adp && sizeof(dev_t) == ad_getentrylen(adp, ADEID_PRIVDEV)) {
+        memcpy(&dev, ad_entry(adp, ADEID_PRIVDEV), sizeof(dev_t));
+        if ( sizeof(ino_t) == ad_getentrylen(adp,ADEID_PRIVINO)) {
+            memcpy(&ino, ad_entry(adp, ADEID_PRIVINO), sizeof(ino_t));
+            if (sizeof(stamp) == ad_getentrylen(adp,ADEID_PRIVSYN)) {
+                memcpy(stamp, ad_entry(adp, ADEID_PRIVSYN), sizeof(stamp));
 
-    aint = cnid_add(vol->v_db, st, did, upath, len, aint);
+                if (dev == st->st_dev && ino == st->st_ino && !memcmp(vol->v_stamp, stamp, sizeof(stamp))) {
+                    memcpy(&aint, ad_entry(adp, ADEID_DID), sizeof(aint));
+                    return aint;
+                }
+            }
+        }
+    }
+#endif
+    if (vol->v_cdb != NULL) {
+	    aint = cnid_add(vol->v_cdb, st, did, upath, len, aint);
     /* Throw errors if cnid_add fails. */
     if (aint == CNID_INVALID) {
         switch (errno) {
@@ -199,53 +219,17 @@ u_int32_t aint = 0;
             return CNID_INVALID;
         }
     }
-#endif /* CNID_DB */
-
-    if (aint == 0) {
-        /*
-         * First thing:  DID and FNUMs are
-         * in the same space for purposes of enumerate (and several
-         * other wierd places).  While we consider this Apple's bug,
-         * this is the work-around:  In order to maintain constant and
-         * unique DIDs and FNUMs, we monotonically generate the DIDs
-         * during the session, and derive the FNUMs from the filesystem.
-         * Since the DIDs are small, we insure that the FNUMs are fairly
-         * large by setting thier high bits to the device number.
-         *
-         * AFS already does something very similar to this for the
-         * inode number, so we don't repeat the procedure.
-         *
-         * new algorithm:
-         * due to complaints over did's being non-persistent,
-         * here's the current hack to provide semi-persistent
-         * did's:
-         *      1) we reserve the first bit for file ids.
-         *      2) the next 7 bits are for the device.
-         *      3) the remaining 24 bits are for the inode.
-         *
-         * both the inode and device information are actually hashes
-         * that are then truncated to the requisite bit length.
-         *
-         * it should be okay to use lstat to deal with symlinks.
+#if AD_VERSION > AD_VERSION1
+            else if (adp && sizeof(dev_t) == ADEDLEN_PRIVDEV && sizeof(ino_t) == ADEDLEN_PRIVINO) {
+                /* update the ressource fork
+                 * for a folder adp is always null
          */
-#ifdef USE_LASTDID
-        if ( S_ISDIR(st->st_mode)) {
-            aint = htonl( vol->v_lastdid++ );
+                 ad_setid(adp, st, aint, vol->v_stamp);
+                 ad_flush(adp, ADFLAGS_HF);
         }
-        else
-        {
-            aint = htonl(( st->st_dev << 16 ) | (st->st_ino & 0x0000ffff));
+#endif    
         }
-#else /* USE_LASTDID */
-        {
-            struct stat	lst;
-            const struct stat *lstp;
 
-            lstp = lstat(upath, &lst) < 0 ? st : &lst;
-            aint = htonl(CNID(lstp, 1));
-        }
-#endif /* USE_LASTDID */
-    }
     return aint;
 }
              
@@ -259,6 +243,7 @@ int getmetadata(struct vol *vol,
     char                *utf_nameoff = NULL;
     int			bit = 0;
     u_int32_t		aint;
+    cnid_t              id = 0;
     u_int16_t		ashort;
     u_char              achar, fdType[4];
     u_int32_t           utf8 = 0;
@@ -273,6 +258,18 @@ int getmetadata(struct vol *vol,
     st = &path->st;
 
     data = buf;
+
+    if ( ((bitmap & ( (1 << FILPBIT_FINFO)|(1 << FILPBIT_LNAME)|(1 <<FILPBIT_PDINFO) ) ) && !path->m_name)
+         || (bitmap & ( (1 << FILPBIT_LNAME) ) && utf8_encoding()) /* FIXME should be m_name utf8 filename */
+         || (bitmap & (1 << FILPBIT_FNUM))) {
+         
+        id = get_id(vol, adp, st, dir->d_did, upath, strlen(upath));
+        if (id == 0)
+            return afp_errno;
+        if (!path->m_name) {
+            path->m_name = utompath(vol, upath, id, utf8_encoding());
+        }
+    }
     while ( bitmap != 0 ) {
         while (( bitmap & 1 ) == 0 ) {
             bitmap = bitmap>>1;
@@ -358,11 +355,8 @@ int getmetadata(struct vol *vol,
             break;
 
         case FILPBIT_FNUM :
-            aint = get_id(vol, adp, st, dir->d_did, upath, strlen(upath));
-            if (aint == 0)
-                return afp_errno;
-            memcpy(data, &aint, sizeof( aint ));
-            data += sizeof( aint );
+            memcpy(data, &id, sizeof( id ));
+            data += sizeof( id );
             break;
 
         case FILPBIT_DFLEN :
@@ -492,12 +486,12 @@ int getmetadata(struct vol *vol,
     if ( l_nameoff ) {
         ashort = htons( data - buf );
         memcpy(l_nameoff, &ashort, sizeof( ashort ));
-        data = set_name(vol, data, path->m_name, 0);
+        data = set_name(vol, data, path->m_name, id, 0);
     }
     if ( utf_nameoff ) {
         ashort = htons( data - buf );
         memcpy(utf_nameoff, &ashort, sizeof( ashort ));
-        data = set_name(vol, data, path->m_name, utf8);
+        data = set_name(vol, data, path->m_name, id, utf8);
     }
     *buflen = data - buf;
     return (AFP_OK);
@@ -529,7 +523,7 @@ int getfilparams(struct vol *vol,
     	    attrbits = ((of->of_ad->ad_df.adf_refcount > 0) ? ATTRBIT_DOPEN : 0);
     	    attrbits |= ((of->of_ad->ad_hf.adf_refcount > of->of_ad->ad_df.adf_refcount)? ATTRBIT_ROPEN : 0);
         } else {
-            memset(&ad, 0, sizeof(ad));
+            ad_init(&ad, vol->v_adouble);
             adp = &ad;
         }
 
@@ -619,7 +613,7 @@ int		ibuflen, *rbuflen;
     if ((of = of_findname(s_path))) {
         adp = of->of_ad;
     } else {
-        memset(&ad, 0, sizeof(ad));
+        ad_init(&ad, vol->v_adouble);
         adp = &ad;
     }
     if ( creatf) {
@@ -788,7 +782,7 @@ int setfilparams(struct vol *vol,
     if ((of = of_findname(path))) {
         adp = of->of_ad;
     } else {
-        memset(&ad, 0, sizeof(ad));
+        ad_init(&ad, vol->v_adouble);
         adp = &ad;
     }
 
@@ -1016,7 +1010,7 @@ struct adouble    *adp;
              * create .AppleDouble if the file is already opened, so we
              * use a diff one, it's not a pb,ie it's not the same file, yet.
              */
-            memset(&ad, 0, sizeof(ad));
+            ad_init(&ad, AD_VERSION); /* FIXME */
             if (!ad_open(dst, ADFLAGS_HF, O_RDWR | O_CREAT, 0666, &ad)) {
             	ad_close(&ad, ADFLAGS_HF);
     	        if (!unix_rename( adsrc, ad_path( dst, 0 )) ) 
@@ -1322,8 +1316,8 @@ const int   noadouble;
     LOG(log_info, logtype_afpd, "begin copyfile:");
 #endif /* DEBUG */
 
-    memset(&ads, 0, sizeof(ads));
-    memset(&add, 0, sizeof(add));
+    ad_init(&ads, 0); /* OK */
+    ad_init(&add, 0); /* FIXME */
     adflags = ADFLAGS_DF;
     if (newname) {
         adflags |= ADFLAGS_HF;
@@ -1418,7 +1412,7 @@ int         checkAttrib;
     /* try to open both forks at once */
     adflags = ADFLAGS_DF|ADFLAGS_HF;
     while(1) {
-        memset(&ad, 0, sizeof(ad));
+        ad_init(&ad, 0);  /* OK */
         if ( ad_open( file, adflags, O_RDONLY, 0, &ad ) < 0 ) {
             switch (errno) {
             case ENOENT:
@@ -1473,13 +1467,11 @@ int         checkAttrib;
     }
     else if (!(err = netatalk_unlink( ad_path( file, ADFLAGS_HF)) ) &&
              !(err = netatalk_unlink( file )) ) {
-#ifdef CNID_DB /* get rid of entry */
         cnid_t id;
-        if (vol && (id = cnid_get(vol->v_db, curdir->d_did, file, strlen(file)))) 
+        if (vol && (id = cnid_get(vol->v_cdb, curdir->d_did, file, strlen(file)))) 
         {
-            cnid_delete(vol->v_db, id);
+            cnid_delete(vol->v_cdb, id);
         }
-#endif /* CNID_DB */
 
     }
     ad_close( &ad, adflags );  /* ad_close removes locks if any */
@@ -1492,7 +1484,6 @@ int         checkAttrib;
 }
 
 /* ------------------------------------ */
-#ifdef CNID_DB
 /* return a file id */
 int afp_createid(obj, ibuf, ibuflen, rbuf, rbuflen )
 AFPObj      *obj;
@@ -1523,7 +1514,7 @@ int		ibuflen, *rbuflen;
         return( AFPERR_PARAM);
     }
 
-    if (vol->v_db == NULL) {
+    if (vol->v_cdb == NULL || !(vol->v_cdb->flags & CNID_FLAG_PERSISTENT)) {
         return AFPERR_NOOP;
     }
 
@@ -1558,7 +1549,7 @@ int		ibuflen, *rbuflen;
             return AFPERR_PARAM;
     }
     st = &s_path->st;
-    if ((id = cnid_lookup(vol->v_db, st, did, upath, len = strlen(upath)))) {
+    if ((id = cnid_lookup(vol->v_cdb, st, did, upath, len = strlen(upath)))) {
         memcpy(rbuf, &id, sizeof(id));
         *rbuflen = sizeof(id);
         return AFPERR_EXISTID;
@@ -1588,7 +1579,7 @@ int		ibuflen, *rbuflen;
     char		*upath;
     struct path         path;
     int                 err, buflen;
-    cnid_t		id;
+    cnid_t		id, cnid;
     u_int16_t		vid, bitmap;
 
     static char buffer[12 + MAXPATHLEN + 1];
@@ -1608,14 +1599,15 @@ int		ibuflen, *rbuflen;
         return( AFPERR_PARAM);
     }
 
-    if (vol->v_db == NULL) {
+    if (vol->v_cdb == NULL || !(vol->v_cdb->flags & CNID_FLAG_PERSISTENT)) {
         return AFPERR_NOOP;
     }
 
     memcpy(&id, ibuf, sizeof( id ));
     ibuf += sizeof(id);
+    cnid = id;
 
-    if (NULL == (upath = cnid_resolve(vol->v_db, &id, buffer, len)) ) {
+    if (NULL == (upath = cnid_resolve(vol->v_cdb, &id, buffer, len)) ) {
         return AFPERR_NOID; /* was AFPERR_BADID, but help older Macs */
     }
 
@@ -1640,7 +1632,7 @@ int		ibuflen, *rbuflen;
 
     memcpy(&bitmap, ibuf, sizeof(bitmap));
     bitmap = ntohs( bitmap );
-    if (NULL == (path.m_name = utompath(vol, upath, utf8_encoding()))) {
+    if (NULL == (path.m_name = utompath(vol, upath, cnid, utf8_encoding()))) {
         return AFPERR_NOID;
     }
     if (AFP_OK != (err = getfilparams(vol, bitmap, &path , curdir, 
@@ -1688,7 +1680,7 @@ int		ibuflen, *rbuflen;
         return( AFPERR_PARAM);
     }
 
-    if (vol->v_db == NULL) {
+    if (vol->v_cdb == NULL || !(vol->v_cdb->flags & CNID_FLAG_PERSISTENT)) {
         return AFPERR_NOOP;
     }
 
@@ -1699,7 +1691,7 @@ int		ibuflen, *rbuflen;
     ibuf += sizeof(id);
     fileid = id;
 
-    if (NULL == (upath = cnid_resolve(vol->v_db, &id, buffer, len)) ) {
+    if (NULL == (upath = cnid_resolve(vol->v_cdb, &id, buffer, len)) ) {
         return AFPERR_NOID;
     }
 
@@ -1724,7 +1716,7 @@ int		ibuflen, *rbuflen;
     else if (S_ISDIR(st.st_mode)) /* directories are bad */
         return AFPERR_BADTYPE;
 
-    if (cnid_delete(vol->v_db, fileid)) {
+    if (cnid_delete(vol->v_cdb, fileid)) {
         switch (errno) {
         case EROFS:
             return AFPERR_VLOCK;
@@ -1742,7 +1734,6 @@ int		ibuflen, *rbuflen;
 
     return err;
 }
-#endif /* CNID_DB */
 
 #define APPLETEMP ".AppleTempXXXXXX"
 
@@ -1766,9 +1757,7 @@ int		ibuflen, *rbuflen;
     struct ofork	*d_of;
     int                 crossdev;
     
-#ifdef CNID_DB
     int                 slen, dlen;
-#endif /* CNID_DB */
     u_int32_t		sid, did;
     u_int16_t		vid;
 
@@ -1820,7 +1809,7 @@ int		ibuflen, *rbuflen;
         default:
             return AFPERR_PARAM;
     }
-    memset(&ads, 0, sizeof(ads));
+    ad_init(&ads, vol->v_adouble);
     adsp = &ads;
     if ((s_of = of_findname(path))) {
             /* reuse struct adouble so it won't break locks */
@@ -1841,10 +1830,7 @@ int		ibuflen, *rbuflen;
 
     /* look for the source cnid. if it doesn't exist, don't worry about
      * it. */
-#ifdef CNID_DB
-    sid = cnid_lookup(vol->v_db, &srcst, sdir->d_did, supath,
-                      slen = strlen(supath));
-#endif /* CNID_DB */
+    sid = cnid_lookup(vol->v_cdb, &srcst, sdir->d_did, supath,slen = strlen(supath));
 
     if (NULL == ( dir = dirlookup( vol, did )) ) {
         return afp_errno; /* was AFPERR_PARAM */
@@ -1874,7 +1860,7 @@ int		ibuflen, *rbuflen;
         default:
             return AFPERR_PARAM;
     }
-    memset(&add, 0, sizeof(add));
+    ad_init(&add, vol->v_adouble);
     addp = &add;
     if ((d_of = of_findname( path))) {
             /* reuse struct adouble so it won't break locks */
@@ -1889,11 +1875,8 @@ int		ibuflen, *rbuflen;
         return AFPERR_MISC;
     
     upath = path->u_name;
-#ifdef CNID_DB
     /* look for destination id. */
-    did = cnid_lookup(vol->v_db, &destst, curdir->d_did, upath,
-                      dlen = strlen(upath));
-#endif /* CNID_DB */
+    did = cnid_lookup(vol->v_cdb, &destst, curdir->d_did, upath, dlen = strlen(upath));
 
     /* construct a temp name.
      * NOTE: the temp file will be in the dest file's directory. it
@@ -1917,21 +1900,20 @@ int		ibuflen, *rbuflen;
         goto err_dest_to_src;
     of_rename(vol, s_of, curdir, temp, curdir, path->m_name);
 
-#ifdef CNID_DB
     /* id's need switching. src -> dest and dest -> src. 
      * we need to re-stat() if it was a cross device copy.
     */
     if (sid) {
-	cnid_delete(vol->v_db, sid);
+	cnid_delete(vol->v_cdb, sid);
     }
     if (did) {
-	cnid_delete(vol->v_db, did);
+	cnid_delete(vol->v_cdb, did);
     }
     if ((did && ( (crossdev && stat( upath, &srcst) < 0) || 
-                cnid_update(vol->v_db, did, &srcst, curdir->d_did,upath, dlen) < 0))
+                cnid_update(vol->v_cdb, did, &srcst, curdir->d_did,upath, dlen) < 0))
        ||
        (sid && ( (crossdev && stat(p, &destst) < 0) ||
-                cnid_update(vol->v_db, sid, &destst, sdir->d_did,supath, slen) < 0))
+                cnid_update(vol->v_cdb, sid, &destst, sdir->d_did,supath, slen) < 0))
     ) {
         switch (errno) {
         case EPERM:
@@ -1943,7 +1925,6 @@ int		ibuflen, *rbuflen;
         }
         goto err_temp_to_dest;
     }
-#endif /* CNID_DB */
 
 #ifdef DEBUG
     LOG(log_info, logtype_afpd, "ending afp_exchangefiles:");
@@ -1954,9 +1935,7 @@ int		ibuflen, *rbuflen;
 
     /* all this stuff is so that we can unwind a failed operation
      * properly. */
-#ifdef CNID_DB
 err_temp_to_dest:
-#endif
     /* rename dest to temp */
     renamefile(upath, temp, temp, vol_noadouble(vol), adsp);
     of_rename(vol, s_of, curdir, upath, curdir, temp);

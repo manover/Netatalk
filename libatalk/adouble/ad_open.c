@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30 2003-04-10 22:58:42 didg Exp $
+ * $Id: ad_open.c,v 1.30.6.1 2003-09-09 16:42:21 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -97,7 +97,6 @@
 #undef ADEDOFF_FILEI
 #endif /* ADEDOFF_FILEI */
 
-#define ADEID_NUM_V1         5
 #define ADEDOFF_NAME_V1	     (AD_HEADER_LEN + ADEID_NUM_V1*AD_ENTRY_LEN)
 #define ADEDOFF_COMMENT_V1   (ADEDOFF_NAME_V1 + ADEDLEN_NAME)
 #define ADEDOFF_FILEI        (ADEDOFF_COMMENT_V1 + ADEDLEN_COMMENT)
@@ -107,7 +106,6 @@
 /* i stick things in a slightly different order than their eid order in 
  * case i ever want to separate RootInfo behaviour from the rest of the 
  * stuff. */
-#define ADEID_NUM_V2         9
 #define ADEDOFF_NAME_V2      (AD_HEADER_LEN + ADEID_NUM_V2*AD_ENTRY_LEN)
 #define ADEDOFF_COMMENT_V2   (ADEDOFF_NAME_V2 + ADEDLEN_NAME)
 #define ADEDOFF_FILEDATESI   (ADEDOFF_COMMENT_V2 + ADEDLEN_COMMENT)
@@ -116,9 +114,11 @@
 #define ADEDOFF_AFPFILEI     (ADEDOFF_DID + ADEDLEN_DID)
 #define ADEDOFF_SHORTNAME    (ADEDOFF_AFPFILEI + ADEDLEN_AFPFILEI)
 #define ADEDOFF_PRODOSFILEI  (ADEDOFF_SHORTNAME + ADEDLEN_SHORTNAME)
-#define ADEDOFF_RFORK_V2     (ADEDOFF_PRODOSFILEI + ADEDLEN_PRODOSFILEI)
+#define ADEDOFF_PRIVDEV      (ADEDOFF_PRODOSFILEI + ADEDLEN_PRODOSFILEI)
+#define ADEDOFF_PRIVINO      (ADEDOFF_PRIVDEV + ADEDLEN_PRIVDEV)
+#define ADEDOFF_PRIVSYN      (ADEDOFF_PRIVINO + ADEDLEN_PRIVINO)
 
-
+#define ADEDOFF_RFORK_V2     (ADEDOFF_PRIVSYN + ADEDLEN_PRIVSYN)
 
 /* we keep local copies of a bunch of stuff so that we can initialize things 
  * correctly. */
@@ -149,17 +149,39 @@ struct entry {
   u_int32_t id, offset, len;
 };
 
-#if AD_VERSION == AD_VERSION1 
-static const struct entry entry_order[] = {
-  {ADEID_NAME, ADEDOFF_NAME_V1, ADEDLEN_INIT},
-  {ADEID_COMMENT, ADEDOFF_COMMENT_V1, ADEDLEN_INIT},
-  {ADEID_FILEI, ADEDOFF_FILEI, ADEDLEN_FILEI},
-  {ADEID_FINDERI, ADEDOFF_FINDERI_V1, ADEDLEN_FINDERI},
-  {ADEID_RFORK, ADEDOFF_RFORK_V1, ADEDLEN_INIT},
+static const struct entry entry_order1[ADEID_NUM_V1 +1] = {
+  {ADEID_NAME,    ADEDOFF_NAME_V1,    ADEDLEN_INIT},      /* 3 */
+  {ADEID_COMMENT, ADEDOFF_COMMENT_V1, ADEDLEN_INIT},      /* 4 */
+  {ADEID_FILEI,   ADEDOFF_FILEI,      ADEDLEN_FILEI},     /* 7 */
+  {ADEID_FINDERI, ADEDOFF_FINDERI_V1, ADEDLEN_FINDERI},   /* 9 */
+  {ADEID_RFORK,   ADEDOFF_RFORK_V1,   ADEDLEN_INIT},      /* 2 */
   {0, 0, 0}
 };
+
+#if AD_VERSION == AD_VERSION1 
+#define DISK_EID(ad, a) (a)
+
 #else /* AD_VERSION == AD_VERSION2 */
-static const struct entry entry_order[] = {
+
+static u_int32_t get_eid(struct adouble *ad, u_int32_t eid) 
+{
+    if (eid <= 15)
+        return eid;
+    if (ad->ad_version == AD_VERSION1)
+        return 0;
+    if (eid == AD_DEV)
+        return ADEID_PRIVDEV;
+    if (eid == AD_INO)
+        return ADEID_PRIVINO;
+    if (eid == AD_SYN)
+        return ADEID_PRIVSYN;
+
+    return 0;
+}
+
+#define DISK_EID(ad, a) get_eid(ad, a)
+
+static const struct entry entry_order2[ADEID_NUM_V2 +1] = {
   {ADEID_NAME, ADEDOFF_NAME_V2, ADEDLEN_INIT},
   {ADEID_COMMENT, ADEDOFF_COMMENT_V2, ADEDLEN_INIT},
   {ADEID_FILEDATESI, ADEDOFF_FILEDATESI, ADEDLEN_FILEDATESI},
@@ -168,15 +190,19 @@ static const struct entry entry_order[] = {
   {ADEID_AFPFILEI, ADEDOFF_AFPFILEI, ADEDLEN_AFPFILEI},
   {ADEID_SHORTNAME, ADEDOFF_SHORTNAME, ADEDLEN_INIT},
   {ADEID_PRODOSFILEI, ADEDOFF_PRODOSFILEI, ADEDLEN_PRODOSFILEI},
+  {ADEID_PRIVDEV,     ADEDOFF_PRIVDEV, ADEDLEN_INIT},
+  {ADEID_PRIVINO,     ADEDOFF_PRIVINO, ADEDLEN_INIT},
+  {ADEID_PRIVSYN,     ADEDOFF_PRIVSYN, ADEDLEN_INIT},
   {ADEID_RFORK, ADEDOFF_RFORK_V2, ADEDLEN_INIT},
+
   {0, 0, 0}
 };
 #endif /* AD_VERSION == AD_VERSION2 */
 
 #if AD_VERSION == AD_VERSION2
 
-
-static __inline__ int ad_v1tov2(struct adouble *ad, const char *path)
+/* FIXME work only if < 2GB */
+static int ad_v1tov2(struct adouble *ad, const char *path)
 {
   struct stat st;
   u_int16_t attr;
@@ -186,6 +212,17 @@ static __inline__ int ad_v1tov2(struct adouble *ad, const char *path)
   /* check to see if we should convert this header. */
   if (!path || (ad->ad_version != AD_VERSION1))
     return 0;
+
+  /* we want version1 anyway */
+  if (ad->ad_flags == AD_VERSION1)
+      return 0;
+
+
+  if (!ad->ad_flags) {
+      /* we don't really know what we want */
+      ad->ad_flags = ad->ad_version;
+      return 0;
+  }
 
   /* convert from v1 to v2. what does this mean?
    *  1) change FILEI into FILEDATESI
@@ -208,6 +245,10 @@ static __inline__ int ad_v1tov2(struct adouble *ad, const char *path)
   if (fstat(fd, &st) ||
       ftruncate(fd, st.st_size + SHIFTDATA) < 0) {
     goto bail_open;
+  }
+  if (st.st_size > 0x7fffffff) {
+      LOG(log_debug, logtype_default, "ad_v1tov2: file too big."); 
+      goto bail_truncate;
   }
   
   /* last place for failure. */
@@ -246,6 +287,13 @@ static __inline__ int ad_v1tov2(struct adouble *ad, const char *path)
   ad->ad_eid[ADEID_SHORTNAME].ade_len = ADEDLEN_INIT;
   ad->ad_eid[ADEID_PRODOSFILEI].ade_off = ADEDOFF_PRODOSFILEI;
   ad->ad_eid[ADEID_PRODOSFILEI].ade_len = ADEDLEN_PRODOSFILEI;
+  
+  ad->ad_eid[ADEID_PRIVDEV].ade_off = ADEDOFF_PRIVDEV;
+  ad->ad_eid[ADEID_PRIVDEV].ade_len = ADEDLEN_INIT;
+  ad->ad_eid[ADEID_PRIVINO].ade_off = ADEDOFF_PRIVINO;
+  ad->ad_eid[ADEID_PRIVINO].ade_len = ADEDLEN_INIT;
+  ad->ad_eid[ADEID_PRIVSYN].ade_off = ADEDOFF_PRIVSYN;
+  ad->ad_eid[ADEID_PRIVSYN].ade_len = ADEDLEN_INIT;
   
   /* shift the old entries (NAME, COMMENT, FINDERI, RFORK) */
   ad->ad_eid[ADEID_NAME].ade_off = ADEDOFF_NAME_V2;
@@ -321,7 +369,7 @@ static void parse_entries(struct adouble *ad, char *buf,
     /* now, read in the entry bits */
     for (; nentries > 0; nentries-- ) {
 	memcpy(&eid, buf, sizeof( eid ));
-	eid = ntohl( eid );
+	eid = DISK_EID(ad, ntohl( eid ));
 	buf += sizeof( eid );
 	memcpy(&off, buf, sizeof( off ));
 	off = ntohl( off );
@@ -520,8 +568,9 @@ char
 {
     static char		modebuf[ MAXPATHLEN + 1];
     char 		*slash;
+    size_t              len;
 
-    if ( strlen( path ) >= MAXPATHLEN ) {
+    if ( (len = strlen( path )) >= MAXPATHLEN ) {
         errno = ENAMETOOLONG;
 	return NULL;  /* can't do it */
     }
@@ -532,7 +581,18 @@ char
      * For a path which is just a filename, use "." instead.
      */
     strcpy( modebuf, path );
-    if (NULL != ( slash = strrchr( modebuf, '/' )) ) {
+    slash = strrchr( modebuf, '/' );
+    /* is last char a '/' */
+    if (slash && slash[1] == 0) {
+        while (modebuf < slash && slash[-1] == '/') {
+            --slash;
+        }
+        if (modebuf < slash) {
+	    *slash = '\0';		/* remove pathname component */
+	    slash = strrchr( modebuf, '/' );
+	}
+    }
+    if (slash) {
 	*slash = '\0';		/* remove pathname component */
     } else {
 	modebuf[0] = '.';	/* use current directory */
@@ -559,7 +619,7 @@ uid_t ad_getfuid(void)
 /* ---------------- 
    return inode of path parent directory
 */
-static int ad_stat(const char *path, struct stat *stbuf)
+int ad_stat(const char *path, struct stat *stbuf)
 {
     char                *p;
 
@@ -670,7 +730,14 @@ static int new_rfork(const char *path, struct adouble *ad, int adflags);
 #else 
 #define AD_SET(a) a = 0
 #endif
-/*
+
+void ad_init(struct adouble *ad, int flags)
+{
+    memset( ad, 0, sizeof( struct adouble ) );
+    ad->ad_flags = flags;
+}
+
+/* -------------------
  * It's not possible to open the header file O_RDONLY -- the read
  * will fail and return an error. this refcounts things now. 
  */
@@ -858,12 +925,20 @@ static int new_rfork(const char *path, struct adouble *ad, int adflags)
     struct stat         st;
 
     ad->ad_magic = AD_MAGIC;
+    ad->ad_version = ad->ad_flags;
+    if (!ad->ad_version)
     ad->ad_version = AD_VERSION;
 
     memset(ad->ad_filler, 0, sizeof( ad->ad_filler ));
     memset(ad->ad_data, 0, sizeof(ad->ad_data));
 
-    eid = entry_order;
+#if AD_VERSION == AD_VERSION2
+    if (ad->ad_version == AD_VERSION2)
+       eid = entry_order2;
+    else
+#endif
+       eid = entry_order1;
+
     while (eid->id) {
         ad->ad_eid[eid->id].ade_off = eid->offset;
 	ad->ad_eid[eid->id].ade_len = eid->len;
@@ -871,7 +946,7 @@ static int new_rfork(const char *path, struct adouble *ad, int adflags)
     }
 	    
     /* put something sane in the directory finderinfo */
-    if (adflags & ADFLAGS_DIR) {
+    if ((adflags & ADFLAGS_DIR)) {
         /* set default view */
 	ashort = htons(FINDERINFO_CLOSEDVIEW);
 	memcpy(ad_entry(ad, ADEID_FINDERI) + FINDERINFO_FRVIEWOFF, 

@@ -1,5 +1,5 @@
 /*
- * $Id: afp_options.c,v 1.30.2.2 2003-07-21 05:50:53 didg Exp $
+ * $Id: afp_options.c,v 1.30.2.2.2.1 2003-09-09 16:42:19 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -60,6 +60,10 @@ char *strchr (), *strrchr ();
 #ifndef MIN
 #define MIN(a, b)  ((a) < (b) ? (a) : (b))
 #endif /* MIN */
+
+/* FIXME CNID */
+char             *Cnid_srv;
+int              Cnid_port;
 
 #define OPTIONS "dn:f:s:uc:g:P:ptDS:TL:F:U:Ivm:"
 #define LENGTH 512
@@ -139,6 +143,12 @@ void afp_options_free(struct afp_options *opt,
 	free(opt->k5service);
     if (opt->k5realm && (opt->k5realm != save->k5realm))
 	free(opt->k5realm);
+    if (opt->k5keytab && (opt->k5keytab != save->k5keytab))
+	free(opt->k5keytab);
+    if (opt->unixcodepage && (opt->unixcodepage != save->unixcodepage))
+	free(opt->unixcodepage);
+    if (opt->maccodepage && (opt->maccodepage != save->maccodepage))
+	free(opt->maccodepage);
 }
 
 /* initialize options */
@@ -169,6 +179,11 @@ void afp_options_init(struct afp_options *options)
 #endif /* ADMIN_GRP */
     options->k5service = NULL;
     options->k5realm = NULL;
+    options->k5keytab = NULL;
+    options->unixcharset = CH_UNIX;
+    options->unixcodepage = "LOCALE";
+    options->maccharset = CH_MAC;
+    options->maccodepage = "MAC_ROMAN";
 }
 
 /* parse an afpd.conf line. i'm doing it this way because it's
@@ -403,8 +418,15 @@ int afp_options_parseline(char *buf, struct afp_options *options)
 	options->k5service = opt;
     if ((c = getoption(buf, "-k5realm")) && (opt = strdup(c)))
 	options->k5realm = opt;
-    if ((c = getoption(buf, "-k5keytab")))
-	setenv( "KRB5_KTNAME", c, 1 );
+    if ((c = getoption(buf, "-k5keytab"))) {
+	if ( NULL == (options->k5keytab = (char *) malloc(sizeof(char)*(strlen(c)+14)) )) {
+		LOG(log_error, logtype_afpd, "malloc failed");
+		exit(-1);
+	}
+	snprintf(options->k5keytab, strlen(c)+14, "KRB5_KTNAME=%s", c);
+	putenv(options->k5keytab);
+	/* setenv( "KRB5_KTNAME", c, 1 ); */
+    }
     if ((c = getoption(buf, "-authprintdir")) && (opt = strdup(c)))
         options->authprintdir = opt;
     if ((c = getoption(buf, "-uampath")) && (opt = strdup(c)))
@@ -421,6 +443,16 @@ int afp_options_parseline(char *buf, struct afp_options *options)
                 LOG(log_info, logtype_afpd, "WARNING: can't find %s\n", opt);
             options->ipaddr = opt;
         }
+    }
+
+    /* FIXME CNID */
+    if ((c = getoption(buf, "-cnidserver"))) {
+        char *p;
+        
+        Cnid_srv = strdup(c);
+        p = strchr(Cnid_srv, ':');
+        *p = 0;
+        Cnid_port = atoi(p +1);
     }
 
     if ((c = getoption(buf, "-port")))
@@ -441,6 +473,23 @@ int afp_options_parseline(char *buf, struct afp_options *options)
             if ((opt = strdup(c)))
                 options->fqdn = opt;
         }
+    }
+
+    if ((c = getoption(buf, "-unixcodepage"))) {
+	options->unixcodepage = c;
+    	if ( 0 == ( options->unixcharset = add_charset(options->unixcodepage)) ) {
+		options->unixcodepage= "LOCALE";
+        	options->unixcharset = CH_UNIX;
+    	}
+    }
+	
+    if ((c = getoption(buf, "-maccodepage"))) {
+	options->maccodepage = c;
+    	if ( 0 == ( options->maccharset = add_charset(options->maccodepage)) ) {
+		options->maccodepage= "Mac_Roman";
+        	options->maccharset = CH_MAC;
+    	}
+	LOG(log_debug, logtype_afpd, "Setting Mac Codepage to '%s'", options->maccodepage);
     }
 
     return 1;

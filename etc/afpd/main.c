@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.20.4.2 2003-07-21 05:50:54 didg Exp $
+ * $Id: main.c,v 1.20.4.2.2.1 2003-09-09 16:42:20 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -172,6 +172,7 @@ char	**av;
     argv = av;
     set_auth_parameters( ac, av );
 #endif /* TRU64 */
+    fault_setup(NULL);
 
     afp_options_init(&default_options);
     if (!afp_options_parse(ac, av, &default_options))
@@ -190,6 +191,9 @@ char	**av;
     default: /* server */
         exit(0);
     }
+
+    /* Register CNID  */
+    cnid_init();
 
     /* install child handler for asp and dsi. we do this before afp_goaway
      * as afp_goaway references stuff from here. 

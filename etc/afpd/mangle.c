@@ -1,5 +1,5 @@
 /* 
- * $Id: mangle.c,v 1.16.2.1 2003-06-23 10:25:08 didg Exp $ 
+ * $Id: mangle.c,v 1.16.2.1.2.1 2003-09-09 16:42:20 didg Exp $ 
  *
  * Copyright (c) 2002. Joe Marcus Clarke (marcus@marcuscom.com)
  * All Rights Reserved.  See COPYRIGHT.
@@ -13,104 +13,86 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#ifdef FILE_MANGLING
+#include <stdio.h>
+#include <ctype.h>
 #include "mangle.h"
 
-#ifndef MIN
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#endif /* ! MIN */
-
+#define hextoint( c )   ( isdigit( c ) ? c - '0' : c + 10 - 'A' )
+#define isuxdigit(x)    (isdigit(x) || (isupper(x) && isxdigit(x)))
 
 char *
 demangle(const struct vol *vol, char *mfilename) {
-	char *filename = NULL;
-	char *ext = NULL;
-	size_t ext_len = 0;
-	char *mangle;
+    char *t;
+    char *u_name;
+    u_int32_t id = 0;
+    static char buffer[12 + MAXPATHLEN + 1];
+    int len = 12 + MAXPATHLEN + 1;
+    struct dir	*dir;
 
-	/* Is this really a mangled file? */
-	mangle = strstr(mfilename, MANGLE_CHAR);
-	if (!mangle) {
+
+    t = strchr(mfilename, MANGLE_CHAR);
+    if (t == NULL) {
+	    return mfilename;
+	}
+    /* may be a mangled filename */
+    t++;
+    if (*t == '0') { /* can't start with a 0 */
+        return mfilename;
+	}
+    while(isuxdigit(*t)) {
+        id = (id *16) + hextoint(*t);
+        t++;
+    }
+    if ((*t != 0 && *t != '.') || strlen(t) > MAX_EXT_LENGTH || id == 0) {
 	    return mfilename;
 	}
 
-	if (NULL != (ext = strrchr(mfilename, '.')) ) {
-	    ext_len = strlen(ext);
+    id = htonl(id);
+    /* is it a dir?*/
+    if (NULL != (dir = dirsearch(vol, id))) {
+        return dir->d_u_name;
 	}
-	if (strlen(mangle) != strlen(MANGLE_CHAR) + MANGLE_LENGTH + ext_len) {
-	    return mfilename;
-	}
-
-	filename = cnid_mangle_get(vol->v_db, mfilename);
-
-	/* No unmangled filename was found. */
-	if (filename == NULL) {
-#ifdef DEBUG
-	    LOG(log_debug, logtype_afpd, "demangle: Unable to lookup %s in the mangle database", mfilename);
-#endif
-	    return mfilename;
-	}
-	return filename;
+    if (NULL != (u_name = cnid_resolve(vol->v_cdb, &id, buffer, len)) ) {
+        return u_name;
+    }
+    return mfilename;
 }
 
 /* -----------------------
    with utf8 filename not always round trip
    filename   mac filename too long or with unmatchable utf8 replaced with _
    uname      unix filename 
+   id         file/folder ID or 0
+   
 */
 char *
-mangle(const struct vol *vol, char *filename, char *uname, int flags) {
+mangle(const struct vol *vol, char *filename, char *uname, cnid_t id, int flags) {
     char *ext = NULL;
-    char *tf = NULL;
     char *m = NULL;
     static char mfilename[MAX_LENGTH + 1];
     char mangle_suffix[MANGLE_LENGTH + 1];
     size_t ext_len = 0;
-    int mangle_suffix_int = 0;
+    int k;
 
     /* Do we really need to mangle this filename? */
     if (!flags && strlen(filename) <= vol->max_filename) {
 	return filename;
     }
     /* First, attempt to locate a file extension. */
-    if (NULL != (ext = strrchr(filename, '.')) ) {
+    if (NULL != (ext = strrchr(uname, '.')) ) {
 	ext_len = strlen(ext);
 	if (ext_len > MAX_EXT_LENGTH) {
 	    /* Do some bounds checking to prevent an extension overflow. */
 	    ext_len = MAX_EXT_LENGTH;
 	}
     }
-
-    /* Check to see if we already have a mangled filename by this name. */
-    while (1) {
 	m = mfilename;
-    	strncpy(m, filename, MIN(MAX_LENGTH - strlen(MANGLE_CHAR) - MANGLE_LENGTH - ext_len, strlen(filename)-ext_len));
-	m[MIN(MAX_LENGTH - strlen(MANGLE_CHAR) - MANGLE_LENGTH - ext_len, strlen(filename)-ext_len)] = '\0';
+    memset(m, 0, MAX_LENGTH + 1);
+    k = sprintf(mangle_suffix, "%c%X", MANGLE_CHAR, ntohl(id));
 
-    	strcat(m, MANGLE_CHAR);
-    	(void)sprintf(mangle_suffix, "%03d", mangle_suffix_int);
+    strncpy(m, filename, MAX_LENGTH - k - ext_len);
     	strcat(m, mangle_suffix);
-
-    	if (ext) {
 		strncat(m, ext, ext_len);
-    	}
-
-	tf = cnid_mangle_get(vol->v_db, m);
-	if (tf == NULL || (strcmp(tf, uname)) == 0) {
-	    break;
-	}
-	else {
-	    if (++mangle_suffix_int > MAX_MANGLE_SUFFIX_LENGTH) {
-		LOG(log_error, logtype_afpd, "mangle: Failed to find a free mangle suffix; returning original filename");
-		return filename;
-	    }
-	}
-    }
-
-    if (cnid_mangle_add(vol->v_db, m, uname) < 0) {
-	return filename;
-    }
 
     return m;
 }
-#endif /* FILE_MANGLING */

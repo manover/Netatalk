@@ -2,7 +2,7 @@
 #ifndef _ATALK_UNICODE_H
 #define _ATALK_UNICODE_H 1
 
-
+#include <atalk/list.h>
 
 #define ucs2_t	u_int16_t
 
@@ -18,11 +18,34 @@ typedef struct {
         char *from_name, *to_name;
 } *atalk_iconv_t;
 
+#define CHARSET_CLIENT 1
+#define CHARSET_VOLUME 2
+#define CHARSET_PRECOMPOSED 4
+#define CHARSET_DECOMPOSED  8
+#define CHARSET_MULTIBYTE   16
+#define CHARSET_WIDECHAR    32
+#define CHARSET_ICONV	    64
+
+#define IGNORE_CHAR	'_'
+
+/* conversion flags */
+#define CONV_IGNORE		(1<<0) /* ignore EILSEQ, replace with IGNORE_CHAR */
+#define CONV_ESCAPEHEX		(1<<1) /* escape unconvertable chars with :[UCS2HEX] */
+#define CONV_ESCAPEDOTS		(1<<2) /* escape leading dots with :2600 */
+#define CONV_UNESCAPEHEX 	(1<<3) 
+#define CONV_TOUPPER		(1<<4) /* convert to UPPERcase */
+#define CONV_TOLOWER		(1<<5) /* convert to lowercase */
+#define CONV_PRECOMPOSE		(1<<6) /* precompose */
+#define CONV_DECOMPOSE		(1<<7) /* precompose */
+
+/* conversion return flags */
+#define CONV_REQMANGLE	(1<<14) /* mangling of returned name is required */
+#define CONV_REQESCAPE	(1<<15) /* espace unconvertable chars with :[UCS2HEX] */
 
 /* this defines the charset types used in samba */
-typedef enum {CH_UCS2=0, CH_UTF8=1, CH_MAC=2, CH_UNIX=3} charset_t;
+typedef enum {CH_UCS2=0, CH_UTF8=1, CH_MAC=2, CH_UNIX=3, CH_UTF8_MAC=4} charset_t;
 
-#define NUM_CHARSETS 4
+#define NUM_CHARSETS 5
 
 /*
  *   for each charset we have a function that pulls from that charset to
@@ -31,10 +54,12 @@ typedef enum {CH_UCS2=0, CH_UTF8=1, CH_MAC=2, CH_UNIX=3} charset_t;
 
 struct charset_functions {
         const char *name;
+	const long kTextEncoding;
         size_t (*pull)(void *, char **inbuf, size_t *inbytesleft,
                                    char **outbuf, size_t *outbytesleft);
         size_t (*push)(void *, char **inbuf, size_t *inbytesleft,
                                    char **outbuf, size_t *outbytesleft);
+	u_int32_t flags;
         struct charset_functions *prev, *next;
 };
 
@@ -43,6 +68,7 @@ extern atalk_iconv_t 	atalk_iconv_open __P((const char *, const char *));
 extern size_t 		atalk_iconv __P((atalk_iconv_t, const char **, size_t *, char **, size_t *));
 extern size_t 		atalk_iconv_ignore __P((atalk_iconv_t, const char **, size_t *, char **, size_t *, int*));
 extern int 		atalk_iconv_close __P((atalk_iconv_t));
+extern struct charset_functions *find_charset_functions(const char *name);
 
 extern ucs2_t 	toupper_w  __P((ucs2_t));
 extern ucs2_t 	tolower_w  __P((ucs2_t));
@@ -64,8 +90,8 @@ extern ucs2_t 	*strncpy_w __P((ucs2_t *, const ucs2_t *, const size_t));
 extern ucs2_t 	*strncat_w __P((ucs2_t *, const ucs2_t *, const size_t));
 extern ucs2_t 	*strcat_w  __P((ucs2_t *, const ucs2_t *));
 
-extern char 	*precompose_w __P((ucs2_t *, size_t, size_t *));
-extern char 	*decompose_w  __P((ucs2_t *, size_t, size_t *));
+extern size_t 	precompose_w __P((ucs2_t *, size_t, ucs2_t *,size_t *));
+extern size_t 	decompose_w  __P((ucs2_t *, size_t, ucs2_t *,size_t *));
 extern size_t 	utf8_charlen __P(( char* ));
 extern size_t 	utf8_strlen_validate __P(( char *));
 
@@ -79,6 +105,8 @@ extern size_t 	 mac_strupper __P((const char *, size_t, char *, size_t));
 extern size_t 	 mac_strlower __P((const char *, size_t, char *, size_t));
 extern size_t 	unix_strupper __P((const char *, size_t, char *, size_t));
 extern size_t 	unix_strlower __P((const char *, size_t, char *, size_t));
+extern size_t 	charset_strupper __P((charset_t, const char *, size_t, char *, size_t));
+extern size_t 	charset_strlower __P((charset_t, const char *, size_t, char *, size_t));
 
 extern size_t 	mac_to_ucs2_allocate __P((ucs2_t **dest, const char *src));
 extern size_t 	mac_to_utf8_allocate __P((char **dest, const char *src));
@@ -87,6 +115,12 @@ extern size_t 	utf8_to_mac_allocate __P((void **dest, const char *src));
 
 extern size_t 	utf8_to_mac __P((char *, size_t, char *, size_t));
 extern size_t 	utf8_to_mac_charset __P((charset_t, char *, size_t, char *, size_t, int*));
+extern size_t 	vol_to_mac_charset __P((charset_t, charset_t, char *, size_t, char *, size_t, int*));
+extern size_t 	mac_to_vol_charset __P((charset_t, charset_t, char *, size_t, char *, size_t));
+extern size_t 	convert_charset __P((charset_t, charset_t, char *, size_t, char *, size_t, u_int16_t *));
+
+extern size_t   encode_cap __P((charset_t, char*, size_t, char*, size_t));
+extern size_t   decode_cap __P((charset_t, char*, size_t, char*, size_t, u_int16_t *));
 
 extern size_t 	utf8_precompose __P(( char *, size_t, char *, size_t));
 extern size_t 	utf8_decompose  __P(( char *, size_t, char *, size_t));

@@ -1,5 +1,5 @@
 /*
- * $Id: globals.h,v 1.18.2.2 2003-07-21 05:50:54 didg Exp $
+ * $Id: globals.h,v 1.18.2.2.2.1 2003-09-09 16:42:20 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -23,6 +23,7 @@
 #include <netatalk/at.h>
 #include <atalk/afp.h>
 #include <atalk/compat.h>
+#include <atalk/unicode.h>
 
 /* test for inline */
 #ifndef __inline__
@@ -69,7 +70,9 @@ struct afp_options {
     char *uamlist;
     char *authprintdir;
     char *signature;
-    char *k5service, *k5realm;
+    char *k5service, *k5realm, *k5keytab;
+    char *unixcodepage,*maccodepage;
+    charset_t maccharset, unixcharset; 
     mode_t umask;
     mode_t save_mask;
     int    sleep;
@@ -106,6 +109,10 @@ extern unsigned char	nologin;
 extern struct dir	*curdir;
 extern char		getwdbuf[];
 
+/* FIXME CNID */
+extern char             *Cnid_srv;
+extern int              Cnid_port;
+
 extern int  get_afp_errno   __P((const int param));
 extern void afp_options_init __P((struct afp_options *));
 extern int afp_options_parse __P((int, char **, struct afp_options *));
@@ -113,7 +120,7 @@ extern int afp_options_parseline __P((char *, struct afp_options *));
 extern void afp_options_free __P((struct afp_options *,
                                       const struct afp_options *));
 extern void setmessage __P((const char *));
-extern void readmessage __P((void));
+extern void readmessage __P((AFPObj *));
 
 /* gettok.c */
 extern void initline   __P((int, char *));

@@ -159,6 +159,7 @@ ucs2_t *strchr_w(const ucs2_t *s, ucs2_t c)
 ucs2_t *strcasechr_w(const ucs2_t *s, ucs2_t c)
 {
 	while (*s != 0) {
+/*		LOG(log_debug, logtype_default, "Comparing %X to %X (%X - %X)", c, *s, toupper_w(c), toupper_w(*s));*/
 		if (toupper_w(c) == toupper_w(*s)) return (ucs2_t *)s;
 		s++;
 	}
@@ -374,95 +375,112 @@ u_int32_t do_decomposition(ucs2_t base)
   	return 0;
 }
 
+/* we can't use static, this stuff needs to be reentrant */
+/* static char comp[MAXPATHLEN +1]; */
 
-static char comp[MAXPATHLEN +1];
-
-char *precompose_w (ucs2_t *name, size_t inplen, size_t *outlen)
+size_t precompose_w (ucs2_t *name, size_t inplen, ucs2_t *comp, size_t *outlen)
 {
 	size_t i;
 	ucs2_t base, comb;
 	ucs2_t *in, *out;
 	ucs2_t result;
+	size_t o_len = *outlen;
 
-    	if (!inplen || (inplen & 1) || inplen > sizeof(comp)/sizeof(u_int16_t))
-        	return NULL;
+//    	if (!inplen || (inplen & 1) || inplen > sizeof(comp)/sizeof(u_int16_t))
+    	if (!inplen || (inplen & 1) || inplen > o_len)
+        	return (size_t)-1;
     	i = 0;
     	in  = name;
     	out = (ucs2_t *)comp;
-    	*outlen = 0;
     
     	base = *in;
-    	while (1) {
+    	while (*outlen > 2) {
         	i += 2;
 	        in++;
         	if (i == inplen) {
-           		*out = base;
-           		*outlen += 2;
-           		return comp;
+           		*out++ = base;
+			*out = 0;
+           		*outlen -= 2;
+           		return o_len - *outlen;
         	}
         	comb = *in;
         	if (comb >= 0x300 && (result = do_precomposition(base, comb))) {
            		*out = result;
            		out++;
-           		*outlen += 2;
+           		*outlen -= 2;
            		i += 2;
            		in++;
-           		if (i == inplen) 
-              			return comp;
+           		if (i == inplen) {
+				*out = 0;
+				*outlen -= 2;
+              			return o_len - *outlen;
+			}
            		base = *in;
         	}
         	else {
            		*out = base;
            		out++;
-           		*outlen += 2;
+           		*outlen -= 2;
            		base = comb;
         	}
     	}
+	
+	errno = E2BIG;
+	return (size_t)-1;
 }
 
 /* --------------- */
 
-char *decompose_w (ucs2_t *name, size_t inplen, size_t *outlen)
+//char *decompose_w (ucs2_t *name, size_t inplen, size_t *outlen)
+size_t decompose_w (ucs2_t *name, size_t inplen, ucs2_t *comp, size_t *outlen)
 {
 	size_t i;
 	ucs2_t base;
 	ucs2_t *in, *out;
 	unsigned int result;
+	size_t o_len = *outlen;
 
     	if (!inplen || (inplen & 1))
-        	return NULL;
+        	return (size_t)-1;
 	i = 0;
 	in  = name;
 	out = (ucs2_t *)comp;
-	*outlen = 0;
     
     	while (i < inplen) {
-        	if (*outlen >= sizeof(comp)/sizeof(u_int16_t) +2) {
-            		return NULL;
+        	//if (*outlen >= o_len/sizeof(u_int16_t) +2) {
+        	if (*outlen < 2) {
+			errno = E2BIG;
+            		return (size_t)-1;
         	}
         	base = *in;
         	if ((result = do_decomposition(base))) {
+			if ( *outlen < 4 ) {
+				errno = E2BIG;
+				return (size_t)-1;
+			}
            		*out = result  >> 16;
            		out++;
-           		*outlen += 2;
+           		*outlen -= 2;
            		*out = result & 0xffff;
            		out++;
-           		*outlen += 2;
+           		*outlen -= 2;
         	}
         	else {
            		*out = base;
            		out++;
-           		*outlen += 2;
+           		*outlen -= 2;
         	}
         	i += 2;
         	in++;
      	}
-     	return comp;
+
+	*out = 0;
+	*outlen -= 2;
+	return o_len-*outlen;
 }
 
 size_t utf8_charlen ( char* utf8 )
 {
-	size_t len;
         unsigned char *p;
 
         p = (unsigned char*) utf8;

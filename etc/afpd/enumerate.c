@@ -1,5 +1,5 @@
 /*
- * $Id: enumerate.c,v 1.39.2.2 2003-05-26 11:17:25 didg Exp $
+ * $Id: enumerate.c,v 1.39.2.2.2.1 2003-09-09 16:42:20 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -23,9 +23,7 @@
 #include <netatalk/endian.h>
 #include <atalk/afp.h>
 #include <atalk/adouble.h>
-#ifdef CNID_DB
 #include <atalk/cnid.h>
-#endif /* CNID_DB */
 #include "desktop.h"
 #include "directory.h"
 #include "volume.h"
@@ -49,19 +47,26 @@ struct path     *path;
     char        *upath;
     struct stat *st;
     int         deleted;
+    cnid_t      id;
 
     upath = path->u_name;
-    name  = path->m_name;    
     st    = &path->st;
     upathlen = strlen(upath);
+
+    id = get_id(vol, NULL, st, dir->d_did, upath, upathlen);
+    if (id == 0) {
+        return NULL;
+    }
+    if (!path->m_name && !(path->m_name = utompath(vol, upath, id , utf8_encoding()))) {
+        return NULL;
+    }
+    name  = path->m_name;    
     if ((cdir = dirnew(name, upath)) == NULL) {
         LOG(log_error, logtype_afpd, "adddir: malloc: %s", strerror(errno) );
         return NULL;
     }
 
-    cdir->d_did = get_id(vol, NULL, st, dir->d_did, upath, upathlen);
-    if (cdir->d_did == 0) 
-        return NULL;
+    cdir->d_did = id;
 
     if ((edir = dirinsert( vol, cdir ))) {
         /* it's not possible with LASTDID
@@ -117,8 +122,7 @@ static int enumerate_loop(struct dirent *de, char *mname, void *data)
     end = sd->sd_buf + sd->sd_buflen;
     len = strlen(de->d_name);
     *(sd->sd_last)++ = len;
-    lenm = strlen(mname);
-
+    lenm = 0; /* strlen(mname);*/
     if ( sd->sd_last + len +lenm + 4 > end ) {
         char *buf;
 
@@ -137,11 +141,11 @@ static int enumerate_loop(struct dirent *de, char *mname, void *data)
 
     memcpy( sd->sd_last, de->d_name, len + 1 );
     sd->sd_last += len + 1;
-
+#if 0
     *(sd->sd_last)++ = lenm;
     memcpy( sd->sd_last, mname, lenm + 1 );
     sd->sd_last += lenm + 1;
-    
+#endif    
     return 0;
 }
 
@@ -161,7 +165,6 @@ static int enumerate_loop(struct dirent *de, char *mname, void *data)
 */
 char *check_dirent(const struct vol *vol, char *name)
 {
-    char *m_name = NULL;
 
     if (!strcmp(name, "..") || !strcmp(name, "."))
         return NULL;
@@ -172,14 +175,17 @@ char *check_dirent(const struct vol *vol, char *name)
     /* check for vetoed filenames */
     if (veto_file(vol->v_veto, name))
         return NULL;
-    if (NULL == (m_name = utompath(vol, name, utf8_encoding()))) 
+#if 0
+    char *m_name = NULL;
+
+    if (NULL == (m_name = utompath(vol, name, 0, utf8_encoding()))) 
         return NULL;    
 
     /* now check against too big a file */
     if (strlen(m_name) > vol->max_filename)
         return NULL;
-
-    return m_name;
+#endif
+    return name;
 }
 
 /* ----------------------------- */
@@ -371,8 +377,6 @@ int     ext;
             return( AFPERR_NOOBJ );
         }
         sd.sd_last += len + 1;
-        len = *(sd.sd_last)++;
-        sd.sd_last += len + 1;
         sd.sd_sindex++;
     }
 
@@ -394,8 +398,6 @@ int     ext;
         if (*sd.sd_last == 0) {
             /* stat() already failed on this one */
             sd.sd_last += len + 1;
-            len = *(sd.sd_last)++;
-            sd.sd_last += len + 1;
             continue;
         }
         s_path.u_name = sd.sd_last;
@@ -411,16 +413,12 @@ int     ext;
              */
             *sd.sd_last = 0;
             sd.sd_last += len + 1;
-            len = *(sd.sd_last)++;
-            sd.sd_last += len + 1;
             curdir->offcnt--;		/* a little lie */
             continue;
         }
 
         sd.sd_last += len + 1;
-        len = *(sd.sd_last)++;
-        s_path.m_name = sd.sd_last;
-        sd.sd_last += len + 1;
+        s_path.m_name = NULL;
         /*
          * If a fil/dir is not a dir, it's a file. This is slightly
          * inaccurate, since that means /dev/null is a file, /dev/printer
@@ -431,14 +429,9 @@ int     ext;
                 continue;
             }
             dir = dirsearch_byname(curdir, s_path.u_name);
-            if (!dir) {
-                if (s_path.m_name == NULL || (dir = adddir( vol, curdir, &s_path)) == NULL) {
+            if (!dir && NULL == (dir = adddir( vol, curdir, &s_path) ) ) {
                     return AFPERR_MISC;
                 }
-            }
-            else {
-                s_path.m_name = NULL;
-            }
             if (AFP_OK != ( ret = getdirparams(vol, dbitmap, &s_path, dir,
                                      data + header , &esz ))) {
                 return( ret );
@@ -447,9 +440,6 @@ int     ext;
         } else {
             if ( fbitmap == 0 ) {
                 continue;
-            }
-            if (s_path.m_name == NULL ) {
-                return AFPERR_MISC;
             }
             if (AFP_OK != ( ret = getfilparams(vol, fbitmap, &s_path, curdir, 
                                      data + header , &esz )) ) {

@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4 2003-07-21 05:50:54 didg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.1 2003-09-09 16:42:19 didg Exp $
  *
  * See COPYRIGHT.
  *
@@ -46,9 +46,7 @@
 #include "globals.h"
 #include "desktop.h"
 
-#ifdef FILE_MANGLING
 #include "mangle.h"
-#endif /* CNID_DB */
 
 #ifdef AFP3x
 #include <iconv.h>
@@ -622,248 +620,105 @@ static char  upath[ MAXPATHLEN + 1];
 static char  mpath[ MAXPATHLEN + 1];
 static char  ucs2[ MAXPATHLEN + 1];
 
-static char *old_mtoupath(const struct vol *vol, char *mpath)
-{
-    char	*m, *u;
-    int		 i = 0;
-    int          changed = 0;
-        
-    m = mpath;
-    u = upath;
-    if ((vol->v_casefold & (AFPVOL_MTOUUPPER| AFPVOL_MTOULOWER))) {
-        changed = 1;
-    }
-    while ( *m != '\0' ) {
-        /* handle case conversion first */
-        if (vol->v_casefold & AFPVOL_MTOUUPPER)
-            *m = diatoupper( *m );
-        else if (vol->v_casefold & AFPVOL_MTOULOWER)
-            *m = diatolower( *m );
-
-        /* we have a code page. we only use the ascii range
-         * if we have map ascii specified. */
-        if (vol->v_mtoupage && ((*m & 0x80) ||
-                                vol->v_flags & AFPVOL_MAPASCII)) {
-            *u = vol->v_mtoupage->map[(unsigned char) *m].value;
-            changed = 1;
-            if (!*u && *m) {
-                /* if conversion failed, encode in hex
-                 * to prevent silly truncation
-                 * H.P. Jansen <hpj@urpla.net> */
-#ifdef DEBUG
-                LOG(log_debug, logtype_afpd, "mtoupath: hex encode: 0x%x", (unsigned char) *m);
-#endif
-                *u++ = ':';
-                *u++ = hexdig[ ( *m & 0xf0 ) >> 4 ];
-                *u = hexdig[ *m & 0x0f ];
-            }
-        } else {
-#if AD_VERSION == AD_VERSION1
-            if ((((vol->v_flags & AFPVOL_NOHEX) == 0) &&
-                    (!isascii(*m) || *m == '/')) ||
-                    (((vol->v_flags & AFPVOL_USEDOTS) == 0) &&
-                     ( i == 0 && (*m == '.' )))) {
-#else 
-            if ((((vol->v_flags & AFPVOL_NOHEX) == 0) &&
-                    (!isprint(*m) || *m == '/')) ||
-                    (((vol->v_flags & AFPVOL_USEDOTS) == 0) &&
-                     ( i == 0 && (*m == '.' )))) {
-#endif
-                /* do hex conversion. */
-                *u++ = ':';
-                *u++ = hexdig[ ( *m & 0xf0 ) >> 4 ];
-                *u = hexdig[ *m & 0x0f ];
-                changed = 1;
-            } else
-                *u = *m;
-        }
-        u++;
-        i++;
-        m++;
-    }
-    *u = '\0';
-
-#ifdef DEBUG
-    LOG(log_debug, logtype_afpd, "mtoupath: '%s':'%s'", mpath, upath);
-#endif /* DEBUG */
-
-    return( (changed)?upath:mpath );
-}
-
-/* ---------------------------- */
-#define hextoint( c )	( isdigit( c ) ? c - '0' : c + 10 - 'a' )
-#define islxdigit(x)	(!isupper(x)&&isxdigit(x))
-
-static char *old_utompath(const struct vol *vol, char *upath)
-{
-    char        *m, *u;
-    int          h;
-    int          changed = 0;
-
-    /* do the hex conversion */
-    u = upath;
-    m = mpath;
-    if ((vol->v_casefold & (AFPVOL_MTOUUPPER| AFPVOL_MTOULOWER))) {
-        changed = 1;
-    }
-    while ( *u != '\0' ) {
-        /* we have a code page */
-        if (vol->v_utompage && ((*u & 0x80) ||
-                                (vol->v_flags & AFPVOL_MAPASCII))) {
-            *m = vol->v_utompage->map[(unsigned char) *u].value;
-            changed = 1;
-        } else
-            if ( *u == ':' && *(u+1) != '\0' && islxdigit( *(u+1)) &&
-                    *(u+2) != '\0' && islxdigit( *(u+2))) {
-                ++u;
-                h = hextoint( *u ) << 4;
-                ++u;
-                h |= hextoint( *u );
-                *m = h;
-                changed = 1;
-            } else
-                *m = *u;
-
-        /* handle case conversion */
-        if (vol->v_casefold & AFPVOL_UTOMLOWER)
-            *m = diatolower( *m );
-        else if (vol->v_casefold & AFPVOL_UTOMUPPER)
-            *m = diatoupper( *m );
-
-        u++;
-        m++;
-    }
-    *m = '\0';
-    m = mpath;
-
-#ifdef FILE_MANGLING
-    m = mangle(vol, mpath, upath, 0);
-    if (m != mpath) {
-        changed = 1;
-    }
-#endif /* FILE_MANGLING */
-
-#ifdef DEBUG
-    LOG(log_debug, logtype_afpd, "utompath: '%s':'%s'", upath, mpath);
-#endif /* DEBUG */
-
-    return((changed)? m:upath );
-}
-
-/* --------------------------- */
 char *mtoupath(const struct vol *vol, char *mpath, int utf8)
 {
-    char	*m, *u, *r;
-    int		 i = 0;
+    char	*m, *u;
     size_t       inplen;
     size_t       outlen;
+    u_int16_t	 flags = 0;
         
     if ( *mpath == '\0' ) {
         return( "." );
     }
 
-#ifdef FILE_MANGLING
     m = demangle(vol, mpath);
     if (m != mpath) {
         return m;
     }
-#endif /* FILE_MANGLING */
-
-    if (!vol_utf8(vol))
-    	return old_mtoupath(vol, mpath);
 
     m = mpath;
     u = upath;
-    while ( *m != '\0' ) {
-        if ( (!(vol->v_flags & AFPVOL_NOHEX) && *m == '/') ||
-             (!(vol->v_flags & AFPVOL_USEDOTS) && i == 0 && *m == '.') 
-        ) {
-          /* do hex conversion. */
-          *u++ = ':';
-          *u++ = hexdig[ ( *m & 0xf0 ) >> 4 ];
-          *u = hexdig[ *m & 0x0f ];
-        } else
-           *u = *m;
-        u++;
-        i++;
-        m++;
-    }
-    *u = '\0';
-    u = upath;
-#ifdef AFP3x
-    inplen = strlen(u);
+
+    inplen = strlen(m);
     outlen = MAXPATHLEN;
-    r = ucs2;
-    if (!utf8) {
-        /* assume precompose */
-        if ((size_t)(-1) == (outlen = convert_string ( vol->v_maccharset, CH_UTF8, u, inplen, r, outlen)) )
-            return NULL;
-        u = ucs2;
-    }
-    else { 
 
-	r = upath;
+    /* set conversion flags */
+    if (!(vol->v_flags & AFPVOL_NOHEX))
+        flags |= CONV_ESCAPEHEX;
+    if (!(vol->v_flags & AFPVOL_USEDOTS))
+        flags |= CONV_ESCAPEDOTS;
+
+    if ((vol->v_casefold & AFPVOL_MTOUUPPER))
+        flags |= CONV_TOUPPER;
+    else if ((vol->v_casefold & AFPVOL_MTOULOWER))
+        flags |= CONV_TOLOWER;
 	
-        if ((size_t)(-1) == (outlen = utf8_precompose(  u, inplen, r, outlen)) )
+    if ((size_t)-1 == (outlen = convert_charset ( (utf8)?CH_UTF8_MAC:vol->v_maccharset, vol->v_volcharset, m, inplen, u, outlen, &flags)) ) {
+        LOG(log_error, logtype_afpd, "conversion from %s to %s for %s failed.", (utf8)?"UTF8-MAC":vol->v_maccodepage, vol->v_volcodepage, mpath);
 	    return NULL;
+    }
+    upath[outlen] = 0;
 
-        u = upath; 
+    /* convert to old cap format */
+    u=ucs2;
+    if ((size_t)-1 == (outlen = encode_cap ( vol->v_maccharset, upath, outlen, u, MAXPATHLEN)) ) {
+        LOG(log_error, logtype_afpd, "cap encode '%s' failed.", upath);
+        return NULL;
     }
     u[outlen] = 0;
-#endif
+
 #ifdef DEBUG
-    LOG(log_debug, logtype_afpd, "mtoupath: '%s':'%s'", mpath, upath);
+    LOG(log_debug, logtype_afpd, "mtoupath: '%s':'%s'", mpath, u);
 #endif /* DEBUG */
     return( u );
 }
 
 /* --------------- */
-char *utompath(const struct vol *vol, char *upath, int utf8)
+char *utompath(const struct vol *vol, char *upath, cnid_t id, int utf8)
 {
     char        *m, *u;
-    int          h;
-    int          mangleflag = 0;
+    u_int16_t    flags = CONV_IGNORE | CONV_UNESCAPEHEX;
     size_t       outlen;
 
-    if (!vol_utf8(vol))
-    	return old_utompath(vol, upath);
-    /* do the hex conversion */
-    u = upath;
     m = mpath;
-    while ( *u != '\0' ) {
-        if ( *u == ':' && islxdigit( *(u+1)) && islxdigit( *(u+2))) {
-            ++u;
-            h = hextoint( *u ) << 4;
-            ++u;
-            h |= hextoint( *u );
-            *m = h;
-        } else
-            *m = *u;
-        u++;
-        m++;
+    outlen = strlen(upath);
+
+    u=ucs2;
+    if ((size_t)-1 == (outlen = decode_cap(vol->v_maccharset, upath, outlen, u, MAXPATHLEN, &flags)) ) {
+        LOG(log_error, logtype_afpd, "cap_decode failed for '%s'", upath);
+	goto utompath_error;
     }
-    *m = '\0';
-    m = mpath;
-#ifdef AFP3x    
-    if (utf8) {
-	if ((size_t)(-1) == ( outlen = utf8_decompose ( mpath, strlen (mpath), mpath, MAXPATHLEN)) )
-	   return NULL;
+    u[outlen] = 0;
+
+    if (vol->v_casefold & AFPVOL_UTOMUPPER)
+        flags |= CONV_TOUPPER;
+    else if (vol->v_casefold & AFPVOL_UTOMLOWER)
+        flags |= CONV_TOLOWER;
+
+    /* convert charsets */
+    if ((size_t)-1 == ( outlen = convert_charset ( vol->v_volcharset, (utf8)?CH_UTF8_MAC:vol->v_maccharset,  u, outlen, mpath, MAXPATHLEN, &flags)) ) { 
+        LOG(log_error, logtype_afpd, "Conversion from %s to %s for %s (%u) failed.", vol->v_volcodepage, vol->v_maccodepage, u, ntohl(id));
+	goto utompath_error;
     }
+
+    mpath[outlen] = 0; 
+    if (!(flags & CONV_REQMANGLE)) 
+        flags = 0;
     else {
-        if ((size_t)(-1) == ( outlen = utf8_to_mac_charset ( vol->v_maccharset,  mpath, strlen(mpath), mpath, MAXPATHLEN, &mangleflag)) ) 
-		return NULL;
+    	if (NULL != (u = strrchr(mpath, '.')) ) 
+		mpath[u-mpath] = 0;
    }
-   mpath[outlen] = 0; 
 
-#endif
-#ifdef FILE_MANGLING
-    m = mangle(vol, mpath, upath, mangleflag);
-#else
-    if (mangleflag)
-        return NULL;
-    m = mpath;
-#endif /* FILE_MANGLING */
+    m = mangle(vol, mpath, upath, id, flags);
 
+#ifdef DEBUG
+    LOG(log_debug, logtype_afpd, "utompath: '%s':'%s':'%2.2X'", upath, m, ntohl(id));
+#endif /* DEBUG */
+    return(m);
+
+utompath_error:
+    u = "unconvertable";
+    m = mangle(vol, u, upath, id, 1);
     return(m);
 }
 
@@ -917,7 +772,7 @@ int		ibuflen, *rbuflen;
 
     isadir = path_isadir(path);
     if (isadir || !(of = of_findname(path))) {
-        memset(&ad, 0, sizeof(ad));
+        ad_init(&ad, vol->v_adouble);
         adp = &ad;
     } else
         adp = of->of_ad;
@@ -983,7 +838,7 @@ int		ibuflen, *rbuflen;
     upath = s_path->u_name;
     isadir = path_isadir(s_path);
     if (isadir || !(of = of_findname(s_path))) {
-        memset(&ad, 0, sizeof(ad));
+        ad_init(&ad, vol->v_adouble);
         adp = &ad;
     } else
         adp = of->of_ad;
@@ -1053,7 +908,7 @@ int		ibuflen, *rbuflen;
 
     isadir = path_isadir(s_path);
     if (isadir || !(of = of_findname(s_path))) {
-        memset(&ad, 0, sizeof(ad));
+        ad_init(&ad, vol->v_adouble);
         adp = &ad;
     } else
         adp = of->of_ad;

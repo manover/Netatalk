@@ -2,11 +2,21 @@
 
 noinst_LTLIBRARIES = libunicode.la
 
-CFLAGS = -I$(top_srcdir)/sys @CFLAGS@
+CFLAGS = -I$(top_srcdir)/sys @CFLAGS@ @ICONV_CFLAGS@
+
+SUBDIRS = charsets
+
+LIBUNICODE_DEPS = charsets/libcharsets.la 
+
 
 libunicode_la_SOURCES = \
 	util_unistr.c	\
 	iconv.c		\
-	charcnv.c	
+	charcnv.c	\
+	utf8.c
 
-noinst_HEADERS = mac_roman.h ucs2_casetable.h precompose.h
+libunicode_la_LIBADD = $(LIBUNICODE_DEPS)
+
+noinst_HEADERS = ucs2_casetable.h precompose.h
+
+LIBS=@ICONV_LIBS@

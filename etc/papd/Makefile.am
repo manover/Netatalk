@@ -29,4 +29,4 @@ CFLAGS = \
 	-D_PATH_PAPDCONF=\"$(pkgconfdir)/papd.conf\" \
 	-D_PATH_PAPDUAMPATH=\"$(UAMS_PATH)/\"
 
-LIBS = @PAM_LIBS@
+#LIBS = @PAM_LIBS@

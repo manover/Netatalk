@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4 2003-07-21 05:50:54 didg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.1 2003-09-09 16:42:20 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -22,9 +22,7 @@
 #include <atalk/adouble.h>
 #include <atalk/afp.h>
 #include <atalk/util.h>
-#ifdef CNID_DB
 #include <atalk/cnid.h>
-#endif /* CNID_DB */
 #include <utime.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,6 +56,8 @@ char *strchr (), *strrchr ();
 #include "filedir.h"
 #include "globals.h"
 #include "unix.h"
+
+#include "mangle.h"
 
 struct dir	*curdir;
 int             afp_errno;
@@ -173,10 +173,9 @@ struct dir *
             const struct vol	*vol;
 u_int32_t	did;
 {
-#ifdef CNID_DB
     struct dir   *ret;
     char	 *upath;
-    u_int32_t	 id;
+    cnid_t   	 id, cnid;
     static char  path[MAXPATHLEN + 1];
     size_t len,  pathlen;
     char         *ptr;
@@ -193,12 +192,12 @@ u_int32_t	did;
     utf8 = utf8_encoding();
     maxpath = (utf8)?MAXPATHLEN -7:255;
     id = did;
-    if (NULL == (upath = cnid_resolve(vol->v_db, &id, buffer, buflen)) ) {
+    if (NULL == (upath = cnid_resolve(vol->v_cdb, &id, buffer, buflen)) ) {
         afp_errno = AFPERR_NOOBJ;
         return NULL;
     }
     ptr = path + MAXPATHLEN;
-    if (NULL == ( mpath = utompath(vol, upath, utf8) ) ) {
+    if (NULL == ( mpath = utompath(vol, upath, did, utf8) ) ) {
         afp_errno = AFPERR_NOOBJ;
         return NULL;
     }
@@ -212,9 +211,10 @@ u_int32_t	did;
         if (ret != NULL) {
             break;
         }
-        if ( NULL == (upath = cnid_resolve(vol->v_db, &id, buffer, buflen))
+        cnid = id;
+        if ( NULL == (upath = cnid_resolve(vol->v_cdb, &id, buffer, buflen))
              ||
-             NULL == (mpath = utompath(vol, upath, utf8))
+             NULL == (mpath = utompath(vol, upath, cnid, utf8))
         ) {
             afp_errno = AFPERR_NOOBJ;
             return NULL;
@@ -254,7 +254,7 @@ u_int32_t	did;
     /* cname is not efficient */
     if (cname( vol, ret, &ptr ) == NULL )
         return NULL;
-#endif
+	
     return dirsearch(vol, did);
 }
 
@@ -564,7 +564,9 @@ struct vol	*vol;
 struct dir	*dir;
 struct path *path;
 {
+    if ( path->u_name == NULL) {
     path->u_name = mtoupath(vol, path->m_name, utf8_encoding() );
+    }
     path->dir = NULL;
 
     if ( path->u_name == NULL) {
@@ -1044,7 +1046,7 @@ char	**cpath;
                ret.dir = dir;
             }               
             return &ret;
-        }
+        } /* if (len == 0) */
 
         if (*data == sep ) {
             data++;
@@ -1079,6 +1081,20 @@ char	**cpath;
         *p = '\0';
 
         if ( p != path ) { /* we got something */
+            char *t;
+            ret.u_name = NULL;
+            /* check for mangled filename :( */
+            if (afp_version >= 30) {
+                t = demangle(vol, path);
+                if (t != path) {
+                    /* should we check id is cdir->d_did ? */
+                    ret.u_name = t;
+                    if ( (t = utompath(vol, ret.u_name, 0, utf8_encoding())) ) {
+                         /* at last got our mac name */
+                         strcpy(path,t);
+                    }
+                }
+            }
             if ( !extend ) {
                 cdir = dir->d_child;
                 while (cdir) {
@@ -1112,7 +1128,7 @@ char	**cpath;
 
             } else {
                 cdir = extenddir( vol, dir, &ret );
-            }
+            } /* if (!extend) */
 
             if ( cdir == NULL ) {
 
@@ -1124,8 +1140,8 @@ char	**cpath;
                 dir = cdir;	
                 *path = '\0';
             }
-        }
-    }
+        } /* if (p != path) */
+    } /* for (;;) */
 }
 
 /*
@@ -1259,7 +1275,8 @@ int getdirparams(const struct vol *vol,
 		   (1 << DIRPBIT_MDATE) |
 		   (1 << DIRPBIT_BDATE) |
 		   (1 << DIRPBIT_FINFO)))) {
-        memset(&ad, 0, sizeof(ad));
+
+        ad_init(&ad, vol->v_adouble);
     	if ( !ad_open( upath, ADFLAGS_HF|ADFLAGS_DIR, O_RDONLY,
                   DIRBITS | 0777, &ad)) {
             isad = 1;
@@ -1454,12 +1471,12 @@ int getdirparams(const struct vol *vol,
     if ( l_nameoff ) {
         ashort = htons( data - buf );
         memcpy( l_nameoff, &ashort, sizeof( ashort ));
-        data = set_name(vol, data, dir->d_m_name, 0);
+        data = set_name(vol, data, dir->d_m_name, dir->d_did, 0);
     }
     if ( utf_nameoff ) {
         ashort = htons( data - buf );
         memcpy( utf_nameoff, &ashort, sizeof( ashort ));
-        data = set_name(vol, data, dir->d_m_name, utf8);
+        data = set_name(vol, data, dir->d_m_name, dir->d_did, utf8);
     }
     if ( isad ) {
         ad_close( &ad, ADFLAGS_HF );
@@ -1570,7 +1587,7 @@ int setdirparams(const struct vol *vol,
     int                 newdate = 0;
 
     upath = path->u_name;
-    memset(&ad, 0, sizeof(ad));
+    ad_init(&ad, vol->v_adouble);
 
     if (ad_open( upath, vol_noadouble(vol)|ADFLAGS_HF|ADFLAGS_DIR,
                  O_RDWR|O_CREAT, 0666, &ad) < 0) {
@@ -1887,6 +1904,10 @@ setdirparam_done:
     }
 
     if ( isad ) {
+        if (path->st_valid && !path->st_errno) {
+            ad_setid(&ad, &path->st, curdir->d_did, vol->v_stamp);
+        }
+    
         ad_flush( &ad, ADFLAGS_HF );
         ad_close( &ad, ADFLAGS_HF );
     }
@@ -1968,7 +1989,7 @@ int		ibuflen, *rbuflen;
         return( AFPERR_PARAM );
     }
 
-    memset(&ad, 0, sizeof(ad));
+    ad_init(&ad, vol->v_adouble);
     if (ad_open( ".", vol_noadouble(vol)|ADFLAGS_HF|ADFLAGS_DIR,
                  O_RDWR|O_CREAT, 0666, &ad ) < 0)  {
         if (vol_noadouble(vol))
@@ -1979,6 +2000,7 @@ int		ibuflen, *rbuflen;
     ad_setentrylen( &ad, ADEID_NAME, strlen( s_path->m_name ));
     memcpy( ad_entry( &ad, ADEID_NAME ), s_path->m_name,
             ad_getentrylen( &ad, ADEID_NAME ));
+    ad_setid( &ad, &s_path->st, dir->d_did, vol->v_stamp);
     ad_flush( &ad, ADFLAGS_HF );
     ad_close( &ad, ADFLAGS_HF );
 
@@ -2032,7 +2054,8 @@ const int noadouble;
         }
     }
 
-    memset(&ad, 0, sizeof(ad));
+    ad_init(&ad, 0);    /* FIXME */
+
     len = strlen( newname );
     /* rename() succeeded so we need to update our tree even if we can't open
      * .Parent
@@ -2103,7 +2126,7 @@ int pathlen;
 
     fdir = curdir;
 
-    memset(&ad, 0, sizeof(ad));
+    ad_init(&ad, vol->v_adouble);
     if ( ad_open( ".", ADFLAGS_HF|ADFLAGS_DIR, O_RDONLY,
                   DIRBITS | 0777, &ad) == 0 ) {
 
@@ -2170,9 +2193,7 @@ int pathlen;
 
     if ( !(err = netatalk_rmdir(fdir->d_u_name))) {
         dirchildremove(curdir, fdir);
-#ifdef CNID_DB
-        cnid_delete(vol->v_db, fdir->d_did);
-#endif /* CNID_DB */
+        cnid_delete(vol->v_cdb, fdir->d_did);
         dir_remove( vol, fdir );
         err = AFP_OK;
     }
