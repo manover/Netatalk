@@ -1,5 +1,5 @@
 /*
- * $Id: unix.c,v 1.24.2.4 2002-03-05 15:55:34 jmarcus Exp $
+ * $Id: unix.c,v 1.24.2.5 2002-03-12 15:20:08 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -16,7 +16,7 @@
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/stat.h>
-#include <sys/syslog.h>
+#include <syslog.h>
 #include <netatalk/endian.h>
 #include <dirent.h>
 #include <limits.h>
