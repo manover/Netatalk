@@ -41,6 +41,8 @@
 #define UAM_OPTION_PROTOCOL	(1 << 7) /* DSI or ASP */
 #define UAM_OPTION_CLIENTNAME   (1 << 8) /* get client IP address */
 #define UAM_OPTION_KRB5SERVICE  (1 << 9) /* service name for krb5 principal */
+#define UAM_OPTION_MACCHARSET   (1 << 10) /* mac charset handle */
+#define UAM_OPTION_UNIXCHARSET  (1 << 11) /* unix charset handle */
 
 /* some password options. you pass these in the length parameter and
  * get back the corresponding option. not all of these are implemented. */
@@ -65,7 +67,7 @@ extern int uam_register __P((const int, const char *, const char *, ...));
 extern void uam_unregister __P((const int, const char *));
 
 /* helper functions */
-extern struct passwd *uam_getname __P((char *, const int));
+extern struct passwd *uam_getname __P((void*, char *, const int));
 extern int uam_checkuser __P((const struct passwd *));
 
 /* afp helper functions */

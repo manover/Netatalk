@@ -1,5 +1,5 @@
 /*
- * $Id: uams_pgp.c,v 1.9 2003-01-26 16:54:46 srittau Exp $
+ * $Id: uams_pgp.c,v 1.9.6.1 2003-09-11 23:49:30 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -78,7 +78,7 @@ static int pgp_login(void *obj, struct passwd **uam_pwd,
     if ((unsigned long) ibuf & 1) /* padding */
       ++ibuf;
 
-    if (( pgppwd = uam_getname(name, i)) == NULL ) {
+    if (( pgppwd = uam_getname(obj, name, i)) == NULL ) {
       return AFPERR_PARAM;
     }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: uams_gss.c,v 1.2.2.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: uams_gss.c,v 1.2.2.2 2003-09-11 23:49:30 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -340,7 +340,7 @@ static int gss_logincont(void *obj, struct passwd **uam_pwd,
 	// Chop off the realm name
 	if (at)
 	    *at = '\0';
-	if((pwd = uam_getname( username, userlen )) == NULL) {
+	if((pwd = uam_getname( obj, username, userlen )) == NULL) {
 	    LOG(log_info, logtype_uams, "uam_getname() failed for %s", username);
 	    return AFPERR_PARAM;
 	}

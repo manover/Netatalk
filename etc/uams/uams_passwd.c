@@ -1,5 +1,5 @@
 /*
- * $Id: uams_passwd.c,v 1.19.2.1 2003-09-03 20:40:50 didg Exp $
+ * $Id: uams_passwd.c,v 1.19.2.1.2.1 2003-09-11 23:49:30 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -85,7 +85,7 @@ static int pwd_login(void *obj, char *username, int ulen, struct passwd **uam_pw
     }
     ibuf[ PASSWDLEN ] = '\0';
 
-    if (( pwd = uam_getname(username, ulen)) == NULL ) {
+    if (( pwd = uam_getname(obj, username, ulen)) == NULL ) {
         return AFPERR_PARAM;
     }
 
@@ -311,7 +311,7 @@ struct papfile	*out;
 
     ulen = strlen(username);
 
-    if (( pwd = uam_getname(username, ulen)) == NULL ) {
+    if (( pwd = uam_getname(NULL, username, ulen)) == NULL ) {
         LOG(log_info, logtype_uams, "Bad Login ClearTxtUAM: ( %s ) not found ",
             username);
         return(-1);

@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.44.2.3 2003-07-21 05:50:53 didg Exp $
+ * $Id: auth.c,v 1.44.2.3.2.1 2003-09-11 23:49:30 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -744,7 +744,7 @@ int		ibuflen, *rbuflen;
 
     LOG(log_info, logtype_afpd, "changing password for <%s>", username);
 
-    if (( pwd = uam_getname( username, sizeof(username))) == NULL )
+    if (( pwd = uam_getname( obj, username, sizeof(username))) == NULL )
         return AFPERR_PARAM;
 
     /* send it off to the uam. we really don't use ibuflen right now. */

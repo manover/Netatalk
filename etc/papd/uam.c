@@ -1,5 +1,5 @@
 /*
- * $Id: uam.c,v 1.9 2003-02-17 01:35:57 srittau Exp $
+ * $Id: uam.c,v 1.9.6.1 2003-09-11 23:49:30 bfernhomberg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -191,7 +191,7 @@ int uam_afpserver_option(void *private, const int what, void *option,
 
 /* --- helper functions for plugin uams --- */
 
-struct passwd *uam_getname(char *name, const int len)
+struct passwd *uam_getname(void *dummy, char *name, const int len)
 {
   struct passwd *pwent;
   char *user;

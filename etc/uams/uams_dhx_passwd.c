@@ -1,5 +1,5 @@
 /*
- * $Id: uams_dhx_passwd.c,v 1.18 2003-02-11 16:41:56 didg Exp $
+ * $Id: uams_dhx_passwd.c,v 1.18.6.1 2003-09-11 23:49:30 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -93,7 +93,7 @@ static int pwd_login(void *obj, char *username, int ulen, struct passwd **uam_pw
         return AFPERR_PARAM;
 #endif /* TRU64 */
 
-    if (( dhxpwd = uam_getname(username, ulen)) == NULL ) {
+    if (( dhxpwd = uam_getname(obj, username, ulen)) == NULL ) {
 	return AFPERR_PARAM;
     }
     
@@ -235,7 +235,7 @@ static int passwd_login(void *obj, struct passwd **uam_pwd,
  * uname format :
     byte      3
     2 bytes   len (network order)
-    len bytes unicode name
+    len bytes utf8 name
 */
 static int passwd_login_ext(void *obj, char *uname, struct passwd **uam_pwd,
 			char *ibuf, int ibuflen,

@@ -1,5 +1,5 @@
 /*
- * $Id: uam.c,v 1.24 2003-04-16 22:45:11 samnoble Exp $
+ * $Id: uam.c,v 1.24.6.1 2003-09-11 23:49:30 bfernhomberg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -55,6 +55,12 @@ char *strchr (), *strrchr ();
 #include "afp_config.h"
 #include "auth.h"
 #include "uam_auth.h"
+
+#ifdef AFP3x
+#define utf8_encoding() (afp_version >= 30)
+#else
+#define utf8_encoding() (0)
+#endif
 
 #ifdef TRU64
 #include <netdb.h>
@@ -287,29 +293,44 @@ void uam_unregister(const int type, const char *name)
 
 /* --- helper functions for plugin uams --- */
 
-struct passwd *uam_getname(char *name, const int len)
+struct passwd *uam_getname(void *private, char *name, const int len)
 {
+    AFPObj *obj = private;
     struct passwd *pwent;
-    char *user;
-    int i;
+    static char username[256];
+    static char user[256];
+    static char pwname[256];
+    char *p;
+    size_t ulen;
+    u_int16_t flags = CONV_PRECOMPOSE;
 
     if ((pwent = getpwnam(name)))
         return pwent;
 
 #ifndef NO_REAL_USER_NAME
-    for (i = 0; i < len; i++)
-        name[i] = tolower(name[i]);
+
+    if ( (size_t) -1 == (ulen = convert_charset((utf8_encoding())?CH_UTF8_MAC:obj->options.maccharset, 0, 
+				CH_UCS2, name, len, username, 256, &flags)))
+	return NULL;
 
     setpwent();
     while ((pwent = getpwent())) {
-        if ((user = strchr(pwent->pw_gecos, ',')))
-            *user = '\0';
-        user = pwent->pw_gecos;
+        if ((p = strchr(pwent->pw_gecos, ',')))
+            *p = '\0';
+
+	if ((size_t)-1 == ( ulen = convert_string(obj->options.unixcharset, CH_UCS2, 
+				pwent->pw_gecos, strlen(pwent->pw_gecos), user, 256)) )
+		continue;
+	if ((size_t)-1 == ( ulen = convert_string(obj->options.unixcharset, CH_UCS2, 
+				pwent->pw_name, strlen(pwent->pw_name), pwname, 256)) )
+		continue;
+
 
         /* check against both the gecos and the name fields. the user
          * might have just used a different capitalization. */
-        if ((strncasecmp(user, name, len) == 0) ||
-                (strncasecmp(pwent->pw_name, name, len) == 0)) {
+
+	if ( (strncasecmp_w((ucs2_t*)user, (ucs2_t*)username, len) == 0) || 
+		( strncasecmp_w ( (ucs2_t*) pwname, (ucs2_t*) username, len) == 0)) {
             strncpy(name, pwent->pw_name, len);
             name[len - 1] = '\0';
             break;
@@ -471,6 +492,14 @@ AFPObj *obj = private;
         if (len)
             *len = strlen(obj->options.k5service);
 	break;
+    case UAM_OPTION_MACCHARSET:
+        *((int *) option) = obj->options.maccharset;
+        *len = sizeof(obj->options.maccharset);
+        break;
+    case UAM_OPTION_UNIXCHARSET:
+        *((int *) option) = obj->options.unixcharset;
+        *len = sizeof(obj->options.unixcharset);
+        break;
     default:
         return -1;
         break;
