@@ -1,5 +1,5 @@
 /*
- * $Id: asp_getsess.c,v 1.7.8.5 2004-07-01 02:01:00 didg Exp $
+ * $Id: asp_getsess.c,v 1.7.8.6 2004-07-01 02:10:23 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1996 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -43,6 +43,10 @@
 #ifndef WIFEXITED
 #define WIFEXITED(stat_val) (((stat_val) & 255) == 0)
 #endif /* ! WIFEXITED */
+
+#ifndef MIN
+#define MIN(a,b)     ((a)<(b)?(a):(b))
+#endif /* ! MIN */
 
 static ASP server_asp;
 static struct server_child *children = NULL;
