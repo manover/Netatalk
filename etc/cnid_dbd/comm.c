@@ -1,5 +1,5 @@
 /*
- * $Id: comm.c,v 1.1.4.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: comm.c,v 1.1.4.2 2003-09-20 02:47:21 bfernhomberg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -24,6 +24,10 @@
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif /* HAVE_SYS_TIME_H */
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif /* HAVE_SYS_UIO_H */
+
 
 #include <assert.h>
 #include <time.h>

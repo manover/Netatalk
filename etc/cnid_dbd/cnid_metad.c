@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_metad.c,v 1.1.4.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: cnid_metad.c,v 1.1.4.2 2003-09-20 02:47:21 bfernhomberg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -15,7 +15,9 @@
 #include <stdlib.h>
 
 #ifdef HAVE_UNISTD_H
+#define __USE_GNU
 #include <unistd.h>
+#undef __USE_GNU
 #endif /* HAVE_UNISTD_H */
 #include <sys/param.h>
 #include <errno.h>
@@ -29,6 +31,9 @@
 #endif
 #ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
+#endif
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
 #endif
 #include <sys/un.h>
 #include <sys/socket.h>
