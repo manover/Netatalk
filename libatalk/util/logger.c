@@ -736,17 +736,19 @@ void generate_message_details(char *message_details_buffer,
                               struct tag_log_file_data *log_struct,
                               enum loglevels loglevel, enum logtypes logtype)
 {
+#if 0
   char datebuffer[32];
   char processinfo[64];
+  char log_buffer[MAXLOGSIZE];
+  const char *logtype_string;
+
+  char loglevel_string[12]; /* max int size is 2 billion, or 10 digits */
+#endif
 
   char *ptr = message_details_buffer;
   int   templen;
   int   len = message_details_buffer_length;
 
-  char log_buffer[MAXLOGSIZE];
-  const char *logtype_string;
-
-  char loglevel_string[12]; /* max int size is 2 billion, or 10 digits */
 
   struct what_to_print_array what_to_print;
 
@@ -945,8 +947,7 @@ void setuplog(char *logtype, char *loglevel, char *filename)
     can be taken from default if needs be.  
    */
   /* const char* sources[] = {"syslog", "filelog"}; */
-  const char *null = "";
-  int sourcenum, typenum, levelnum;
+  int typenum, levelnum;
   log_file_data_pair *logs = log_file_arr[logtype_default];
 
   /*
