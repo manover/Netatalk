@@ -79,6 +79,12 @@ typedef struct DSI {
    * write/read just write/read data */
   pid_t  (*proto_open)(struct DSI *);
   void   (*proto_close)(struct DSI *);
+
+  /* url registered with slpd */
+#ifdef USE_SRVLOC
+  char srvloc_url[512];
+#endif 
+
 } DSI;
   
 /* DSI flags */

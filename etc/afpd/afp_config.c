@@ -1,5 +1,5 @@
 /*
- * $Id: afp_config.c,v 1.22 2003-02-09 20:34:38 jmarcus Exp $
+ * $Id: afp_config.c,v 1.22.6.1 2003-10-30 03:48:12 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -48,7 +48,6 @@ char *strchr (), *strrchr ();
 #include <atalk/server_child.h>
 #ifdef USE_SRVLOC
 #include <slp.h>
-static char srvloc_url[512];
 #endif /* USE_SRVLOC */
 
 #include "globals.h"
@@ -107,9 +106,10 @@ static void dsi_cleanup(const AFPConfig *config)
     SLPError err;
     SLPError callbackerr;
     SLPHandle hslp;
+    DSI *dsi = (DSI *)config->obj.handle;
 
     /*  Do nothing if we didn't register.  */
-    if (srvloc_url[0] == '\0')
+    if (!dsi || dsi->srvloc_url[0] == '\0')
         return;
 
     err = SLPOpen("en", SLP_FALSE, &hslp);
@@ -119,20 +119,21 @@ static void dsi_cleanup(const AFPConfig *config)
     }
 
     err = SLPDereg(hslp,
-                   srvloc_url,
+                   dsi->srvloc_url,
                    SRVLOC_callback,
                    &callbackerr);
     if (err != SLP_OK) {
-        LOG(log_error, logtype_afpd, "dsi_cleanup: Error unregistering %s from SRVLOC", srvloc_url);
+        LOG(log_error, logtype_afpd, "dsi_cleanup: Error unregistering %s from SRVLOC", dsi->srvloc_url);
         goto srvloc_dereg_err;
     }
 
     if (callbackerr != SLP_OK) {
-        LOG(log_error, logtype_afpd, "dsi_cleanup: Error in callback while trying to unregister %s from SRVLOC (%d)", srvloc_url, callbackerr);
+        LOG(log_error, logtype_afpd, "dsi_cleanup: Error in callback while trying to unregister %s from SRVLOC (%d)", dsi->srvloc_url, callbackerr);
         goto srvloc_dereg_err;
     }
 
 srvloc_dereg_err:
+    dsi->srvloc_url[0] = '\0';
     SLPClose(hslp);
 }
 #endif /* USE_SRVLOC */
@@ -315,7 +316,7 @@ static AFPConfig *DSIConfigInit(const struct afp_options *options,
     }
 
 #ifdef USE_SRVLOC
-    srvloc_url[0] = '\0';	/*  Mark that we haven't registered.  */
+    dsi->srvloc_url[0] = '\0';	/*  Mark that we haven't registered.  */
     if (!(options->flags & OPTION_NOSLP)) {
 	err = SLPOpen("en", SLP_FALSE, &hslp);
 	if (err != SLP_OK) {
@@ -335,23 +336,25 @@ static AFPConfig *DSIConfigInit(const struct afp_options *options,
 	}
 	/* Try to use the FQDN to register with srvloc. */
 	h = gethostbyaddr((char*)&dsi->server.sin_addr, sizeof(dsi->server.sin_addr), AF_INET);
-	if (h) hostname = h->h_name;
-	else hostname = inet_ntoa(dsi->server.sin_addr);
+	if (h) 
+	    hostname = h->h_name;
+	else 
+	    hostname = inet_ntoa(dsi->server.sin_addr);
 	srvloc_hostname = (options->server ? options->server : options->hostname);
-	if (strlen(srvloc_hostname) > (sizeof(srvloc_url) - strlen(hostname) - 21)) {
+	if (strlen(srvloc_hostname) > (sizeof(dsi->srvloc_url) - strlen(hostname) - 21)) {
 	    LOG(log_error, logtype_afpd, "DSIConfigInit: Hostname is too long for SRVLOC");
-	    srvloc_url[0] = '\0';
+	    dsi->srvloc_url[0] = '\0';
 	    goto srvloc_reg_err;
 	}
 	if (dsi->server.sin_port == afp_port) {
-	    sprintf(srvloc_url, "afp://%s/?NAME=%s", hostname, srvloc_hostname);
+	    sprintf(dsi->srvloc_url, "afp://%s/?NAME=%s", hostname, srvloc_hostname);
 	}
 	else {
-	    sprintf(srvloc_url, "afp://%s:%d/?NAME=%s", hostname, ntohs(dsi->server.sin_port), srvloc_hostname);
+	    sprintf(dsi->srvloc_url, "afp://%s:%d/?NAME=%s", hostname, ntohs(dsi->server.sin_port), srvloc_hostname);
 	}
 
 	err = SLPReg(hslp,
-		     srvloc_url,
+		     dsi->srvloc_url,
 		     SLP_LIFETIME_MAXIMUM,
 		     "",
 		     "",
@@ -359,18 +362,18 @@ static AFPConfig *DSIConfigInit(const struct afp_options *options,
 		     SRVLOC_callback,
 		     &callbackerr);
 	if (err != SLP_OK) {
-	    LOG(log_error, logtype_afpd, "DSIConfigInit: Error registering %s with SRVLOC", srvloc_url);
-	    srvloc_url[0] = '\0';
+	    LOG(log_error, logtype_afpd, "DSIConfigInit: Error registering %s with SRVLOC", dsi->srvloc_url);
+	    dsi->srvloc_url[0] = '\0';
 	    goto srvloc_reg_err;
 	}
 
 	if (callbackerr != SLP_OK) {
-	    LOG(log_error, logtype_afpd, "DSIConfigInit: Error in callback trying to register %s with SRVLOC", srvloc_url);
-	    srvloc_url[0] = '\0';
+	    LOG(log_error, logtype_afpd, "DSIConfigInit: Error in callback trying to register %s with SRVLOC", dsi->srvloc_url);
+	    dsi->srvloc_url[0] = '\0';
 	    goto srvloc_reg_err;
 	}
 
-	LOG(log_info, logtype_afpd, "Sucessfully registered %s with SRVLOC", srvloc_url);
+	LOG(log_info, logtype_afpd, "Sucessfully registered %s with SRVLOC", dsi->srvloc_url);
 
 srvloc_reg_err:
 	SLPClose(hslp);
@@ -396,7 +399,7 @@ srvloc_reg_err:
     config->server_start = dsi_start;
 #ifdef USE_SRVLOC
     config->server_cleanup = dsi_cleanup;
-#endif /* USE_SRVLOC */
+#endif 
     return config;
 }
 
