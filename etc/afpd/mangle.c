@@ -1,5 +1,5 @@
 /* 
- * $Id: mangle.c,v 1.16.2.1.2.4 2003-10-12 02:11:28 didg Exp $ 
+ * $Id: mangle.c,v 1.16.2.1.2.5 2003-10-14 00:28:26 bfernhomberg Exp $ 
  *
  * Copyright (c) 2002. Joe Marcus Clarke (marcus@marcuscom.com)
  * All Rights Reserved.  See COPYRIGHT.
@@ -23,15 +23,24 @@
 
 
 
-static char *demangle_checks ( const struct vol *vol, char* uname, char * mfilename, size_t prefix)
+static char *demangle_checks ( const struct vol *vol, char* uname, char * mfilename, size_t prefix, char * ext)
 {
     u_int16_t flags;
     static char buffer[MAXPATHLEN +1];
     size_t len;
+    char *u;
 
     /* We need to check, whether we really need to demangle the filename 	*/
     /* i.e. it's not just a file with a valid #HEX in the name ...		*/
     /* but we don't want to miss valid demangle as well.			*/
+
+    /* check whether file extensions match */
+    if ( NULL != (u = strchr(uname, '.')) ) {
+	if (strcmp(ext,u))
+		return mfilename;
+    }
+    else if ( *ext == '.' )
+	return mfilename;
 
     /* First we convert the unix name to our volume maccharset     	*/
     /* This assumes, OSX will not send us a mangled name for *any* 	*/
@@ -150,7 +159,7 @@ private_demangle(const struct vol *vol, char *mfilename, cnid_t did, cnid_t *osx
             }
         } 
         else {
-	    return demangle_checks (vol, dir->d_u_name, mfilename, prefix);
+	    return demangle_checks (vol, dir->d_u_name, mfilename, prefix, t);
 	}
     }
     else if (NULL != (u_name = cnid_resolve(vol->v_cdb, &id, buffer, len)) ) {
@@ -165,7 +174,7 @@ private_demangle(const struct vol *vol, char *mfilename, cnid_t did, cnid_t *osx
             }
         }
         else {
-            return demangle_checks (vol, u_name, mfilename, prefix);
+            return demangle_checks (vol, u_name, mfilename, prefix, t);
         }
     }
 
