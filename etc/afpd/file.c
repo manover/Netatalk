@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.18 2004-03-11 02:02:00 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.19 2004-03-11 12:47:59 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -177,25 +177,24 @@ char   stamp[ADEDLEN_PRIVSYN];
     /* look in AD v2 header 
      * note inode and device are opaques and not in network order
     */
-    if (adp && sizeof(dev_t) == ad_getentrylen(adp, ADEID_PRIVDEV)) {
+    if (adp 
+           && sizeof(dev_t) == ad_getentrylen(adp, ADEID_PRIVDEV)
+           && sizeof(ino_t) == ad_getentrylen(adp,ADEID_PRIVINO)
+           && sizeof(stamp) == ad_getentrylen(adp,ADEID_PRIVSYN)
+           && sizeof(cnid_t) == ad_getentrylen(adp, ADEID_DID)
+           && sizeof(cnid_t) == ad_getentrylen(adp, ADEID_PRIVID)
+           
+    ) {
         memcpy(&dev, ad_entry(adp, ADEID_PRIVDEV), sizeof(dev_t));
-        if ( sizeof(ino_t) == ad_getentrylen(adp,ADEID_PRIVINO)) {
-            memcpy(&ino, ad_entry(adp, ADEID_PRIVINO), sizeof(ino_t));
-            if (sizeof(stamp) == ad_getentrylen(adp,ADEID_PRIVSYN)) {
-                memcpy(stamp, ad_entry(adp, ADEID_PRIVSYN), sizeof(stamp));
-                if (sizeof(cnid_t) == ad_getentrylen(adp, ADEID_DID)) {
-                    memcpy(&a_did, ad_entry(adp, ADEID_DID), sizeof(cnid_t));
+        memcpy(&ino, ad_entry(adp, ADEID_PRIVINO), sizeof(ino_t));
+        memcpy(stamp, ad_entry(adp, ADEID_PRIVSYN), sizeof(stamp));
+        memcpy(&a_did, ad_entry(adp, ADEID_DID), sizeof(cnid_t));
 
-                    if (   ((vol->v_flags & AFPVOL_NODEV) || dev == st->st_dev)
-                           && ino == st->st_ino && a_did == did &&
-                           !memcmp(vol->v_stamp, stamp, sizeof(stamp)) &&
-			   (sizeof(cnid_t) == ad_getentrylen(adp, ADEID_PRIVID)) ) 
-                    { 
-                        memcpy(&aint, ad_entry(adp, ADEID_PRIVID), sizeof(aint));
-                        return aint;
-                    } 
-                }
-            }
+        if (  ( (vol->v_flags & AFPVOL_NODEV) || dev == st->st_dev)
+              && ino == st->st_ino && a_did == did 
+              && !memcmp(vol->v_stamp, stamp, sizeof(stamp))) { 
+           memcpy(&aint, ad_entry(adp, ADEID_PRIVID), sizeof(aint));
+           return aint;
         }
     }
 #endif
