@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_dbd.c,v 1.1.4.1 2003-09-09 16:42:21 didg Exp $
+ * $Id: cnid_dbd.c,v 1.1.4.2 2003-09-20 03:02:56 bfernhomberg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -22,11 +22,13 @@
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif /* HAVE_SYS_STAT_H */
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif /* HAVE_SYS_UIO_H */
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <sys/param.h>
 #include <errno.h>
-
 #include <netinet/in.h>
 #include <net/if.h>
 #include <netinet/tcp.h>
