@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.35 2004-08-11 02:33:47 bfernhomberg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.36 2004-08-24 17:33:22 bfernhomberg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(etc/afpd/main.c)
@@ -767,7 +767,6 @@ dnl ----- Mac OSX specific -----
 if test x"$this_os" = "xmacosx"; then 
 	AC_MSG_RESULT([ * Mac OSX specific configuration])
 	AC_DEFINE(BSD4_4, 1, [BSD compatiblity macro])
-	AC_DEFINE(HAVE_BROKEN_CPP, 1, [Define if cpp is broken])
 	AC_DEFINE(HAVE_2ARG_DBTOB, 1, [Define if dbtob takes two arguments])
 	dnl AC_DEFINE(NO_DLFCN_H)
 	AC_DEFINE(NO_DDP, 1, [Define if DDP should be disabled])
