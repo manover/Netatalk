@@ -1,5 +1,5 @@
 /*
- * $Id: file.h,v 1.16.2.1 2003-06-23 10:25:07 didg Exp $
+ * $Id: file.h,v 1.16.2.2 2003-07-21 05:50:54 didg Exp $
  *
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
@@ -52,6 +52,7 @@ extern const u_char	ufinderi[];
 #define FILPBIT_EXTDFLEN 11
 #define FILPBIT_PDINFO   13    /* ProDOS Info/ UTF8 name */
 #define FILPBIT_EXTRFLEN 14
+#define FILPBIT_UNIXPR   15
 
 /* attribute bits. (d) = directory attribute bit as well. */
 #define ATTRBIT_INVISIBLE (1<<0)  /* invisible (d) */

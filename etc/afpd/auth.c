@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.44.2.2 2003-05-26 11:04:36 didg Exp $
+ * $Id: auth.c,v 1.44.2.3 2003-07-21 05:50:53 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -33,6 +33,7 @@
 #include <pwd.h>
 #include <grp.h>
 #include <atalk/logger.h>
+#include <atalk/server_ipc.h>
 
 #ifdef TRU64
 #include <netdb.h>
@@ -272,6 +273,7 @@ static int login(AFPObj *obj, struct passwd *pwd, void (*logout)(void))
 
         LOG(log_info, logtype_afpd, "session from %s (%s)", hostname,
             inet_ntoa( dsi->client.sin_addr ) );
+
         if (setegid( pwd->pw_gid ) < 0 || seteuid( pwd->pw_uid ) < 0) {
             LOG(log_error, logtype_afpd, "login: %s", strerror(errno) );
             return AFPERR_BADUAM;
@@ -334,14 +336,15 @@ unsigned int ibuflen, *rbuflen;
 
     *rbuflen = 0;
 
-    retdata = 1;
+    retdata = obj->options.sleep /120;
+    if (!retdata) {
+    	retdata = 1;
+    }
     *rbuflen = sizeof(retdata);
     retdata = htonl(retdata);
     memcpy(rbuf, &retdata, sizeof(retdata));
-    if (obj->proto == AFPPROTO_DSI) {
-        DSI *dsi = obj->handle;
-        dsi_sleep(dsi, 1);
-    }
+    if (obj->sleep)
+        obj->sleep();
     rbuf += sizeof(retdata);
     return AFP_OK;
 }
@@ -353,10 +356,12 @@ char	     *ibuf, *rbuf;
 unsigned int ibuflen, *rbuflen;
 {
     u_int16_t           type;
-    u_int32_t           idlen;
+    u_int32_t           idlen = 0;
+    u_int32_t		boottime;
 
     u_int16_t           tklen; /* FIXME: spec  u_int32_t? */
     pid_t               token;
+    char 		*p;
 
     *rbuflen = 0;
 
@@ -388,6 +393,19 @@ unsigned int ibuflen, *rbuflen;
         break;
     case 3: /* Jaguar */
     case 4:
+	if (ibuflen >= 8 ) {
+	    p = ibuf;
+	    memcpy( &idlen, ibuf, sizeof(idlen));
+	    idlen = ntohl(idlen);
+	    ibuf += sizeof(idlen);
+	    ibuflen -= sizeof(idlen);
+	    ibuf += sizeof(boottime);
+	    ibuflen -= sizeof(boottime);
+	    if (ibuflen < idlen || idlen > (90-10)) {
+		return AFPERR_PARAM;
+	    }
+	    server_ipc_write(IPC_GETSESSION, idlen+8, p ); 
+	}
 	type = 0;
 	break;
     }
@@ -434,6 +452,9 @@ int		ibuflen, *rbuflen;
     }   
     memcpy(&token, ibuf, tklen);
     /* killed old session, not easy */
+    server_ipc_write(IPC_KILLTOKEN, tklen, &token);
+    sleep(1);
+    
     return AFPERR_SESSCLOS;   /* was AFP_OK */
 }
 
@@ -509,7 +530,7 @@ int		ibuflen, *rbuflen;
     if (!len || len > ibuflen)
         return send_reply(obj, AFPERR_BADUAM);
 
-    if ((afp_uam = auth_uamfind(UAM_SERVER_LOGIN, ibuf, len)) == NULL)
+    if (NULL == (afp_uam = auth_uamfind(UAM_SERVER_LOGIN, ibuf, len)) )
         return send_reply(obj, AFPERR_BADUAM);
     ibuf += len;
     ibuflen -= len;

@@ -11,6 +11,7 @@ libutil_la_SOURCES = \
 	logger.c	\
 	module.c	\
 	server_child.c	\
+	server_ipc.c	\
 	server_lock.c	\
 	strcasestr.c    \
 	strdicasecmp.c	

@@ -1,5 +1,5 @@
 /*
- * $Id: afp_dsi.c,v 1.27.2.2 2003-06-23 10:25:07 didg Exp $
+ * $Id: afp_dsi.c,v 1.27.2.3 2003-07-21 05:50:53 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -47,6 +47,7 @@ extern struct oforks	*writtenfork;
 
 #define CHILD_DIE         (1 << 0)
 #define CHILD_RUNNING     (1 << 1)
+#define CHILD_SLEEPING    (1 << 2)
 
 static struct {
     AFPObj *obj;
@@ -90,9 +91,14 @@ static void afp_dsi_die(int sig)
     }
 }
 
-/* ---------------------------------
- * SIGUSR1 down in five mn.
-*/
+/* */
+static void afp_dsi_sleep(void)
+{
+    child.flags |= CHILD_SLEEPING;
+    dsi_sleep(child.obj->handle, 1);
+}
+
+/* ------------------- */
 static void afp_dsi_timedown()
 {
     struct sigaction	sv;
@@ -155,13 +161,15 @@ static void afp_dsi_getmesg (int sig)
 }
 #endif /* SERVERTEXT */
 
-/* ---------------------- */
 static void alarm_handler()
 {
-int err;
+    int err;
+
     /* if we're in the midst of processing something,
        don't die. */
-    if ((child.flags & CHILD_RUNNING) || (child.tickle++ < child.obj->options.timeout)) {
+    if ((child.flags & CHILD_SLEEPING) && child.tickle++ < child.obj->options.sleep) {
+        return;
+    } else if ((child.flags & CHILD_RUNNING) || (child.tickle++ < child.obj->options.timeout)) {
         if (!(err = pollvoltime(child.obj)))
             err = dsi_tickle(child.obj->handle);
         if (err <= 0) 
@@ -203,6 +211,7 @@ void afp_over_dsi(AFPObj *obj)
     obj->reply = (int (*)()) dsi_cmdreply;
     obj->attention = (int (*)(void *, AFPUserBytes)) dsi_attention;
 
+    obj->sleep = afp_dsi_sleep;
     child.obj = obj;
     child.tickle = child.flags = 0;
 
@@ -270,6 +279,7 @@ void afp_over_dsi(AFPObj *obj)
     /* get stuck here until the end */
     while ((cmd = dsi_receive(dsi))) {
         child.tickle = 0;
+        child.flags &= ~CHILD_SLEEPING;
         dsi_sleep(dsi, 0); /* wake up */
         if (reload_request) {
             reload_request = 0;
@@ -278,7 +288,7 @@ void afp_over_dsi(AFPObj *obj)
 
         if (cmd == DSIFUNC_TICKLE) {
             /* so we don't get killed on the client side. */
-            if (child.flags & CHILD_DIE)
+            if ((child.flags & CHILD_DIE))
                 dsi_tickle(dsi);
             continue;
         } else if (!(child.flags & CHILD_DIE)) { /* reset tickle timer */

@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.20.4.1 2003-05-26 11:17:25 didg Exp $
+ * $Id: main.c,v 1.20.4.2 2003-07-21 05:50:54 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -41,6 +41,7 @@
 #include <atalk/paths.h>
 #include <atalk/util.h>
 #include <atalk/server_child.h>
+#include <atalk/server_ipc.h>
 
 #include "globals.h"
 #include "afp_config.h"
@@ -63,6 +64,7 @@ struct afp_options default_options;
 static AFPConfig *configs;
 static server_child *server_children;
 static fd_set save_rfds;
+static int    Ipc_fd = -1;
 
 #ifdef TRU64
 void afp_get_cmdline( int *ac, char ***av)
@@ -78,6 +80,25 @@ static void afp_exit(const int i)
     exit(i);
 }
 
+/* ------------------
+   initialize fd set we are waiting for.
+*/
+static void set_fd(int ipc_fd)
+{
+    AFPConfig   *config;
+
+    FD_ZERO(&save_rfds);
+    for (config = configs; config; config = config->next) {
+        if (config->fd < 0) /* for proxies */
+            continue;
+        FD_SET(config->fd, &save_rfds);
+    }
+    if (ipc_fd >= 0) {
+        FD_SET(ipc_fd, &save_rfds);
+    }
+}
+ 
+/* ------------------ */
 static void afp_goaway(int sig)
 {
 
@@ -107,12 +128,7 @@ static void afp_goaway(int sig)
                 LOG(log_error, logtype_afpd, "config re-read: no servers configured");
                 afp_exit(1);
             }
-            FD_ZERO(&save_rfds);
-            for (config = configs; config; config = config->next) {
-                if (config->fd < 0)
-                    continue;
-                FD_SET(config->fd, &save_rfds);
-            }
+            set_fd(Ipc_fd);
         } else {
             LOG(log_info, logtype_afpd, "disallowing logins");
             auth_unload();
@@ -147,6 +163,7 @@ char	**av;
 {
     AFPConfig           *config;
     fd_set              rfds;
+    void                *ipc;
     struct sigaction	sv;
     sigset_t            sigs;
 
@@ -229,13 +246,11 @@ char	**av;
     }
     sigprocmask(SIG_UNBLOCK, &sigs, NULL);
 
-    /* watch atp and dsi sockets. */
-    FD_ZERO(&save_rfds);
-    for (config = configs; config; config = config->next) {
-        if (config->fd < 0) /* for proxies */
-            continue;
-        FD_SET(config->fd, &save_rfds);
+    /* watch atp, dsi sockets and ipc parent/child file descriptor. */
+    if ((ipc = server_ipc_create())) {
+        Ipc_fd = server_ipc_parent(ipc);
     }
+    set_fd(Ipc_fd);
 
     /* wait for an appleshare connection. parent remains in the loop
      * while the children get handled by afp_over_{asp,dsi}.  this is
@@ -251,7 +266,9 @@ char	**av;
             LOG(log_error, logtype_afpd, "main: can't wait for input: %s", strerror(errno));
             break;
         }
-
+        if (Ipc_fd >=0 && FD_ISSET(Ipc_fd, &rfds)) {
+            server_ipc_read(server_children);
+       }
         for (config = configs; config; config = config->next) {
             if (config->fd < 0)
                 continue;

@@ -1,5 +1,5 @@
 /*
- * $Id: volume.h,v 1.19.2.4 2003-06-23 10:25:08 didg Exp $
+ * $Id: volume.h,v 1.19.2.5 2003-07-21 05:50:54 didg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -118,6 +118,7 @@ this is going away. */
 #define AFPVOL_NOFILEID  (1 << 15)  /* don't advertise createid resolveid and deleteid calls */
 #define AFPVOL_UTF8      (1 << 16)  /* unix name are in UTF8 */
 #define AFPVOL_NOSTAT    (1 << 17)  /* unix name are in UTF8 */
+#define AFPVOL_UNIX_PRIV (1 << 18)  /* support unix privileges */
 
 /* FPGetSrvrParms options */
 #define AFPSRVR_CONFIGINFO     (1 << 0)
@@ -178,6 +179,7 @@ int wincheck(const struct vol *vol, const char *path);
 #define vol_utf8(vol) (0)
 #define utf8_encoding() (0)
 #endif
+#define vol_unix_priv(vol) (afp_version >= 30 && ((vol)->v_flags & AFPVOL_UNIX_PRIV))
 
 extern struct vol	*getvolbyvid __P((const u_int16_t));
 extern int              ustatfs_getvolspace __P((const struct vol *,

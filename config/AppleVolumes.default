@@ -83,6 +83,7 @@
 # preexec_close       -> a non-zero return code from preexec close the 
 #                        volume being mounted.
 # nostat              -> don't stat volume path when enumerating volumes list
+# upriv               -> use unix privilege.  
 #
 #
 # codepage:filename   -> load filename from nls directory.

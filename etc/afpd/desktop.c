@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.3 2003-06-23 10:25:07 didg Exp $
+ * $Id: desktop.c,v 1.26.2.4 2003-07-21 05:50:54 didg Exp $
  *
  * See COPYRIGHT.
  *
@@ -911,7 +911,7 @@ int		ibuflen, *rbuflen;
     clen = min( clen, 199 );
 
     upath = path->u_name;
-    if (check_access(upath, OPENACC_WR ) < 0) {
+    if (!vol_unix_priv(vol) && check_access(upath, OPENACC_WR ) < 0) {
         return AFPERR_ACCESS;
     }
 
@@ -1047,7 +1047,7 @@ int		ibuflen, *rbuflen;
     }
 
     upath = s_path->u_name;
-    if (check_access(upath, OPENACC_WR ) < 0) {
+    if (!vol_unix_priv(vol) && check_access(upath, OPENACC_WR ) < 0) {
         return AFPERR_ACCESS;
     }
 

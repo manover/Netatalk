@@ -1,5 +1,5 @@
 /*
- * $Id: directory.h,v 1.13.2.3 2003-05-20 14:49:19 didg Exp $
+ * $Id: directory.h,v 1.13.2.4 2003-07-21 05:50:54 didg Exp $
  *
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
@@ -137,6 +137,7 @@ extern int path_isadir(struct path *o_path);
 #define DIRPBIT_GID	11
 #define DIRPBIT_ACCESS	12
 #define DIRPBIT_PDINFO  13         /* ProDOS Info */
+#define DIRPBIT_UNIXPR  15
 
 /* directory attribute bits (see file.h for other bits) */
 #define ATTRBIT_EXPFOLDER   (1 << 1) /* shared point */
@@ -212,6 +213,7 @@ typedef int (*dir_loop)(struct dirent *, char *, void *);
 extern int  for_each_dirent __P((const struct vol *, char *, dir_loop , void *));
 
 extern int  check_access __P((char *name , int mode));
+extern int file_access   __P((struct path *path, int mode));
 
 extern int netatalk_unlink __P((const char *name));
 

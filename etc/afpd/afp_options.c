@@ -1,5 +1,5 @@
 /*
- * $Id: afp_options.c,v 1.30.2.1 2003-05-26 11:17:25 didg Exp $
+ * $Id: afp_options.c,v 1.30.2.2 2003-07-21 05:50:53 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -159,6 +159,7 @@ void afp_options_init(struct afp_options *options)
     options->passwdfile = _PATH_AFPDPWFILE;
     options->tickleval = 30;
     options->timeout = 4;
+    options->sleep = 10* 120; /* 10 h in 30 seconds tick */
     options->server_notif = 1;
     options->authprintdir = NULL;
     options->signature = "host";
@@ -261,6 +262,13 @@ int afp_options_parseline(char *buf, struct afp_options *options)
         options->timeout = atoi(c);
         if (options->timeout <= 0) {
             options->timeout = 4;
+        }
+    }
+
+    if ((c = getoption(buf, "-sleep"))) {
+        options->sleep = atoi(c) *120;
+        if (options->sleep <= 4) {
+            options->sleep = 4;
         }
     }
 
