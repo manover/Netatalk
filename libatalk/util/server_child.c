@@ -1,5 +1,5 @@
 /*
- * $Id: server_child.c,v 1.7.4.1.2.2 2003-11-13 15:39:02 didg Exp $
+ * $Id: server_child.c,v 1.7.4.1.2.3 2004-02-16 08:59:52 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -284,7 +284,9 @@ void server_child_kill_one_by_id(server_child *children, const int forkid, const
 		  LOG(log_info, logtype_default, "Disconnecting old session %d, client rebooted.",  child->pid);
 	     }
 	     else {
-		  LOG(log_info, logtype_default, "WARNING: 2 connections (%d, %d), boottime identical, don't know if one needs to be disconnected.");
+		  LOG(log_info, logtype_default, 
+		      "WARNING: 2 connections (%d, %d), boottime identical, don't know if one needs to be disconnected.",
+		       child->pid, pid);
 	     } 
 		
 	  }
