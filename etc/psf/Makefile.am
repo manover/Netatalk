@@ -26,10 +26,10 @@ psf_LINKS = ofpap ifpap tfpap ifpaprev tfpaprev ofwpap ifwpap \
 # install sections for links
 #
 
-install-exec-local:
+install-exec-hook:
 	@list='$(psf_LINKS)'; for l in $$list; do \
 		rm $(DESTDIR)$(sbindir)/$$l 2>/dev/null || true; \
-		$(LN_S) psf $(DESTDIR)$(sbindir)/$$l;  \
+		(cd $(DESTDIR)$(sbindir) && $(LN_S) psf $$l);  \
 	done
 
 #

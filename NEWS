@@ -7,7 +7,7 @@ Changes in 1.6.1
        of Berkeley DB are supported.
 * FIX: Codepage file maccode.koi8-r is now correctly cleaned.
 * FIX: Fix init script location on SuSE. [Olaf]
-* FIX: Build fixes. [Olaf]
+* FIX: Build fixes. [Olaf, Steven N. Hirsch]
 * FIX: Various bugs when a user doesn't have access permission to a folder.
        (Fixes an OSX kernel panic.)
 * FIX: CNID, folders' DID handling with concurrent access or symlinks.
