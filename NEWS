@@ -1,6 +1,9 @@
 Changes from 1.5.3
 ==================
 
+* FIX: file open read only and then read write (aka pb with Illustrator).
+* FIX: Problems with unexpected EOF when reading files on a ddp connection
+       Photoshop, old finder.
 * FIX: --with-nls-dir option does now work
 
 Changes from 1.5.2
