@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.32 2004-07-11 02:17:51 bfernhomberg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.33 2004-08-11 20:15:35 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -653,7 +653,6 @@ static int creatvol(AFPObj *obj, struct passwd *pwd,
 	    volume->v_adouble = options[VOLOPT_ADOUBLE].i_value;
 	else 
 	    volume->v_adouble = AD_VERSION;
-	initvoladouble(volume);
 #ifdef FORCE_UIDGID
         if (options[VOLOPT_FORCEUID].c_value) {
             volume->v_forceuid = strdup(options[VOLOPT_FORCEUID].c_value);
@@ -684,6 +683,7 @@ static int creatvol(AFPObj *obj, struct passwd *pwd,
         }
     }
 
+    initvoladouble(volume);
     volume->v_next = Volumes;
     Volumes = volume;
     return 0;
