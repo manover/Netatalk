@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.1.4.10 2004-03-22 05:31:39 didg Exp $
+ * $Id: main.c,v 1.1.4.10.2.1 2004-12-11 12:38:20 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -188,32 +188,16 @@ static int loop(struct db_param *dbp)
     }
 }
 
-
-int main(int argc, char *argv[])
+/* ------------------------ */
+static void switch_to_user(char *dir)
 {
-    struct sigaction sv;
-    struct db_param *dbp;
-    int err = 0;
     struct stat st;
-    int lockfd, ctrlfd, clntfd;
-    struct flock lock;
-    char *dir;
-       
-    set_processname("cnid_dbd");
- 
-    if (argc  != 4) {
-        LOG(log_error, logtype_cnid, "main: not enough arguments");
-        exit(1);
-    }
-
-    dir = argv[1];
-    ctrlfd = atoi(argv[2]);
-    clntfd = atoi(argv[3]);
 
     if (chdir(dir) < 0) {
         LOG(log_error, logtype_cnid, "chdir to %s failed: %s", dir, strerror(errno));
         exit(1);
     }
+    
     if (stat(".", &st) < 0) {
         LOG(log_error, logtype_cnid, "error in stat for %s: %s", dir, strerror(errno));
         exit(1);
@@ -225,8 +209,13 @@ int main(int argc, char *argv[])
             exit(1);
         }
     }
-    /* Before we do anything else, check if there is an instance of cnid_dbd
-       running already and silently exit if yes. */
+}
+
+/* ------------------------ */
+int get_lock(void)
+{
+    int lockfd;
+    struct flock lock;
 
     if ((lockfd = open(LOCKFILENAME, O_RDWR | O_CREAT, 0644)) < 0) {
 	LOG(log_error, logtype_cnid, "main: error opening lockfile: %s", strerror(errno));
@@ -247,8 +236,14 @@ int main(int argc, char *argv[])
 	}
     }
     
-    LOG(log_info, logtype_cnid, "Startup, DB dir %s", dir);
-    
+    return lockfd;
+}
+
+/* ----------------------- */
+void set_signal(void)
+{
+    struct sigaction sv;
+
     sv.sa_handler = sig_exit;
     sv.sa_flags = 0;
     sigemptyset(&sv.sa_mask);
@@ -264,10 +259,56 @@ int main(int argc, char *argv[])
         LOG(log_error, logtype_cnid, "main: sigaction: %s", strerror(errno));
         exit(1);
     }
+}
+
+/* ----------------------- */
+void free_lock(int lockfd)
+{
+    struct flock lock;
+
+    lock.l_start  = 0;
+    lock.l_whence = SEEK_SET;
+    lock.l_len    = 0;
+    lock.l_type = F_UNLCK;
+    fcntl(lockfd, F_SETLK, &lock);
+    close(lockfd);
+}
+
+/* ------------------------ */
+int main(int argc, char *argv[])
+{
+    struct db_param *dbp;
+    int err = 0;
+    int lockfd, ctrlfd, clntfd;
+    char *dir;
+       
+    set_processname("cnid_dbd");
+    syslog_setup(log_debug, logtype_default, logoption_ndelay | logoption_pid, logfacility_daemon);
+    
+    if (argc  != 4) {
+        LOG(log_error, logtype_cnid, "main: not enough arguments");
+        exit(1);
+    }
+
+    dir = argv[1];
+    ctrlfd = atoi(argv[2]);
+    clntfd = atoi(argv[3]);
+
+    switch_to_user(dir);
+    
+    /* Before we do anything else, check if there is an instance of cnid_dbd
+       running already and silently exit if yes. */
+    lockfd = get_lock();
+    
+    LOG(log_info, logtype_cnid, "Startup, DB dir %s", dir);
+    
+    set_signal();
+    
     /* SIGINT and SIGTERM are always off, unless we get a return code of 0 from
        comm_rcv (no requests for one second, see above in loop()). That means we
        only shut down after one second of inactivity. */
     block_sigs_onoff(1);
+
     if ((dbp = db_param_read(dir)) == NULL)
         exit(1);
 
@@ -297,10 +338,12 @@ int main(int argc, char *argv[])
     if (dbif_txn_commit() < 0)
 	exit(6);
 #endif
+
     if (comm_init(dbp, ctrlfd, clntfd) < 0) {
         dbif_close();
         exit(3);
     }
+
     if (loop(dbp) < 0)
         err++;
 
@@ -309,22 +352,19 @@ int main(int argc, char *argv[])
        should be enough. */
     if (dbif_sync() < 0)
         err++;
-#endif        
+#endif
 
     if (dbif_close() < 0)
         err++;
-
-    lock.l_type = F_UNLCK;
-    fcntl(lockfd, F_SETLK, &lock);
-    close(lockfd);
+        
+    free_lock(lockfd);
     
     if (err)
         exit(4);
-    else {
-	if (exit_sig)
-	    LOG(log_info, logtype_cnid, "main: Exiting on signal %i", exit_sig);
-	else
-	    LOG(log_info, logtype_cnid, "main: Idle timeout, exiting");
-        exit(0);
-    }
+    else if (exit_sig)
+	LOG(log_info, logtype_cnid, "main: Exiting on signal %i", exit_sig);
+    else
+	LOG(log_info, logtype_cnid, "main: Idle timeout, exiting");
+    
+    return 0;
 }
