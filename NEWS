@@ -1,6 +1,7 @@
 Changes in 1.6.1
 ================
 
+* UPD: Improve --enable-fhs [Olaf Hering]
 * FIX: Codepage file maccode.koi8-r is now correctly cleaned.
 
 Changes in 1.6.0
