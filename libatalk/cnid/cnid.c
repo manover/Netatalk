@@ -1,5 +1,5 @@
 /* 
- * $Id: cnid.c,v 1.1.4.8 2004-01-14 23:15:19 lenneis Exp $
+ * $Id: cnid.c,v 1.1.4.9 2004-03-19 13:18:51 bfernhomberg Exp $
  *
  * Copyright (c) 2003 the Netatalk Team
  * Copyright (c) 2003 Rafal Lewczuk <rlewczuk@pronet.pl>
@@ -19,6 +19,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/param.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 #include <signal.h>
 #include <unistd.h>
 #include <errno.h>
@@ -26,9 +30,7 @@
 #include <atalk/cnid.h>
 #include <atalk/list.h>
 #include <atalk/logger.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+#include <atalk/util.h>
 
 /* List of all registered modules. */
 static struct list_head modules = ATALK_LIST_HEAD_INIT(modules);
@@ -59,7 +61,8 @@ void cnid_register(struct _cnid_module *module)
 /* --------------- */
 static int cnid_dir(const char *dir, mode_t mask)
 {
-   struct stat st; 
+   struct stat st, st1; 
+   char tmp[MAXPATHLEN];
 
    if (stat(dir, &st) < 0) {
        if (errno != ENOENT) 
@@ -76,8 +79,12 @@ static int cnid_dir(const char *dir, mode_t mask)
        if (mkdir(dir, 0777 & ~mask) < 0)
            return -1;
    } else {
-       LOG(log_info, logtype_cnid, "Setting uid/gid to %d/%d", st.st_uid, st.st_gid);
-       if (setegid(st.st_gid) < 0 || seteuid(st.st_uid) < 0) {
+       strlcpy(tmp, dir, sizeof(tmp));
+       strlcat(tmp, "/.AppleDB", sizeof(tmp));
+       if (stat(tmp, &st1) < 0) /* use .AppleDB owner, if folder already exists */
+           st1 = st; 
+       LOG(log_info, logtype_cnid, "Setting uid/gid to %d/%d", st1.st_uid, st1.st_gid);
+       if (setegid(st1.st_gid) < 0 || seteuid(st1.st_uid) < 0) {
            LOG(log_error, logtype_cnid, "uid/gid: %s", strerror(errno));
            return -1;
        }
@@ -123,10 +130,6 @@ struct _cnid_db *cnid_open(const char *volpath, mode_t mask, char *type, int fla
     }
 
     db = mod->cnid_open(volpath, mask);
-    /* FIXME should module know about it ? */
-    if (flags) {
-        db->flags |= CNID_FLAG_NODEV;
-    }
 
     if ((mod->flags & CNID_FLAG_SETUID)) {
         seteuid(0);
@@ -139,6 +142,10 @@ struct _cnid_db *cnid_open(const char *volpath, mode_t mask, char *type, int fla
     if (NULL == db) {
         LOG(log_error, logtype_afpd, "Cannot open CNID db at [%s].", volpath);
         return NULL;
+    }
+    /* FIXME should module know about it ? */
+    if (flags) {
+        db->flags |= CNID_FLAG_NODEV;
     }
     db->flags |= mod->flags;
 
