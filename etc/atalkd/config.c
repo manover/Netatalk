@@ -1,5 +1,5 @@
 /*
- * $Id: config.c,v 1.13.6.4 2004-06-09 01:07:16 bfernhomberg Exp $
+ * $Id: config.c,v 1.13.6.5 2004-06-09 01:10:07 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -248,9 +248,11 @@ int writeconf( cf )
 	    if ( iface->i_flags & IFACE_DONTROUTE) {
 	        fprintf( newconf, " -dontroute");
 	    }
+#ifdef linux
             if ( !(iface->i_flags & IFACE_ALLMULTI)) {
 	        fprintf( newconf, " -noallmulti");
             }
+#endif
 
 	    fprintf( newconf, " -phase %d",
 		    ( iface->i_flags & IFACE_PHASE1 ) ? 1 : 2 );
