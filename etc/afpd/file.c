@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.21 2004-03-12 02:21:19 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.22 2004-03-12 13:03:18 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -455,6 +455,9 @@ int getmetadata(struct vol *vol,
             data += sizeof( aint );
             break;
         case FILPBIT_UNIXPR :
+            /* accessmode may change st_mode with ACLs */
+            accessmode( upath, &ma, dir , st);
+
             aint = htonl(st->st_uid);
             memcpy( data, &aint, sizeof( aint ));
             data += sizeof( aint );
@@ -466,7 +469,6 @@ int getmetadata(struct vol *vol,
             memcpy( data, &aint, sizeof( aint ));
             data += sizeof( aint );
 
-            accessmode( upath, &ma, dir , st);
 
             *data++ = ma.ma_user;
             *data++ = ma.ma_world;
@@ -771,6 +773,8 @@ int setfilparams(struct vol *vol,
     int                 change_parent_mdate = 0;
     int                 newdate = 0;
     struct timeval      tv;
+    uid_t		f_uid;
+    gid_t		f_gid;
 
 
 #ifdef DEBUG
@@ -861,16 +865,20 @@ int setfilparams(struct vol *vol,
             break;
 
         case FILPBIT_UNIXPR :
-	    /* Skip the UIG/GID, no way to set them from OSX clients */
-            buf += sizeof( aint );
-            buf += sizeof( aint );
-
             change_mdate = 1;
             change_parent_mdate = 1;
+
+            memcpy( &aint, buf, sizeof( aint ));
+            f_uid = ntohl (aint);
+            buf += sizeof( aint );
+            memcpy( &aint, buf, sizeof( aint ));
+            f_gid = ntohl (aint);
+            buf += sizeof( aint );
+            setfilowner(vol, f_uid, f_gid, path);
+
             memcpy( &aint, buf, sizeof( aint ));
             buf += sizeof( aint );
             aint = ntohl (aint);
-
             setfilunixmode(vol, path, aint);
             break;
             /* Client needs to set the ProDOS file info for this file.
@@ -1885,6 +1893,9 @@ int		ibuflen, *rbuflen;
     u_int32_t		sid, did;
     u_int16_t		vid;
 
+    uid_t              uid;
+    gid_t              gid;
+
 #ifdef DEBUG
     LOG(log_info, logtype_afpd, "begin afp_exchangefiles:");
 #endif /* DEBUG */
@@ -1922,7 +1933,7 @@ int		ibuflen, *rbuflen;
     }
 
     /* XXX 
-     * here we need to switch to root 
+     * here do we need to switch to root ?
     */
 
     ad_init(&ads, vol->v_adouble);
@@ -2041,6 +2052,43 @@ int		ibuflen, *rbuflen;
        ad_flush( addp, ADFLAGS_HF );
        ad_close(addp, ADFLAGS_HF);
     }
+
+    /* change perms, src gets dest perm and vice versa */
+
+    uid = geteuid();
+    gid = getegid();
+    if (seteuid(0)) {
+        LOG(log_error, logtype_afpd, "seteuid failed %s", strerror(errno));
+        return AFP_OK; /* ignore error */
+    }
+
+    /*
+     * we need to exchange ACL entries as well
+     */
+    /* exchange_acls(vol, p, upath); */
+
+    path->st = srcst;
+    path->st_valid = 1;
+    path->st_errno = 0;
+    path->m_name = NULL;
+    path->u_name = upath;
+
+    setfilunixmode(vol, path, destst.st_mode);
+    setfilowner(vol, destst.st_uid, destst.st_gid, path);
+
+    path->st = destst;
+    path->st_valid = 1;
+    path->st_errno = 0;
+    path->u_name = p;
+
+    setfilunixmode(vol, path, srcst.st_mode);
+    setfilowner(vol, srcst.st_uid, srcst.st_gid, path);
+
+    if ( setegid(gid) < 0 || seteuid(uid) < 0) {
+        LOG(log_error, logtype_afpd, "can't seteuid back %s", strerror(errno));
+        exit(1);
+    }
+
 #ifdef DEBUG
     LOG(log_info, logtype_afpd, "ending afp_exchangefiles:");
 #endif /* DEBUG */

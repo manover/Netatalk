@@ -1,5 +1,5 @@
 /*
- * $Id: unix.c,v 1.43.2.1.2.4 2004-03-11 02:02:03 didg Exp $
+ * $Id: unix.c,v 1.43.2.1.2.5 2004-03-12 13:03:19 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -584,6 +584,45 @@ const gid_t	gid;
             strerror(errno) );
     }
     return( 0 );
+}
+
+/* ----------------------------- */
+int setfilowner(vol, uid, gid, path)
+const struct vol *vol;
+const uid_t	uid;
+const gid_t	gid;
+struct path* path;
+{
+    struct stat st;
+    char  *ad_p;
+
+    if (!path->st_valid) {
+        of_stat(path);
+    }
+
+    if (path->st_errno) {
+        return -1;
+    }
+
+    if ( chown( path->u_name, uid, gid ) < 0 && errno != EPERM ) {
+        LOG(log_debug, logtype_afpd, "setfilowner: chown %d/%d %s: %s",
+            uid, gid, path->u_name, strerror(errno) );
+	return -1;
+    }
+
+    ad_p = vol->ad_path( path->u_name, ADFLAGS_HF );
+
+    if ( stat( ad_p, &st ) < 0 ) {
+	/* ignore */
+        return 0;
+    }
+    if ( chown( ad_p, uid, gid ) < 0 &&
+            errno != EPERM ) {
+        LOG(log_debug, logtype_afpd, "setfilowner: chown %d/%d %s: %s",
+            uid, gid, ad_p, strerror(errno) );
+        return -1;
+    }
+    return 0;
 }
 
 
