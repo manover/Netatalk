@@ -1,4 +1,4 @@
-dnl $Id: config-checks.m4,v 1.3 2002-04-29 06:23:58 morgana Exp $
+dnl $Id: config-checks.m4,v 1.3.4.1 2003-09-03 20:40:51 didg Exp $
 dnl Autoconf macro to set the configuration directories.
 
 AC_DEFUN([NETATALK_CONFIG_DIRS], [
@@ -14,10 +14,10 @@ AC_DEFUN([NETATALK_CONFIG_DIRS], [
 		]
 	)
 
-	NLSDIR="${PKGCONFDIR}/nls"
+	NLSDIR="${datadir}/netatalk/nls"
 
 	AC_ARG_WITH(nls-dir,
-		[  --with-nls-dir=PATH     path to NLS files [PKGCONF/nls]],
+		[  --with-nls-dir=PATH     path to NLS files [DATA/netatalk/nls]],
 		[
 			if test "x$withval" != "x"; then
 				NLSDIR="$withval"
@@ -30,11 +30,10 @@ AC_DEFUN([NETATALK_CONFIG_DIRS], [
 	AC_ARG_WITH(message-dir,
 		[  --with-message-dir=PATH path to server message files [PKGCONF/msg]],
 		[
-			if test "x$withval" != "x"; then
+			if test x"$withval" = x"no";  then 
+				AC_MSG_WARN([*** message-dir is mandatory and cannot be disabled, using default ***])
+			elif test "x$withval" != "x" && test x"$withval" != x"yes"; then
 				SERVERTEXT="$withval"
-				cat >> confdefs.h <<EOF
-#define SERVERTEXT "$withval"
-EOF
 			fi
 		]
 	)
