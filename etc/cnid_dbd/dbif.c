@@ -1,5 +1,5 @@
 /*
- * $Id: dbif.c,v 1.1.4.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: dbif.c,v 1.1.4.2 2003-09-16 12:21:44 rlewczuk Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -129,7 +129,11 @@ static int  db_compat_associate (DB *p, DB *s,
 #if DB_VERSION_MAJOR > 4 || (DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR >= 1)
     return p->associate(p, NULL, s, callback, flags);
 #else
+#if DB_VERSION_MAJOR > 4
     return p->associate(p,       s, callback, flags);
+#else
+    return 0;
+#endif
 #endif
 }
 
@@ -315,7 +319,11 @@ int dbif_del(const int dbi, DBT *key, u_int32_t flags)
 
     ret = db->del(db, db_txn, key, flags);
 
+#if DB_VERSION_MAJOR > 3
     if (ret == DB_NOTFOUND || ret == DB_SECONDARY_BAD)
+#else
+    if (ret == DB_NOTFOUND)
+#endif
         return 0;
     if (ret) {
         LOG(log_error, logtype_cnid, "error deleting key/value from %s: %s", db_table[dbi].name, db_strerror(errno));
