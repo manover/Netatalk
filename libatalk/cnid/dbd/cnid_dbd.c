@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_dbd.c,v 1.1.4.6 2003-10-30 09:58:43 bfernhomberg Exp $
+ * $Id: cnid_dbd.c,v 1.1.4.7 2003-11-12 16:00:10 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -52,7 +52,10 @@
 #define SOL_TCP IPPROTO_TCP
 #endif /* ! SOL_TCP */
 
-#define RQST_RESET(r) do { (r).namelen = 0; } while (0)
+static void RQST_RESET(struct cnid_dbd_rqst  *r) 
+{ 
+   memset(r, 0, sizeof(struct cnid_dbd_rqst ));
+}
 
 /* ----------- */
 extern char             *Cnid_srv;
@@ -345,7 +348,7 @@ cnid_t cnid_dbd_add(struct _cnid_db *cdb, const struct stat *st,
         return CNID_INVALID;
     }
 
-    RQST_RESET(rqst);
+    RQST_RESET(&rqst);
     rqst.op = CNID_DBD_OP_ADD;
     rqst.dev = st->st_dev;
     rqst.ino = st->st_ino;
@@ -400,7 +403,7 @@ cnid_t cnid_dbd_get(struct _cnid_db *cdb, const cnid_t did, const char *name,
         return CNID_INVALID;
     }
 
-    RQST_RESET(rqst);
+    RQST_RESET(&rqst);
     rqst.op = CNID_DBD_OP_GET;
     rqst.did = did;
     rqst.name = name;
@@ -448,7 +451,7 @@ char *cnid_dbd_resolve(struct _cnid_db *cdb, cnid_t *id, void *buffer, u_int32_t
        CNID_HEADER_LEN plus 1 byte, which is large enough for the maximum that
        can come from the database. */
 
-    RQST_RESET(rqst);
+    RQST_RESET(&rqst);
     rqst.op = CNID_DBD_OP_RESOLVE;
     rqst.cnid = *id;
 
@@ -504,7 +507,7 @@ int cnid_dbd_getstamp(struct _cnid_db *cdb, void *buffer, const int len)
        CNID_HEADER_LEN plus 1 byte, which is large enough for the maximum that
        can come from the database. */
 
-    RQST_RESET(rqst);
+    RQST_RESET(&rqst);
     rqst.op = CNID_DBD_OP_RESOLVE;
     rqst.cnid = id;
 
@@ -557,7 +560,7 @@ cnid_t cnid_dbd_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t
         return CNID_INVALID;
     }
 
-    RQST_RESET(rqst);
+    RQST_RESET(&rqst);
     rqst.op = CNID_DBD_OP_LOOKUP;
     rqst.dev = st->st_dev;
     rqst.ino = st->st_ino;
@@ -610,7 +613,7 @@ int cnid_dbd_update(struct _cnid_db *cdb, const cnid_t id, const struct stat *st
         return -1;
     }
 
-    RQST_RESET(rqst);
+    RQST_RESET(&rqst);
     rqst.op = CNID_DBD_OP_UPDATE;
     rqst.cnid = id;
     rqst.dev = st->st_dev;
@@ -651,7 +654,7 @@ int cnid_dbd_delete(struct _cnid_db *cdb, const cnid_t id)
         return -1;
     }
 
-    RQST_RESET(rqst);
+    RQST_RESET(&rqst);
     rqst.op = CNID_DBD_OP_DELETE;
     rqst.cnid = id;
 

@@ -1,5 +1,5 @@
 /* 
- * $Id: cnid.c,v 1.1.4.5 2003-10-30 03:31:33 bfernhomberg Exp $
+ * $Id: cnid.c,v 1.1.4.6 2003-11-12 16:00:08 didg Exp $
  *
  * Copyright (c) 2003 the Netatalk Team
  * Copyright (c) 2003 Rafal Lewczuk <rlewczuk@pronet.pl>
@@ -149,18 +149,18 @@ struct _cnid_db *cnid_open(const char *volpath, mode_t mask, char *type)
 }
 
 /* ------------------- */
-static void block_signal(struct _cnid_db *db)
+static void block_signal( u_int32_t flags)
 {
-    if ((db->flags & CNID_FLAG_BLOCK)) {
+    if ((flags & CNID_FLAG_BLOCK)) {
         sigprocmask(SIG_BLOCK, &sigblockset, NULL);
         setitimer(ITIMER_REAL, &none, &savetimer);
     }
 }
 
 /* ------------------- */
-static void unblock_signal(struct _cnid_db *db)
+static void unblock_signal(u_int32_t flags)
 {
-    if ((db->flags & CNID_FLAG_BLOCK)) {
+    if ((flags & CNID_FLAG_BLOCK)) {
         setitimer(ITIMER_REAL, &savetimer, NULL);
         sigprocmask(SIG_UNBLOCK, &sigblockset, NULL);
     }
@@ -169,13 +169,17 @@ static void unblock_signal(struct _cnid_db *db)
 /* Closes CNID database. Currently it's just a wrapper around db->cnid_close(). */
 void cnid_close(struct _cnid_db *db)
 {
+u_int32_t flags;
+
     if (NULL == db) {
         LOG(log_error, logtype_afpd, "Error: cnid_close called with NULL argument !");
         return;
     }
-    block_signal(db);
+    /* cnid_close free db */
+    flags = db->flags;
+    block_signal(flags);
     db->cnid_close(db);
-    unblock_signal(db);
+    unblock_signal(flags);
 }
 
 /* --------------- */
@@ -184,9 +188,9 @@ cnid_t cnid_add(struct _cnid_db *cdb, const struct stat *st, const cnid_t did,
 {
 cnid_t ret;
 
-    block_signal(cdb);
+    block_signal(cdb->flags);
     ret = cdb->cnid_add(cdb, st, did, name, len, hint);
-    unblock_signal(cdb);
+    unblock_signal(cdb->flags);
     return ret;
 }
 
@@ -195,9 +199,9 @@ int cnid_delete(struct _cnid_db *cdb, cnid_t id)
 {
 int ret;
 
-    block_signal(cdb);
+    block_signal(cdb->flags);
     ret = cdb->cnid_delete(cdb, id);
-    unblock_signal(cdb);
+    unblock_signal(cdb->flags);
     return ret;
 }
 
@@ -207,9 +211,9 @@ cnid_t cnid_get(struct _cnid_db *cdb, const cnid_t did, const char *name,const i
 {
 cnid_t ret;
 
-    block_signal(cdb);
+    block_signal(cdb->flags);
     ret = cdb->cnid_get(cdb, did, name, len);
-    unblock_signal(cdb);
+    unblock_signal(cdb->flags);
     return ret;
 }
 
@@ -226,9 +230,9 @@ cnid_t ret;
     	time(buffer);
         return 0;
     }
-    block_signal(cdb);
+    block_signal(cdb->flags);
     ret = cdb->cnid_getstamp(cdb, buffer, len);
-    unblock_signal(cdb);
+    unblock_signal(cdb->flags);
     return ret;
 }
 
@@ -238,9 +242,9 @@ cnid_t cnid_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t did
 {
 cnid_t ret;
 
-    block_signal(cdb);
+    block_signal(cdb->flags);
     ret = cdb->cnid_lookup(cdb, st, did, name, len);
-    unblock_signal(cdb);
+    unblock_signal(cdb->flags);
     return ret;
 }
 
@@ -249,9 +253,9 @@ char *cnid_resolve(struct _cnid_db *cdb, cnid_t *id, void *buffer, u_int32_t len
 {
 char *ret;
 
-    block_signal(cdb);
+    block_signal(cdb->flags);
     ret = cdb->cnid_resolve(cdb, id, buffer, len);
-    unblock_signal(cdb);
+    unblock_signal(cdb->flags);
     return ret;
 }
 
@@ -261,9 +265,9 @@ int cnid_update   (struct _cnid_db *cdb, const cnid_t id, const struct stat *st,
 {
 int ret;
 
-    block_signal(cdb);
+    block_signal(cdb->flags);
     ret = cdb->cnid_update(cdb, id, st, did, name, len);
-    unblock_signal(cdb);
+    unblock_signal(cdb->flags);
     return ret;
 }
 			
