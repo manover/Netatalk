@@ -1,4 +1,4 @@
-.TH netatalk.conf 5  28\ September\ 2000 "Netatalk 2.0-beta1" 
+.TH netatalk.conf 5  24\ June\ 2004 "Netatalk 2.0-beta2" 
 .SH NAME
 netatalk.conf \- Configuration file used by netatalk(8) to determine its  general configuration
 .SH DESCRIPTION
@@ -32,8 +32,8 @@ authentication is compiled in) to use.
 \fIExample:\fR \fIAFPD_UAMLIST\fR=\fI"\-U uams_guest.so,uams_randnum.so"\fR
 .TP 
 \fICNID_METAD_RUN\fR
-Enables the cnid_metad daemon if set to "yes". This should
-be enabled if you are going to use the dbd CNID backend.
+Enables the cnid_metad daemon if set to "yes". This
+should be enabled if you are going to use the dbd CNID backend.
 .TP 
 \fIATALK_BGROUND\fR
 "yes" will set netatalk to initialize in the
@@ -52,6 +52,15 @@ be enabled if you are planning on providing Appletalk services.
 \fIPAPD_RUN\fR
 Enables the papd daemon if set to "yes". This should
 be enabled if you are planning on using netatalk as a print server.
+.TP 
+\fIATALK_MAC_CHARSET\fR
+Set the Mac client codepage, used by atalkd and papd to
+convert extended characters from the Unix to the Mac codepage.
+.TP 
+\fIATALK_UNIX_CHARSET\fR
+Set the Unix codepage, used by atalkd and papd to convert
+extended characters from the Unix to the Mac codepage. Has to match
+the codepage of the configuration files.
 .SH SEE\ ALSO
 \fBatalkd\fR(8),
 \fBatalkd.conf\fR(5)

@@ -1,4 +1,4 @@
-.TH AppleVolumes.default 5  05\ January\ 2004 "Netatalk 2.0-beta1" 
+.TH AppleVolumes.default 5  05\ January\ 2004 "Netatalk 2.0-beta2" 
 .SH NAME
 AppleVolumes.default \- Configuration file used by afpd(8) to  determine the shares made available through Appletalk
 .SH DESCRIPTION
@@ -29,10 +29,20 @@ line.
 .PP
 The possible options and their meanings are:
 .TP 
-adouble:\fI[v1/v2]\fR
+adouble:\fI[v1|v2|osx]\fR
 specify the format of the metadata files, which are used for
 saving Mac resource fork as well. Earlier versions used AppleDouble
-V1, the new default format is V2.
+V1, the new default format is V2. Starting with Netatalk 2.0, the 
+scheme MacOS X uses currently (10.3.x), is also supported
+.RS 
+\fBNote\fR
+
+Using \fBadouble:osx\fR is \fBnot\fR
+recommended for production use. Its only aim is to temporarely share eg. 
+FAT32 formatted FireWire harddrives written on a Macintosh with afpd. Apple's 
+metadata scheme lacks several essential features, so using it on the server's 
+side will break both CNIDs and MacOS 9 compatibility
+.RE
 .TP 
 allow:\fI[users/groups]\fR
 The allow option allows the users and groups that access a

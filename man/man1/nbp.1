@@ -1,20 +1,38 @@
-.TH nbp 1  17\ Dec\ 1991 "Netatalk 2.0-beta1" 
+.TH nbp 1  24\ June\ 2004 "Netatalk 2.0-beta2" 
 .SH NAME
 nbplkup, nbprgstr, nbpunrgstr \- access NBP database
 .SH SYNOPSIS
-\fBnbplkup\fR [ \-r \fBnresp\fR ] [\fBnbpname\fR] \fBnbprgstr\fR [ \-p \fBport\fR ] \fBnbpnamenbpunrgstrnbpname\fR 
-.SH DESCRIPTION
-\fInbprgstr\fR registers \fInbpname\fR with \fBatalkd\fR(8),
-at the given \fIport\fR. \fInbpunrgstr\fR
-informs \fIatalkd\fR that \fInbpname\fR
-is no longer to be advertised.
+\fBnbplkup \fR [\-r \fBmaxresponses\fR] [\-A \fBaddress\fR] [\-m \fBmaccodepage\fR] \fBnbpname\fR 
 .PP
-nbplkup displays up to \fInresp\fR
-(default 1000) entities registered on the AppleTalk internet. \fInbpname\fR is parsed by \fBnbp_name\fR(3).
+\fBnbprgstr \fR [\-A \fBaddress\fR] [\-p \fBport\fR] [\-m \fBmaccodepage\fR] \fBnbpname\fR 
+.PP
+\fBnbpunrgstr\fR [\-A \fBaddress\fR] [\-m \fBmaccodepage\fR] \fBnbpname\fR 
+.SH DESCRIPTION
+nbprgstr registers \fInbpname\fR
+with \fBatalkd\fR(8),
+at the given \fIport\fR. nbpunrgstr
+informs \fIatalkd\fR that
+\fInbpname\fR is no longer to be advertised.
+.PP
+nbplkup displays up to
+\fImaxresponses\fR (default 1000) entities registered
+on the AppleTalk internet. \fInbpname\fR
+is parsed by \fBnbp_name\fR(3).
 An `\fI=\fR' for the \fIobject\fR
 or \fItype\fR matches anything, and an `\fI*\fR' for \fIzone\fR means
 the local zone. The default values are taken from the \fINBPLKUP\fR
 environment variable, parsed as an \fInbpname\fR.
+.SH ENVIRONMENT\ VARIABLES
+.TP 
+NBPLKUP
+default nbpname for nbplkup
+.TP 
+ATALK_MAC_CHARSET
+the codepage used by the clients on the Appletalk network
+.TP 
+ATALK_UNIX_CHARSET
+the codepage used to display extended characters on this
+shell.
 .SH EXAMPLE
 Find all devices of type \fILaserWriter\fR
 in the local zone.

@@ -1,4 +1,4 @@
-.TH afpd.conf 5  05\ Jan\ 2004 "Netatalk 2.0-beta1" 
+.TH afpd.conf 5  05\ Jan\ 2004 "Netatalk 2.0-beta2" 
 .SH NAME
 afpd.conf \- Configuration file used by afpd(8) to determine the setup of  its file sharing services
 .SH DESCRIPTION
@@ -147,6 +147,22 @@ Enables or disables AFP\-over\-TCP
 \-transall
 Make both available (default)
 .SH TRANSPORT\ OPTIONS
+.TP 
+\-advertise_ssh
+Allows Mac OS X clients (10.3.3 or above) to automagically 
+establish a tunneled AFP connection through SSH. If this option is set, 
+the server's answers to client's FPGetSrvrInfo requests contain an 
+additional entry. It depends on both client's settings and a correctly
+configured and running \fBsshd\fR(8)
+on the server to let things work.
+.RS 
+\fBNote\fR
+
+Setting this option is not recommended since globally encrypting 
+AFP connections via SSH will increase the server's load significantly. 
+On the other hand, Apple's client side implementation of this feature
+in MacOS X versions prior to 10.3.4 contained a security flaw
+.RE
 .TP 
 \-ddpaddr \fI[ddp address]\fR
 Specifies the DDP address of the server. The default is to
@@ -325,7 +341,9 @@ after 2 minutes.
 \fBafpd.conf setup for Kerberos V auth\fR
 .PP
 .nf
-\- \-transall \-uamlist uams_clrtxt.so,uams_dhx.so,uams_guest.so,uams_gss.so \-k5service afpserver \-k5keytab /path/to/afpserver.keytab \-k5realm YOUR.REALM \-fqdn your.fqdn.namel:548
+\- \-transall \-uamlist uams_clrtxt.so,uams_dhx.so,uams_guest.so,uams_gss.so \\ 
+\-k5service afpserver \-k5keytab /path/to/afpserver.keytab \\ 
+\-k5realm YOUR.REALM \-fqdn your.fqdn.namel:548
 .fi
 .PP
 \fBafpd.conf letting afpd appear as three servers on the net\fR

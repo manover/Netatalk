@@ -1,4 +1,4 @@
-.TH cnid_dbd 8  2\ Dec\ 2003 "Netatalk 2.0-beta1" 
+.TH cnid_dbd 8  2\ Dec\ 2003 "Netatalk 2.0-beta2" 
 .SH NAME
 cnid_dbd \- implement access to CNID databases through a dedicated daemon  process
 .SH SYNOPSIS
@@ -30,17 +30,17 @@ cnid_dbd uses the same on\-disk database format as
 the \fIcdb\fR backend. It is therefore possible
 to switch between the two backends as necessary.
 .PP
-cnid_dbd inherits the effective userid and
-groupid from \fIcnid_metad\fR on startup, which
-is normally caused by \fIafpd\fR serving a
-netatalk volume to a client. It changes to the \fIBerkleley
-DB\fR database home directory \fIdbdir\fR
-that is associated with the volume, opens the database and starts serving
-requests using the filedescriptor \fIclntfd\fR.
-Subsequent instances of \fIafpd\fR that
-want to access the same volume are redirected to the running
-cnid_dbd by \fIcnid_metad\fR
-via the filedescriptor \fIctrlfd\fR.
+cnid_dbd inherits the effective userid and groupid
+from \fIcnid_metad\fR on startup, which is normally
+caused by \fIafpd\fR serving a netatalk volume to a
+client. It changes to the \fIBerkleley DB\fR
+database home directory \fIdbdir\fR that is
+associated with the volume. If the userid inherited from \fIcnid_metad\fR is 0 (root), cnid_dbd
+will change userid and groupid to the owner and group of the database home
+directory. Otherwise, it will continue to use the inherited values.
+cnid_dbd will then attempt to open the database and
+start serving requests using filedescriptor \fIclntfd\fR. Subsequent instances of \fIafpd\fR that want to access the same volume are redirected
+to the running cnid_dbd process by \fIcnid_metad\fR via the filedescriptor \fIctrlfd\fR.
 .PP
 cnid_dbd can be configured to run forever or to
 exit after a period of inactivity. If cnid_dbd receives
@@ -53,14 +53,14 @@ database in an inconsistent state (no transactions) or losing recent
 updates during recovery (transactions).
 .PP
 If transactions are used the \fIBerkleley DB\fR
-database subsystem will create files named log.xxxxxxxxxx in the 
-database home directory \fIdbdir\fR, where xxxxxxxxxx 
-is a monotonically increasing integer. These files contain information to 
-replay database changes and are not automatically removed. Please see the sections 
+database subsystem will create files named log.xxxxxxxxxx in the database home
+directory \fIdbdir\fR, where xxxxxxxxxx is a monotonically
+increasing integer. These files contain information to replay database changes and are
+not automatically removed, unless the \fIlogfile_autoremove\fR option is specified in the \fIdb_param\fR configuration file (see below). Please see the sections
 \fIDatabase and log file archival\fR, \fI
 Log file removal\fR and the documentation of the \fI
 db_archive\fR command line utility in the Berkeley DB Tutorial and Reference
-for information when and how it is safe to remove these files.
+for information when and how it is safe to remove these files manually.
 .PP
 Do not use cnid_dbd for databases on NFS mounted file
 systems. It makes the whole point of securing database changes properly moot. Use
@@ -74,6 +74,13 @@ exist or a parameter is not listed, suitable default values are used. The
 format for a single parameter is the parameter name, followed by one or
 more spaces, followed by the parameter value, followed by a newline. The
 following parameters are currently recognized:
+.TP 
+\fIlogfile_autoremove\fR
+This flag is ignored unless transactional support is enabled. If set to 1,
+unused Berkeley DB transactional logfiles (log.xxxxxxxxxx in the database home
+directory) are removed on startup of cnid_dbd. This is
+usually safe if the content of the database directory is backed up on a
+regular basis. Default: 0.
 .TP 
 \fIcachesize\fR
 Determines the size of the Berkeley DB cache in kilobytes.
@@ -90,7 +97,7 @@ Guide\fR has a section \fISelecting a cache
 size\fR that gives more detailed information.
 .TP 
 \fInosync\fR
-This flag is only valid if transactional support is enabled.
+This flag is ignored unless transactional support is enabled.
 If it is set to 1, transactional changes to the database are not
 synchronously written to disk when the transaction completes. This
 will increase performance considerably at the risk of recent changes
@@ -136,5 +143,5 @@ is the number of seconds of inactivity before an idle
 cnid_dbd exits. Default: 600. Set this to 0 to
 disable the timeout.
 .SH SEE\ ALSO
-\fBcnid_metad\fR(1),
+\fBcnid_metad\fR(8),
 \fBafpd\fR(8)
