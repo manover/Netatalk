@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.45.2.2.2.7 2004-02-20 21:23:13 didg Exp $
+ * $Id: filedir.c,v 1.45.2.2.2.8 2004-03-02 13:27:07 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -177,10 +177,10 @@ int		ibuflen, *rbuflen;
     if (!s_path->st_valid) {
         /* it's a dir and it should be there
          * because we chdir in it in cname or
-         * it's curdir (maybe deleted, but then we can't know)
-         * 
+         * it's curdir (maybe deleted, but then we can't know).
+         * So we need to try harder.
          */
-        of_stat(s_path);
+        of_statdir(s_path);
     }
     if ( s_path->st_errno != 0 ) {
         return( AFPERR_NOOBJ );

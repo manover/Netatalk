@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.23 2004-03-01 14:01:02 bfernhomberg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.24 2004-03-02 13:27:08 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1500,6 +1500,7 @@ int		ibuflen, *rbuflen;
     int		len, ret;
     size_t	namelen;
     u_int16_t	bitmap;
+    char        path[ MAXPATHLEN + 1];
     char        *vol_uname;
     char        *vol_mname;
 
@@ -1564,36 +1565,6 @@ int		ibuflen, *rbuflen;
 
     volume->v_dir = volume->v_root = NULL;
 
-    /* FIXME unix name != mac name */
-
-    len = convert_string_allocate( CH_UCS2, (utf8_encoding()?CH_UTF8_MAC:obj->options.maccharset),
-                              	       volume->v_name, namelen, &vol_mname);
-    if ( !vol_mname || len <= 0) {
-        ret = AFPERR_MISC;
-        goto openvol_err;
-    }
-	
-    len = convert_string_allocate( CH_UCS2 , volume->v_volcharset, volume->v_name, namelen, &vol_uname);
-
-    if ( !vol_uname || len <= 0) {
-	free(vol_mname);
-        ret = AFPERR_MISC;
-        goto openvol_err;
-    }
-	
-    if ((dir = dirnew(vol_mname, vol_uname) ) == NULL) {
-	free(vol_mname);
-	free(vol_uname);
-        LOG(log_error, logtype_afpd, "afp_openvol: malloc: %s", strerror(errno) );
-        ret = AFPERR_MISC;
-        goto openvol_err;
-    }
-    free(vol_mname);
-    free(vol_uname);
-
-    dir->d_did = DIRDID_ROOT;
-    dir->d_color = DIRTREE_COLOR_BLACK; /* root node is black */
-    volume->v_dir = volume->v_root = dir;
     volume->v_flags |= AFPVOL_OPEN;
     volume->v_cdb = NULL;  
 
@@ -1626,6 +1597,38 @@ int		ibuflen, *rbuflen;
         ret = AFPERR_PARAM;
         goto openvol_err;
     }
+
+    len = convert_string_allocate( CH_UCS2, (utf8_encoding()?CH_UTF8_MAC:obj->options.maccharset),
+                              	       volume->v_name, namelen, &vol_mname);
+    if ( !vol_mname || len <= 0) {
+        ret = AFPERR_MISC;
+        goto openvol_err;
+    }
+    
+    if ( NULL == getcwd(path, MAXPATHLEN)) {
+        /* shouldn't be fatal but it will fail later */
+        LOG(log_error, logtype_afpd, "afp_openvol: volume pathlen too long" );
+        ret = AFPERR_MISC;
+        goto openvol_err;
+    }        
+    
+    if ((vol_uname = strrchr(path, '/')) == NULL)
+         vol_uname = path;
+    else if (*(vol_uname + 1) != '\0')
+         vol_uname++;
+	
+    if ((dir = dirnew(vol_mname, vol_uname) ) == NULL) {
+	free(vol_mname);
+        LOG(log_error, logtype_afpd, "afp_openvol: malloc: %s", strerror(errno) );
+        ret = AFPERR_MISC;
+        goto openvol_err;
+    }
+    free(vol_mname);
+
+    dir->d_did = DIRDID_ROOT;
+    dir->d_color = DIRTREE_COLOR_BLACK; /* root node is black */
+    volume->v_dir = volume->v_root = dir;
+
     curdir = volume->v_dir;
     if (volume->v_cnidscheme == NULL) {
         volume->v_cnidscheme = strdup(DEFAULT_CNID_SCHEME);

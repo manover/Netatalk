@@ -1,5 +1,5 @@
 /*
- * $Id: ofork.c,v 1.20.6.4 2004-02-14 15:47:20 didg Exp $
+ * $Id: ofork.c,v 1.20.6.5 2004-03-02 13:27:08 didg Exp $
  *
  * Copyright (c) 1996 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -286,6 +286,26 @@ int ret;
    return ret;
 }
 
+/* -------------------------- 
+ * assume 
+*/
+int of_statdir  (struct path *path)
+{
+static char pathname[ MAXPATHLEN + 1];
+int ret;
+
+    if (*path->m_name) {
+        /* not curdir */
+        return of_stat (path);
+    }
+    path->st_errno = 0;
+    path->st_valid = 1;
+    strcpy(pathname, "../");
+    strlcat(pathname, path->dir->d_u_name, MAXPATHLEN);
+    if ((ret = stat(pathname, &path->st)) < 0)
+    	path->st_errno = errno;
+   return ret;
+}
 
 /* -------------------------- */
 struct ofork *
