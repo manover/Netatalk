@@ -3,6 +3,7 @@ Changes in 1.6.2
 
 * FIX: macusers script can now cope with IP addresses instead of host names.
 * FIX: Install etc2ps.sh correctly.
+* FIX: atalkd: Fixes for reading long configuration file lines. [Dan Wilga]
 
 Changes in 1.6.1
 ================
