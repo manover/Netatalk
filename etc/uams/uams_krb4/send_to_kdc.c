@@ -15,7 +15,7 @@
 
 #ifndef lint
 static char rcsid_send_to_kdc_c[] =
-"$Id: send_to_kdc.c,v 1.1 2000-07-25 21:09:02 rufustfirefly Exp $";
+"$Id: send_to_kdc.c,v 1.1.1.1 2000-07-25 21:09:02 rufustfirefly Exp $";
 #endif /* lint */
 
 # ifdef UAM_AFSKRB

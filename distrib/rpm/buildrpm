@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # buildrpm
-# $Id: buildrpm,v 1.1 2000-07-25 21:08:59 rufustfirefly Exp $
+# $Id: buildrpm,v 1.1.1.1 2000-07-25 21:08:59 rufustfirefly Exp $
 #
 # automates the process of building the netatalk rpm
 
