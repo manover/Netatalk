@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.1.4.2 2003-10-30 10:03:19 bfernhomberg Exp $
+ * $Id: main.c,v 1.1.4.3 2003-11-03 20:56:59 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -253,24 +253,46 @@ int main(int argc, char *argv[])
     if ((dbp = db_param_read(dir)) == NULL)
         exit(1);
 
+    if (dbif_env_init(dbp) < 0)
+        exit(2); /* FIXME: same exit code as failure for dbif_open() */  
+    
+#ifdef CNID_BACKEND_DBD_TXN
+    if (dbif_txn_begin() < 0)
+	exit(6);
+#endif
+    
     if (dbif_open(dbp) < 0) {
+#ifdef CNID_BACKEND_DBD_TXN
+	dbif_txn_abort();
+#endif
         dbif_close();
         exit(2);
     }
     if (dbd_stamp() < 0) {
+#ifdef CNID_BACKEND_DBD_TXN
+	dbif_txn_abort();
+#endif
         dbif_close();
         exit(5);
     }
+#ifdef CNID_BACKEND_DBD_TXN
+    if (dbif_txn_commit() < 0)
+	exit(6);
+#endif
     if (comm_init(dbp) < 0) {
         dbif_close();
         exit(3);
     }
     if (loop(dbp) < 0)
         err++;
-    
+
+#ifndef CNID_BACKEND_DBD_TXN
+    /* FIXME: Do we really need to sync before closing the DB? Just closing it
+       should be enough. */
     if (dbif_sync() < 0)
         err++;
-        
+#endif        
+
     if (dbif_close() < 0)
         err++;
 
@@ -279,7 +301,7 @@ int main(int argc, char *argv[])
 #endif
     close(lockfd);
     
-    if (err) 
+    if (err)
         exit(4);
     else {
 	if (exit_sig)

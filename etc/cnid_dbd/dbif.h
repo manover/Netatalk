@@ -1,5 +1,5 @@
 /*
- * $Id: dbif.h,v 1.1.4.4 2003-10-30 10:03:19 bfernhomberg Exp $
+ * $Id: dbif.h,v 1.1.4.5 2003-11-03 20:56:59 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -19,6 +19,7 @@
 #define DBIF_IDX_DIDNAME   2
 
 extern int        dbif_stamp  __P((void *, int));
+extern int        dbif_env_init  __P((struct db_param *));
 extern int        dbif_open  __P((struct db_param *));
 extern int        dbif_close __P((void));
 extern int        dbif_get __P((const int, DBT *, DBT *, u_int32_t));

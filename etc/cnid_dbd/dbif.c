@@ -1,5 +1,5 @@
 /*
- * $Id: dbif.c,v 1.1.4.5 2003-10-30 10:03:19 bfernhomberg Exp $
+ * $Id: dbif.c,v 1.1.4.6 2003-11-03 20:56:59 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -49,76 +49,8 @@ static struct db_table {
      { "didname.db",     NULL,      0, DB_HASH},
 };
 
-/*
- *  We assume our current directory is already the BDB homedir. Otherwise
- *  opening the databases will not work as expected.
- */
-
 extern int didname(DB *dbp, const DBT *pkey, const DBT *pdata, DBT *skey);
 extern int devino(DB *dbp, const DBT *pkey, const DBT *pdata, DBT *skey);
-
-static int env_init(struct db_param *dbp)
-{
-    int ret;
-
-#ifdef CNID_BACKEND_DBD_TXN
-    if ((ret = db_env_create(&db_env, 0))) {
-        LOG(log_error, logtype_cnid, "error creating DB environment: %s", 
-            db_strerror(ret));
-        return -1;
-    }    
-    if (db_errlog != NULL)
-        db_env->set_errfile(db_env, db_errlog); 
-    db_env->set_verbose(db_env, DB_VERB_RECOVERY, 1);
-    db_env->set_verbose(db_env, DB_VERB_CHKPOINT, 1);
-    if (ret = db_env->open(db_env, ".", DB_CREATE | DB_INIT_LOCK | DB_INIT_LOG | 
-                           DB_INIT_MPOOL | DB_INIT_TXN | DB_PRIVATE | DB_RECOVER, 0)) {
-        LOG(log_error, logtype_cnid, "error opening DB environment: %s", 
-            db_strerror(ret));
-        db_env->close(db_env, 0);
-        return -1;
-    }
-
-    if (db_errlog != NULL)
-        fflush(db_errlog);
-
-    if (ret = db_env->close(db_env, 0)) {
-        LOG(log_error, logtype_cnid, "error closining DB environment after recovery: %s", 
-            db_strerror(ret));
-        return -1;
-    }
-#endif
-    if ((ret = db_env_create(&db_env, 0))) {
-        LOG(log_error, logtype_cnid, "error creating DB environment after recovery: %s",
-            db_strerror(ret));
-        return -1;
-    }
-    if ((ret = db_env->set_cachesize(db_env, 0, 1024 * dbp->cachesize, 0))) {
-        LOG(log_error, logtype_cnid, "error settining DB environment cachesize to %i: %s",
-            dbp->cachesize, db_strerror(ret));
-        db_env->close(db_env, 0);
-        return -1;
-    }
-    
-    if (db_errlog != NULL)
-        db_env->set_errfile(db_env, db_errlog);
-    if ((ret = db_env->open(db_env, ".", DBOPTIONS , 0))) {
-        LOG(log_error, logtype_cnid, "error opening DB environment after recovery: %s",
-            db_strerror(ret));
-        db_env->close(db_env, 0);
-        return -1;      
-    }
-
-#ifdef CNID_BACKEND_DBD_TXN
-    if (dbp->nosync && (ret = db_env->set_flags(db_env, DB_TXN_NOSYNC, 1))) {
-        LOG(log_error, logtype_cnid, "error setting TXN_NOSYNC flag: %s",
-            db_strerror(ret));
-        db_env->close(db_env, 0);
-        return -1;      
-    }
-#endif
-    return 0;
-}
 
 /* --------------- */
 static int  db_compat_associate (DB *p, DB *s,
@@ -126,7 +58,7 @@ static int  db_compat_associate (DB *p, DB *s,
                    u_int32_t flags)
 {
 #if DB_VERSION_MAJOR > 4 || (DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR >= 1)
-    return p->associate(p, NULL, s, callback, flags);
+    return p->associate(p, db_txn, s, callback, flags);
 #else
 #if (DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR == 0)
     return p->associate(p,       s, callback, flags);
@@ -142,13 +74,9 @@ static int db_compat_open(DB *db, char *file, char *name, DBTYPE type, int mode)
     int ret;
 
 #if DB_VERSION_MAJOR > 4 || (DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR >= 1)
-#ifdef CNID_BACKEND_DBD_TXN
-    ret = db->open(db, NULL, file, name, type, DB_CREATE | DB_AUTO_COMMIT, mode); 
-#else 
-    ret = db->open(db, NULL, file, name, type, DB_CREATE                 , mode); 
-#endif
+    ret = db->open(db, db_txn, file, name, type, DB_CREATE, mode); 
 #else
-    ret = db->open(db,       file, name, type, DB_CREATE                 , mode); 
+    ret = db->open(db,       file, name, type, DB_CREATE, mode); 
 #endif
 
     if (ret) {
@@ -179,19 +107,82 @@ int dbif_stamp(void *buffer, int size)
 }
 
 /* --------------- */
-int dbif_open(struct db_param *dbp)
+/*
+ *  We assume our current directory is already the BDB homedir. Otherwise
+ *  opening the databases will not work as expected. If we use transactions,
+ *  dbif_env_init(), dbif_close() and dbif_stamp() are the only interface
+ *  functions that can be called without a valid transaction handle in db_txn.
+ */
+int dbif_env_init(struct db_param *dbp)
 {
     int ret;
-    int i;
 
     if ((db_errlog = fopen(DB_ERRLOGFILE, "a")) == NULL)
         LOG(log_warning, logtype_cnid, "error creating/opening DB errlogfile: %s", strerror(errno));
 
-    if (env_init(dbp) < 0)
+#ifdef CNID_BACKEND_DBD_TXN
+    if ((ret = db_env_create(&db_env, 0))) {
+        LOG(log_error, logtype_cnid, "error creating DB environment: %s", 
+            db_strerror(ret));
         return -1;
+    }    
+    if (db_errlog != NULL)
+        db_env->set_errfile(db_env, db_errlog); 
+    db_env->set_verbose(db_env, DB_VERB_RECOVERY, 1);
+    db_env->set_verbose(db_env, DB_VERB_CHKPOINT, 1);
+    if (ret = db_env->open(db_env, ".", DBOPTIONS | DB_PRIVATE | DB_RECOVER, 0)) {
+        LOG(log_error, logtype_cnid, "error opening DB environment: %s", 
+            db_strerror(ret));
+        db_env->close(db_env, 0);
+        return -1;
+    }
 
-    /* db_env will point to a valid environment handle from here onwards if
-       transactions are used or to NULL otherwise */
+    if (db_errlog != NULL)
+        fflush(db_errlog);
+
+    if (ret = db_env->close(db_env, 0)) {
+        LOG(log_error, logtype_cnid, "error closing DB environment after recovery: %s", 
+            db_strerror(ret));
+        return -1;
+    }
+#endif
+    if ((ret = db_env_create(&db_env, 0))) {
+        LOG(log_error, logtype_cnid, "error creating DB environment after recovery: %s",
+            db_strerror(ret));
+        return -1;
+    }
+    if ((ret = db_env->set_cachesize(db_env, 0, 1024 * dbp->cachesize, 0))) {
+        LOG(log_error, logtype_cnid, "error setting DB environment cachesize to %i: %s",
+            dbp->cachesize, db_strerror(ret));
+        db_env->close(db_env, 0);
+        return -1;
+    }
+    
+    if (db_errlog != NULL)
+        db_env->set_errfile(db_env, db_errlog);
+    if ((ret = db_env->open(db_env, ".", DBOPTIONS , 0))) {
+        LOG(log_error, logtype_cnid, "error opening DB environment after recovery: %s",
+            db_strerror(ret));
+        db_env->close(db_env, 0);
+        return -1;      
+    }
+
+#ifdef CNID_BACKEND_DBD_TXN
+    if (dbp->nosync && (ret = db_env->set_flags(db_env, DB_TXN_NOSYNC, 1))) {
+        LOG(log_error, logtype_cnid, "error setting TXN_NOSYNC flag: %s",
+            db_strerror(ret));
+        db_env->close(db_env, 0);
+        return -1;      
+    }
+#endif
+    return 0;
+}
+
+/* --------------- */
+int dbif_open(struct db_param *dbp)
+{
+    int ret;
+    int i;
 
     for (i = 0; i != DBIF_DB_CNT; i++) {
         if ((ret = db_create(&(db_table[i].db), db_env, 0))) {
@@ -219,7 +210,7 @@ int dbif_open(struct db_param *dbp)
             return -1;
         if (db_errlog != NULL)
             db_table[i].db->set_errfile(db_table[i].db, db_errlog);
-    }     
+    }
     
     /* TODO: Implement CNID DB versioning info on new databases. */
     /* TODO: Make transaction support a runtime option. */
@@ -233,6 +224,7 @@ int dbif_open(struct db_param *dbp)
         LOG(log_error, logtype_cnid, "Failed to associate devino database: %s",db_strerror(ret));
 	return -1;
     }
+
     return 0;
 }
 
