@@ -1,16 +1,13 @@
 /*
- * $Id: ad_date.c,v 1.3 2001-06-29 14:14:46 rufustfirefly Exp $
+ * $Id: ad_date.c,v 1.3.14.1 2004-02-20 19:57:14 didg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include <atalk/adouble.h>
+#include <string.h>
 
 int ad_setdate(const struct adouble *ad, 
 	       unsigned int dateoff, u_int32_t date)

@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.7 2004-02-14 15:47:22 didg Exp $
+ * $Id: ad_open.c,v 1.30.6.8 2004-02-20 19:57:14 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -31,25 +31,14 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-#include <string.h>
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif /* HAVE_FCNTL_H */
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif /* HAVE_UNISTD_H */
 #include <errno.h>
+
+#include <atalk/adouble.h>
+#include <sys/param.h>
 #include <atalk/logger.h>
 
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/param.h>
-#include <sys/mman.h>
-
-#include <netatalk/endian.h>
-#include <atalk/adouble.h>
 #include <atalk/util.h>
+#include <string.h>
 
 #include "ad_private.h"
 

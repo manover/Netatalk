@@ -1,5 +1,5 @@
 /*
- * $Id: ad_sendfile.c,v 1.6.6.1 2003-10-17 00:01:13 didg Exp $
+ * $Id: ad_sendfile.c,v 1.6.6.2 2004-02-20 19:57:15 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -33,17 +33,14 @@
 
 #ifdef WITH_SENDFILE
 
+#include <atalk/adouble.h>
+
 #include <stdio.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif /* HAVE_UNISTD_H */
-#include <sys/types.h>
-#include <sys/stat.h>
+
 #include <sys/socket.h>
 #include <sys/uio.h>
 
 #include <errno.h>  
-#include <atalk/adouble.h>
 
 #include <atalk/logger.h>
 

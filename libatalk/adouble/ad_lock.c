@@ -1,5 +1,5 @@
 /* 
- * $Id: ad_lock.c,v 1.11.6.2 2004-01-28 10:15:39 didg Exp $
+ * $Id: ad_lock.c,v 1.11.6.3 2004-02-20 19:57:14 didg Exp $
  *
  * Copyright (c) 1998,1999 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT for more information.
@@ -20,18 +20,13 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
+#include <atalk/adouble.h>
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif /* HAVE_UNISTD_H */
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif /* HAVE_FCNTL_H */
 #include <errno.h>
 
-#include <atalk/adouble.h>
+#include <string.h>
 
 #include "ad_private.h"
 
