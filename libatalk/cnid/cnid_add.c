@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_add.c,v 1.14 2001-10-22 03:40:18 jmarcus Exp $
+ * $Id: cnid_add.c,v 1.14.2.1 2001-12-03 05:05:45 jmarcus Exp $
  *
  * Copyright (c) 1999. Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -39,233 +39,233 @@
 /* add an entry to the CNID databases. we do this as a transaction
  * to prevent messiness. */
 static int add_cnid(CNID_private *db, DB_TXN *ptid, DBT *key, DBT *data) {
-	DBT altkey, altdata;
-	DB_TXN *tid;
-	/* We create rc here because using errno is bad.  Why?  Well, if you 
-	 * use errno once, then call another function which resets it, you're
-	 * screwed. */
-	int rc;
+    DBT altkey, altdata;
+    DB_TXN *tid;
+    /* We create rc here because using errno is bad.  Why?  Well, if you
+     * use errno once, then call another function which resets it, you're
+     * screwed. */
+    int rc;
 
-	memset(&altkey, 0, sizeof(altkey));
-	memset(&altdata, 0, sizeof(altdata));
+    memset(&altkey, 0, sizeof(altkey));
+    memset(&altdata, 0, sizeof(altdata));
 
 retry:
-	if ((rc = txn_begin(db->dbenv, ptid, &tid, 0)) != 0) {
-		return rc;
-	}
+    if ((rc = txn_begin(db->dbenv, ptid, &tid, 0)) != 0) {
+        return rc;
+    }
 
 
-	/* main database */
-	if ((rc = db->db_cnid->put(db->db_cnid, tid, key, data, DB_NOOVERWRITE))) {
-		int ret;
-		if ((ret = txn_abort(tid)) != 0) {
-			return ret;
-		}
-		if (rc == DB_LOCK_DEADLOCK) {
-			goto retry;
-		}
+    /* main database */
+    if ((rc = db->db_cnid->put(db->db_cnid, tid, key, data, DB_NOOVERWRITE))) {
+        int ret;
+        if ((ret = txn_abort(tid)) != 0) {
+            return ret;
+        }
+        if (rc == DB_LOCK_DEADLOCK) {
+            goto retry;
+        }
 
-		return rc;
-	}
-
-
-	/* dev/ino database */
-	altkey.data = data->data;
-	altkey.size = CNID_DEVINO_LEN;
-	altdata.data = key->data;
-	altdata.size = key->size;
-	if ((rc = db->db_devino->put(db->db_devino, tid, &altkey, &altdata, 0))) {
-		int ret;
-		if ((ret = txn_abort(tid)) != 0) {
-			return ret;
-		}
-		if (rc == DB_LOCK_DEADLOCK) {
-			goto retry;
-		}
-
-		return rc;
-	}
+        return rc;
+    }
 
 
-	/* did/name database */
-	altkey.data = (char *) data->data + CNID_DEVINO_LEN;
-	altkey.size = data->size - CNID_DEVINO_LEN;
-	if ((rc = db->db_didname->put(db->db_didname, tid, &altkey, &altdata, 0))) {
-		int ret;
-		if ((ret = txn_abort(tid)) != 0) {
-			return ret;
-		}
-		if (rc == DB_LOCK_DEADLOCK) {
-			goto retry;
-		}
+    /* dev/ino database */
+    altkey.data = data->data;
+    altkey.size = CNID_DEVINO_LEN;
+    altdata.data = key->data;
+    altdata.size = key->size;
+    if ((rc = db->db_devino->put(db->db_devino, tid, &altkey, &altdata, 0))) {
+        int ret;
+        if ((ret = txn_abort(tid)) != 0) {
+            return ret;
+        }
+        if (rc == DB_LOCK_DEADLOCK) {
+            goto retry;
+        }
 
-		return rc;
-	}
+        return rc;
+    }
 
-	if ((rc = txn_commit(tid, 0)) != 0) {
-		syslog(LOG_ERR, "add_cnid: Failed to commit transaction: %s",
-		       db_strerror(rc));
-		return rc;
-	}
-	return 0;
+
+    /* did/name database */
+    altkey.data = (char *) data->data + CNID_DEVINO_LEN;
+    altkey.size = data->size - CNID_DEVINO_LEN;
+    if ((rc = db->db_didname->put(db->db_didname, tid, &altkey, &altdata, 0))) {
+        int ret;
+        if ((ret = txn_abort(tid)) != 0) {
+            return ret;
+        }
+        if (rc == DB_LOCK_DEADLOCK) {
+            goto retry;
+        }
+
+        return rc;
+    }
+
+    if ((rc = txn_commit(tid, 0)) != 0) {
+        syslog(LOG_ERR, "add_cnid: Failed to commit transaction: %s",
+               db_strerror(rc));
+        return rc;
+    }
+    return 0;
 }
 
 cnid_t cnid_add(void *CNID, const struct stat *st,
-       const cnid_t did, const char *name, const int len,
-	   cnid_t hint)
+                const cnid_t did, const char *name, const int len,
+                cnid_t hint)
 {
-	CNID_private *db;
-	DBT key, data, rootinfo_key, rootinfo_data;
-	DB_TXN *tid;
-	cnid_t id, save;
-	int rc;
+    CNID_private *db;
+    DBT key, data, rootinfo_key, rootinfo_data;
+    DB_TXN *tid;
+    cnid_t id, save;
+    int rc;
 
-	if (!(db = CNID) || !st || !name) {
-		return 0;
-	}
+    if (!(db = CNID) || !st || !name) {
+        return 0;
+    }
 
-	/* Do a lookup. */
-	id = cnid_lookup(db, st, did, name, len);
-	/* ... Return id if it is valid, or if Rootinfo is read-only. */
-	if (id || (db->flags & CNIDFLAG_DB_RO)) {
+    /* Do a lookup. */
+    id = cnid_lookup(db, st, did, name, len);
+    /* ... Return id if it is valid, or if Rootinfo is read-only. */
+    if (id || (db->flags & CNIDFLAG_DB_RO)) {
 #ifdef DEBUG
-		syslog(LOG_INFO, "cnid_add: Looked up did %u, name %s as %u",
-		       ntohl(did), name, ntohl(id));
+        syslog(LOG_INFO, "cnid_add: Looked up did %u, name %s as %u",
+               ntohl(did), name, ntohl(id));
 #endif
-		return id;
-	}
+        return id;
+    }
 
-	/* Initialize our DBT data structures. */
-	memset(&key, 0, sizeof(key));
-	memset(&data, 0, sizeof(data));
+    /* Initialize our DBT data structures. */
+    memset(&key, 0, sizeof(key));
+    memset(&data, 0, sizeof(data));
 
-	/* Just tickle hint, and the key will change (gotta love pointers). */
-	key.data = &hint;
-	key.size = sizeof(hint);
+    /* Just tickle hint, and the key will change (gotta love pointers). */
+    key.data = &hint;
+    key.size = sizeof(hint);
 
-	if ((data.data = make_cnid_data(st, did, name, len)) == NULL) {
-		syslog(LOG_ERR, "cnid_add: Path name is too long");
-		goto cleanup_err;
-	}
+    if ((data.data = make_cnid_data(st, did, name, len)) == NULL) {
+        syslog(LOG_ERR, "cnid_add: Path name is too long");
+        goto cleanup_err;
+    }
 
-	data.size = CNID_HEADER_LEN + len + 1;
+    data.size = CNID_HEADER_LEN + len + 1;
 
-	/* Start off with the hint.  It should be in network byte order.
-	 * We need to make sure that somebody doesn't add in restricted
-	 * cnid's to the database. */
-	if (ntohl(hint) >= CNID_START) {
-		/* If the key doesn't exist, add it in.  Don't fiddle with nextID. */
-		rc = add_cnid(db, NULL, &key, &data);
-		switch (rc) {
-			case DB_KEYEXIST: /* Need to use RootInfo after all. */
-				break;
-			default:
-				syslog(LOG_ERR, "cnid_add: Unable to add CNID %u: %s",
-				       ntohl(hint), db_strerror(rc));
-				goto cleanup_err;
-			case 0:
+    /* Start off with the hint.  It should be in network byte order.
+     * We need to make sure that somebody doesn't add in restricted
+     * cnid's to the database. */
+    if (ntohl(hint) >= CNID_START) {
+        /* If the key doesn't exist, add it in.  Don't fiddle with nextID. */
+        rc = add_cnid(db, NULL, &key, &data);
+        switch (rc) {
+        case DB_KEYEXIST: /* Need to use RootInfo after all. */
+            break;
+        default:
+            syslog(LOG_ERR, "cnid_add: Unable to add CNID %u: %s",
+                   ntohl(hint), db_strerror(rc));
+            goto cleanup_err;
+        case 0:
 #ifdef DEBUG
-				syslog(LOG_INFO, "cnid_add: Used hint for did %u, name %s as %u",
-				       ntohl(did), name, ntohl(hint));
+            syslog(LOG_INFO, "cnid_add: Used hint for did %u, name %s as %u",
+                   ntohl(did), name, ntohl(hint));
 #endif
-				return hint;
-		}
-	}
+            return hint;
+        }
+    }
 
-	memset(&rootinfo_key, 0, sizeof(rootinfo_key));
-	memset(&rootinfo_data, 0, sizeof(rootinfo_data));
-	rootinfo_key.data = ROOTINFO_KEY;
-	rootinfo_key.size = ROOTINFO_KEYLEN;
+    memset(&rootinfo_key, 0, sizeof(rootinfo_key));
+    memset(&rootinfo_data, 0, sizeof(rootinfo_data));
+    rootinfo_key.data = ROOTINFO_KEY;
+    rootinfo_key.size = ROOTINFO_KEYLEN;
 retry:
-	if ((rc = txn_begin(db->dbenv, NULL, &tid, 0)) != 0) {
-		syslog(LOG_ERR, "cnid_add: Failed to begin transaction: %s",
-		       db_strerror(rc));
-		goto cleanup_err;
-	}
+    if ((rc = txn_begin(db->dbenv, NULL, &tid, 0)) != 0) {
+        syslog(LOG_ERR, "cnid_add: Failed to begin transaction: %s",
+               db_strerror(rc));
+        goto cleanup_err;
+    }
 
-	/* Get the key. */
-	switch (rc = db->db_didname->get(db->db_didname, tid, &rootinfo_key,
-		&rootinfo_data, DB_RMW)) {
-		case DB_LOCK_DEADLOCK:
-			if ((rc = txn_abort(tid)) != 0) {
-				syslog(LOG_ERR, "cnid_add: txn_abort: %s", db_strerror(rc));
-				goto cleanup_err;
-			}
-			goto retry;
-		case 0:
-			memcpy(&hint, rootinfo_data.data, sizeof(hint));
+    /* Get the key. */
+    switch (rc = db->db_didname->get(db->db_didname, tid, &rootinfo_key,
+                                     &rootinfo_data, DB_RMW)) {
+    case DB_LOCK_DEADLOCK:
+        if ((rc = txn_abort(tid)) != 0) {
+            syslog(LOG_ERR, "cnid_add: txn_abort: %s", db_strerror(rc));
+            goto cleanup_err;
+        }
+        goto retry;
+    case 0:
+        memcpy(&hint, rootinfo_data.data, sizeof(hint));
 #ifdef DEBUG
-			syslog(LOG_INFO, "cnid_add: Found rootinfo for did %u, name %s as %u", ntohl(did), name, ntohl(hint));
+        syslog(LOG_INFO, "cnid_add: Found rootinfo for did %u, name %s as %u", ntohl(did), name, ntohl(hint));
 #endif
-			break;
-		case DB_NOTFOUND:
-			hint = htonl(CNID_START);
+        break;
+    case DB_NOTFOUND:
+        hint = htonl(CNID_START);
 #ifdef DEBUG
-			syslog(LOG_INFO, "cnid_add: Using CNID_START for did %u, name %s",
-			       ntohl(did), name);
+        syslog(LOG_INFO, "cnid_add: Using CNID_START for did %u, name %s",
+               ntohl(did), name);
 #endif
-			break;
-		default:
-			syslog(LOG_ERR, "cnid_add: Unable to lookup rootinfo: %s",
-			       db_strerror(rc));
-			goto cleanup_abort;
-	}
+        break;
+    default:
+        syslog(LOG_ERR, "cnid_add: Unable to lookup rootinfo: %s",
+               db_strerror(rc));
+        goto cleanup_abort;
+    }
 
-	/* Search for a new id.  We keep the first id around to check for
-	 * wrap-around.  NOTE: I do it this way so that we can go back and
-	 * fill in holes. */
-	save = id = ntohl(hint);
-	while ((rc = add_cnid(db, tid, &key, &data)) != 0) {
-		/* Don't use any special CNIDs. */
-		if (++id < CNID_START) {
-			id = CNID_START;
-		}
+    /* Search for a new id.  We keep the first id around to check for
+     * wrap-around.  NOTE: I do it this way so that we can go back and
+     * fill in holes. */
+    save = id = ntohl(hint);
+    while ((rc = add_cnid(db, tid, &key, &data)) != 0) {
+        /* Don't use any special CNIDs. */
+        if (++id < CNID_START) {
+            id = CNID_START;
+        }
 
-		if ((rc != DB_KEYEXIST) || (save == id)) {
-			syslog(LOG_ERR, "cnid_add: Unable to add CNID %u: %s",
-			       ntohl(hint), db_strerror(rc));
-			goto cleanup_abort;
-		}
-		hint = htonl(id);
-	}
+        if ((rc != DB_KEYEXIST) || (save == id)) {
+            syslog(LOG_ERR, "cnid_add: Unable to add CNID %u: %s",
+                   ntohl(hint), db_strerror(rc));
+            goto cleanup_abort;
+        }
+        hint = htonl(id);
+    }
 
-	rootinfo_data.data = &hint;
-	rootinfo_data.size = sizeof(hint);
+    rootinfo_data.data = &hint;
+    rootinfo_data.size = sizeof(hint);
 
-	switch (rc = db->db_didname->put(db->db_didname, tid, &rootinfo_key, &rootinfo_data, 0)) {
-		case DB_LOCK_DEADLOCK:
-			if ((rc = txn_abort(tid)) != 0) {
-				syslog(LOG_ERR, "cnid_add: txn_abort: %s", db_strerror(rc));
-				goto cleanup_err;
-			}
-			goto retry;
-		case 0:
-			break;
-		default:
-			syslog(LOG_ERR, "cnid_add: Unable to update rootinfo: %s",
-			       db_strerror(rc));
-			goto cleanup_abort;
-	}
+    switch (rc = db->db_didname->put(db->db_didname, tid, &rootinfo_key, &rootinfo_data, 0)) {
+    case DB_LOCK_DEADLOCK:
+        if ((rc = txn_abort(tid)) != 0) {
+            syslog(LOG_ERR, "cnid_add: txn_abort: %s", db_strerror(rc));
+            goto cleanup_err;
+        }
+        goto retry;
+    case 0:
+        break;
+    default:
+        syslog(LOG_ERR, "cnid_add: Unable to update rootinfo: %s",
+               db_strerror(rc));
+        goto cleanup_abort;
+    }
 
 cleanup_commit:
-	/* The transaction finished, commit it. */
-	if ((rc = txn_commit(tid, 0)) != 0) {
-		syslog(LOG_ERR, "cnid_add: Unable to commit transaction: %s",
-		       db_strerror(rc));
-		goto cleanup_err;
-	}
+    /* The transaction finished, commit it. */
+    if ((rc = txn_commit(tid, 0)) != 0) {
+        syslog(LOG_ERR, "cnid_add: Unable to commit transaction: %s",
+               db_strerror(rc));
+        goto cleanup_err;
+    }
 
 #ifdef DEBUG
-	syslog(LOG_INFO, "cnid_add: Returned CNID for did %u, name %s as %u",
-	       ntohl(did), name, ntohl(hint));
+    syslog(LOG_INFO, "cnid_add: Returned CNID for did %u, name %s as %u",
+           ntohl(did), name, ntohl(hint));
 #endif
-	return hint;
+    return hint;
 
 cleanup_abort:
-	txn_abort(tid);
+    txn_abort(tid);
 
 cleanup_err:
-	return 0;
+    return 0;
 }
 #endif /* CNID_DB */
 
