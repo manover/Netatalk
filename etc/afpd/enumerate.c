@@ -1,5 +1,5 @@
 /*
- * $Id: enumerate.c,v 1.39.2.2.2.4 2004-03-11 02:01:59 didg Exp $
+ * $Id: enumerate.c,v 1.39.2.2.2.5 2004-06-20 15:10:14 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -375,7 +375,7 @@ int     ext;
         sd.sd_last = sd.sd_buf;
     }
     while ( sd.sd_sindex < sindex ) {
-        len = *(sd.sd_last)++;
+        len = (unsigned char)*(sd.sd_last)++;
         if ( len == 0 ) {
             sd.sd_did = 0;	/* invalidate sd struct to force re-read */
             return( AFPERR_NOOBJ );
@@ -384,7 +384,7 @@ int     ext;
         sd.sd_sindex++;
     }
 
-    while (( len = *(sd.sd_last)) != 0 ) {
+    while (( len = (unsigned char)*(sd.sd_last)) != 0 ) {
         /*
          * If we've got all we need, send it.
          */
