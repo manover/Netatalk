@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.31.2.1 2004-10-20 19:48:38 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.31.2.2 2004-10-20 20:05:27 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -85,8 +85,11 @@ void *get_finderinfo(const char *mpath, struct adouble *adp, void *data)
     if (adp)
         ad_finder = ad_entry(adp, ADEID_FINDERI);
 
-    if ((adp != NULL) && (ad_finder != NULL)) {
+    if ((ad_finder != NULL)) {
         memcpy(data, ad_finder, 32);
+        /* default type ? */
+        if (!memcmp(ad_finder, ufinderi, 8))
+            chk_ext = 1;
     }
     else {
         memcpy(data, ufinderi, 32);
@@ -957,7 +960,6 @@ int setfilparams(struct vol *vol,
             )) {
                 memcpy(finder_buf, ufinderi, 8 );
             }
-
             memcpy(ad_entry( adp, ADEID_FINDERI ), finder_buf, 32 );
             break;
         case FILPBIT_UNIXPR :

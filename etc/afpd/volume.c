@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.33 2004-08-11 20:15:35 bfernhomberg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.33.2.1 2004-10-20 20:05:27 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -838,7 +838,12 @@ static void sortextmap( void)
     }
     if (Extmap_cnt) {
         qsort(Extmap, Extmap_cnt, sizeof(struct extmap), extmap_cmp);
-        Defextmap = Extmap;
+        if (*Extmap->em_ext == 0) {
+            /* the first line is really "." the default entry, 
+             * we remove the leading '.' in setextmap
+            */
+            Defextmap = Extmap;
+        }
     }
 }
 
