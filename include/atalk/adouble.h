@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.10 2004-02-20 19:56:15 didg Exp $
+ * $Id: adouble.h,v 1.21.6.11 2004-02-20 20:17:53 didg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -41,17 +41,10 @@
 #endif
 
 #ifdef HAVE_PWRITE
-
 #ifndef HAVE_PREAD
 #undef HAVE_PWRITE
 #endif
-
 #endif
-
-
-#include <sys/cdefs.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 
 #ifdef  HAVE_PREAD
 #ifdef _XOPEN_SOURCE
@@ -60,11 +53,16 @@
 #define _XOPEN_SOURCE 500
 #endif
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #ifdef HAVE_UNISTD_H
 #undef __USE_MISC
 #define __USE_MISC
 #include <unistd.h>
 #endif 
+
+#include <sys/cdefs.h>
 
 #ifdef HAVE_FCNTL_H  
 #include <fcntl.h>
