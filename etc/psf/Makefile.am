@@ -12,7 +12,7 @@ INCLUDES = -DZEROWIDTH \
 	-D_PATH_PAP=\"$(bindir)/pap\" \
 	-D_PATH_PSORDER=\"$(bindir)/psorder\" \
 	-D_PATH_PSA=\"$(sbindir)/psa\" \
-	-D_PATH_PSFILTER=\"$(bindir)/etc2ps.sh\" \
+	-D_PATH_PSFILTER=\"$(sbindir)/etc2ps.sh\" \
 	-D_PATH_PAGECOUNT=\"$(pkgdatadir)/pagecount.ps\"
 
 EXTRA_DIST = etc2ps.sh pagecount.ps

@@ -4,6 +4,7 @@ Changes in 1.6.3
 * FIX: afpd: Catsearch, when Mac and unix name differ, search on attributes.
 * FIX: afpd: Files could be opened for writing on read-only filesystems.
 * FIX: afpd: Debugging using SIGUSR1 was broken. [Stefan Muenkner]
+* FIX: psf: Correct path to etc2ps.sh.
 * FIX: shell_utils: Don't distribute generated files.
 * FIX: aecho: -A option didn't work. [Chris Shiels]
 * FIX: configure: Berkeley DB path detection could be wrong. [Stefan Muenkner]
