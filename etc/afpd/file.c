@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.4 2003-10-17 00:01:11 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.5 2003-10-17 00:48:56 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1294,6 +1294,7 @@ static int copy_fd(int dfd, int sfd)
         }
     }
     no_sendfile:
+    lseek(sfd, offset, SEEK_SET);
 #endif 
 
     while (1) {
