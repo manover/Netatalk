@@ -1,5 +1,5 @@
 /*
- * $Id: comm.c,v 1.1.4.2 2003-09-20 02:47:21 bfernhomberg Exp $
+ * $Id: comm.c,v 1.1.4.3 2003-10-12 13:50:16 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -7,26 +7,31 @@
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif /* HAVE_CONFIG_H */
+#endif 
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif /* HAVE_UNISTD_H */
+#endif 
+
 #include <sys/param.h>
 #include <sys/socket.h>
+
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
+#endif 
+
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
-#endif /* HAVE_SYS_TIME_H */
+#endif 
+
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
-#endif /* HAVE_SYS_UIO_H */
+#endif 
 
 
 #include <assert.h>
@@ -265,19 +270,48 @@ int comm_rcv(struct cnid_dbd_rqst *rqst)
     return 1;
 }
 
-
+/* ------------ */
+#define USE_WRITEV
 int comm_snd(struct cnid_dbd_rply *rply)
 {
+#ifdef USE_WRITEV 
+  struct iovec iov[2];
+  size_t towrite;
+#endif
+
+    if (!rply->namelen) {
+        if (write(cur_fd, rply, sizeof(struct cnid_dbd_rply)) != sizeof(struct cnid_dbd_rply)) {
+            LOG(log_error, logtype_cnid, "error writing message header: %s", strerror(errno));
+            invalidate_fd(cur_fd);
+            return 0;
+        }
+        return 1;
+    }
+#ifdef USE_WRITEV 
+
+    iov[0].iov_base = rply;
+    iov[0].iov_len = sizeof(struct cnid_dbd_rply);
+    iov[1].iov_base = rply->name;
+    iov[1].iov_len = rply->namelen;
+    towrite = sizeof(struct cnid_dbd_rply) +rply->namelen;
+
+    if (writev(cur_fd, iov, 2) != towrite) {
+        LOG(log_error, logtype_cnid, "error writing message : %s", strerror(errno));
+        invalidate_fd(cur_fd);
+        return 0;
+    }
+#else
     if (write(cur_fd, rply, sizeof(struct cnid_dbd_rply)) != sizeof(struct cnid_dbd_rply)) {
         LOG(log_error, logtype_cnid, "error writing message header: %s", strerror(errno));
         invalidate_fd(cur_fd);
         return 0;
     }
-    if (rply->namelen && write(cur_fd, rply->name, rply->namelen) != rply->namelen) {
+    if (write(cur_fd, rply->name, rply->namelen) != rply->namelen) {
         LOG(log_error, logtype_cnid, "error writing message name: %s", strerror(errno));
         invalidate_fd(cur_fd);
         return 0;
     }
+#endif    
     return 1;
 }
 
