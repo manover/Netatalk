@@ -1,6 +1,6 @@
-#! /usr/bin/perl 
+#!@PERL@
 #
-# $Id: netatalkshorternamelinks.pl,v 1.2 2001-05-07 14:16:47 rufustfirefly Exp $
+# $Id: netatalkshorternamelinks.pl.in,v 1.1.2.1 2002-02-07 23:50:22 srittau Exp $
 # 
 # (c) 2000 Christian Wolff, scarabaeus@scarabaeus.org
 # quick hack to create symbolic links for files with names over 31 chars long 
