@@ -274,6 +274,7 @@ static int crit_check(struct vol *vol, struct path *path, int cidx) {
 	struct finderinfo *finfo = NULL, finderinfo;
 	struct adouble *adp = NULL;
 	time_t c_date, b_date;
+	u_int32_t ac_date, ab_date;
 	static char convbuf[512];
 	size_t len;
 
@@ -340,8 +341,8 @@ static int crit_check(struct vol *vol, struct path *path, int cidx) {
 	/* Check for creation date... */
 	if (c1.rbitmap & (1<<DIRPBIT_CDATE)) {
 		if (adp || (adp = adl_lkup(vol, path))) {
-			if (ad_getdate(adp, AD_DATE_CREATE, (u_int32_t*)&c_date) >= 0)
-				c_date = AD_DATE_TO_UNIX(c_date);
+			if (ad_getdate(adp, AD_DATE_CREATE, &ac_date) >= 0)
+				c_date = AD_DATE_TO_UNIX(ac_date);
 			else c_date = path->st.st_mtime;
 		} else c_date = path->st.st_mtime;
 		if (c_date < c1.cdate || c_date > c2.cdate)
@@ -351,8 +352,8 @@ static int crit_check(struct vol *vol, struct path *path, int cidx) {
 	/* Check for backup date... */
 	if (c1.rbitmap & (1<<DIRPBIT_BDATE)) {
 		if (adp || (adp == adl_lkup(vol, path))) {
-			if (ad_getdate(adp, AD_DATE_BACKUP, (u_int32_t*)&b_date) >= 0)
-				b_date = AD_DATE_TO_UNIX(b_date);
+			if (ad_getdate(adp, AD_DATE_BACKUP, &ab_date) >= 0)
+				b_date = AD_DATE_TO_UNIX(ab_date);
 			else b_date = path->st.st_mtime;
 		} else b_date = path->st.st_mtime;
 		if (b_date < c1.bdate || b_date > c2.bdate)

@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.45.2.2.2.11 2004-05-10 18:40:32 didg Exp $
+ * $Id: filedir.c,v 1.45.2.2.2.12 2004-08-11 03:13:21 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -345,6 +345,7 @@ int         isdir;
     struct path         path;
     cnid_t      id;
     ucs2_t *oldname_w, *newname_w;
+    void *oldname_w_p = &oldname_w, *newname_w_p = &newname_w;
 
     ad_init(&ad, vol->v_adouble);
     adp = &ad;
@@ -407,11 +408,11 @@ int         isdir;
         /* deal with case insensitive, case-preserving filesystems. */
         if ((stat(upath, st) == 0)) {
 	    if ((size_t)-1 == (convert_string_allocate(vol->v_volcharset, CH_UCS2, oldname,
-                                strlen(oldname), (char**) &oldname_w)) ) {
+                                strlen(oldname), oldname_w_p)) ) {
                 return AFPERR_MISC; /* conversion error has already been logged */
             }
 	    if ((size_t)-1 == (convert_string_allocate(vol->v_volcharset, CH_UCS2, newname, 
-                                strlen(newname), (char**) &newname_w)) ) {
+                                strlen(newname), newname_w_p)) ) {
                 free(oldname_w);
                 return AFPERR_MISC; /* conversion error has already been logged */
             }
