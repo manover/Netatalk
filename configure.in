@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.5 2003-09-20 02:54:51 bfernhomberg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.6 2003-09-26 23:46:21 bfernhomberg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(bin/adv1tov2/adv1tov2.c)
@@ -253,6 +253,7 @@ AC_ARG_ENABLE(force-uidgid,
 
 dnl Don't use BDB unless it's needed
 bdb_required=no
+compiled_backends=""
 
 dnl Determine whether or not to use DB3 Concurrent Data Store
 AC_MSG_CHECKING([whether or not to use DB3 Concurrent Data Store])
@@ -260,8 +261,9 @@ AC_ARG_WITH(cnid-cdb-backend,
 	[  --with-cnid-cdb-backend	enable CNID with Concurrent DB3 Data Store],
 	if test x"$withval" = x"no"; then
 	    use_cdb_backend=no
-			else
+	else
 	    use_cdb_backend=yes
+	    compiled_backends="$compiled_backends cdb"
 	fi
 	,use_cdb_backend=yes
 )
@@ -315,6 +317,7 @@ else
 fi
 
 if test $use_dbd_backend = yes; then
+    compiled_backends="$compiled_backends dbd"
     AC_DEFINE(CNID_BACKEND_DBD, 1, [Define if CNID Database Daemon backend should be compiled.])
     if test x"$DEFAULT_CNID_SCHEME" = x; then
         DEFAULT_CNID_SCHEME=dbd
@@ -331,7 +334,8 @@ AC_ARG_WITH(cnid-db3-backend,
 	    use_db3_backend=no
 	else
 	    use_db3_backend=yes
-		fi
+    	    $compiled_backends="$compile_backends db3"
+	fi
 	,use_db3_backend=no
 )
 
@@ -354,6 +358,7 @@ AC_ARG_WITH(cnid-last-backend,
 	    use_last_backend=no
 	else
 	    use_last_backend=yes
+    	    compiled_backends="$compiled_backends last"
 	fi
 	,use_last_backend=no
 )
@@ -376,6 +381,7 @@ AC_ARG_WITH(cnid-hash-backend,
 	    use_hash_backend=no
 	else
 	    use_hash_backend=yes
+    	    compiled_backends="$compiled_backends hash"
 	fi
 	,use_hash_backend=no
 )
@@ -398,6 +404,7 @@ AC_ARG_WITH(cnid-tdb-backend,
 	    use_tdb_backend=no
 	else
 	    use_tdb_backend=yes
+    	    compiled_backends="$compiled_backends tdb"
 	fi
 	,use_tdb_backend=no
 )
@@ -406,7 +413,7 @@ if test $use_tdb_backend = yes; then
 	    AC_MSG_RESULT([yes])
     AC_DEFINE(CNID_BACKEND_TDB, 1, [Define if CNID TDB scheme backend should be compiled.])
     if test x"$DEFAULT_TDB_SCHEME" = x; then
-	DEFAULT_TDB_SCHEME=tdb
+	DEFAULT_CNID_SCHEME=tdb
 	fi
 else
     AC_MSG_RESULT([no])
@@ -420,6 +427,7 @@ AC_ARG_WITH(cnid-mtab-backend,
 	    use_mtab_backend=no
 	else
 	    use_mtab_backend=yes
+    	    compiled_backends="$compiled_backends mtab"
 	fi
 	,use_mtab_backend=no
 )
@@ -451,16 +459,23 @@ if test x"$DEFAULT_CNID_SCHEME" = x; then
     AC_MSG_ERROR([No DID schemes compiled in ])
 fi
 
-#eval "default_scheme_selected=\$use_$DEFAULT_CNID_SCHEME_backend"
-#echo "default_scheme_selected=[$default_scheme_selected]"
-#if test x"$default_scheme_selected" = xyes; then
-#   AC_MSG_CHECKING([Checking whether default CNID scheme has been activated])
-#   AC_MSG_RESULT([yes])
-#else
-#   AC_MSG_ERROR([Default CNID scheme is disabled ! Enable it or select other as default.])
-#fi
+AC_MSG_CHECKING([whether default CNID scheme has been activated])
+found_scheme=no
+for scheme in $compiled_backends ; do
+    if test "$scheme" = $DEFAULT_CNID_SCHEME ; then	
+        found_scheme=yes
+    fi
+done
+if test x"$found_scheme" = x"no"; then
+        AC_MSG_RESULT([no])
+        AC_MSG_ERROR([Specified default CNID scheme $DEFAULT_CNID_SCHEME was not selected for compilation])
+    else
+        AC_MSG_RESULT([yes])
+fi
 
 AC_DEFINE_UNQUOTED(DEFAULT_CNID_SCHEME, "$DEFAULT_CNID_SCHEME", [Default CNID scheme to be used])
+AC_SUBST(DEFAULT_CNID_SCHEME)
+AC_SUBST(compiled_backends)
 
 dnl Check for Berkeley DB library
 if test "x$bdb_required" = "xyes"; then
