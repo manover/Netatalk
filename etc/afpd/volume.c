@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.11 2003-11-18 12:30:48 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.12 2003-11-24 12:13:32 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1511,6 +1511,8 @@ int		ibuflen, *rbuflen;
     int		len, ret;
     size_t	namelen;
     u_int16_t	bitmap;
+    char        *vol_uname;
+    char        *vol_mname;
 
     ibuf += 2;
     memcpy(&bitmap, ibuf, sizeof( bitmap ));
@@ -1574,8 +1576,6 @@ int		ibuflen, *rbuflen;
     volume->v_dir = volume->v_root = NULL;
 
     /* FIXME unix name != mac name */
-    char *vol_uname;
-    char *vol_mname;
 
     len = convert_string_allocate( CH_UCS2, (utf8_encoding()?CH_UTF8_MAC:obj->options.maccharset),
                               	       volume->v_name, namelen, &vol_mname);
