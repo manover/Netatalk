@@ -225,7 +225,7 @@ AC_DEFUN([AC_NETATALK_CNID], [
     AC_MSG_CHECKING([whether default CNID scheme has been activated])
     found_scheme=no
     for scheme in $compiled_backends ; do
-        if test "$scheme" = $DEFAULT_CNID_SCHEME ; then	
+        if test x"$scheme" = x"$DEFAULT_CNID_SCHEME"; then	
             found_scheme=yes
         fi
     done
@@ -240,4 +240,9 @@ AC_DEFUN([AC_NETATALK_CNID], [
     AC_SUBST(DEFAULT_CNID_SCHEME)
     AC_SUBST(compiled_backends)
 
+    if test "x$bdb_required" = "xyes"; then
+	ifelse([$1], , :, [$1])
+    else
+	ifelse([$2], , :, [$2])     
+    fi
 ])
