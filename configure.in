@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.168.2.2 2002-11-11 22:18:45 srittau Exp $
+dnl $Id: configure.in,v 1.168.2.3 2002-12-05 11:20:54 srittau Exp $
 dnl configure.in for netatalk
 
 AC_INIT(bin/adv1tov2/adv1tov2.c)
@@ -257,7 +257,7 @@ fi
 dnl Determine whether or not to use CDB or transactional DB store
 AC_MSG_CHECKING([whether or not to use CNID with Concurrent Data Store])
 AC_ARG_WITH(cdb,
-	[ --with-cdb		enable CNID with Concurrent Data Store],
+	[  --with-cdb              enable CNID with Concurrent Data Store],
 	if test "$withval" = "no"; then
 	    if test "x$did_scheme" != "xcnid"; then
 		USE_CDB="no"
