@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.14 2004-05-10 18:40:32 didg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.15 2004-06-20 15:30:04 bfernhomberg Exp $
  *
  * See COPYRIGHT.
  *
@@ -687,8 +687,13 @@ char *utompath(const struct vol *vol, char *upath, cnid_t id, int utf8)
     mpath[outlen] = 0; 
     if (!(flags & CONV_REQMANGLE)) 
         flags = 0;
+    else
+        flags = 1;
 
-    m = mangle(vol, mpath, upath, id, flags);
+    if (utf8)
+        flags |= 2;
+
+    m = mangle(vol, mpath, outlen, upath, id, flags);
 
 #ifdef DEBUG
     LOG(log_debug, logtype_afpd, "utompath: '%s':'%s':'%2.2X'", upath, m, ntohl(id));
@@ -697,7 +702,7 @@ char *utompath(const struct vol *vol, char *upath, cnid_t id, int utf8)
 
 utompath_error:
     u = "???";
-    m = mangle(vol, u, upath, id, 1);
+    m = mangle(vol, u, strlen(u), upath, id, (utf8)?3:1);
     return(m);
 }
 

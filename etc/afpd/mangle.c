@@ -1,5 +1,5 @@
 /* 
- * $Id: mangle.c,v 1.16.2.1.2.9 2004-02-15 22:44:49 bfernhomberg Exp $ 
+ * $Id: mangle.c,v 1.16.2.1.2.10 2004-06-20 15:30:04 bfernhomberg Exp $ 
  *
  * Copyright (c) 2002. Joe Marcus Clarke (marcus@marcuscom.com)
  * All Rights Reserved.  See COPYRIGHT.
@@ -199,6 +199,28 @@ demangle_osx(const struct vol *vol, char *mfilename, cnid_t did, cnid_t *fileid)
     return private_demangle(vol, mfilename, did, fileid);
 }
 
+
+/* -------------------------------------------------------
+ * find the start of a utf8 character
+ */
+static char *
+utf8_mangle_validate(char *path, size_t len)
+{
+    unsigned char *p = path + len;
+    int           dec = 0;
+
+    /* char matches with 10xxxxxx ? */
+    while ( len && *p && ((*p & 0xc0) == 0x80)) {
+	dec = 1;
+        len--;
+        p--;
+    }
+    if (dec)
+        *p = 0;
+
+    return path;
+}
+
 /* -----------------------
    with utf8 filename not always round trip
    filename   mac filename too long or first chars if unmatchable chars.
@@ -207,16 +229,16 @@ demangle_osx(const struct vol *vol, char *mfilename, cnid_t did, cnid_t *fileid)
    
 */
 char *
-mangle(const struct vol *vol, char *filename, char *uname, cnid_t id, int flags) {
+mangle(const struct vol *vol, char *filename, size_t filenamelen, char *uname, cnid_t id, int flags) {
     char *ext = NULL;
     char *m = NULL;
-    static char mfilename[MAX_LENGTH + 1];
+    static char mfilename[MAXPATHLEN + 1];
     char mangle_suffix[MANGLE_LENGTH + 1];
     size_t ext_len = 0;
     int k;
 
     /* Do we really need to mangle this filename? */
-    if (!flags && strlen(filename) <= vol->max_filename) {
+    if (!(flags & 1) && filenamelen <= vol->max_filename) {
 	return filename;
     }
     /* First, attempt to locate a file extension. */
@@ -230,7 +252,9 @@ mangle(const struct vol *vol, char *filename, char *uname, cnid_t id, int flags)
     m = mfilename;
     k = sprintf(mangle_suffix, "%c%X", MANGLE_CHAR, ntohl(id));
 
-    strlcpy(m, filename, MAX_LENGTH - k - ext_len +1);
+    strlcpy(m, filename, vol->max_filename - k - ext_len +1);
+    if (flags & 2)
+        m = utf8_mangle_validate(m, vol->max_filename - k - ext_len +1);
     if (*m == 0) {
         strcat(m, "???");
     }
