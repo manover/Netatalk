@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.21 2004-02-29 15:26:03 bfernhomberg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.22 2004-02-29 17:38:03 bfernhomberg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(etc/afpd/main.c)
@@ -936,6 +936,7 @@ AM_CONDITIONAL(USE_SUSE, test x$sysv_style = xsuse)
 AM_CONDITIONAL(USE_SHADOWPW, test x$shadowpw = xyes)
 AM_CONDITIONAL(USE_TRU64, test x$sysv_style = xtru64)
 AM_CONDITIONAL(USE_SOLARIS, test x$sysv_style = xsolaris)
+AM_CONDITIONAL(USE_UNDEF, test x$sysv_style = x)
 
 dnl --------------------- generate files
 

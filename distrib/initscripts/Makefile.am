@@ -166,3 +166,11 @@ uninstall-hook:
 	rm -f /etc/rc2.d/S90atalk /etc/rc0.d/K04atalk
 
 endif
+
+if USE_UNDEF
+
+install-data-hook:
+
+unistall-hook:
+
+endif
