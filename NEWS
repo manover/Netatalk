@@ -3,6 +3,8 @@ Changes from 1.5rc2
 
 * FIX: Compilation on Tru64 systems was broken, since libtool's acinclude.m4
        file on the packagers system did not contain the necessary patch.
+* FIX: On some systems, atalkd refuses to start, since it couldn't detect
+       any interfaces. This was caused by an overzealous validity check.
 
 Changes from 1.5rc1
 ===================
