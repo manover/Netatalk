@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.29.2.3 2002-01-14 02:50:34 srittau Exp $
+ * $Id: file.c,v 1.29.2.4 2002-02-07 23:56:33 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -89,11 +89,11 @@ char *strchr (), *strrchr ();
  */
 
 const u_char ufinderi[] = {
-    'T', 'E', 'X', 'T', 'U', 'N', 'I', 'X',
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0
-};
+                              'T', 'E', 'X', 'T', 'U', 'N', 'I', 'X',
+                              0, 0, 0, 0, 0, 0, 0, 0,
+                              0, 0, 0, 0, 0, 0, 0, 0,
+                              0, 0, 0, 0, 0, 0, 0, 0
+                          };
 
 int getfilparams(struct vol *vol,
                  u_int16_t bitmap,
@@ -1679,7 +1679,7 @@ int		ibuflen, *rbuflen;
         case EPERM:
         case EACCES:
             err = AFPERR_ACCESS;
-			break;
+            break;
         default:
             err = AFPERR_PARAM;
         }
@@ -1692,7 +1692,7 @@ int		ibuflen, *rbuflen;
         case EPERM:
         case EACCES:
             err = AFPERR_ACCESS;
-			break;
+            break;
         default:
             err = AFPERR_PARAM;
         }

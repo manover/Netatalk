@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.14.2.3 2002-01-23 18:34:14 jmarcus Exp $
+ * $Id: volume.c,v 1.14.2.4 2002-02-07 23:57:54 srittau Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1399,23 +1399,23 @@ int		ibuflen, *rbuflen;
 
 int wincheck(struct vol *vol, const char *path)
 {
-	int len;
+    int len;
 
-	if (!(vol->v_flags & AFPVOL_MSWINDOWS))
-		return 1;
+    if (!(vol->v_flags & AFPVOL_MSWINDOWS))
+        return 1;
 
-	/* empty paths are not allowed */
-	if ((len = strlen(path)) == 0)
-		return 0;
+    /* empty paths are not allowed */
+    if ((len = strlen(path)) == 0)
+        return 0;
 
-	/* leading or trailing whitespaces are not allowed */
-	if ((*path == ' ') || (path[len-1] == ' '))
-		return 0;
+    /* leading or trailing whitespaces are not allowed */
+    if ((*path == ' ') || (path[len-1] == ' '))
+        return 0;
 
-	/* certain characters are not allowed */
-	if (strpbrk(path, MSWINDOWS_BADCHARS))
-		return 0;
+    /* certain characters are not allowed */
+    if (strpbrk(path, MSWINDOWS_BADCHARS))
+        return 0;
 
-	/* everything else is okay */
-	return 1;
+    /* everything else is okay */
+    return 1;
 }
