@@ -44,7 +44,7 @@ diff -Nur vfs/Makefile vfs.new/Makefile
 +
 diff -Nur vfs/README vfs.new/README
 --- vfs/README	Thu Jan  1 00:00:00 1970
-+++ vfs.new/README	Tue Jul 13 02:21:25 2004
++++ vfs.new/README	Tue Jul 13 02:28:21 2004
 @@ -0,0 +1,34 @@
 +This a vfs for NT ADS 
 +you must set SMB and BUILD variables in Makefile.
@@ -82,8 +82,8 @@ diff -Nur vfs/README vfs.new/README
 +Didier
 diff -Nur vfs/vfs_ads.c vfs.new/vfs_ads.c
 --- vfs/vfs_ads.c	Thu Jan  1 00:00:00 1970
-+++ vfs.new/vfs_ads.c	Mon Jul 12 10:46:27 2004
-@@ -0,0 +1,997 @@
++++ vfs.new/vfs_ads.c	Wed Jul 14 16:37:15 2004
+@@ -0,0 +1,1029 @@
 +/* 
 + * CAP VFS module for Samba 3.x Version 0.3
 + *
@@ -578,8 +578,25 @@ diff -Nur vfs/vfs_ads.c vfs.new/vfs_ads.c
 +
 +	ret = SMB_VFS_NEXT_RENAME(handle, conn, old, new);
 +	if (!ret && !isDir(main_info)) {
++	    int  ptr1;
++	    int  ptr2;
++	    
 +	    char *ads_old  = ads_dir(ctx, conn->origpath, old, 0);
 +	    char *ads_new  = ads_dir(ctx, conn->origpath, new, 0);
++
++	    /* is dest folder .Adouble there ? */
++	    ptr1 = ads_get_path_ptr(ads_new);
++	    ptr2 = ads_get_path_ptr(ads_old);
++
++	    ads_new[ptr1] = '\0';
++	    ads_old[ptr2] = '\0';
++	    if (strcmp(ads_new, ads_old)) {
++	    	mkdir(ads_new, 0777);
++	    }
++
++	    ads_new[ptr1] = '/';
++	    ads_old[ptr2] = '/';
++	    
 +	    SMB_VFS_NEXT_RENAME(handle, conn, ads_old, ads_new);
 +	}
 +
@@ -1057,8 +1074,23 @@ diff -Nur vfs/vfs_ads.c vfs.new/vfs_ads.c
 +
 +#ifdef ADS_NEW_MODULE
 +
++#if 0
 +NTSTATUS vfs_ads_init(void)
 +{
++        return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "ads", ads_op_tuples);
++}
++#endif
++
++NTSTATUS vfs_ads_init(void)
++{
++        DEBUG(3, ("ADS: vfs_ads_init\n"));
++        return NT_STATUS_OK;
++}
++         
++
++NTSTATUS init_module(void)
++{
++	DEBUG(3, ("ADS: init_module\n" ));
 +        return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "ads", ads_op_tuples);
 +}
 +
