@@ -1,5 +1,5 @@
 /*
- * $Id: server_child.c,v 1.7.4.1.2.3 2004-02-16 08:59:52 didg Exp $
+ * $Id: server_child.c,v 1.7.4.1.2.4 2004-07-01 01:27:34 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -60,8 +60,10 @@
 #define HASH(i) ((((i) >> 8) ^ (i)) & (CHILD_HASHSIZE - 1))
 
 struct server_child_data {
-  pid_t pid; 
-  u_int32_t  time;
+  pid_t     pid; 
+  uid_t     uid;
+  int       valid;
+  u_int32_t time;
   u_int32_t idlen;
   
   char *clientid;
@@ -166,6 +168,7 @@ int server_child_add(server_child *children, const int forkid,
   }
 
   child->pid = pid;
+  child->valid = 0;
   hash_child(fork->table, child);
   children->count++;
   sigprocmask(SIG_SETMASK, &oldsig, NULL);
@@ -243,7 +246,7 @@ void server_child_kill(server_child *children, const int forkid,
  * a plain-old linked list 
  * FIXME use resolve_child ?
  */
-void server_child_kill_one(server_child *children, const int forkid, const pid_t pid)
+void server_child_kill_one(server_child *children, const int forkid, const pid_t pid, const uid_t uid)
 {
   server_child_fork *fork;
   struct server_child_data *child, *tmp;
@@ -255,7 +258,16 @@ void server_child_kill_one(server_child *children, const int forkid, const pid_t
     while (child) {
       tmp = child->next;
       if (child->pid == pid) {
-          kill(child->pid, SIGTERM);
+          if (!child->valid) {
+             /* hmm, client 'guess' the pid, rogue? */
+             LOG(log_info, logtype_default, "Disconnecting old session (%d) no token, bailout!",  child->pid);
+          }
+          else if (child->uid != uid) {
+             LOG(log_info, logtype_default, "Disconnecting old session (%d) not the same user, bailout!",  child->pid);
+          }
+          else {
+              kill(child->pid, SIGTERM);
+          }
       }
       child = tmp;
     }
@@ -265,7 +277,8 @@ void server_child_kill_one(server_child *children, const int forkid, const pid_t
 
 /* see if there is a process for the same mac     */
 /* if the times don't match mac has been rebooted */
-void server_child_kill_one_by_id(server_child *children, const int forkid, const pid_t pid, 
+void server_child_kill_one_by_id(server_child *children, const int forkid, const pid_t pid,
+          const uid_t uid, 
           const u_int32_t idlen, char *id, u_int32_t boottime)
 {
   server_child_fork *fork;
@@ -280,8 +293,13 @@ void server_child_kill_one_by_id(server_child *children, const int forkid, const
       if ( child->pid != pid) {
           if ( child->idlen == idlen && !memcmp(child->clientid, id, idlen)) {
 	     if ( child->time != boottime ) {
-	          kill(child->pid, SIGTERM);
-		  LOG(log_info, logtype_default, "Disconnecting old session %d, client rebooted.",  child->pid);
+	          if (uid == child->uid) {
+	              kill(child->pid, SIGTERM);
+		      LOG(log_info, logtype_default, "Disconnecting old session %d, client rebooted.",  child->pid);
+		  }
+		  else {
+		      LOG(log_info, logtype_default, "Disconnecting old session not the same uid, bailout!");
+		  }
 	     }
 	     else {
 		  LOG(log_info, logtype_default, 
@@ -298,6 +316,8 @@ void server_child_kill_one_by_id(server_child *children, const int forkid, const
 	  if (child->clientid) {
 	      free(child->clientid);
 	  }
+          child->uid = uid; 
+          child->valid = 1;
 	  child->idlen = idlen;
           child->clientid = id;
 	  LOG(log_info, logtype_default, "Setting clientid (len %d) for %d, boottime %X", idlen, child->pid, boottime);

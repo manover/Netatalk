@@ -1,5 +1,5 @@
 /*
- * $Id: server_ipc.c,v 1.1.4.1.2.1 2004-01-10 08:29:16 bfernhomberg Exp $
+ * $Id: server_ipc.c,v 1.1.4.1.2.2 2004-07-01 01:27:34 didg Exp $
  *
  * All rights reserved. See COPYRIGHT.
  *
@@ -26,6 +26,7 @@
 typedef struct ipc_header {
 	u_int16_t command;
         pid_t	  child_pid;
+        uid_t     uid;
         u_int32_t len;
 	char 	  *msg;
 } ipc_header;
@@ -65,8 +66,8 @@ int ipc_kill_token (struct ipc_header *ipc, server_child *children)
     /* assume signals SA_RESTART set */
     memcpy (&pid, ipc->msg, sizeof(pid_t));
 
-    LOG(log_info, logtype_default, "child %d disconnected", pid); 
-    server_child_kill_one(children, CHILD_DSIFORK, pid);
+    LOG(log_info, logtype_default, "child %d user %d disconnected", pid, ipc->uid);
+    server_child_kill_one(children, CHILD_DSIFORK, pid, ipc->uid);
     return 0;
 }
 
@@ -97,16 +98,22 @@ int ipc_get_session (struct ipc_header *ipc, server_child *children)
     }
     memcpy (clientid, p, idlen);
   
-    server_child_kill_one_by_id (children, CHILD_DSIFORK, ipc->child_pid, idlen, clientid, boottime);
+    server_child_kill_one_by_id (children, CHILD_DSIFORK, ipc->child_pid, ipc->uid, idlen, clientid, boottime);
     /* FIXME byte to ascii if we want to log clientid */
     LOG (log_info, logtype_afpd, "ipc_get_session: len: %u, idlen %d, time %x", ipc->len, idlen, boottime); 
     return 0;
 }
 
-#define IPC_HEADERLEN 10
+#define IPC_HEADERLEN 14
 #define IPC_MAXMSGSIZE 90
 
-/* ----------------- */
+/* ----------------- 
+ * Ipc format
+ * command
+ * pid
+ * uid
+ * 
+*/
 int server_ipc_read(server_child *children)
 {
     int       ret = 0;
@@ -119,10 +126,16 @@ int server_ipc_read(server_child *children)
     } 
 
     p = buf;
+
     memcpy(&ipc.command, p, sizeof(ipc.command));
     p += sizeof(ipc.command);
+
     memcpy(&ipc.child_pid, p, sizeof(ipc.child_pid));
     p += sizeof(ipc.child_pid);
+
+    memcpy(&ipc.uid, p, sizeof(ipc.uid));
+    p += sizeof(ipc.uid);
+
     memcpy(&ipc.len, p, sizeof(ipc.len));
 
     /* This should never happen */
@@ -163,6 +176,7 @@ int server_ipc_write( u_int16_t command, int len, void *msg)
 {
    char block[IPC_MAXMSGSIZE], *p;
    pid_t pid;
+   uid_t uid;
    p = block;
 
    memset ( p, 0 , IPC_MAXMSGSIZE);
@@ -175,6 +189,15 @@ int server_ipc_write( u_int16_t command, int len, void *msg)
    pid = getpid();
    memcpy(p, &pid, sizeof(pid_t));
    p += sizeof(pid_t);
+   
+   /* FIXME 
+    * using uid is wrong. It will not disconnect if the new connection
+    * is with a different user. 
+    * But we really don't want a remote kill command.
+   */
+   uid = geteuid();
+   memcpy(p, &uid, sizeof(uid_t));
+   p += sizeof(uid_t);
 
    memcpy(p, &len, 4);
    p += 4;

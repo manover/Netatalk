@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.44.2.3.2.14 2004-06-18 07:58:20 bfernhomberg Exp $
+ * $Id: auth.c,v 1.44.2.3.2.15 2004-07-01 01:27:34 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -457,6 +457,8 @@ unsigned int ibuflen, *rbuflen;
     */
     switch (type) {
     case 0: /* old version ?*/
+            tklen = obj->sinfo.sessiontoken_len;
+            token = obj->sinfo.sessiontoken;
         break;
     case 1: /* disconnect */
     case 2: /* reconnect update id */
@@ -531,10 +533,12 @@ int		ibuflen, *rbuflen;
     *rbuflen = 0;
     ibuf += 2;
 
+#if 0
     /* check for guest user */
     if ( 0 == (strcasecmp(obj->username, obj->options.guest)) ) {
         return AFPERR_MISC;
     }
+#endif
 
     memcpy(&type, ibuf, sizeof(type));
     type = ntohs(type);
