@@ -1,5 +1,5 @@
 /*
- * $Id: uams_passwd.c,v 1.19.2.1.2.1 2003-09-11 23:49:30 bfernhomberg Exp $
+ * $Id: uams_passwd.c,v 1.19.2.1.2.2 2003-10-29 23:53:24 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -14,7 +14,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
 /* STDC check */
 #if STDC_HEADERS
 #include <string.h>
@@ -29,15 +28,13 @@ char *strchr (), *strrchr ();
 #define memmove(d,s,n) bcopy ((s), (d), (n))
 #endif /* ! HAVE_MEMCPY */
 #endif /* STDC_HEADERS */
-
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
-#ifndef NO_CRYPT_H
+#ifdef HAVE_CRYPT_H
 #include <crypt.h>
-#endif /* ! NO_CRYPT_H */
+#endif /* ! HAVE_CRYPT_H */
 #include <pwd.h>
-#include <atalk/logger.h>
 
 #ifdef SOLARIS
 #define SHADOWPW
@@ -47,6 +44,7 @@ char *strchr (), *strrchr ();
 #include <shadow.h>
 #endif /* SHADOWPW */
 
+#include <atalk/logger.h>
 #include <atalk/afp.h>
 #include <atalk/uam.h>
 

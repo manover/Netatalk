@@ -1,5 +1,5 @@
 /*
- * $Id: uams_dhx_passwd.c,v 1.18.6.1 2003-09-11 23:49:30 bfernhomberg Exp $
+ * $Id: uams_dhx_passwd.c,v 1.18.6.2 2003-10-29 23:53:24 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -9,6 +9,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
+#define _XOPEN_SOURCE /* for crypt() */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,16 +17,13 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
-#ifndef NO_CRYPT_H
+#ifdef HAVE_CRYPT_H
 #include <crypt.h>
-#endif /* ! NO_CRYPT_H */
+#endif /* ! HAVE_CRYPT_H */
 #include <pwd.h>
-#include <atalk/logger.h>
-
 #ifdef SHADOWPW
 #include <shadow.h>
 #endif /* SHADOWPW */
-
 #if defined(GNUTLS_DHX)
 #include <gnutls/openssl.h>
 #elif defined(OPENSSL_DHX)
@@ -38,6 +36,7 @@
 #include <cast.h>
 #endif /* OPENSSL_DHX */
 
+#include <atalk/logger.h>
 #include <atalk/afp.h>
 #include <atalk/uam.h>
 

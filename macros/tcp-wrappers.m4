@@ -1,4 +1,4 @@
-dnl $Id: tcp-wrappers.m4,v 1.1.4.1 2003-09-09 16:42:22 didg Exp $
+dnl $Id: tcp-wrappers.m4,v 1.1.4.2 2003-10-29 23:53:24 bfernhomberg Exp $
 
 AC_DEFUN([NETATALK_TCP_WRAPPERS], [
 	check=maybe
@@ -24,10 +24,12 @@ AC_DEFUN([NETATALK_TCP_WRAPPERS], [
 		fi
 	fi
 
+	netatalk_cv_tcpwrap=no
 	AC_MSG_CHECKING([whether to enable the TCP wrappers])
 	if test "x$enable" == "xyes"; then
 		AC_DEFINE(TCPWRAP, 1, [Define if TCP wrappers should be used])
 		WRAP_LIBS="-lwrap"
+		netatalk_cv_tcpwrap=yes
 		AC_MSG_RESULT([yes])
 	else
 		if test "x$check" == "xyes"; then

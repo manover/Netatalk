@@ -1,4 +1,4 @@
-dnl $Id: config-checks.m4,v 1.3.4.1.2.1 2003-09-13 02:46:28 bfernhomberg Exp $
+dnl $Id: config-checks.m4,v 1.3.4.1.2.2 2003-10-29 23:53:24 bfernhomberg Exp $
 dnl Autoconf macro to set the configuration directories.
 
 AC_DEFUN([NETATALK_CONFIG_DIRS], [
@@ -6,7 +6,7 @@ AC_DEFUN([NETATALK_CONFIG_DIRS], [
 
 	AC_ARG_WITH(pkgconfdir,
         	[  --with-pkgconfdir=DIR   package specific configuration in DIR
-                          [SYSCONF/netatalk]],
+                          [[SYSCONF/netatalk]]],
                	[
 			if test "x$withval" != "x"; then
 				PKGCONFDIR="$withval"
@@ -18,7 +18,7 @@ AC_DEFUN([NETATALK_CONFIG_DIRS], [
 	SERVERTEXT="${PKGCONFDIR}/msg"
 
 	AC_ARG_WITH(message-dir,
-		[  --with-message-dir=PATH path to server message files [PKGCONF/msg]],
+		[  --with-message-dir=PATH path to server message files [[PKGCONF/msg]]],
 		[
 			if test x"$withval" = x"no";  then 
 				AC_MSG_WARN([*** message-dir is mandatory and cannot be disabled, using default ***])

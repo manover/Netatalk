@@ -1,5 +1,21 @@
-dnl $Id: ssl-check.m4,v 1.8.6.1 2003-09-09 16:42:22 didg Exp $
+dnl $Id: ssl-check.m4,v 1.8.6.2 2003-10-29 23:53:24 bfernhomberg Exp $
 dnl Autoconf macro to check for SSL or OpenSSL
+
+AC_DEFUN([AC_CRYPT], [
+
+	saveLIBS=$LIBS
+	LIBS=""
+	CRYPT_LIBS=""
+
+	AC_CHECK_HEADERS(crypt.h)
+	AC_CHECK_LIB(crypt, main)
+
+	CRYPT_LIBS=$LIBS
+	LIBS=$saveLIBS
+
+	AC_SUBST(CRYPT_LIBS)
+])
+
 
 AC_DEFUN([AC_PATH_SSL], [
 	AC_ARG_WITH(ssl-dir, [  --with-ssl-dir=PATH     specify path to OpenSSL installation (must contain

@@ -1,4 +1,4 @@
-dnl $Id: gssapi-check.m4,v 1.1.2.1 2003-09-09 16:42:22 didg Exp $
+dnl $Id: gssapi-check.m4,v 1.1.2.2 2003-10-29 23:53:24 bfernhomberg Exp $
 dnl Autoconf macro to check for kerberos
 
 AC_DEFUN([NETATALK_GSSAPI_CHECK], 
@@ -7,15 +7,15 @@ AC_DEFUN([NETATALK_GSSAPI_CHECK],
 	GSSAPI_LIBS=""
 	GSSAPI_CFLAGS=""
 
-        AC_ARG_ENABLE(gssapi,
-                [  --enable-gssapi[=DIR]     compile Kerberos V UAM],
-                [compilegssapi=$enableval],
-                [compilegssapi=no]
+        AC_ARG_WITH(gssapi,
+                [  --with-gssapi[[=PATH]]    path to GSSAPI for Kerberos V UAM [[auto]]],
+                [compilegssapi=$withval],
+                [compilegssapi=auto]
         )
 
 	if test x"$compilegssapi" != x"no"; then
 
-                if test "x$compilegssapi" != "xyes"; then
+                if test "x$compilegssapi" != "xyes" -a "x$compilegssapi" != "xauto"; then
             		GSSAPI_CFLAGS="-I$withval/include"
             		GSSAPI_CPPFLAGS="-I$withval/include"
             		GSSAPI_LDFLAGS="-L$withval/lib"
@@ -123,15 +123,17 @@ AC_DEFUN([NETATALK_GSSAPI_CHECK],
 
 
     AC_MSG_CHECKING(whether GSSAPI support is used)
-  		if test x"$ac_cv_lib_gssapi_gss_display_status" = x"yes" || test x"$ac_cv_lib_gssapi_krb5_gss_display_status" = x"yes"; then
-    			AC_DEFINE(HAVE_GSSAPI,1,[Whether to enable GSSAPI support])
-    			AC_MSG_RESULT([yes])
-  			GSSAPI_LIBS="$LIBS $LDLAGS"
-  else
-    			AC_MSG_RESULT([no])
-			AC_MSG_ERROR([GSSAPI installation not found])
-    GSSAPI_LIBS=""
-  fi
+    if test x"$ac_cv_lib_gssapi_gss_display_status" = x"yes" || test x"$ac_cv_lib_gssapi_krb5_gss_display_status" = x"yes"; then
+   	AC_DEFINE(HAVE_GSSAPI,1,[Whether to enable GSSAPI support])
+    	AC_MSG_RESULT([yes])
+  	GSSAPI_LIBS="$LIBS $LDLAGS"
+     else
+    	AC_MSG_RESULT([no])
+	if test x"$compilegssapi" == x"yes"; then
+	  AC_MSG_ERROR([GSSAPI installation not found])
+	fi
+        GSSAPI_LIBS=""
+     fi
 
   LIBS="$ac_save_LIBS"
   CFLAGS="$ac_save_CFLAGS"
@@ -139,8 +141,14 @@ AC_DEFUN([NETATALK_GSSAPI_CHECK],
   CPPFLAGS="$ac_save_CPPFLAGS"
 	fi
 
-	AM_CONDITIONAL(USE_GSSAPI, test x"$ac_cv_lib_gssapi_gss_display_status" = x"yes")
-  AC_SUBST(GSSAPI_LIBS)
-  AC_SUBST(GSSAPI_CFLAGS)
+        if test x"$ac_cv_lib_gssapi_gss_display_status" = x"yes"; then
+                ifelse([$1], , :, [$1])
+        else
+                ifelse([$2], , :, [$2])
+        fi
+
+
+	AC_SUBST(GSSAPI_LIBS)
+	AC_SUBST(GSSAPI_CFLAGS)
 
 ])
