@@ -1,6 +1,8 @@
 Changes from 1.5rc2
 ===================
 
+* FIX: Compilation on Tru64 systems was broken, since libtool's acinclude.m4
+       file on the packagers system did not contain the necessary patch.
 
 Changes from 1.5rc1
 ===================
