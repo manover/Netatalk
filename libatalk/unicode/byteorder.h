@@ -118,11 +118,11 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define SSVALX(buf,pos,val) (CVAL_NC(buf,pos)=(unsigned char)((val)&0xFF),CVAL_NC(buf,pos+1)=(unsigned char)((val)>>8))
 #define SIVALX(buf,pos,val) (SSVALX(buf,pos,val&0xFFFF),SSVALX(buf,pos+2,val>>16))
 #define SVALS(buf,pos) ((int16)SVAL(buf,pos))
-#define IVALS(buf,pos) ((int32)IVAL(buf,pos))
-#define SSVAL(buf,pos,val) SSVALX((buf),(pos),((uint16)(val)))
-#define SIVAL(buf,pos,val) SIVALX((buf),(pos),((uint32)(val)))
+#define IVALS(buf,pos) ((int32_t)IVAL(buf,pos))
+#define SSVAL(buf,pos,val) SSVALX((buf),(pos),((u_int16_t)(val)))
+#define SIVAL(buf,pos,val) SIVALX((buf),(pos),((u_int32_t)(val)))
 #define SSVALS(buf,pos,val) SSVALX((buf),(pos),((int16)(val)))
-#define SIVALS(buf,pos,val) SIVALX((buf),(pos),((int32)(val)))
+#define SIVALS(buf,pos,val) SIVALX((buf),(pos),((int32_t)(val)))
 
 #else /* CAREFUL_ALIGNMENT */
 

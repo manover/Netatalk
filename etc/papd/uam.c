@@ -1,5 +1,5 @@
 /*
- * $Id: uam.c,v 1.9.6.1 2003-09-11 23:49:30 bfernhomberg Exp $
+ * $Id: uam.c,v 1.9.6.2 2003-11-02 19:29:55 bfernhomberg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -55,8 +55,7 @@ struct uam_mod *uam_load(const char *path, const char *name)
   void *module;
 
   if ((module = mod_open(path)) == NULL) {
-    LOG(log_error, logtype_papd, "uam_load(%s): failed to load.", name);
-    LOG(log_error, logtype_papd, dlerror());
+    LOG(log_error, logtype_papd, "uam_load(%s): failed to load: %s", name, mod_error());
     return NULL;
   }
 
