@@ -28,7 +28,6 @@
 #define UAM_SERVER_LOGIN         (1 << 0)
 #define UAM_SERVER_CHANGEPW      (1 << 1)
 #define UAM_SERVER_PRINTAUTH     (1 << 2) 
-#define UAM_SERVER_LOGIN_EXT     (1 << 3)
 
 /* options */
 #define UAM_OPTION_USERNAME     (1 << 0) /* get space for username */
@@ -38,8 +37,9 @@
 #define UAM_OPTION_RANDNUM      (1 << 4) /* request a random number */
 #define UAM_OPTION_HOSTNAME     (1 << 5) /* get host name */
 #define UAM_OPTION_COOKIE       (1 << 6) /* cookie handle */
-#define UAM_OPTION_PROTOCOL	(1 << 7) /* DSI or ASP */
+#define UAM_OPTION_PROTOCOL     (1 << 7) /* DSI or ASP */
 #define UAM_OPTION_CLIENTNAME   (1 << 8) /* get client IP address */
+#define UAM_OPTION_KRB5SERVICE  (1 << 9) /* service name for krb5 principal */
 
 /* some password options. you pass these in the length parameter and
  * get back the corresponding option. not all of these are implemented. */
@@ -80,6 +80,6 @@ extern int uam_sia_validate_user __P((sia_collect_func_t *, int, char **,
 #define UAM_AFPSERVER_POSTAUTH (1 << 0)
 
 extern int uam_afpserver_action __P((const int /*id*/, const int /*switch*/, 
-				     int (*)(), int (**)()));
+				     int (**)(), int (**)()));
 
 #endif
