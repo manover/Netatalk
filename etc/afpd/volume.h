@@ -1,5 +1,5 @@
 /*
- * $Id: volume.h,v 1.19.2.5.2.6 2004-03-11 02:02:04 didg Exp $
+ * $Id: volume.h,v 1.19.2.5.2.7 2004-06-24 00:46:12 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -13,10 +13,6 @@
 #include <netatalk/endian.h>
 
 #include "atalk/unicode.h"
-#ifdef HAVE_USABLE_ICONV
-#include <iconv.h>
-#endif
-
 #include "globals.h"
 
 #define AFPVOL_NAMELEN   27
