@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.5 2003-10-17 00:48:56 bfernhomberg Exp $
+ * $Id: file.c,v 1.92.2.2.2.6 2003-10-21 12:11:08 rlewczuk Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1365,6 +1365,29 @@ const int   noadouble;
     if (ad_hfileno(&ads) == -1 || AFP_OK == (err = copy_fd(ad_hfileno(&add), ad_hfileno(&ads)))){
         /* copy the data fork */
 	err = copy_fd(ad_dfileno(&add), ad_dfileno(&ads));
+    }
+
+    /* Now, reopen destination file */
+    err = AFP_OK;
+    if (ad_close( &add, adflags ) <0) {
+	deletefile(NULL, dst, 0);
+        return AFPERR_PARAM;  // FIXME
+    } else {
+	ad_init(&add, 0);
+	if (ad_open(dst , adflags | noadouble, O_RDWR, 0666, &add) < 0) {
+	    ad_close( &ads, adflags );
+	    deletefile(NULL, dst, 0);
+	    switch ( err ) {
+	    case ENOENT :
+		return( AFPERR_NOOBJ );
+	    case EACCES :
+		return( AFPERR_ACCESS );
+	    case EROFS:
+		return AFPERR_VLOCK;
+	    default :
+		return( AFPERR_PARAM );
+	    }
+	}
     }
 
     if (newname) {
