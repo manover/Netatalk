@@ -1,5 +1,5 @@
 /* 
- * $Id: uams_randnum.c,v 1.12.6.3 2004-02-25 00:37:19 bfernhomberg Exp $
+ * $Id: uams_randnum.c,v 1.12.6.4 2004-10-08 00:54:40 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -172,7 +172,8 @@ static int afppasswd(const struct passwd *pwd,
   memset(buf, 0, sizeof(buf));
   while (fgets(buf, sizeof(buf), fp)) {
     if ((p = strchr(buf, ':'))) {
-      if (strncmp(buf, pwd->pw_name, p - buf) == 0) {
+      if ( strlen(pwd->pw_name) == (p - buf) &&
+           strncmp(buf, pwd->pw_name, p - buf) == 0) {
 	p++;
 	if (*p == PASSWD_ILLEGAL) {
 	  LOG(log_info, logtype_uams, "invalid password entry for %s", pwd->pw_name);

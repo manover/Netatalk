@@ -1,5 +1,5 @@
 /* 
- * $Id: afppasswd.c,v 1.11 2003-02-17 02:04:59 srittau Exp $
+ * $Id: afppasswd.c,v 1.11.6.1 2004-10-08 00:54:40 bfernhomberg Exp $
  *
  * Copyright 1999 (c) Adrian Sun (asun@u.washington.edu)
  * All Rights Reserved. See COPYRIGHT.
@@ -139,7 +139,8 @@ static int update_passwd(const char *path, const char *name, int flags)
   while (fgets(buf, sizeof(buf), fp)) {
     if ((p = strchr(buf, ':'))) {
       /* check for a match */
-      if (strncmp(buf, name, p - buf) == 0) {
+      if (strlen(name) == (p - buf) && 
+          strncmp(buf, name, p - buf) == 0) {
 	p++;
 	if (!(flags & OPT_ISROOT) && (*p == PASSWD_ILLEGAL)) {
 	  fprintf(stderr, "Your password is disabled. Please see your administrator.\n");
