@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_update.c,v 1.1.4.4 2003-10-30 10:03:19 bfernhomberg Exp $
+ * $Id: dbd_update.c,v 1.1.4.5 2003-11-25 00:41:31 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -46,7 +46,8 @@ int dbd_update(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
     if ((rc = dbif_pget(DBIF_IDX_DEVINO, &key, &pkey, &data, 0)) < 0 ) {
         goto err_db;
     }
-    else if  (rc > 0) {
+    else if  (rc > 0) { 
+	/* FIXME: pkey.data points to the CNID? */
         if ((rc = dbif_del(DBIF_IDX_DEVINO, &pkey, 0)) < 0 ) {
             goto err_db;
         }
@@ -64,6 +65,7 @@ int dbd_update(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
         goto err_db;
     }
     else if  (rc > 0) {
+	/* FIXME: pkey.data points to the CNID? */
         if ((rc = dbif_del(DBIF_IDX_DIDNAME, &pkey, 0)) < 0) {
             goto err_db;
         }

@@ -65,17 +65,17 @@ In order to turn on cnid_dbd backend support for a given volume, set
 the option -cnidscheme:dbd in your AppleVolumes.default file or
 equivalent. The default for this parameter is -cnidscheme:cdb.
 
-There are two executeables that will be built in etc/cnid_dbd and 
+There are two executeables that will be built in etc/cnid_dbd and
 installed into the systems binaries directories of netatalk
-(e.g. /usr/local/netatalk/sbin or whatever you specify with 
---sbindir to configure): cnid_metad and cnid_dbd. cnid_metad should
-run all the time with root permissions. It will be notified when an
-instance of afpd starts up and will in turn make sure that a cnid_dbd
-daemon is started for the volume that afpd wishes to access. The
-daemon runs forever and services any other instances of afpd that
-access the volume. You can safely kill it with SIGTERM, it will be
-restarted automatically by cnid_metad as soon as the volume is
-accessed again. 
+(e.g. /usr/local/netatalk/sbin or whatever you specify with --sbindir
+to configure): cnid_metad and cnid_dbd. cnid_metad should run all the
+time with root permissions. It will be notified when an instance of
+afpd starts up and will in turn make sure that a cnid_dbd daemon is
+started for the volume that afpd wishes to access. The daemon runs as
+long as necessary (see the idle_timeout option below) and services any
+other instances of afpd that access the volume. You can safely kill it
+with SIGTERM, it will be restarted automatically by cnid_metad as soon
+as the volume is accessed again.
 
 cnid_metad needs one command line argument, the name of the cnid_dbd
 executeable. You can either specify "cnid_dbd" if it is in the path
@@ -105,6 +105,7 @@ flush_frequency    100
 flush_interval     30
 usock_file         <databasedirectory>/usock
 fd_table_size      16
+idle_timeout       600
 
 
 "backlog" specifies the maximum number of connection requests that can

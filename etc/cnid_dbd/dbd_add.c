@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_add.c,v 1.1.4.2 2003-10-21 16:24:58 didg Exp $
+ * $Id: dbd_add.c,v 1.1.4.3 2003-11-25 00:41:31 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -34,7 +34,6 @@
 #include "pack.h"
 #include "dbd.h"
 
-/* FIXME assume dev_t == ino_t == 8 */
 /*                         cnid   - dev        - inode     - type  - did  - name */
 #define ROOTINFO_DATA    "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0RootInfo"
 #define ROOTINFO_DATALEN (3*4 +2*8  +9)
@@ -66,6 +65,7 @@ static int add_cnid(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
             rply->result = CNID_DBD_RES_ERR_DUPLCNID;
             break;
         case -1:
+	    /* FIXME: Should that not be logged for case 1:? */
             LOG(log_error, logtype_cnid, "add_cnid: duplicate %x %s", rply->cnid
              , data.data + CNID_NAME_OFS);
             

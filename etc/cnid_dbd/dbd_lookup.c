@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_lookup.c,v 1.1.4.3 2003-10-30 10:03:19 bfernhomberg Exp $
+ * $Id: dbd_lookup.c,v 1.1.4.4 2003-11-25 00:41:31 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -31,8 +31,8 @@ int dbd_lookup(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
 {
     char *buf;
     DBT key, devdata, diddata;
-    dev_t  dev;
-    ino_t  ino;
+    char dev[CNID_DEV_LEN];
+    char ino[CNID_INO_LEN];
     int devino = 1, didname = 1; 
     int rc;
     cnid_t id_devino, id_didname;
@@ -49,8 +49,9 @@ int dbd_lookup(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
     rply->cnid = 0;
     
     buf = pack_cnid_data(rqst); 
-    memcpy(&dev, buf + CNID_DEV_OFS, sizeof(dev));
-    memcpy(&ino, buf + CNID_INO_OFS, sizeof(ino));
+    memcpy(dev, buf + CNID_DEV_OFS, CNID_DEV_LEN);
+    /* FIXME: ino is not needed later on, remove? */
+    memcpy(ino, buf + CNID_INO_OFS, CNID_INO_LEN);
 
     /* Look for a CNID.  We have two options: dev/ino or did/name.  If we
        only get a match in one of them, that means a file has moved. */
@@ -72,6 +73,7 @@ int dbd_lookup(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
         type_devino = ntohl(type_devino);
     }
     
+    /* FIXME: This second call to pack_cnid_data() is redundant, any reason it is here? */
     buf = pack_cnid_data(rqst); 
     key.data = buf +CNID_DID_OFS;
     key.size = CNID_DID_LEN + rqst->namelen + 1;
@@ -110,7 +112,7 @@ int dbd_lookup(struct cnid_dbd_rqst *rqst, struct cnid_dbd_rply *rply)
          * if it's the same dev or not the same type
          * just delete it
         */
-        if (!memcmp(&dev, (char *)diddata.data + CNID_DEV_OFS, sizeof(dev)) ||
+        if (!memcmp(dev, (char *)diddata.data + CNID_DEV_OFS, CNID_DEV_LEN) ||
                    type_didname != rqst->type) {
             if (dbd_delete(rqst, rply) < 0) {
                 return -1;

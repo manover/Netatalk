@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.1.4.3 2003-11-03 20:56:59 lenneis Exp $
+ * $Id: main.c,v 1.1.4.4 2003-11-25 00:41:31 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -159,6 +159,9 @@ static int loop(struct db_param *dbp)
             break;
         case CNID_DBD_OP_DELETE:
             ret = dbd_delete(&rqst, &rply);
+            break;
+        case CNID_DBD_OP_GETSTAMP:
+            ret = dbd_getstamp(&rqst, &rply);
             break;
         default:
             LOG(log_error, logtype_cnid, "loop: unknow op %d", rqst.op);

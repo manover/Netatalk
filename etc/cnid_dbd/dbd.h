@@ -1,5 +1,5 @@
 /*
- * $Id: dbd.h,v 1.1.4.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: dbd.h,v 1.1.4.2 2003-11-25 00:41:31 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -18,5 +18,6 @@ extern int      dbd_resolve  __P((struct cnid_dbd_rqst *, struct cnid_dbd_rply *
 extern int      dbd_lookup  __P((struct cnid_dbd_rqst *, struct cnid_dbd_rply *));
 extern int      dbd_update  __P((struct cnid_dbd_rqst *, struct cnid_dbd_rply *));
 extern int      dbd_delete  __P((struct cnid_dbd_rqst *, struct cnid_dbd_rply *));
+extern int      dbd_getstamp  __P((struct cnid_dbd_rqst *, struct cnid_dbd_rply *));
 
 #endif /* CNID_DBD_DBD_H */

@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_dbd.c,v 1.1.4.7 2003-11-12 16:00:10 didg Exp $
+ * $Id: cnid_dbd.c,v 1.1.4.8 2003-11-25 00:41:31 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -488,58 +488,6 @@ char *cnid_dbd_resolve(struct _cnid_db *cdb, cnid_t *id, void *buffer, u_int32_t
 }
 
 /* ---------------------- */
-int cnid_dbd_getstamp(struct _cnid_db *cdb, void *buffer, const int len)
-{
-    CNID_private *db;
-    struct cnid_dbd_rqst rqst;
-    struct cnid_dbd_rply rply;
-    cnid_t id = 0;
-    char temp[12 + MAXPATHLEN + 1];
-
-    if (!cdb || !(db = cdb->_private)) {
-        LOG(log_error, logtype_cnid, "cnid_getstamp: Parameter error");
-        errno = CNID_ERR_PARAM;                
-        return -1;
-    }
-
-    /* TODO: We should maybe also check len. At the moment we rely on the caller
-       to provide a buffer that is large enough for MAXPATHLEN plus
-       CNID_HEADER_LEN plus 1 byte, which is large enough for the maximum that
-       can come from the database. */
-
-    RQST_RESET(&rqst);
-    rqst.op = CNID_DBD_OP_RESOLVE;
-    rqst.cnid = id;
-
-    memset(buffer, 0, len);
-
-    /* This mimicks the behaviour of the "regular" cnid_resolve. So far,
-       nobody uses the content of buffer. It only provides space for the
-       name in the caller. */
-    rply.name = temp + CNID_HEADER_LEN;
-
-    if (transmit(db, &rqst, &rply) < 0) {
-        errno = CNID_ERR_DB;
-        return -1;
-    }
-
-    switch (rply.result) {
-    case CNID_DBD_RES_OK:
-        memcpy(buffer, &rply.did, sizeof(cnid_t));
-        break;
-    case CNID_DBD_RES_NOTFOUND:
-        return -1;
-    case CNID_DBD_RES_ERR_DB:
-        errno = CNID_ERR_DB;
-        return -1;
-    default:
-        abort();
-    }
-
-    return 0;
-}
-
-/* ---------------------- */
 cnid_t cnid_dbd_lookup(struct _cnid_db *cdb, const struct stat *st, const cnid_t did,
                    const char *name, const int len)
 {
@@ -675,6 +623,52 @@ int cnid_dbd_delete(struct _cnid_db *cdb, const cnid_t id)
     }
 }
 
+/* ---------------------- */
+int cnid_dbd_getstamp(struct _cnid_db *cdb, void *buffer, const int len)
+{
+    CNID_private *db;
+    struct cnid_dbd_rqst rqst;
+    struct cnid_dbd_rply rply;
+
+    /* FIXME: We rely on len == ADEDLEN_PRIVSYN == CNID_DEV_LEN here as well as
+       in the backend. There should really be a constant for that value that is
+       used throughout. Also, returning the stamp via the name field is somewhat
+       fishy. */
+
+    if (!cdb || !(db = cdb->_private)) {
+        LOG(log_error, logtype_cnid, "cnid_getstamp: Parameter error");
+        errno = CNID_ERR_PARAM;                
+        return -1;
+    }
+
+
+    RQST_RESET(&rqst);
+    rqst.op = CNID_DBD_OP_GETSTAMP;
+
+    memset(buffer, 0, len);
+
+    rply.name = buffer;
+
+    if (transmit(db, &rqst, &rply) < 0) {
+        errno = CNID_ERR_DB;
+        return -1;
+    }
+
+    switch (rply.result) {
+    case CNID_DBD_RES_OK:
+        break;
+    case CNID_DBD_RES_NOTFOUND:
+        return -1;
+    case CNID_DBD_RES_ERR_DB:
+        errno = CNID_ERR_DB;
+        return -1;
+    default:
+        abort();
+    }
+
+    return 0;
+}
+
 struct _cnid_module cnid_dbd_module = {
     "dbd",
     {NULL, NULL},
@@ -682,4 +676,3 @@ struct _cnid_module cnid_dbd_module = {
 };
 
 #endif /* CNID_DBD */
-

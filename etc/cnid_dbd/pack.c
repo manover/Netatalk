@@ -1,5 +1,5 @@
 /*
- * $Id: pack.c,v 1.1.4.3 2003-10-30 10:03:19 bfernhomberg Exp $
+ * $Id: pack.c,v 1.1.4.4 2003-11-25 00:41:31 lenneis Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -20,6 +20,28 @@
 #include <atalk/cnid_dbd_private.h>
 #include <netatalk/endian.h>
 #include "pack.h"
+
+/* --------------- */
+static void pack_devino(unsigned char *buf, dev_t dev, ino_t ino)
+{
+    buf[CNID_DEV_LEN - 1] = dev; dev >>= 8;
+    buf[CNID_DEV_LEN - 2] = dev; dev >>= 8;
+    buf[CNID_DEV_LEN - 3] = dev; dev >>= 8;
+    buf[CNID_DEV_LEN - 4] = dev; dev >>= 8;
+    buf[CNID_DEV_LEN - 5] = dev; dev >>= 8;
+    buf[CNID_DEV_LEN - 6] = dev; dev >>= 8;
+    buf[CNID_DEV_LEN - 7] = dev; dev >>= 8;
+    buf[CNID_DEV_LEN - 8] = dev;
+
+    buf[CNID_DEV_LEN + CNID_INO_LEN - 1] = ino; ino >>= 8;
+    buf[CNID_DEV_LEN + CNID_INO_LEN - 2] = ino; ino >>= 8;
+    buf[CNID_DEV_LEN + CNID_INO_LEN - 3] = ino; ino >>= 8;
+    buf[CNID_DEV_LEN + CNID_INO_LEN - 4] = ino; ino >>= 8;
+    buf[CNID_DEV_LEN + CNID_INO_LEN - 5] = ino; ino >>= 8;
+    buf[CNID_DEV_LEN + CNID_INO_LEN - 6] = ino; ino >>= 8;
+    buf[CNID_DEV_LEN + CNID_INO_LEN - 7] = ino; ino >>= 8;
+    buf[CNID_DEV_LEN + CNID_INO_LEN - 8] = ino;    
+}
 
 /* --------------- */
 int didname(dbp, pkey, pdata, skey)
@@ -58,11 +80,8 @@ char *pack_cnid_data(struct cnid_dbd_rqst *rqst)
     char *buf = start +CNID_LEN;
     u_int32_t i;
 
-    memcpy(buf, &rqst->dev, sizeof(rqst->dev));
-    buf += sizeof(rqst->dev);
-
-    memcpy(buf, &rqst->ino, sizeof(rqst->ino));
-    buf += sizeof(rqst->ino);
+    pack_devino(buf, rqst->dev, rqst->ino);
+    buf += CNID_DEVINO_LEN;
 
     i = htonl(rqst->type);
     memcpy(buf, &i, sizeof(i));

@@ -22,6 +22,7 @@
 #define CNID_DBD_OP_DELETE      0x08
 #define CNID_DBD_OP_MANGLE_ADD  0x09
 #define CNID_DBD_OP_MANGLE_GET  0x0a
+#define CNID_DBD_OP_GETSTAMP    0x0b
 
 #define CNID_DBD_RES_OK            0x00
 #define CNID_DBD_RES_NOTFOUND      0x01
