@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.126.2.11 2002-02-07 23:46:23 srittau Exp $
+dnl $Id: configure.in,v 1.126.2.12 2002-02-07 23:47:26 srittau Exp $
 dnl configure.in for netatalk
 
 AC_INIT(bin/adv1tov2/adv1tov2.c)
@@ -167,8 +167,6 @@ AC_ARG_ENABLE(debug,
 			AC_DEFINE_UNQUOTED(DEBUG, $enableval)
 		fi 
 		AC_MSG_RESULT([enabling debugging code])
-	else
-		AC_DEFINE(DEBUG, 0)
 	fi
 )
 
