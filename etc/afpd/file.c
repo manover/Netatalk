@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.10 2004-02-06 02:32:15 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.11 2004-02-06 13:39:51 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -181,6 +181,7 @@ u_int32_t aint = 0;
 #if AD_VERSION > AD_VERSION1
 dev_t  dev;
 ino_t  ino;
+cnid_t a_did;
 char   stamp[ADEDLEN_PRIVSYN];
     /* look in AD v2 header 
      * note inode and device are opaques and not in network order
@@ -191,13 +192,17 @@ char   stamp[ADEDLEN_PRIVSYN];
             memcpy(&ino, ad_entry(adp, ADEID_PRIVINO), sizeof(ino_t));
             if (sizeof(stamp) == ad_getentrylen(adp,ADEID_PRIVSYN)) {
                 memcpy(stamp, ad_entry(adp, ADEID_PRIVSYN), sizeof(stamp));
+                if (sizeof(cnid_t) == ad_getentrylen(adp, ADEID_DID)) {
+                    memcpy(&a_did, ad_entry(adp, ADEID_DID), sizeof(cnid_t));
 
-                if (   ((vol->v_flags & AFPVOL_NODEV) || dev == st->st_dev)
-                       && ino == st->st_ino && 
-                       !memcmp(vol->v_stamp, stamp, sizeof(stamp)) ) 
-                {
-                    memcpy(&aint, ad_entry(adp, ADEID_DID), sizeof(aint));
-                    return aint;
+                    if (   ((vol->v_flags & AFPVOL_NODEV) || dev == st->st_dev)
+                           && ino == st->st_ino && a_did == did &&
+                           !memcmp(vol->v_stamp, stamp, sizeof(stamp)) &&
+			   (sizeof(cnid_t) == ad_getentrylen(adp, ADEID_PRIVID)) ) 
+                    { 
+                        memcpy(&aint, ad_entry(adp, ADEID_PRIVID), sizeof(aint));
+                        return aint;
+                    } 
                 }
             }
         }
@@ -227,7 +232,7 @@ char   stamp[ADEDLEN_PRIVSYN];
             /* update the ressource fork
              * for a folder adp is always null
              */
-            ad_setid(adp,(vol->v_flags & AFPVOL_NODEV)?0:st->st_dev, st->st_ino, aint, vol->v_stamp);
+            ad_setid(adp,(vol->v_flags & AFPVOL_NODEV)?0:st->st_dev, st->st_ino, aint, did, vol->v_stamp);
             ad_flush(adp, ADFLAGS_HF);
         }
 #endif    
@@ -1613,6 +1618,55 @@ int		ibuflen, *rbuflen;
     return afp_errno;
 }
 
+static int
+reenumerate_id(const struct vol *vol, char *name, cnid_t did)
+{
+    DIR             *dp;
+    struct dirent   *de;
+    int             ret;
+    struct stat     st;
+    cnid_t	    aint;
+    struct adouble  ad;
+	
+
+    if (vol->v_cdb != NULL) {
+	return -1;
+    }
+    if (NULL == ( dp = opendir( name)) ) {
+        return -1;
+    }
+    ret = 0;
+    for ( de = readdir( dp ); de != NULL; de = readdir( dp )) {
+        if (NULL == check_dirent(vol, de->d_name))
+            continue;
+
+        if ( stat(de->d_name, &st)<0 )
+            continue;
+	
+	/* update or add to cnid */
+        aint = cnid_add(vol->v_cdb, &st, did, de->d_name, strlen(de->d_name), 0); /* ignore errors */
+
+#if AD_VERSION > AD_VERSION1
+        if (aint != CNID_INVALID && !S_ISDIR(st.st_mode)) {
+            ad_init(&ad, 0);  /* OK */
+            if ( ad_open( de->d_name, ADFLAGS_HF, O_RDWR, 0, &ad ) < 0 ) {
+                continue;
+            }
+            else {
+                ad_setid(&ad,(vol->v_flags & AFPVOL_NODEV)?0:st.st_dev, st.st_ino, aint, did, vol->v_stamp);
+                ad_flush(&ad, ADFLAGS_HF);
+                ad_close(&ad, ADFLAGS_HF);
+           }
+        }
+#endif /* AD_VERSION > AD_VERSION1 */
+
+        ret++;
+    }
+    closedir(dp);
+    return ret;
+}
+
+    
 /* ------------------------------
    resolve a file id */
 int afp_resolveid(obj, ibuf, ibuflen, rbuf, rbuflen )
@@ -1624,7 +1678,7 @@ int		ibuflen, *rbuflen;
     struct dir		*dir;
     char		*upath;
     struct path         path;
-    int                 err, buflen;
+    int                 err, buflen, retry=0;
     cnid_t		id, cnid;
     u_int16_t		vid, bitmap;
 
@@ -1653,6 +1707,7 @@ int		ibuflen, *rbuflen;
     ibuf += sizeof(id);
     cnid = id;
 
+retry:
     if (NULL == (upath = cnid_resolve(vol->v_cdb, &id, buffer, len)) ) {
         return AFPERR_NOID; /* was AFPERR_BADID, but help older Macs */
     }
@@ -1661,7 +1716,7 @@ int		ibuflen, *rbuflen;
         return AFPERR_NOID; /* idem AFPERR_PARAM */
     }
     path.u_name = upath;
-    if (movecwd(vol, dir) < 0 || of_stat(&path) < 0) {
+    if (movecwd(vol, dir) < 0) {
         switch (errno) {
         case EACCES:
         case EPERM:
@@ -1672,6 +1727,26 @@ int		ibuflen, *rbuflen;
             return AFPERR_PARAM;
         }
     }
+
+    if ( of_stat(&path) < 0 ) {
+	if ( errno == ENOENT && !retry) {
+	    /* cnid db is out of sync, reenumerate the directory and updated ids */
+	    reenumerate_id(vol, ".", id);
+	    id = cnid;
+	    retry = 1;
+	    goto retry;
+        }
+        switch (errno) {
+        case EACCES:
+        case EPERM:
+            return AFPERR_ACCESS;
+        case ENOENT:
+            return AFPERR_NOID;
+        default:
+            return AFPERR_PARAM;
+        }
+    }
+
     /* directories are bad */
     if (S_ISDIR(path.st.st_mode))
         return AFPERR_BADTYPE;

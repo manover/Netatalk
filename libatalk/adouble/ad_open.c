@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.5 2004-01-03 22:16:32 didg Exp $
+ * $Id: ad_open.c,v 1.30.6.6 2004-02-06 13:39:52 bfernhomberg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -118,8 +118,9 @@
 #define ADEDOFF_PRIVDEV      (ADEDOFF_PRODOSFILEI + ADEDLEN_PRODOSFILEI)
 #define ADEDOFF_PRIVINO      (ADEDOFF_PRIVDEV + ADEDLEN_PRIVDEV)
 #define ADEDOFF_PRIVSYN      (ADEDOFF_PRIVINO + ADEDLEN_PRIVINO)
+#define ADEDOFF_PRIVID       (ADEDOFF_PRIVSYN + ADEDLEN_PRIVSYN)
 
-#define ADEDOFF_RFORK_V2     (ADEDOFF_PRIVSYN + ADEDLEN_PRIVSYN)
+#define ADEDOFF_RFORK_V2     (ADEDOFF_PRIVID + ADEDLEN_PRIVID)
 
 /* we keep local copies of a bunch of stuff so that we can initialize things 
  * correctly. */
@@ -176,6 +177,8 @@ static u_int32_t get_eid(struct adouble *ad, u_int32_t eid)
         return ADEID_PRIVINO;
     if (eid == AD_SYN)
         return ADEID_PRIVSYN;
+    if (eid == AD_ID)
+        return ADEID_PRIVID;
 
     return 0;
 }
@@ -194,6 +197,7 @@ static const struct entry entry_order2[ADEID_NUM_V2 +1] = {
   {ADEID_PRIVDEV,     ADEDOFF_PRIVDEV, ADEDLEN_INIT},
   {ADEID_PRIVINO,     ADEDOFF_PRIVINO, ADEDLEN_INIT},
   {ADEID_PRIVSYN,     ADEDOFF_PRIVSYN, ADEDLEN_INIT},
+  {ADEID_PRIVID,     ADEDOFF_PRIVID, ADEDLEN_INIT},
   {ADEID_RFORK, ADEDOFF_RFORK_V2, ADEDLEN_INIT},
 
   {0, 0, 0}
@@ -201,6 +205,111 @@ static const struct entry entry_order2[ADEID_NUM_V2 +1] = {
 #endif /* AD_VERSION == AD_VERSION2 */
 
 #if AD_VERSION == AD_VERSION2
+
+static int ad_update(struct adouble *ad, const char *path)
+{
+  struct stat st;
+  u_int16_t nentries = 0;
+  off_t     off, shiftdata=0;
+  const struct entry  *eid;
+  static off_t entry_len[ADEID_MAX];
+  static char  databuf[ADEID_MAX][256], *buf;
+  int fd;
+
+  /* check to see if we should convert this header. */
+  if (!path || (ad->ad_version != AD_VERSION2))
+    return 0;
+  
+  if (ad->ad_eid[ADEID_RFORK].ade_off)  
+    shiftdata = ADEDOFF_RFORK_V2 -ad->ad_eid[ADEID_RFORK].ade_off;
+
+  memcpy(&nentries, ad->ad_data + ADEDOFF_NENTRIES, sizeof( nentries ));
+  nentries = ntohs( nentries );
+
+  if ( shiftdata == 0 && nentries == ADEID_NUM_V2)
+    return 0;
+
+  memset(entry_len, 0, sizeof(entry_len));
+  memset(databuf, 0, sizeof(databuf));
+
+  /* bail if we can't get a lock */
+  if (ad_tmplock(ad, ADEID_RFORK, ADLOCK_WR, 0, 0, 0) < 0)
+    goto bail_err;
+
+  if ((fd = open(path, O_RDWR)) < 0)
+    goto bail_lock;
+
+  if (fstat(fd, &st) ||
+    sys_ftruncate(fd, st.st_size + shiftdata) < 0) {
+    goto bail_open;
+  }
+  if (st.st_size > 0x7fffffff) {
+    LOG(log_debug, logtype_default, "ad_update: file '%s' too big for update.", path);
+    goto bail_truncate;
+  }
+  /* last place for failure. */
+  if ((void *) (buf = (char *)
+                mmap(NULL, st.st_size + shiftdata,
+                     PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) ==
+          MAP_FAILED) {
+    goto bail_truncate;
+  }
+
+  off = ad->ad_eid[ADEID_RFORK].ade_off;
+
+  /* move the RFORK. this assumes that the RFORK is at the end */
+  if (off) {
+    memmove(buf + ADEDOFF_RFORK_V2, buf + off, ad->ad_eid[ADEID_RFORK].ade_len);
+  }
+
+  munmap(buf, st.st_size + shiftdata);
+  close(fd);
+
+  /* now, fix up our copy of the header */
+  memset(ad->ad_filler, 0, sizeof(ad->ad_filler));
+ 
+  /* save the header entries */ 
+  eid = entry_order2;
+  while (eid->id) {
+    if( ad->ad_eid[eid->id].ade_off != 0) {
+      if ( eid->id > 2 && ad->ad_eid[eid->id].ade_len < 256)
+        memcpy( databuf[eid->id], ad->ad_data +ad->ad_eid[eid->id].ade_off, ad->ad_eid[eid->id].ade_len);
+      entry_len[eid->id] = ad->ad_eid[eid->id].ade_len;
+    }
+    eid++;
+  }
+
+  memset(ad->ad_data + AD_HEADER_LEN, 0, AD_DATASZ - AD_HEADER_LEN);
+
+  /* copy the saved entries to the new header */
+  eid = entry_order2;
+  while (eid->id) {
+    if ( eid->id > 2 && entry_len[eid->id] > 0) {
+      memcpy(ad->ad_data+eid->offset, databuf[eid->id], entry_len[eid->id]);
+    }
+    ad->ad_eid[eid->id].ade_off = eid->offset;
+    ad->ad_eid[eid->id].ade_len = entry_len[eid->id];
+    eid++;
+  }
+
+  /* rebuild the header and cleanup */
+  ad_flush(ad, ADFLAGS_HF );
+  ad_tmplock(ad, ADEID_RFORK, ADLOCK_CLR, 0, 0, 0);
+
+  LOG(log_debug, logtype_default, "updated AD2 header %s", path);
+
+  return 0;
+
+bail_truncate:
+  sys_ftruncate(fd, st.st_size);
+bail_open:
+  close(fd);
+bail_lock:
+  ad_tmplock(ad, ADEID_RFORK, ADLOCK_CLR, 0, 0, 0);
+bail_err:
+  return -1;
+}
+
 
 /* FIXME work only if < 2GB */
 static int ad_v1tov2(struct adouble *ad, const char *path)
@@ -302,6 +411,8 @@ static int ad_v1tov2(struct adouble *ad, const char *path)
   ad->ad_eid[ADEID_PRIVINO].ade_len = ADEDLEN_INIT;
   ad->ad_eid[ADEID_PRIVSYN].ade_off = ADEDOFF_PRIVSYN;
   ad->ad_eid[ADEID_PRIVSYN].ade_len = ADEDLEN_INIT;
+  ad->ad_eid[ADEID_PRIVID].ade_off  = ADEDOFF_PRIVID;
+  ad->ad_eid[ADEID_PRIVID].ade_len =  ADEDLEN_INIT;
   
   /* shift the old entries (NAME, COMMENT, FINDERI, RFORK) */
   ad->ad_eid[ADEID_NAME].ade_off = ADEDOFF_NAME_V2;
@@ -912,7 +1023,7 @@ int ad_open( path, adflags, oflags, mode, ad )
 	    /* Read the adouble header in and parse it.*/
 	if ((ad_header_read( ad , &st) < 0)
 #if AD_VERSION == AD_VERSION2
-		|| (ad_v1tov2(ad, ad_p) < 0)
+		|| (ad_v1tov2(ad, ad_p) < 0) || (ad_update(ad, ad_p) < 0)
 #endif /* AD_VERSION == AD_VERSION2 */
         ) {
             ad_close( ad, adflags );

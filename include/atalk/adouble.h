@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.6 2004-01-31 14:26:24 bfernhomberg Exp $
+ * $Id: adouble.h,v 1.21.6.7 2004-02-06 13:39:52 bfernhomberg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -102,11 +102,13 @@
 #define ADEID_PRIVDEV           16
 #define ADEID_PRIVINO           17
 #define ADEID_PRIVSYN           18 /* in synch with database */
+#define ADEID_PRIVID            19
 
 #define AD_DEV                  0x80444556
 #define AD_INO                  0x80494E4F
 #define AD_SYN                  0x8053594E
-#define ADEID_MAX		19
+#define AD_ID                   0x8053567E
+#define ADEID_MAX		20
 #endif
 
 /* magic */
@@ -143,9 +145,10 @@
 #define ADEDLEN_PRIVDEV         8
 #define ADEDLEN_PRIVINO         8
 #define ADEDLEN_PRIVSYN         8
+#define ADEDLEN_PRIVID          4
 
 #define ADEID_NUM_V1         5
-#define ADEID_NUM_V2         12
+#define ADEID_NUM_V2         13
 
 /* 589 */
 #define AD_DATASZ1      (AD_HEADER_LEN + ADEDLEN_NAME + ADEDLEN_COMMENT +ADEDLEN_FILEI +ADEDLEN_FINDERI+\
@@ -156,12 +159,12 @@ ADEID_NUM_V1*AD_ENTRY_LEN)
 #endif
 
 #define AD_NEWSZ2       (ADEDLEN_DID + ADEDLEN_AFPFILEI +ADEDLEN_SHORTNAME +ADEDLEN_PRODOSFILEI \
-+ADEDLEN_PRIVDEV +ADEDLEN_PRIVINO +ADEDLEN_PRIVSYN)
++ADEDLEN_PRIVDEV +ADEDLEN_PRIVINO +ADEDLEN_PRIVSYN+ ADEDLEN_PRIVID)
 
 /* 725 */
 #define AD_DATASZ2      (AD_DATASZ1 + AD_NEWSZ2 + (ADEID_NUM_V2 -ADEID_NUM_V1)*AD_ENTRY_LEN)
 
-#if AD_DATASZ2 != 725
+#if AD_DATASZ2 != 741
 #error bad size for AD_DATASZ2
 #endif
 
@@ -417,7 +420,7 @@ extern int ad_setattr __P((const struct adouble *, const u_int16_t));
 extern int ad_getattr __P((const struct adouble *, u_int16_t *));
 
 #if AD_VERSION == AD_VERSION2
-extern int ad_setid __P((struct adouble *, const dev_t dev,const ino_t ino, const u_int32_t, const void *));
+extern int ad_setid __P((struct adouble *, const dev_t dev,const ino_t ino, const u_int32_t, const u_int32_t, const void *));
 #else
 #define ad_setid(a, b, c)
 #endif

@@ -1,5 +1,5 @@
 /*
- * $Id: ad_flush.c,v 1.6.6.1 2003-09-09 16:42:21 didg Exp $
+ * $Id: ad_flush.c,v 1.6.6.2 2004-02-06 13:39:52 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
@@ -44,7 +44,7 @@
 static const u_int32_t set_eid[] = {
 0,1,2,3,4,5,6,7,8,
 9,10,11,12,13,14,15,
-AD_DEV, AD_INO, AD_SYN
+AD_DEV, AD_INO, AD_SYN, AD_ID
 };
 
 #define EID_DISK(a) (set_eid[a])
