@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.4 2003-05-26 17:02:47 didg Exp $
+ * $Id: volume.c,v 1.51.2.5 2003-05-28 04:42:46 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1090,6 +1090,7 @@ getvolspace_done:
     return( AFP_OK );
 }
 
+/* ----------------------- */
 static int getvolparams( bitmap, vol, st, buf, buflen )
 u_int16_t	bitmap;
 struct vol	*vol;
@@ -1279,6 +1280,30 @@ int		*buflen;
     return( AFP_OK );
 }
 
+/* ------------------------- */
+int static stat_vol(u_int16_t bitmap, struct vol *vol, char *rbuf, int *rbuflen)
+{
+    struct stat	st;
+    int		buflen, ret;
+
+    if ( stat( vol->v_path, &st ) < 0 ) {
+        *rbuflen = 0;
+        return( AFPERR_PARAM );
+    }
+
+    buflen = *rbuflen - sizeof( bitmap );
+    if (( ret = getvolparams( bitmap, vol, &st,
+                              rbuf + sizeof( bitmap ), &buflen )) != AFP_OK ) {
+        *rbuflen = 0;
+        return( ret );
+    }
+    *rbuflen = buflen + sizeof( bitmap );
+    bitmap = htons( bitmap );
+    memcpy(rbuf, &bitmap, sizeof( bitmap ));
+    return( AFP_OK );
+
+}
+
 /* ------------------------------- */
 void load_volumes(AFPObj *obj)
 {
@@ -1406,9 +1431,7 @@ int		ibuflen, *rbuflen;
     char	*volname;
 #ifndef CNID_DB
     char        *p;
-#else
-    int         opened = 0;
-#endif /* CNID_DB */
+#endif
     struct vol	*volume;
     struct dir	*dir;
     int		len, ret, buflen;
@@ -1419,8 +1442,8 @@ int		ibuflen, *rbuflen;
     bitmap = ntohs( bitmap );
     ibuf += sizeof( bitmap );
     if (( bitmap & (1<<VOLPBIT_VID)) == 0 ) {
-        ret = AFPERR_BITMAP;
-        goto openvol_err;
+        *rbuflen = 0;
+        return AFPERR_BITMAP;
     }
 
     len = (unsigned char)*ibuf++;
@@ -1440,16 +1463,26 @@ int		ibuflen, *rbuflen;
     }
 
     if ( volume == NULL ) {
-        ret = AFPERR_PARAM;
-        goto openvol_err;
+        *rbuflen = 0;
+        return AFPERR_PARAM;
     }
 
     /* check for a volume password */
     if (volume->v_password && strncmp(ibuf, volume->v_password, VOLPASSLEN)) {
-        ret = AFPERR_ACCESS;
-        goto openvol_err;
+        *rbuflen = 0;
+        return AFPERR_ACCESS;
     }
-    /* FIXME 
+
+    if (( volume->v_flags & AFPVOL_OPEN  ) ) {
+        /* the volume is already open */
+#ifdef FORCE_UIDGID
+        set_uidgid ( volume );
+#endif
+        return stat_vol(bitmap, volume, rbuf, rbuflen);
+    }
+
+    /* initialize volume variables
+     * FIXME file size
     */
     if (afp_version >= 30) {
         volume->max_filename = 255;
@@ -1457,42 +1490,50 @@ int		ibuflen, *rbuflen;
     else {
         volume->max_filename = MACFILELEN;
     }
-    if (( volume->v_flags & AFPVOL_OPEN  ) == 0 ) {
-        /* FIXME unix name != mac name */
-        if ((dir = dirnew(volume->v_name, volume->v_name) ) == NULL) {
-            LOG(log_error, logtype_afpd, "afp_openvol: malloc: %s", strerror(errno) );
+
+#ifdef CNID_DB
+    volume->v_db = NULL;
+#endif
+    volume->v_dir = volume->v_root = NULL;
+
+#ifdef AFP3x
+    volume->v_utf8toucs2 = (iconv_t)(-1);
+    volume->v_ucs2toutf8 = (iconv_t)(-1);
+    volume->v_mactoutf8  = (iconv_t)(-1);
+    volume->v_ucs2tomac  = (iconv_t)(-1);
+#endif
+
+    /* FIXME unix name != mac name */
+    if ((dir = dirnew(volume->v_name, volume->v_name) ) == NULL) {
+        LOG(log_error, logtype_afpd, "afp_openvol: malloc: %s", strerror(errno) );
+        ret = AFPERR_MISC;
+        goto openvol_err;
+    }
+
+    dir->d_did = DIRDID_ROOT;
+    dir->d_color = DIRTREE_COLOR_BLACK; /* root node is black */
+    volume->v_dir = volume->v_root = dir;
+    volume->v_flags |= AFPVOL_OPEN;
+
+    if (volume->v_root_preexec) {
+	if ((ret = afprun(1, volume->v_root_preexec, NULL)) && volume->v_root_preexec_close) {
+            LOG(log_error, logtype_afpd, "afp_openvol: root preexec : %d", ret );
             ret = AFPERR_MISC;
             goto openvol_err;
-        }
-        dir->d_did = DIRDID_ROOT;
-        dir->d_color = DIRTREE_COLOR_BLACK; /* root node is black */
-        volume->v_dir = volume->v_root = dir;
-        volume->v_flags |= AFPVOL_OPEN;
-#ifdef CNID_DB
-        volume->v_db = NULL;
-        opened = 1;
-#endif
-	if (volume->v_root_preexec) {
-	    if ((ret = afprun(1, volume->v_root_preexec, NULL)) && volume->v_root_preexec_close) {
-                LOG(log_error, logtype_afpd, "afp_openvol: root preexec : %d", ret );
-                ret = AFPERR_MISC;
-                goto openvol_err;
-	    }
-	}
-	if (volume->v_preexec) {
-	    if ((ret = afprun(0, volume->v_preexec, NULL)) && volume->v_preexec_close) {
-                LOG(log_error, logtype_afpd, "afp_openvol: preexec : %d", ret );
-                ret = AFPERR_MISC;
-                goto openvol_err;
-	    }
 	}
     }
-    else {
-       /* FIXME */
-    }    
+
 #ifdef FORCE_UIDGID
     set_uidgid ( volume );
-#endif /* FORCE_UIDGID */
+#endif
+
+    if (volume->v_preexec) {
+	if ((ret = afprun(0, volume->v_preexec, NULL)) && volume->v_preexec_close) {
+            LOG(log_error, logtype_afpd, "afp_openvol: preexec : %d", ret );
+            ret = AFPERR_MISC;
+            goto openvol_err;
+	}
+    }
 
     if ( stat( volume->v_path, &st ) < 0 ) {
         ret = AFPERR_PARAM;
@@ -1506,32 +1547,20 @@ int		ibuflen, *rbuflen;
     curdir = volume->v_dir;
 
 #ifdef CNID_DB
-    if (opened) {
-        if (volume->v_dbpath)
-            volume->v_db = cnid_open (volume->v_dbpath, volume->v_umask);
-        if (volume->v_db == NULL)
-            volume->v_db = cnid_open (volume->v_path, volume->v_umask);
-        if (volume->v_db == NULL) {
-           /* config option? 
-            * - mount the volume readonly
-            * - return an error
-            * - read/write with other scheme
-            */
-        }
+    if (volume->v_dbpath)
+        volume->v_db = cnid_open (volume->v_dbpath, volume->v_umask);
+    if (volume->v_db == NULL)
+        volume->v_db = cnid_open (volume->v_path, volume->v_umask);
+    if (volume->v_db == NULL) {
+        /* FIXME config option? 
+         * - mount the volume readonly
+         * - return an error
+         * - read/write with other scheme
+         */
     }
-#endif /* CNID_DB */
+#endif
 
-    buflen = *rbuflen - sizeof( bitmap );
-    if (( ret = getvolparams( bitmap, volume, &st,
-                              rbuf + sizeof(bitmap), &buflen )) != AFP_OK ) {
-        goto openvol_err;
-    }
 #ifdef AFP3x
-    volume->v_utf8toucs2 = (iconv_t)(-1);
-    volume->v_ucs2toutf8 = (iconv_t)(-1);
-    volume->v_mactoutf8  = (iconv_t)(-1);
-    volume->v_ucs2tomac  = (iconv_t)(-1);
-    
     if (vol_utf8(volume)) {
         if ((iconv_t)(-1) == (volume->v_utf8toucs2 = iconv_open("UCS-2LE", "UTF-8"))) {
             LOG(log_error, logtype_afpd, "openvol: no UTF8 to UCS-2LE");
@@ -1539,37 +1568,37 @@ int		ibuflen, *rbuflen;
         }
         if ((iconv_t)(-1) == (volume->v_ucs2toutf8 = iconv_open("UTF-8", "UCS-2LE"))) {
             LOG(log_error, logtype_afpd, "openvol: no UCS-2LE to UTF-8");
-            goto openvol_err_iconv;
+            goto openvol_err;
         }
         if ((iconv_t)(-1) == (volume->v_mactoutf8 = iconv_open("UTF-8", "MAC"))) {
             LOG(log_error, logtype_afpd, "openvol: no MAC to UTF-8");
-            goto openvol_err_iconv;
+            goto openvol_err;
         }
         if ((iconv_t)(-1) == (volume->v_ucs2tomac = iconv_open("MAC", "UCS-2LE"))) {
             LOG(log_error, logtype_afpd, "openvol:  no UCS-2LE to MAC");
-            goto openvol_err_iconv;
+            goto openvol_err;
         }
     }
 #endif
-    *rbuflen = buflen + sizeof( bitmap );
-    bitmap = htons( bitmap );
-    memcpy(rbuf, &bitmap, sizeof( bitmap ));
 
+    ret  = stat_vol(bitmap, volume, rbuf, rbuflen);
+    if (ret == AFP_OK) {
 #ifndef CNID_DB
-    /*
-     * If you mount a volume twice, the second time the trash appears on
-     * the desk-top.  That's because the Mac remembers the DID for the
-     * trash (even for volumes in different zones, on different servers).
-     * Just so this works better, we prime the DID cache with the trash,
-     * fixing the trash at DID 17.
-     */
-    p = Trash;
-    cname( volume, volume->v_dir, &p );
-#endif /* CNID_DB */
+        /*
+         * If you mount a volume twice, the second time the trash appears on
+         * the desk-top.  That's because the Mac remembers the DID for the
+         * trash (even for volumes in different zones, on different servers).
+         * Just so this works better, we prime the DID cache with the trash,
+         * fixing the trash at DID 17.
+         */
+        p = Trash;
+        cname( volume, volume->v_dir, &p );
+#endif
+        return( AFP_OK );
+    }
 
-    return( AFP_OK );
+openvol_err:
 #ifdef AFP3x
-openvol_err_iconv:
     if (volume->v_utf8toucs2 != (iconv_t)(-1))
         iconv_close(volume->v_utf8toucs2);
     if (volume->v_ucs2toutf8 != (iconv_t)(-1))
@@ -1579,9 +1608,15 @@ openvol_err_iconv:
     if (volume->v_ucs2tomac  != (iconv_t)(-1))
         iconv_close(volume->v_ucs2tomac);
 #endif        
-openvol_err:
+    if (volume->v_dir) {
+        dirfree( volume->v_dir );
+        volume->v_dir = volume->v_root = NULL;
+    }
+
+    volume->v_flags &= ~AFPVOL_OPEN;
+
 #ifdef CNID_DB
-    if (opened && volume->v_db != NULL) {
+    if (volume->v_db != NULL) {
         cnid_close(volume->v_db);
         volume->v_db = NULL;
     }
@@ -1794,9 +1829,7 @@ AFPObj      *obj;
 char	*ibuf, *rbuf;
 int		ibuflen, *rbuflen;
 {
-    struct stat	st;
     struct vol	*vol;
-    int		buflen, ret;
     u_int16_t	vid, bitmap;
 
     ibuf += 2;
@@ -1810,21 +1843,7 @@ int		ibuflen, *rbuflen;
         return( AFPERR_PARAM );
     }
 
-    if ( stat( vol->v_path, &st ) < 0 ) {
-        *rbuflen = 0;
-        return( AFPERR_PARAM );
-    }
-
-    buflen = *rbuflen - sizeof( bitmap );
-    if (( ret = getvolparams( bitmap, vol, &st,
-                              rbuf + sizeof( bitmap ), &buflen )) != AFP_OK ) {
-        *rbuflen = 0;
-        return( ret );
-    }
-    *rbuflen = buflen + sizeof( bitmap );
-    bitmap = htons( bitmap );
-    memcpy(rbuf, &bitmap, sizeof( bitmap ));
-    return( AFP_OK );
+    return stat_vol(bitmap, vol, rbuf, rbuflen);
 }
 
 /* ------------------------- */
