@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.12 2003-11-24 12:13:32 bfernhomberg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.13 2003-11-29 00:11:55 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -495,7 +495,7 @@ static void showvol(const ucs2_t *name)
 {
     struct vol	*volume;
     for ( volume = Volumes; volume; volume = volume->v_next ) {
-        if ( !strcasecmp_w( volume->v_name, name ) && volume->v_hide) {
+        if (volume->v_hide && !strcasecmp_w( volume->v_name, name ) ) {
             volume->v_hide = 0;
             return;
         }
@@ -796,7 +796,12 @@ static void sortextmap( void)
 */
 static void free_extmap( void)
 {
+    struct extmap	*em;
+
     if (Extmap) {
+        for ( em = Extmap; em->em_ext; em++) {
+             free (em->em_ext);
+        }
         free(Extmap);
         Extmap = NULL;
         Defextmap = Extmap;
@@ -1010,7 +1015,9 @@ static void volume_free(struct vol *vol)
     free(vol->v_veto);
     free(vol->v_volcodepage);
     free(vol->v_maccodepage);
+    free(vol->v_cnidscheme);
     free(vol->v_dbpath);
+    free(vol->v_gvs);
 #ifdef FORCE_UIDGID
     free(vol->v_forceuid);
     free(vol->v_forcegid);
@@ -1037,8 +1044,6 @@ static void free_volumes(void )
         if (vol->v_name == NULL) {
            if (Volumes == vol) {
                Volumes = nvol;
-           }
-           if (!ovol) {
                ovol = Volumes;
            }
            else {
@@ -1061,24 +1066,18 @@ struct vol *vol, *ovol, *nvol;
         Volumes = Volumes->v_next;
         return;
     }
-    for ( vol = Volumes, ovol = NULL; vol; vol = nvol) {
+    for ( vol = Volumes->v_next, ovol = Volumes; vol; vol = nvol) {
         nvol = vol->v_next;
 
         if (vol == volume) {
-           if (!ovol) {
-               ovol = Volumes;
-           }
-           else {
-              ovol->v_next = nvol;
-           }
-           break;
+            ovol->v_next = nvol;
+            break;
         }
         else {
            ovol = vol;
         }
     }
 }
-
 
 static int getvolspace( vol, bfree, btotal, xbfree, xbtotal, bsize )
 struct vol	*vol;
@@ -1413,6 +1412,9 @@ void load_volumes(AFPObj *obj)
         * If neither are readable, read the default volumes file. if
         * that doesn't work, create a user share.
         */
+        if (obj->options.uservol.name) {
+            free(obj->options.uservol.name);
+        }
         obj->options.uservol.name = strdup(pwent->pw_dir);
         if ( readvolfile(obj, &obj->options.uservol,    "AppleVolumes", 1, pwent) < 0 &&
                 readvolfile(obj, &obj->options.uservol, ".AppleVolumes", 1, pwent) < 0 &&
@@ -1796,6 +1798,7 @@ int		ibuflen, *rbuflen;
 	showvol(vol->v_name);
 	volume_free(vol);
 	volume_unlink(vol);
+	free(vol);
     }
     return( AFP_OK );
 }
