@@ -407,7 +407,6 @@ size_t precompose_w (ucs2_t *name, size_t inplen, ucs2_t *comp, size_t *outlen)
            		in++;
            		if (i == inplen) {
 				*out = 0;
-				*outlen -= 2;
               			return o_len - *outlen;
 			}
            		base = *in;
@@ -441,7 +440,6 @@ size_t decompose_w (ucs2_t *name, size_t inplen, ucs2_t *comp, size_t *outlen)
 	out = (ucs2_t *)comp;
     
     	while (i < inplen) {
-        	//if (*outlen >= o_len/sizeof(u_int16_t) +2) {
         	if (*outlen < 2) {
 			errno = E2BIG;
             		return (size_t)-1;
@@ -469,7 +467,6 @@ size_t decompose_w (ucs2_t *name, size_t inplen, ucs2_t *comp, size_t *outlen)
      	}
 
 	*out = 0;
-	*outlen -= 2;
 	return o_len-*outlen;
 }
 

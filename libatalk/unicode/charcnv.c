@@ -951,6 +951,9 @@ size_t convert_charset ( charset_t from_set, charset_t to_set, charset_t cap_cha
 		return (size_t) -1;
 	}
 
+	if ( o_len == 0)
+		return o_len;
+
 	/* Do pre/decomposition */
 	if (CHECK_FLAGS(flags, CONV_PRECOMPOSE) || 
 		((!(charsets[to_set])   || !(charsets[to_set]->flags & CHARSET_DECOMPOSED)) && 
