@@ -12,6 +12,7 @@ Changes from 1.5.2
 * FIX: afp_deleteid() now deletes the specified file and not the parent
        directory.
 * FIX: NetBSD ELF support.
+* FIX: acleandir.rc is now installed in the bin directory.
 * FIX: Clean up some syslog messages.
 
 Changes from 1.5.1
