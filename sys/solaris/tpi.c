@@ -1,3 +1,6 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
 #include <sys/types.h>
 #include <sys/kmem.h>
 #include <sys/conf.h>
@@ -348,7 +351,7 @@ cmn_err( CE_CONT, "tpi_wput T_UNITDATA_REQ mblk size %X %X\n", m->b_rptr + tl->u
 		freemsg( m );
 		break;
 	    }
-#endif notdef
+#endif /* notdef */
 
 	    sat = *(struct sockaddr_at *)(m->b_rptr +
 		    tl->unitdata_req.DEST_offset );

@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.20 2004-02-20 20:53:10 bfernhomberg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.21 2004-02-29 15:26:03 bfernhomberg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(etc/afpd/main.c)
@@ -119,6 +119,7 @@ AC_CHECK_FUNCS(backtrace_symbols)
 AC_CHECK_FUNCS(setlocale nl_langinfo)
 AC_CHECK_FUNCS(dlopen dlclose dlsym dlerror waitpid getcwd strdup strndup strnlen strtoul strerror chown fchown chmod fchmod chroot link mknod mknod64)
 AC_CHECK_FUNCS(strlcpy strlcat)
+AC_CHECK_MEMBERS(struct tm.tm_gmtoff,,, [#include <time.h>])
 AC_CACHE_SAVE
 
 
@@ -512,8 +513,8 @@ dnl post-FHS substitutions, etc
 dnl --------------------------------------------------------------------------
 
 dnl ***** UAMS_PATH
-AC_DEFINE_UNQUOTED(UAMS_PATH, "${uams_path}",
-	[path to UAMs [default=PKGCONF/uams]])
+dnl AC_DEFINE_UNQUOTED(UAMS_PATH, "${uams_path}",
+dnl 	[path to UAMs [default=PKGCONF/uams]])
 UAMS_PATH="${uams_path}"
 AC_SUBST(UAMS_PATH)
 
@@ -748,9 +749,75 @@ if test x"$this_os" = "xsolaris"; then
 	AC_DEFINE(SOLARIS, 1, [Solaris compatibility macro])
 	CFLAGS="-I\$(top_srcdir)/sys/generic $CFLAGS"
 	need_dash_r=yes
+	sysv_style=solaris
 
-	AC_MSG_RESULT([enabling Solaris kernel module build])
-	solaris_module=yes
+	solaris_module=no
+	AC_MSG_CHECKING([if we can build Solaris kernel module])
+	if test -x /usr/ccs/bin/ld; then
+		solaris_module=yes
+	fi
+	AC_MSG_RESULT([$solaris_module])
+
+	COMPILE_64BIT_KMODULE=no
+	KCFLAGS=""
+	KLDFLAGS=""
+	COMPILE_KERNEL_GCC=no
+
+	if test "$solaris_module" = "yes"; then
+	   dnl Solaris kernel module stuff
+           AC_MSG_CHECKING([if we have to build a 64bit kernel module])
+
+	   # check for isainfo, if not found it has to be a 32 bit kernel (<=2.6)	
+	   if test -x /usr/bin/isainfo; then
+		# check for 64 bit platform
+		if isainfo -kv | grep '^64-bit'; then
+			COMPILE_64BIT_KMODULE=yes
+		fi
+	   fi
+
+	   AC_MSG_RESULT([$COMPILE_64BIT_KMODULE])
+
+
+	   if test "${GCC}" = yes; then
+		COMPILE_KERNEL_GCC=yes
+		if test "$COMPILE_64BIT_KMODULE" = yes; then
+                	# use for 64 bit
+                	KCFLAGS="-m64"
+                	#KLDFLAGS="-melf64_sparc"
+                	KLDFLAGS="-64"
+		else
+			KCFLAGS=""
+			KLDFLAGS=""
+		fi
+		KCFLAGS="$KCFLAGS -D_KERNEL -Wall -Wstrict-prototypes"
+           else
+		if test "$COMPILE_64BIT_KMODULE" = yes; then
+                # use Sun CC (for a 64-bit kernel, uncomment " -xarch=v9 -xregs=no%appl ")
+ 			KCFLAGS="-xarch=v9 -xregs=no%appl"
+			KLDFLAGS="-64"
+		else
+ 			KCFLAGS=""
+			KLDFLAGS=""
+		fi
+		KCFLAGS="-D_KERNEL $KCFLAGS -mno-app-regs -munaligned-doubles -fpcc-struct-return"
+	   fi
+
+           AC_CACHE_CHECK([for timeout_id_t],netatalk_cv_HAVE_TIMEOUT_ID_T,[
+           AC_TRY_LINK([\
+#include <sys/stream.h>
+#include <sys/ddi.h>],
+[\
+timeout_id_t dummy;
+],
+netatalk_cv_HAVE_TIMEOUT_ID_T=yes,netatalk_cv_HAVE_TIMEOUT_ID_T=no,netatalk_cv_HAVE_TIMEOUT_ID_T=cross)])
+
+	   AC_DEFINE(HAVE_TIMEOUT_ID_T, test x"$netatalk_cv_HAVE_TIMEOUT_ID" = x"yes", [define for timeout_id_t])
+	fi
+
+	AC_SUBST(COMPILE_KERNEL_GCC)
+	AC_SUBST(COMPILE_64BIT_KMODULE)
+	AC_SUBST(KCFLAGS)
+	AC_SUBST(KLDFLAGS)
 fi
 
 dnl ----- Tru64 specific -----
@@ -868,6 +935,7 @@ AM_CONDITIONAL(USE_REDHAT, test x$sysv_style = xredhat)
 AM_CONDITIONAL(USE_SUSE, test x$sysv_style = xsuse)
 AM_CONDITIONAL(USE_SHADOWPW, test x$shadowpw = xyes)
 AM_CONDITIONAL(USE_TRU64, test x$sysv_style = xtru64)
+AM_CONDITIONAL(USE_SOLARIS, test x$sysv_style = xsolaris)
 
 dnl --------------------- generate files
 
@@ -952,7 +1020,6 @@ AC_OUTPUT([Makefile
 	sys/netbsd/Makefile
 	sys/netbsd/netatalk/Makefile
 	sys/solaris/Makefile
-	sys/solaris/Makefile.kernel
 	sys/sunos/Makefile
 	sys/ultrix/Makefile
 	],
@@ -961,5 +1028,4 @@ AC_OUTPUT([Makefile
 
 AC_NETATALK_LIBS_SUMMARY
 AC_NETATALK_CONFIG_SUMMARY
-
 
