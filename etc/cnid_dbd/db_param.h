@@ -1,5 +1,5 @@
 /*
- * $Id: db_param.h,v 1.1.4.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: db_param.h,v 1.1.4.2 2003-10-30 10:03:19 bfernhomberg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -9,6 +9,7 @@
 #define CNID_DBD_DB_PARAM_H 1
 
 #include <sys/param.h>
+#include <sys/cdefs.h>
 
 
 struct db_param {

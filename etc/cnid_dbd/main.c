@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.1.4.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: main.c,v 1.1.4.2 2003-10-30 10:03:19 bfernhomberg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -12,13 +12,11 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <signal.h>
 #include <string.h>
-
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif /* HAVE_SYS_TYPES_H */
@@ -27,6 +25,7 @@
 #include <sys/stat.h>
 #endif /* HAVE_SYS_STAT_H */
 #include <time.h>
+#include <sys/file.h>
 
 #include <netatalk/endian.h>
 #include <atalk/cnid_dbd_private.h>
@@ -220,6 +219,7 @@ int main(int argc, char *argv[])
         LOG(log_error, logtype_cnid, "main: error opening lockfile: %s", strerror(errno));
         exit(1);
     }
+#ifndef SOLARIS /* FIXME: Solaris doesn't have an flock implementation */
     if (flock(lockfd, LOCK_EX | LOCK_NB) < 0) {
         if (errno == EWOULDBLOCK) {
             exit(0);
@@ -228,6 +228,7 @@ int main(int argc, char *argv[])
             exit(1);
         }
     }
+#endif
     LOG(log_info, logtype_cnid, "Startup, DB dir %s", dir);
 
     sv.sa_handler = sig_exit;
@@ -273,7 +274,9 @@ int main(int argc, char *argv[])
     if (dbif_close() < 0)
         err++;
 
+#ifndef SOLARIS /* FIXME */
     flock(lockfd, LOCK_UN);
+#endif
     close(lockfd);
     
     if (err) 

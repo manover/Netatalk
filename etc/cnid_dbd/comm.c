@@ -1,5 +1,5 @@
 /*
- * $Id: comm.c,v 1.1.4.3 2003-10-12 13:50:16 didg Exp $
+ * $Id: comm.c,v 1.1.4.4 2003-10-30 10:03:19 bfernhomberg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -19,6 +19,7 @@
 #endif 
 
 #include <sys/param.h>
+#define _XPG4_2 1
 #include <sys/socket.h>
 
 #ifdef HAVE_SYS_TYPES_H
@@ -33,6 +34,10 @@
 #include <sys/uio.h>
 #endif 
 
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
 
 #include <assert.h>
 #include <time.h>
@@ -43,6 +48,12 @@
 #include "db_param.h"
 #include "usockfd.h"
 #include "comm.h"
+
+/* Length of the space taken up by a padded control message of length len */
+#ifndef CMSG_SPACE
+#define	CMSG_SPACE(len)	(__CMSG_ALIGN(sizeof(struct cmsghdr)) + __CMSG_ALIGN(len))
+#endif
+
 
 struct connection {
     time_t tm;                    /* When respawned last */

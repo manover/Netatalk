@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_metad.c,v 1.1.4.3 2003-10-28 07:24:02 didg Exp $
+ * $Id: cnid_metad.c,v 1.1.4.4 2003-10-30 10:03:19 bfernhomberg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -36,6 +36,7 @@
 #include <sys/uio.h>
 #endif
 #include <sys/un.h>
+#define _XPG4_2 1
 #include <sys/socket.h>
 #include <stdio.h>
 #include <time.h>

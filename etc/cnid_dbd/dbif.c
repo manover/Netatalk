@@ -1,5 +1,5 @@
 /*
- * $Id: dbif.c,v 1.1.4.4 2003-10-21 16:24:58 didg Exp $
+ * $Id: dbif.c,v 1.1.4.5 2003-10-30 10:03:19 bfernhomberg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -11,23 +11,18 @@
 
 #include <stdio.h>
 #include <errno.h>
-
-#ifdef HAVE_DB4_DB_H
-#include <db4/db.h>
-#else
-#include <db.h>
-#endif
-#include <atalk/logger.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif /* HAVE_SYS_TYPES_H */
-
 #include <string.h>
-#include "db_param.h"
-#include "dbif.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/cdefs.h>
 #include <unistd.h>
+#include <atalk/logger.h>
+#include <db.h>
+#include "db_param.h"
+#include "dbif.h"
 
 #define DB_ERRLOGFILE "db_errlog"
 

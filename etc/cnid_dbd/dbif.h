@@ -1,5 +1,5 @@
 /*
- * $Id: dbif.h,v 1.1.4.3 2003-10-21 16:24:58 didg Exp $
+ * $Id: dbif.h,v 1.1.4.4 2003-10-30 10:03:19 bfernhomberg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -8,11 +8,8 @@
 #ifndef CNID_DBD_DBIF_H
 #define CNID_DBD_DBIF_H 1
 
-#ifdef HAVE_DB4_DB_H
-#include <db4/db.h>
-#else
+#include <sys/cdefs.h>
 #include <db.h>
-#endif
 #include "db_param.h"
 
 #define DBIF_DB_CNT 3

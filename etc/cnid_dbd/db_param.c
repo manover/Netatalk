@@ -1,5 +1,5 @@
 /*
- * $Id: db_param.c,v 1.1.4.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: db_param.c,v 1.1.4.2 2003-10-30 10:03:19 bfernhomberg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -12,7 +12,9 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
-
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>

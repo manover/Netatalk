@@ -1,5 +1,5 @@
 /*
- * $Id: dbd_get.c,v 1.1.4.2 2003-10-21 16:24:58 didg Exp $
+ * $Id: dbd_get.c,v 1.1.4.3 2003-10-30 10:03:19 bfernhomberg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYRIGHT.
@@ -13,12 +13,6 @@
 #include <sys/param.h>
 #include <atalk/logger.h>
 #include <errno.h>
-
-#ifdef HAVE_DB4_DB_H
-#include <db4/db.h>
-#else
-#include <db.h>
-#endif
 #include <netatalk/endian.h>
 #include <atalk/cnid_dbd_private.h>
 
