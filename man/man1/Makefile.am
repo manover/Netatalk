@@ -35,7 +35,8 @@ NONGENERATED_MANS	=	achfile.1  \
 				timeout.1 \
 				unbin.1 \
 				unhex.1 \
-				unsingle.1
+				unsingle.1 \
+				cnid_index.1
 
 man_MANS = $(GENERATED_MANS) $(NONGENERATED_MANS)
 
