@@ -1,5 +1,15 @@
 #!@PERL@
 
+#
+# Upgrade version 1 CNID databases to version 2
+#
+# $Id: cnid2_create.in,v 1.1.2.2 2004-01-02 17:20:57 lenneis Exp $
+#
+# Copyright (C) Joerg Lenneis 2003
+# All Rights Reserved.  See COPYRIGHT.
+#
+#
+
 use strict;
 
 

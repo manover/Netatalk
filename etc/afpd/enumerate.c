@@ -1,5 +1,5 @@
 /*
- * $Id: enumerate.c,v 1.39.2.2.2.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: enumerate.c,v 1.39.2.2.2.2 2004-01-02 17:20:57 lenneis Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -215,6 +215,13 @@ for_each_dirent(const struct vol *vol, char *name, dir_loop fn, void *data)
     return ret;
 }
 
+/* This is the maximal length of a single entry for a file/dir in the reply
+   block if all bits in the file/dir bitmap are set: header(4) + params(104) +
+   macnamelength(1) + macname(31) + utf8(4) + utf8namelen(2) + utf8name(255) +
+   oddpadding(1) */
+
+#define REPLY_PARAM_MAXLEN (4 + 104 + 1 + MACFILELEN + 4 + 2 + 255 + 1)
+
 /* ----------------------------- */
 static int enumerate(obj, ibuf, ibuflen, rbuf, rbuflen, ext )
 AFPObj       *obj;
@@ -312,7 +319,7 @@ int     ext;
     header = (ext)?4:2;
     header *=sizeof( u_char );
     
-    maxsz = min(maxsz, *rbuflen);
+    maxsz = min(maxsz, *rbuflen - REPLY_PARAM_MAXLEN);
     o_path = cname( vol, dir, &ibuf );
 
     if (afp_errno == AFPERR_NOOBJ) 
