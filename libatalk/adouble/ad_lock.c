@@ -1,5 +1,5 @@
 /* 
- * $Id: ad_lock.c,v 1.11.6.4 2004-05-08 22:37:46 didg Exp $
+ * $Id: ad_lock.c,v 1.11.6.4.2.1 2004-12-07 03:24:38 didg Exp $
  *
  * Copyright (c) 1998,1999 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved. See COPYRIGHT for more information.
@@ -403,9 +403,14 @@ int ad_testlock(struct adouble *ad, int eid, const off_t off)
     if ((ad_hfileno(ad) != -1)) {
       	adf = &ad->ad_hf;
     	lock.l_start = df2off(off);
-   	}
-  } else { /* rfork */
-	adf = &ad->ad_hf;
+    }
+  } 
+  else { /* rfork */
+    if ((ad_hfileno(ad) == -1)) {
+        /* there's no resource fork. return no lock */
+        return 0;
+    }
+    adf = &ad->ad_hf;
     lock.l_start = hf2off(off);
   }
 

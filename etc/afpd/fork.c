@@ -1,5 +1,5 @@
 /*
- * $Id: fork.c,v 1.51.2.2.2.10.2.1 2004-10-30 22:42:06 didg Exp $
+ * $Id: fork.c,v 1.51.2.2.2.10.2.2 2004-12-07 03:23:49 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -178,11 +178,13 @@ static int setforkmode(struct adouble *adp, int eid, int ofrefnum, int what)
 
 /* -------------------------
 */
-static int getforkmode(struct adouble *adp, int eid, int what)
+int getforkmode(struct adouble *adp, int eid, int what)
 {
     return ad_testlock(adp, eid,  what);
 }
 
+/* -------------------------
+*/
 static int fork_setmode(struct adouble *adp, int eid, int access, int ofrefnum)
 {
     int ret;

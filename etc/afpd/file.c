@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.31.2.4 2004-12-07 02:58:09 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.31.2.5 2004-12-07 03:23:49 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -805,12 +805,8 @@ int setfilparams(struct vol *vol,
 #endif /* DEBUG */
 
     upath = path->u_name;
-    if ((of = of_findname(path))) {
-        adp = of->of_ad;
-    } else {
-        ad_init(&ad, vol->v_adouble);
-        adp = &ad;
-    }
+    adp = of_ad(vol, path, &ad);
+    
 
     if (!vol_unix_priv(vol) && check_access(upath, OPENACC_WR ) < 0) {
         return AFPERR_ACCESS;
@@ -1051,7 +1047,7 @@ struct adouble    *adp;
     	        /* FIXME  warning in syslog so admin'd know there's a conflict ?*/
     	        return AFPERR_OLOCK; /* little lie */
     	    }
-            if (AFP_OK != ( rc = copyfile(vol, vol, src, dst, newname )) ) {
+            if (AFP_OK != ( rc = copyfile(vol, vol, src, dst, newname, NULL )) ) {
                 /* on error copyfile delete dest */
                 return( rc );
             }
@@ -1211,6 +1207,9 @@ int		ibuflen, *rbuflen;
     int         err, retvalue = AFP_OK;
     u_int16_t	svid, dvid;
 
+    struct adouble ad, *adp;
+    int denyreadset;
+    
 #ifdef DEBUG
     LOG(log_info, logtype_afpd, "begin afp_copyfile:");
 #endif /* DEBUG */
@@ -1248,11 +1247,20 @@ int		ibuflen, *rbuflen;
      *      and locks need to stay coherent. as a result,
      *      we just balk if the file is opened already. */
 
+    adp = of_ad(s_vol, s_path, &ad);
+
+    if (ad_open(s_path->u_name , ADFLAGS_DF |ADFLAGS_HF | ADFLAGS_NOHF, O_RDONLY, 0, adp) < 0) {
+        return AFPERR_DENYCONF;
+    }
+    denyreadset = (getforkmode(adp, ADEID_DFORK, AD_FILELOCK_DENY_RD) != 0 || 
+                  getforkmode(adp, ADEID_RFORK, AD_FILELOCK_DENY_RD) != 0 );
+    ad_close( adp, ADFLAGS_DF |ADFLAGS_HF );
+    if (denyreadset) {
+        return AFPERR_DENYCONF;
+    }
+
     newname = obj->newtmp;
     strcpy( newname, s_path->m_name );
-
-    if (of_findname(s_path))
-        return AFPERR_DENYCONF;
 
     p = ctoupath( s_vol, curdir, newname );
     if (!p) {
@@ -1290,7 +1298,7 @@ int		ibuflen, *rbuflen;
     if (NULL == (upath = mtoupath(d_vol, newname, curdir->d_did, utf8_encoding()))) {
         return( AFPERR_PARAM );
     }
-    if ( (err = copyfile(s_vol, d_vol, p, upath , newname)) < 0 ) {
+    if ( (err = copyfile(s_vol, d_vol, p, upath , newname, adp)) < 0 ) {
         return err;
     }
     curdir->offcnt++;
@@ -1394,9 +1402,10 @@ static int copy_fd(int dfd, int sfd)
  * if newname is NULL (from directory.c) we don't want to copy ressource fork.
  * because we are doing it elsewhere.
  */
-int copyfile(s_vol, d_vol, src, dst, newname )
+int copyfile(s_vol, d_vol, src, dst, newname, adp )
 const struct vol *s_vol, *d_vol;
 char	*src, *dst, *newname;
+struct adouble *adp;
 {
     struct adouble	ads, add;
     int			err = 0;
@@ -1409,42 +1418,45 @@ char	*src, *dst, *newname;
     LOG(log_info, logtype_afpd, "begin copyfile:");
 #endif /* DEBUG */
 
-    ad_init(&ads, s_vol->v_adouble); 
+    if (adp == NULL) {
+        ad_init(&ads, s_vol->v_adouble); 
+        adp = &ads;
+    }
     ad_init(&add, d_vol->v_adouble);
     adflags = ADFLAGS_DF;
     if (newname) {
         adflags |= ADFLAGS_HF;
     }
 
-    if (ad_open(src , adflags | ADFLAGS_NOHF, O_RDONLY, 0, &ads) < 0) {
+    if (ad_open(src , adflags | ADFLAGS_NOHF, O_RDONLY, 0, adp) < 0) {
         ret_err = errno;
         goto done;
     }
 
-    if (ad_hfileno(&ads) == -1) {
+    if (ad_hfileno(adp) == -1) {
         /* no resource fork, don't create one for dst file */
         adflags &= ~ADFLAGS_HF;
     }
 
     if (ad_open(dst , adflags | noadouble, O_RDWR|O_CREAT|O_EXCL, 0666, &add) < 0) {
         ret_err = errno;
-        ad_close( &ads, adflags );
+        ad_close( adp, adflags );
         if (EEXIST != ret_err) {
             deletefile(d_vol, dst, 0);
             goto done;
         }
         return AFPERR_EXIST;
     }
-    if (ad_hfileno(&ads) == -1 || 0 == (err = copy_fd(ad_hfileno(&add), ad_hfileno(&ads)))){
+    if (ad_hfileno(adp) == -1 || 0 == (err = copy_fd(ad_hfileno(&add), ad_hfileno(adp)))){
         /* copy the data fork */
-	err = copy_fd(ad_dfileno(&add), ad_dfileno(&ads));
+	err = copy_fd(ad_dfileno(&add), ad_dfileno(adp));
     }
 
     /* Now, reopen destination file */
     if (err < 0) {
        ret_err = errno;
     }
-    ad_close( &ads, adflags );
+    ad_close( adp, adflags );
 
     if (ad_close( &add, adflags ) <0) {
         deletefile(d_vol, dst, 0);
@@ -1729,18 +1741,14 @@ reenumerate_id(const struct vol *vol, char *name, cnid_t did)
 
 #if AD_VERSION > AD_VERSION1
         if (aint != CNID_INVALID && !S_ISDIR(path.st.st_mode)) {
-            struct ofork    *of;
+//            struct ofork    *of;
             struct adouble  ad, *adp;
 
             path.st_errno = 0;
             path.st_valid = 1;
             path.u_name = de->d_name;
             
-            if (!(of = of_findname(&path))) {
-                ad_init(&ad, vol->v_adouble);
-                adp = &ad;
-            } else
-                adp = of->of_ad;
+            adp = of_ad(vol, &path, &ad);
             
             if ( ad_open( de->d_name, ADFLAGS_HF, O_RDWR, 0, adp ) < 0 ) {
                 continue;

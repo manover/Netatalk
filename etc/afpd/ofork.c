@@ -1,5 +1,5 @@
 /*
- * $Id: ofork.c,v 1.20.6.6 2004-05-10 18:40:32 didg Exp $
+ * $Id: ofork.c,v 1.20.6.6.2.1 2004-12-07 03:23:51 didg Exp $
  *
  * Copyright (c) 1996 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -372,3 +372,21 @@ struct ofork	*of;
 
     free( of );
 }
+
+/* ----------------------
+
+*/
+struct adouble *of_ad(const struct vol *vol, struct path *path, struct adouble *ad)
+{
+    struct ofork        *of;
+    struct adouble      *adp;
+
+    if ((of = of_findname(path))) {
+        adp = of->of_ad;
+    } else {
+        ad_init(ad, vol->v_adouble);
+        adp = ad;
+    }
+    return adp;
+}
+

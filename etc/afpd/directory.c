@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.15.2.2 2004-12-07 02:58:10 didg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.15.2.3 2004-12-07 03:23:48 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -786,7 +786,7 @@ static int copydir(const struct vol *vol, char *src, char *dst)
             if (S_ISDIR(st.st_mode)) {
                 if (AFP_OK != (err = copydir(vol, spath, dpath)))
                     goto copydir_done;
-            } else if (AFP_OK != (err = copyfile(vol, vol, spath, dpath, NULL))) {
+            } else if (AFP_OK != (err = copyfile(vol, vol, spath, dpath, NULL, NULL))) {
                 goto copydir_done;
 
             } else {
