@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.41 2002-10-17 18:01:54 didg Exp $
+ * $Id: volume.c,v 1.36.2.1 2002-10-19 23:33:36 jmarcus Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -293,7 +293,7 @@ static __inline__ char *get_codepage_path(const char *path, const char *name)
 
 /* handle all the options. tmp can't be NULL. */
 static void volset(struct vol_option *options, char *volname, int vlen,
-                   const char *nlspath, const char *tmp, AFPObj *obj,
+		   const char *nlspath, const char *tmp, AFPObj *obj,
 		   struct passwd *pwd)
 {
     char *val;
@@ -386,7 +386,7 @@ static void volset(struct vol_option *options, char *volname, int vlen,
             free(options[VOLOPT_DBPATH].c_value);
 
 	volxlate(obj, t, MAXPATHLEN, val, pwd, NULL);
-        options[VOLOPT_DBPATH].c_value = strdup(t + 1);
+	options[VOLOPT_DBPATH].c_value = strdup(t + 1);
 #endif /* CNID_DB */
     } else if (optionok(tmp, "umask:", val)) {
 	options[VOLOPT_UMASK].i_value = (int)strtol(val, (char **)NULL, 8);
@@ -604,6 +604,7 @@ int			user;
             LOG(log_error, logtype_afpd, "setextmap: calloc: %s", strerror(errno) );
             return;
         }
+
     }
     ext++;
     for ( em = extmap, cnt = 0; em->em_ext; em++, cnt++) {
@@ -729,8 +730,9 @@ struct passwd *pwent;
                                    path + VOLOPT_DEFAULT_LEN) < 0)
                         break;
                     volset(save_options, tmp, sizeof(tmp) - 1,
-                           obj->options.nlspath, path + VOLOPT_DEFAULT_LEN,
-			   obj, pwent);
+		    	obj->options.nlspath, path + VOLOPT_DEFAULT_LEN,
+			obj, pwent);
+
                 }
             }
             break;
@@ -792,7 +794,7 @@ struct passwd *pwent;
                     break;
 
                 volset(options, volname, sizeof(volname) - 1,
-                       obj->options.nlspath, tmp, obj, pwent);
+			obj->options.nlspath, tmp, obj, pwent);
             }
 
             /* check allow/deny lists:
@@ -954,7 +956,6 @@ int		*buflen;
         ad_setentrylen( &ad, ADEID_NAME, strlen( slash ));
         memcpy(ad_entry( &ad, ADEID_NAME ), slash,
                ad_getentrylen( &ad, ADEID_NAME ));
-	ad_setdate(&ad, AD_DATE_CREATE | AD_DATE_UNIX, st->st_mtime);
         ad_flush(&ad, ADFLAGS_HF);
     }
 
@@ -990,15 +991,11 @@ int		*buflen;
              *       it's passed in that way as it's possible to mount
              *       a read-write filesystem under a read-only one. */
             if ((vol->v_flags & AFPVOL_RO) ||
-                    ((utime(vol->v_path, NULL) < 0) && (errno == EROFS))) {
+                    ((utime(vol->v_path, NULL) < 0) && (errno == EROFS)))
                 ashort |= VOLPBIT_ATTR_RO;
-            }
 #ifdef WITH_CATSEARCH
-            ashort |= VOLPBIT_ATTR_CATSEARCH;
+                ashort |= VOLPBIT_ATTR_CATSEARCH;
 #endif
-            if (afp_version >= 30) {
-                ashort |= VOLPBIT_ATTR_UTF8;
-            }
             ashort = htons(ashort);
             memcpy(data, &ashort, sizeof( ashort ));
             data += sizeof( ashort );
@@ -1220,22 +1217,16 @@ int		ibuflen, *rbuflen;
         ret = AFPERR_ACCESS;
         goto openvol_err;
     }
-    /* FIXME 
-    */
-    if (afp_version >= 30)
-        volume->max_filename = 255;
-    else 
-        volume->max_filename = MACFILELEN;
 
     if (( volume->v_flags & AFPVOL_OPEN  ) == 0 ) {
-        /* FIXME unix name != mac name */
-        if ((dir = dirnew(volume->v_name, volume->v_name) ) == NULL) {
+        if ((dir = dirnew(strlen(volume->v_name) + 1)) == NULL) {
             LOG(log_error, logtype_afpd, "afp_openvol: malloc: %s", strerror(errno) );
             ret = AFPERR_MISC;
             goto openvol_err;
         }
         dir->d_did = DIRDID_ROOT;
         dir->d_color = DIRTREE_COLOR_BLACK; /* root node is black */
+        strcpy( dir->d_name, volume->v_name );
         volume->v_dir = volume->v_root = dir;
         volume->v_flags |= AFPVOL_OPEN;
     }
