@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.20.4.2.2.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: main.c,v 1.20.4.2.2.2 2003-09-12 18:44:17 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -172,8 +172,10 @@ char	**av;
     argv = av;
     set_auth_parameters( ac, av );
 #endif /* TRU64 */
-    fault_setup(NULL);
 
+#ifdef DEBUG1
+    fault_setup(NULL);
+#endif
     afp_options_init(&default_options);
     if (!afp_options_parse(ac, av, &default_options))
         exit(1);

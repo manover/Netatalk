@@ -1,5 +1,5 @@
 /*
- * $Id: fork.c,v 1.51.2.2.2.1 2003-09-09 16:42:20 didg Exp $
+ * $Id: fork.c,v 1.51.2.2.2.2 2003-09-12 18:44:17 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -961,11 +961,13 @@ int is64;
     if ((obj->proto == AFPPROTO_DSI) && (*rbuflen < reqcount) && !nlmask) {
         DSI *dsi = obj->handle;
 
+#ifdef DEBUG1
         if (obj->options.flags & OPTION_DEBUG) {
             printf( "(read) reply: %d/%d, %d\n", *rbuflen,
                     (int) reqcount, dsi->clientID);
             bprint(rbuf, *rbuflen);
         }
+#endif        
         /* subtract off the offset */
         size -= offset;
         if (reqcount > size) {
@@ -1010,11 +1012,12 @@ afp_read_loop:
                 goto afp_read_exit;
 
             offset += *rbuflen;
+#ifdef DEBUG1
             if (obj->options.flags & OPTION_DEBUG) {
                 printf( "(read) reply: %d, %d\n", *rbuflen, dsi->clientID);
                 bprint(rbuf, *rbuflen);
             }
-
+#endif
             /* dsi_read() also returns buffer size of next allocation */
             cc = dsi_read(dsi, rbuf, *rbuflen); /* send it off */
             if (cc < 0)
@@ -1322,11 +1325,12 @@ int                 is64;
             return( AFPERR_PARAM );
         }
 
+#ifdef DEBUG1
         if (obj->options.flags & OPTION_DEBUG) {
             printf("(write) len: %d\n", *rbuflen);
             bprint(rbuf, *rbuflen);
         }
-
+#endif
         if ((cc = write_file(ofork, eid, offset, rbuf, *rbuflen,
                              xlate)) < 0) {
             *rbuflen = 0;
@@ -1381,11 +1385,12 @@ int                 is64;
             /* loop until everything gets written. currently
                     * dsi_write handles the end case by itself. */
             while ((cc = dsi_write(dsi, rbuf, *rbuflen))) {
+#ifdef DEBUG1
                 if ( obj->options.flags & OPTION_DEBUG ) {
                     printf("(write) command cont'd: %d\n", cc);
                     bprint(rbuf, cc);
                 }
-
+#endif
                 if ((cc = write_file(ofork, eid, offset, rbuf, cc, xlate)) < 0) {
                     dsi_writeflush(dsi);
                     *rbuflen = 0;

@@ -22,6 +22,8 @@
 #include "config.h"
 #endif
 
+#ifdef DEBUG1
+
 #include <sys/types.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -194,5 +196,4 @@ void fault_setup(void (*fn)(void *))
 #endif
 }
 
-
-
+#endif

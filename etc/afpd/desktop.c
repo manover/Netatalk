@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.2 2003-09-11 23:36:44 bfernhomberg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.3 2003-09-12 18:44:17 didg Exp $
  *
  * See COPYRIGHT.
  *
@@ -244,10 +244,12 @@ addicon_err:
         if ((asp_wrtcont(obj->handle, rbuf, &buflen) < 0) || buflen != bsize)
             return( AFPERR_PARAM );
 
+#ifdef DEBUG1
         if (obj->options.flags & OPTION_DEBUG) {
             printf("(write) len: %d\n", buflen);
             bprint(rbuf, buflen);
         }
+#endif
 
         /*
          * We're at the end of the file, add the headers, etc.  */
@@ -294,11 +296,12 @@ addicon_err:
             }
 
             while ((iovcnt = dsi_write(dsi, rbuf, buflen))) {
+#ifdef DEBUG1
                 if ( obj->options.flags & OPTION_DEBUG ) {
                     printf("(write) command cont'd: %d\n", iovcnt);
                     bprint(rbuf, iovcnt);
                 }
-
+#endif
                 if ((cc = write(si.sdt_fd, rbuf, iovcnt)) < 0) {
                     LOG(log_error, logtype_afpd, "afp_addicon: write: %s", strerror(errno));
                     dsi_writeflush(dsi);
@@ -545,11 +548,12 @@ int		ibuflen, *rbuflen;
             if (buflen < 0)
                 goto geticon_exit;
 
+#ifdef DEBUG1
             if (obj->options.flags & OPTION_DEBUG) {
                 printf( "(read) reply: %d, %d\n", buflen, dsi->clientID);
                 bprint(rbuf, buflen);
             }
-
+#endif
             /* dsi_read() also returns buffer size of next allocation */
             buflen = dsi_read(dsi, rbuf, buflen); /* send it off */
             if (buflen < 0)
