@@ -1,5 +1,5 @@
 /*
- * $Id: dsi_tcp.c,v 1.5 2001-08-15 02:18:57 srittau Exp $
+ * $Id: dsi_tcp.c,v 1.5.2.1 2002-02-08 00:03:55 srittau Exp $
  *
  * Copyright (c) 1997, 1998 Adrian Sun (asun@zoology.washington.edu)
  * All rights reserved. See COPYRIGHT.
@@ -131,8 +131,11 @@ static int dsi_tcp_open(DSI *dsi)
     signal(SIGHUP, SIG_DFL);
 
     /* install an alarm to deal with non-responsive connections */
-    memset(&newact, 0, sizeof(newact));
     newact.sa_handler = timeout_handler;
+    sigemptyset(&newact.sa_mask);
+    newact.sa_flags = 0;
+    sigemptyset(&oldact.sa_mask);
+    oldact.sa_flags = 0;
     if ((sigaction(SIGALRM, &newact, &oldact) < 0) ||
         (setitimer(ITIMER_REAL, &timer, NULL) < 0)) {
 	syslog(LOG_ERR, "dsi_tcp_open: %s", strerror(errno));
@@ -144,8 +147,8 @@ static int dsi_tcp_open(DSI *dsi)
      * delinquent connections from causing mischief. */
     
     /* read in the first two bytes */
-    dsi_stream_read(dsi, block, 2);
-    if ((block[0] > DSIFL_MAX) || (block[1] > DSIFUNC_MAX)) {
+    len = dsi_stream_read(dsi, block, 2);
+    if (len <= 0 || (block[0] > DSIFL_MAX) || (block[1] > DSIFUNC_MAX)) {
       syslog(LOG_ERR, "dsi_tcp_open: invalid header");
       exit(1);
     }      
