@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.16 2004-07-12 02:01:45 didg Exp $
+ * $Id: ad_open.c,v 1.30.6.17 2004-08-23 22:27:02 bfernhomberg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -257,6 +257,20 @@ static int ad_update(struct adouble *ad, const char *path)
     LOG(log_debug, logtype_default, "ad_update: file '%s' too big for update.", path);
     goto bail_truncate;
   }
+
+  off = ad->ad_eid[ADEID_RFORK].ade_off;
+  if (off > st.st_size) {
+      LOG(log_error, logtype_default, "ad_v1tov2: invalid resource fork offset. (off: %u)", off); 
+      errno = EIO;
+      goto bail_truncate;
+  }
+
+  if (ad->ad_eid[ADEID_RFORK].ade_len > st.st_size - off) {
+      LOG(log_error, logtype_default, "ad_v1tov2: invalid resource fork length. (rfork len: %u)", ad->ad_eid[ADEID_RFORK].ade_len); 
+      errno = EIO;
+      goto bail_truncate;
+  }
+  
   /* last place for failure. */
   if ((void *) (buf = (char *)
                 mmap(NULL, st.st_size + shiftdata,
@@ -265,7 +279,6 @@ static int ad_update(struct adouble *ad, const char *path)
     goto bail_truncate;
   }
 
-  off = ad->ad_eid[ADEID_RFORK].ade_off;
 
   /* move the RFORK. this assumes that the RFORK is at the end */
   if (off) {
@@ -381,6 +394,20 @@ static int ad_v1tov2(struct adouble *ad, const char *path)
       LOG(log_debug, logtype_default, "ad_v1tov2: file too big."); 
       goto bail_truncate;
   }
+
+  off = ad->ad_eid[ADEID_RFORK].ade_off;
+
+  if (off > st.st_size) {
+      LOG(log_error, logtype_default, "ad_v1tov2: invalid resource fork offset. (off: %u)", off); 
+      errno = EIO;
+      goto bail_truncate;
+  }
+
+  if (ad->ad_eid[ADEID_RFORK].ade_len > st.st_size - off) {
+      LOG(log_error, logtype_default, "ad_v1tov2: invalid resource fork length. (rfork len: %u)", ad->ad_eid[ADEID_RFORK].ade_len); 
+      errno = EIO;
+      goto bail_truncate;
+  }
   
   /* last place for failure. */
   if ((void *) (buf = (char *) 
@@ -390,8 +417,6 @@ static int ad_v1tov2(struct adouble *ad, const char *path)
     goto bail_truncate;
   }
   
-  off = ad->ad_eid[ADEID_RFORK].ade_off;
-
   /* move the RFORK. this assumes that the RFORK is at the end */
   if (off) {
       memmove(buf + ADEDOFF_RFORK_V2, buf + off, ad->ad_eid[ADEID_RFORK].ade_len);
