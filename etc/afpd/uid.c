@@ -1,5 +1,5 @@
 /*
- * $Id: uid.c,v 1.5.2.2 2002-03-05 02:08:12 jmarcus Exp $
+ * $Id: uid.c,v 1.5.2.3 2002-03-17 23:37:49 jmarcus Exp $
  * code: jeff@univrel.pr.uconn.edu
  *
  * These functions are abstracted here, so that all calls for resolving
@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <syslog.h>
+#include <errno.h>
 
 /* functions for username and group */
 #include <pwd.h>
