@@ -1,5 +1,5 @@
 /*
- * $Id: status.c,v 1.13.6.3 2003-11-18 12:37:02 didg Exp $
+ * $Id: status.c,v 1.13.6.4 2004-01-22 19:37:46 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -395,7 +395,7 @@ static int status_utf8servername(char *data, int *nameoffset,
 	LOG ( log_error, logtype_afpd, "Could not set utf8 servername");
 
 	/* set offset to 0 */
-	memset(data + *nameoffset, 0, sizeof(offset));
+	memset(begin + *nameoffset, 0, sizeof(offset));
     }
     else {
     	namelen = htons(len);
