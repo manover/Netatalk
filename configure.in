@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.23 2004-02-29 18:43:38 bfernhomberg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.24 2004-03-18 02:56:31 bfernhomberg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(etc/afpd/main.c)
@@ -582,9 +582,8 @@ dnl ----- FreeBSD specific -----
 if test x"$this_os" = "xfreebsd"; then 
 	AC_MSG_RESULT([ * FreeBSD specific configuration])
 	AC_DEFINE(BSD4_4, 1, [BSD compatiblity macro])
+	AC_DEFINE(FREEBSD, 1, [Define if OS is FreeBSD])
 	AC_DEFINE(SENDFILE_FLAVOR_BSD, 1, [Define if the sendfile() function uses BSD semantics])
-
-dnl	AC_DEFINE(NO_CRYPT_H, 1, [Define if crypt.h does not exist])
 fi
 
 dnl ----- HP-UX 11 specific -----
@@ -726,6 +725,7 @@ dnl ----- NetBSD specific -----
 if test x"$this_os" = "xnetbsd"; then 
 	AC_MSG_RESULT([ * NetBSD specific configuration])
 	AC_DEFINE(BSD4_4, 1, [BSD compatiblity macro])
+	AC_DEFINE(NETBSD, 1, [Define if OS is FreeBSD])
 	if echo __ELF__ | $CC -E - | grep __ELF__ > /dev/null; then
 		# NetBSD ELF machines don't have to have DLSYM_PREPEND_UNDERSCORE.
 		# If this test is true, it's not an ELF box.

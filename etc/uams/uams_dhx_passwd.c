@@ -1,5 +1,5 @@
 /*
- * $Id: uams_dhx_passwd.c,v 1.18.6.5 2004-02-07 19:46:08 didg Exp $
+ * $Id: uams_dhx_passwd.c,v 1.18.6.6 2004-03-18 02:56:32 bfernhomberg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -9,7 +9,13 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
+
+#ifdef NETBSD
 #define _XOPEN_SOURCE 500 /* for crypt() */
+#endif
+#ifdef FREEBSD
+#define _XOPEN_SOURCE /* for crypt() */
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
