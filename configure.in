@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.37.2.1 2004-10-27 13:31:01 tkaiser Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.37.2.2 2004-10-27 14:20:38 bfernhomberg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(etc/afpd/main.c)
@@ -204,22 +204,21 @@ NETATALK_AFS_CHECK
 
 NETATALK_CONFIG_DIRS
 
-AC_MSG_CHECKING([for logfile path])
+AC_MSG_CHECKING([whether to use logfile])
 AC_ARG_WITH(logfile,
-	[  --with-logfile=PATH     path for file used by logger [/var/log/netatalk.log]
-                          use --without-logfile to disable logger],[
+	[  --with-logfile=PATH     path for file used by logger],[
         if test x"$withval" = x"no"; then
 		AC_DEFINE(DISABLE_LOGGER, 1, [Define if the logger should not be used])
-		AC_MSG_RESULT([syslog])
+		AC_MSG_RESULT([no, syslog])
 	elif test "$withval" != "yes"; then
 		AC_DEFINE_UNQUOTED(LOGFILEPATH, "$withval", [Path to the log file])
 		AC_MSG_RESULT([$withval])
 	else
-                AC_DEFINE_UNQUOTED(LOGFILEPATH, "/var/log/netatalk.log", [Path to the log file])
-                AC_MSG_RESULT([/var/log/netatalk.log]) 
-	fi],[
 		AC_DEFINE_UNQUOTED(LOGFILEPATH, "/var/log/netatalk.log", [Path to the log file])
-		AC_MSG_RESULT([/var/log/netatalk.log])
+		AC_MSG_RESULT([/var/log/netatalk.log]) 
+	fi],[
+		AC_DEFINE(DISABLE_LOGGER, 1, [Define if the logger should not be used])
+		AC_MSG_RESULT([no, syslog])
 	]
 )
 
