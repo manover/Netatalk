@@ -1,5 +1,5 @@
 /*
- * $Id: uam.c,v 1.24.6.7.2.2 2004-12-07 18:41:08 bfernhomberg Exp $
+ * $Id: uam.c,v 1.24.6.7.2.3 2005-02-01 11:33:48 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * All Rights Reserved.  See COPYRIGHT.
@@ -413,13 +413,13 @@ AFPObj *obj = private;
 
     switch (what) {
     case UAM_OPTION_USERNAME:
-        *buf = (void *) obj->username;
+        *buf = obj->username;
         if (len)
             *len = sizeof(obj->username) - 1;
         break;
 
     case UAM_OPTION_GUEST:
-        *buf = (void *) obj->options.guest;
+        *buf = obj->options.guest;
         if (len)
             *len = strlen(obj->options.guest);
         break;
@@ -430,7 +430,7 @@ AFPObj *obj = private;
 
         switch (*len) {
         case UAM_PASSWD_FILENAME:
-            *buf = (void *) obj->options.passwdfile;
+            *buf = obj->options.passwdfile;
             *len = strlen(obj->options.passwdfile);
             break;
 
@@ -465,14 +465,15 @@ AFPObj *obj = private;
         break;
 
     case UAM_OPTION_HOSTNAME:
-        *buf = (void *) obj->options.hostname;
+        *buf = obj->options.hostname;
         if (len)
             *len = strlen(obj->options.hostname);
         break;
 
     case UAM_OPTION_PROTOCOL:
-        *buf = (void *) obj->proto;
+        *((int *) option) = obj->proto;
         break;
+        
     case UAM_OPTION_CLIENTNAME:
         {
             struct DSI *dsi = obj->handle;
@@ -482,9 +483,9 @@ AFPObj *obj = private;
                                 sizeof( struct in_addr ),
                                 dsi->client.sin_family );
             if( hp )
-                *buf = (void *) hp->h_name;
+                *buf = hp->h_name;
             else
-                *buf = (void *) inet_ntoa( dsi->client.sin_addr );
+                *buf = inet_ntoa( dsi->client.sin_addr );
         }
         break;
     case UAM_OPTION_COOKIE:
