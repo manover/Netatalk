@@ -1,3 +1,6 @@
+dnl $Id: summary.m4,v 1.1.2.5 2004-06-24 00:43:58 bfernhomberg Exp $
+dnl Autoconf macros, display configure summary
+
 AC_DEFUN([AC_NETATALK_CONFIG_SUMMARY], [
 
 	AC_MSG_RESULT([Configure summary:])
@@ -35,11 +38,12 @@ AC_DEFUN([AC_NETATALK_CONFIG_SUMMARY], [
 	AC_MSG_RESULT([         passwd  ($uams_using_options)])
 	AC_MSG_RESULT([         guest])
 	AC_MSG_RESULT([    Options:])
+	AC_MSG_RESULT([         CUPS support:           $netatalk_cv_use_cups])
 	AC_MSG_RESULT([         SLP support:            $netatalk_cv_srvloc])
 	AC_MSG_RESULT([         tcp wrapper support:    $netatalk_cv_tcpwrap])
-	if test x"$netatalk_cv_linux_sendfile" != x; then
-		AC_MSG_RESULT([         Linux sendfile support: $netatalk_cv_linux_sendfile])
-	fi
+dnl	if test x"$netatalk_cv_linux_sendfile" != x; then
+dnl		AC_MSG_RESULT([         Linux sendfile support: $netatalk_cv_linux_sendfile])
+dnl	fi
 	AC_MSG_RESULT([         quota support:          $netatalk_cv_quotasupport])
 	AC_MSG_RESULT([         admin group support:    $netatalk_cv_admin_group])
 	AC_MSG_RESULT([         valid shell check:      $netatalk_cv_use_shellcheck])
@@ -94,5 +98,10 @@ AC_DEFUN([AC_NETATALK_LIBS_SUMMARY], [
 		AC_MSG_RESULT([    SRVLOC:])
 		AC_MSG_RESULT([        LIBS   = $SLP_LIBS])
 		AC_MSG_RESULT([        CFLAGS = $SLP_CFLAGS])
+	fi
+	if test x"$netatalk_cv_use_cups" = x"yes"; then
+		AC_MSG_RESULT([    CUPS:])
+		AC_MSG_RESULT([        LIBS   = $CUPS_LIBS])
+		AC_MSG_RESULT([        CFLAGS = $CUPS_CFLAGS])
 	fi
 ])
