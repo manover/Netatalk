@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.31.2.8 2005-01-31 17:00:55 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.31.2.9 2005-02-05 14:46:35 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1740,7 +1740,6 @@ reenumerate_id(const struct vol *vol, char *name, cnid_t did)
 
 #if AD_VERSION > AD_VERSION1
         if (aint != CNID_INVALID && !S_ISDIR(path.st.st_mode)) {
-//            struct ofork    *of;
             struct adouble  ad, *adp;
 
             path.st_errno = 0;
