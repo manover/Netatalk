@@ -1,3 +1,40 @@
+Changes in 2.0-beta2
+====================
+
+* NEW: atalkd, papd and npb tools now support nbpnames with extended
+       characters
+* NEW: integrated CUPS support for papd
+* NEW: optionally advertise SSH tunneling capabilties
+* NEW: automatic logfile removal for cnid_metad
+* NEW: asip-status.pl has been added to netatalk
+* UPD: updated documentation
+* UPD: we now require Berkeley DB >= 4.1
+* UPD: 64bit Linux fixes from Stew Benedict, Mandrakesoft
+* UPD: remove --enable-sendfile
+* UPD: more verbose error messages
+* FIX: better handling for resource forks without read access
+* FIX: Tru64 build, by Burkhard Schmidt
+* FIX: MIT Kerberos detection
+* FIX: varios *BSD compile problems
+* FIX: compile problem with libiconv, reported by Joe Marcus Clarke
+* FIX: adv1tov2: make it work with the new structure
+* FIX: afpd: filenames longer than 127 bytes were not enumerated correctly,
+       reported by Thies C. Arntzen
+* FIX: afpd: return IP before FQDN in status reply.
+* FIX: afpd: Mac chooser could crash on a codepage conversion error
+* FIX: afpd: KerberosV auth with Panther clients, make long AD tickets work,
+       reported by Andrew Smith
+* FIX: atalkd: could send invalid NBPLKUP replies, e.g with more than 15
+       printers. Reported by Almacha
+* FIX: papd: fix papd.conf parsing problems with consecutive ':' and missing 
+       newline. Reported by Craig White.
+* FIX: megatron: make megatron work with UTF-8 volumes
+* FIX: timeout: running timeout with commands which accept arguments, 
+       from Yuval Yeret.
+* FIX: uniconv: fix a SEGFAULT, reported by Matthew Geier
+* FIX: pam detection: PAM_C/LDFLAGS were always empty, from Alexander Barton
+* FIX: numerous small bugfixes.
+
 Changes in 2.0-beta1
 =====================
 
