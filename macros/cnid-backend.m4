@@ -54,8 +54,8 @@ AC_DEFUN([AC_NETATALK_CNID], [
             AC_MSG_RESULT([yes])
         fi
 	],[
-        use_dbd_txn=yes
-        AC_MSG_RESULT([yes])
+        use_dbd_txn=no
+        AC_MSG_RESULT([no])
     ])
 
     if test $use_dbd_txn = yes; then
