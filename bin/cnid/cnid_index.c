@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_index.c,v 1.1.2.3 2005-01-25 14:34:26 didg Exp $
+ * $Id: cnid_index.c,v 1.1.2.4 2005-04-10 12:49:18 didg Exp $
  *
  * All Rights Reserved.  See COPYING.
  */
@@ -297,9 +297,6 @@ static int dbd_check(char *dbdir)
     if (dbif_count(DBIF_IDX_CNID, &c_cnid)) 
         return -1;
 
-    if (dbif_count(DBIF_IDX_DIDNAME, &c_didname)) 
-        return -1;
-    
     if (dbif_count(DBIF_IDX_DEVINO, &c_devino))
         return -1;
 
