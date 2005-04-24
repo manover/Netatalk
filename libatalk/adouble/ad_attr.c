@@ -1,5 +1,5 @@
 /*
- * $Id: ad_attr.c,v 1.4.8.7.2.1 2005-02-10 01:23:17 didg Exp $
+ * $Id: ad_attr.c,v 1.4.8.7.2.2 2005-04-24 22:26:32 didg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -115,7 +115,7 @@ char   temp[ADEDLEN_PRIVSYN];
     ) {
         memcpy(&dev, ad_entry(adp, ADEID_PRIVDEV), sizeof(dev_t));
         memcpy(&ino, ad_entry(adp, ADEID_PRIVINO), sizeof(ino_t));
-        memcpy(temp, ad_entry(adp, ADEID_PRIVSYN), sizeof(stamp));
+        memcpy(temp, ad_entry(adp, ADEID_PRIVSYN), sizeof(temp));
         memcpy(&a_did, ad_entry(adp, ADEID_DID), sizeof(cnid_t));
 
         if (  ((adp->ad_options & ADVOL_NODEV) || dev == st_dev)
