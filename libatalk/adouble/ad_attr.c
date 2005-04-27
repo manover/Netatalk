@@ -1,5 +1,5 @@
 /*
- * $Id: ad_attr.c,v 1.4.8.7.2.2 2005-04-24 22:26:32 didg Exp $
+ * $Id: ad_attr.c,v 1.4.8.7.2.3 2005-04-27 01:36:21 didg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -70,6 +70,7 @@ int ad_setid (struct adouble *adp, const dev_t dev, const ino_t ino , const u_in
                 ad_getentryoff(adp, ADEID_PRIVDEV) &&
                 sizeof(dev_t) == ADEDLEN_PRIVDEV && sizeof(ino_t) == ADEDLEN_PRIVINO) 
     {
+    
         ad_setentrylen( adp, ADEID_PRIVDEV, sizeof(dev_t));
 	if ((adp->ad_options & ADVOL_NODEV)) {
             memset(ad_entry( adp, ADEID_PRIVDEV ), 0, sizeof(dev_t));
@@ -105,8 +106,9 @@ char   temp[ADEDLEN_PRIVSYN];
 
     /* look in AD v2 header 
      * note inode and device are opaques and not in network order
+     * only use the ID if adouble is writable for us.
     */
-    if (adp && ( adp->ad_options & ADVOL_CACHE) 
+    if (adp && ( adp->ad_options & ADVOL_CACHE) && ( adp->ad_hf.adf_flags & O_RDWR )
             && sizeof(dev_t) == ad_getentrylen(adp, ADEID_PRIVDEV)
             && sizeof(ino_t) == ad_getentrylen(adp,ADEID_PRIVINO)
             && sizeof(temp) == ad_getentrylen(adp,ADEID_PRIVSYN)
