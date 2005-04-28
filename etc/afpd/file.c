@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.31.2.12 2005-03-11 17:36:20 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.31.2.13 2005-04-28 09:24:04 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -186,7 +186,8 @@ char *set_name(const struct vol *vol, char *data, cnid_t pid, char *name, cnid_t
 				  (1 << FILPBIT_FINFO) |\
 				  (1 << FILPBIT_RFLEN) |\
 				  (1 << FILPBIT_EXTRFLEN) |\
-				  (1 << FILPBIT_PDINFO)))
+				  (1 << FILPBIT_PDINFO) |\
+				  (1 << FILPBIT_UNIXPR)))
 
 /* -------------------------- */
 u_int32_t get_id(struct vol *vol, struct adouble *adp,  const struct stat *st,
@@ -452,7 +453,7 @@ int getmetadata(struct vol *vol,
             memcpy(data, &aint, sizeof( aint ));
             data += sizeof( aint );
             break;
-        case FILPBIT_UNIXPR :            
+        case FILPBIT_UNIXPR :
             /* accessmode may change st_mode with ACLs */
             accessmode( upath, &ma, dir , st);
 
@@ -463,7 +464,20 @@ int getmetadata(struct vol *vol,
             memcpy( data, &aint, sizeof( aint ));
             data += sizeof( aint );
 
-            aint = htonl(st->st_mode);
+	    /* FIXME: ugly hack
+               type == slnk indicates an OSX style symlink, 
+               we have to add S_IFLNK to the mode, otherwise
+               10.3 clients freak out. */
+
+    	    aint = st->st_mode;
+ 	    if (adp) {
+	        memcpy(fdType, ad_entry( adp, ADEID_FINDERI ), 4 );
+                if ( memcmp( fdType, "slnk", 4 ) == 0 ) {
+	 	    aint |= S_IFLNK;
+            	}
+	    }
+            aint = htonl(aint);
+
             memcpy( data, &aint, sizeof( aint ));
             data += sizeof( aint );
 
