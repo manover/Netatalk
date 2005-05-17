@@ -1,3 +1,26 @@
+Changes in 2.0.3
+================
+
+* NEW: afpd: add a cachecnid option that controls if afpd should 
+       use the IDs stored in the AD2 files as cache. Defaults
+       to off.
+* UPD: afpd: deal with more than 32 groups.
+* FIX: afpd: several catsearch fixes, based on patch from
+       TSUBAKIMOTO Hiroya.
+* FIX: afpd: fix a race when a client very quickly reconnects and 
+       tries to kill its old session.
+* FIX: afpd: OSX style symlink caused problems with Panther clients.
+* FIX: afpd: old files with default type didn't show the right icon
+       in finder, from Shlomi Yaakobovich, slightly modified.
+* FIX: cnid_check: disable cnid_check if CNID db was configured with
+       transactions and really bail out after the first error.
+* FIX: admin-group configure option was broken.
+* FIX: several problems with IDs cached in AD2 files.
+* FIX: Ignore BIDI in UTF8 hints from OSX.
+* FIX: Lots of gcc warning fixes.
+* FIX: small configure script changes.
+
+
 Changes in 2.0.2
 ================
 
