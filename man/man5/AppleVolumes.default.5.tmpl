@@ -1,4 +1,4 @@
-.TH AppleVolumes.default 5 "03 January 2005" 2.0.2 Netatalk 
+.TH AppleVolumes.default 5 "03 January 2005" 2.0.3 Netatalk 
 .SH NAME
 AppleVolumes.default \- Configuration file used by afpd(8) to determine the shares made available through Appletalk
 .SH DESCRIPTION
@@ -333,6 +333,12 @@ options:[\fBoption\fR]
 This allows multiple options to be specified in a comma
 delimited format. The available options are:
 .RS 
+.TP 
+cachecnid
+If set afpd uses the ID information
+stored in AppleDouble V2 header files to reduce database 
+load. Don't set this option if the volume is modified by non
+AFP clients (NFS/SMB/local). Defaults to off.
 .TP 
 crlf
 Enables crlf translation for TEXT files, automatically
