@@ -1,5 +1,5 @@
 /*
- * $Id: unix.c,v 1.43.2.1.2.10 2004-06-15 22:53:55 didg Exp $
+ * $Id: unix.c,v 1.43.2.1.2.10.2.1 2005-05-26 11:49:55 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -415,14 +415,14 @@ mode_t mode;
 struct stat *st;
 {
 struct stat sb;
-mode_t mask = S_IRUSR |S_IWUSR | S_IRGRP | S_IWGRP |S_IROTH | S_IWOTH;
+mode_t mask = S_IRWXU | S_IRWXG | S_IRWXO;  /* rwx for owner group and other, by default */
 
     if (!st) {
         if (stat(name, &sb) != 0)
             return -1;
         st = &sb;
     }
-   mode &= mask;	/* keep only rw-rw-rw in mode */
+   
    mode |= st->st_mode & ~mask; /* keep other bits from previous mode */
    if ( chmod( name,  mode & ~default_options.umask ) < 0 && errno != EPERM ) {
        return -1;

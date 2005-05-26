@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.18.2.4 2005-02-12 11:22:05 didg Exp $
+ * $Id: ad_open.c,v 1.30.6.18.2.5 2005-05-26 11:49:56 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -484,6 +484,7 @@ mode_t ad_hf_mode (mode_t mode)
 #if 0
     mode |= S_IRUSR;
 #endif    
+    mode &= ~(S_IXUSR | S_IXGRP | S_IXOTH);
     /* fnctl lock need write access */
     if ((mode & S_IRUSR))
         mode |= S_IWUSR;
@@ -943,7 +944,7 @@ int ad_open( path, adflags, oflags, mode, ad )
     struct stat         st;
     char		*slash, *ad_p;
     int			hoflags, admode;
-    int                 st_invalid;
+    int                 st_invalid = -1;
     int                 open_df = 0;
     
     if (ad->ad_inited != AD_INITED) {
@@ -959,12 +960,17 @@ int ad_open( path, adflags, oflags, mode, ad )
         if (ad_dfileno(ad) == -1) {
 	  hoflags = (oflags & ~(O_RDONLY | O_WRONLY)) | O_RDWR;
 	  admode = mode;
-	  st_invalid = ad_mode_st(path, &admode, &st);
+	  if ((oflags & O_CREAT)) {
+	      st_invalid = ad_mode_st(path, &admode, &st);
+	      if ((ad->ad_options & ADVOL_UNIXPRIV)) {
+	          admode = mode;
+	      }
+	  }
           ad->ad_df.adf_fd =open( path, hoflags, admode );
 	  if (ad->ad_df.adf_fd < 0 ) {
              if ((errno == EACCES || errno == EROFS) && !(oflags & O_RDWR)) {
                 hoflags = oflags;
-                ad->ad_df.adf_fd =open( path, hoflags, admode );
+                ad->ad_df.adf_fd = open( path, hoflags, admode );
              }
 	  }
 	  if ( ad->ad_df.adf_fd < 0)
@@ -972,7 +978,7 @@ int ad_open( path, adflags, oflags, mode, ad )
 
 	  AD_SET(ad->ad_df.adf_off);
 	  ad->ad_df.adf_flags = hoflags;
-	  if ((oflags & O_CREAT) && !st_invalid) {
+	  if (!st_invalid) {
 	      /* just created, set owner if admin (root) */
 	      ad_chown(path, &st);
 	  }
@@ -1039,6 +1045,9 @@ int ad_open( path, adflags, oflags, mode, ad )
 	    admode = mode;
 	    errno = 0;
 	    st_invalid = ad_mode_st(ad_p, &admode, &st);
+	    if ((ad->ad_options & ADVOL_UNIXPRIV)) {
+	        admode = mode;
+	    }
 	    admode = ad_hf_mode(admode); 
 	    if ( errno == ENOENT && !(adflags & ADFLAGS_NOADOUBLE) && ad->ad_flags != AD_VERSION2_OSX) {
 		/*
@@ -1056,6 +1065,9 @@ int ad_open( path, adflags, oflags, mode, ad )
 		*slash = '/';
 		admode = mode;
 		st_invalid = ad_mode_st(ad_p, &admode, &st);
+		if ((ad->ad_options & ADVOL_UNIXPRIV)) {
+	            admode = mode;
+	        }
 		admode = ad_hf_mode(admode); 
 	    }
 	    /* retry with O_CREAT */

@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.20.2.3 2005-02-12 11:22:05 didg Exp $
+ * $Id: adouble.h,v 1.21.6.20.2.4 2005-05-26 11:49:56 didg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -272,6 +272,8 @@ struct adouble {
 /* adouble v2 cnid cache */
 #define ADVOL_NODEV      (1 << 0)   
 #define ADVOL_CACHE      (1 << 1)
+/* adouble unix priv */
+#define ADVOL_UNIXPRIV   (1 << 2)   
 
 /* lock flags */
 #define ADLOCK_CLR      (0)
@@ -411,7 +413,8 @@ extern int ad_metadata    __P((const char *, int, struct adouble *));
 #define ad_metadata(name, flags, adp)  ad_open(name, ADFLAGS_HF|(flags), O_RDONLY, 0666, adp)
 #endif
 
-/* extend header to RW if R or W (W if R for locking),
+/* build a resource fork mode from the data fork mode:
+ * remove X mode and extend header to RW if R or W (W if R for locking),
  */ 
 #ifndef ATACC
 #ifndef __inline__
@@ -419,9 +422,7 @@ extern int ad_metadata    __P((const char *, int, struct adouble *));
 #endif
 static __inline__ mode_t ad_hf_mode (mode_t mode)
 {
-#if 0
-    mode |= S_IRUSR;
-#endif    
+    mode &= ~(S_IXUSR | S_IXGRP | S_IXOTH);
     /* fnctl lock need write access */
     if ((mode & S_IRUSR))
         mode |= S_IWUSR;
