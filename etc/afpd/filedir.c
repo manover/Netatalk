@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.45.2.2.2.14.2.2 2005-02-10 01:23:14 didg Exp $
+ * $Id: filedir.c,v 1.45.2.2.2.14.2.3 2005-06-02 12:49:41 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -748,7 +748,7 @@ int		ibuflen, *rbuflen;
 #endif /* DROPKLUDGE */
             /* if unix priv don't try to match perm with dest folder */
             if (!isdir && !vol_unix_priv(vol)) {
-                int  admode = ad_mode("", 0777);
+                int  admode = ad_mode("", 0777) | vol->v_perm;
 
                 setfilmode(upath, admode, NULL);
                 setfilmode(vol->ad_path( upath, ADFLAGS_HF ), ad_hf_mode(admode), NULL);
