@@ -1,5 +1,5 @@
 /*
- * $Id: fork.c,v 1.51.2.2.2.10.2.2 2004-12-07 03:23:49 didg Exp $
+ * $Id: fork.c,v 1.51.2.2.2.10.2.3 2005-07-20 21:17:57 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1154,6 +1154,8 @@ int		ibuflen, *rbuflen;
     struct timeval      tv;
     int			adflags, doflush = 0;
     u_int16_t		ofrefnum;
+    int			ret;
+    
 
     *rbuflen = 0;
     ibuf += 2;
@@ -1184,14 +1186,14 @@ int		ibuflen, *rbuflen;
             }
         }
     }
-
+    ret = AFP_OK;
     if ( ad_close( ofork->of_ad, adflags ) < 0 ) {
         LOG(log_error, logtype_afpd, "afp_closefork(%s): ad_close: %s", ofork->of_name, strerror(errno) );
-        return( AFPERR_PARAM );
+        ret = AFPERR_PARAM;
     }
 
     of_dealloc( ofork );
-    return( AFP_OK );
+    return ret;
 }
 
 
