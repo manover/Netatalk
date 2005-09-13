@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_index.c,v 1.1.2.4 2005-04-10 12:49:18 didg Exp $
+ * $Id: cnid_index.c,v 1.1.2.5 2005-09-13 16:57:44 didg Exp $
  *
  * All Rights Reserved.  See COPYING.
  */
@@ -274,7 +274,11 @@ static int dbif_count(const int dbi, u_int32_t *count)
     DB_BTREE_STAT *sp;
     DB *db = db_table[dbi].db;
 
+#if DB_VERSION_MAJOR > 4 || (DB_VERSION_MAJOR == 4 && DB_VERSION_MINOR >= 3)
+    ret = db->stat(db, db_txn, &sp, 0);
+#else
     ret = db->stat(db, &sp, 0);
+#endif
 
     if (ret) {
         LOG(log_error, logtype_cnid, "error getting stat infotmation on database: %s", db_strerror(errno));
