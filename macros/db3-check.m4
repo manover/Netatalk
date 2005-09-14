@@ -1,4 +1,4 @@
-dnl $Id: db3-check.m4,v 1.11.6.9 2004-08-11 03:01:11 bfernhomberg Exp $
+dnl $Id: db3-check.m4,v 1.11.6.9.2.1 2005-09-14 13:29:06 didg Exp $
 dnl Autoconf macros to check for the Berkeley DB library
 
 
@@ -119,6 +119,10 @@ NETATALK_BDB_LINK_TRY(atalk_cv_db_db_4_dot_2,[-ldb-4.2])
 NETATALK_BDB_LINK_TRY(atalk_cv_db_db42,[-ldb42])
 NETATALK_BDB_LINK_TRY(atalk_cv_db_db_42,[-ldb-42])
 NETATALK_BDB_LINK_TRY(atalk_cv_db_db_4_2,[-ldb-4-2])
+NETATALK_BDB_LINK_TRY(atalk_cv_db_db_4_dot_2,[-ldb-4.3])
+NETATALK_BDB_LINK_TRY(atalk_cv_db_db42,[-ldb43])
+NETATALK_BDB_LINK_TRY(atalk_cv_db_db_42,[-ldb-43])
+NETATALK_BDB_LINK_TRY(atalk_cv_db_db_4_2,[-ldb-4-3])
 NETATALK_BDB_LINK_TRY(atalk_cv_db_db_4_dot_1,[-ldb-4.1])
 NETATALK_BDB_LINK_TRY(atalk_cv_db_db41,[-ldb41])
 NETATALK_BDB_LINK_TRY(atalk_cv_db_db_41,[-ldb-41])
@@ -134,7 +138,7 @@ AC_DEFUN([AC_PATH_BDB],
 	trybdbdir=""
 	dobdbsearch=yes
 	bdb_search_dirs="/usr/local/include /usr/include"
-	search_subdirs="/db4.2 /db42 /db4.1 /db41 /db4 /"
+	search_subdirs="/db4.2 /db42 /db4.3 /db43 /db4.1 /db41 /db4 /"
 
 dnl required BDB version
 	DB_MAJOR_REQ=4
