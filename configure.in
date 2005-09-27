@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.179.2.3.2.37.2.4 2005-04-13 10:21:09 bfernhomberg Exp $
+dnl $Id: configure.in,v 1.179.2.3.2.37.2.5 2005-09-27 10:40:40 didg Exp $
 dnl configure.in for netatalk
 
 AC_INIT(etc/afpd/main.c)
@@ -553,6 +553,16 @@ AC_ARG_WITH(uams-path,
 )
 
 NETATALK_AC_CUPS
+
+dnl check if we can use attribute unused (gcc only) from ethereal
+AC_MSG_CHECKING(to see if we can add '__attribute__((unused))' to CFLAGS)
+if test x$GCC != x ; then
+  CFLAGS="-D_U_=\"__attribute__((unused))\" $CFLAGS"
+  AC_MSG_RESULT(yes)
+else
+  CFLAGS="-D_U_=\"\" $CFLAGS"
+  AC_MSG_RESULT(no)
+fi
 
 dnl --------------------------------------------------------------------------
 dnl FHS stuff has to be done last because it overrides other defaults

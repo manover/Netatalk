@@ -1,5 +1,5 @@
 /*
- * $Id: fork.c,v 1.51.2.2.2.10.2.3 2005-07-20 21:17:57 didg Exp $
+ * $Id: fork.c,v 1.51.2.2.2.10.2.4 2005-09-27 10:40:41 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -259,9 +259,9 @@ static int fork_setmode(struct adouble *adp, int eid, int access, int ofrefnum)
 
 /* ----------------------- */
 int afp_openfork(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
+AFPObj  *obj _U_;
 char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+int	ibuflen _U_, *rbuflen;
 {
     struct vol		*vol;
     struct dir		*dir;
@@ -536,9 +536,9 @@ openfork_err:
 }
 
 int afp_setforkparams(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
-char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+AFPObj  *obj _U_;
+char	*ibuf, *rbuf _U_;
+int	ibuflen, *rbuflen;
 {
     struct ofork	*ofork;
     off_t		size;
@@ -676,9 +676,9 @@ afp_setfork_err:
 
 /* ---------------------- */
 static int byte_lock(obj, ibuf, ibuflen, rbuf, rbuflen, is64 )
-AFPObj  *obj;
+AFPObj  *obj _U_;
 char	*ibuf, *rbuf;
-int	ibuflen, *rbuflen;
+int	ibuflen _U_, *rbuflen;
 int     is64;
 {
     struct ofork	*ofork;
@@ -867,10 +867,10 @@ static __inline__ ssize_t read_file(struct ofork *ofork, int eid,
  * with dsi, should we check that reqcount < server quantum? 
 */
 static int read_fork(obj, ibuf, ibuflen, rbuf, rbuflen, is64)
-AFPObj      *obj;
+AFPObj  *obj;
 char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
-int is64;
+int	ibuflen _U_, *rbuflen;
+int     is64;
 {
     struct ofork	*ofork;
     off_t		offset, saveoff, reqcount, savereqcount;
@@ -1059,9 +1059,9 @@ int	ibuflen, *rbuflen;
 
 /* ---------------------- */
 int afp_flush(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
-char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+AFPObj  *obj _U_;
+char	*ibuf, *rbuf _U_;
+int	ibuflen _U_, *rbuflen;
 {
     struct vol *vol;
     u_int16_t vid;
@@ -1079,9 +1079,9 @@ int		ibuflen, *rbuflen;
 }
 
 int afp_flushfork(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
-char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+AFPObj  *obj _U_;
+char	*ibuf, *rbuf _U_;
+int	ibuflen _U_, *rbuflen;
 {
     struct ofork	*ofork;
     u_int16_t		ofrefnum;
@@ -1146,9 +1146,9 @@ struct ofork	*ofork;
 }
 
 int afp_closefork(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
-char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+AFPObj      *obj _U_;
+char	*ibuf, *rbuf _U_;
+int		ibuflen _U_, *rbuflen;
 {
     struct ofork	*ofork;
     struct timeval      tv;
@@ -1240,7 +1240,7 @@ static __inline__ ssize_t write_file(struct ofork *ofork, int eid,
 static int write_fork(obj, ibuf, ibuflen, rbuf, rbuflen, is64)
 AFPObj              *obj;
 char                *ibuf, *rbuf;
-int                 ibuflen, *rbuflen;
+int                 ibuflen _U_, *rbuflen;
 int                 is64;
 {
     struct ofork	*ofork;
@@ -1441,9 +1441,9 @@ int                 ibuflen, *rbuflen;
 
 /* ---------------------------- */
 int afp_getforkparams(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
+AFPObj  *obj _U_;
 char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+int	ibuflen _U_, *rbuflen;
 {
     struct ofork	*ofork;
     int			buflen, ret;

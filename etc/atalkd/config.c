@@ -1,5 +1,5 @@
 /*
- * $Id: config.c,v 1.13.6.5.2.3 2005-02-06 10:16:02 didg Exp $
+ * $Id: config.c,v 1.13.6.5.2.4 2005-09-27 10:40:41 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved. See COPYRIGHT.
@@ -476,7 +476,7 @@ read_conf_err:
 
 int noallmulti( iface, av )
     struct interface	*iface;
-    char		**av;
+    char		**av _U_;
 {
     /* Linux specific, no effect on other platforms */
     iface->i_flags &= !IFACE_ALLMULTI;
@@ -487,7 +487,7 @@ int noallmulti( iface, av )
 /*ARGSUSED*/
 int router( iface, av )
     struct interface	*iface;
-    char		**av;
+    char		**av _U_;
 {
     /* make sure "-router" and "-dontroute" aren't both on the same line. */
     if (iface->i_flags & IFACE_DONTROUTE) {
@@ -511,7 +511,7 @@ int router( iface, av )
 /*ARGSUSED*/
 int dontroute( iface, av )
     struct interface	*iface;
-    char		**av;
+    char		**av _U_;
 {
     /* make sure "-router" and "-dontroute" aren't both on the same line. */
     if (iface->i_flags & IFACE_RSEED) {
@@ -526,7 +526,7 @@ int dontroute( iface, av )
 /*ARGSUSED*/
 int seed( iface, av )
     struct interface	*iface;
-    char		**av;
+    char		**av _U_;
 {
     /*
      * Check to be sure "-seed" is before "-zone". we keep the old

@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.18.2.2 2005-02-10 01:23:10 didg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.18.2.3 2005-09-27 10:40:41 didg Exp $
  *
  * See COPYRIGHT.
  *
@@ -41,9 +41,9 @@
 
 
 int afp_opendt(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
+AFPObj  *obj _U_;
 char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+int	ibuflen _U_, *rbuflen;
 {
     struct vol	*vol;
     u_int16_t	vid;
@@ -62,9 +62,9 @@ int		ibuflen, *rbuflen;
 }
 
 int afp_closedt(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
-char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+AFPObj  *obj _U_;
+char	*ibuf _U_, *rbuf _U_;
+int	ibuflen _U_, *rbuflen;
 {
     *rbuflen = 0;
     return( AFP_OK );
@@ -127,9 +127,9 @@ int mode;
 }
 
 int afp_addicon(obj, ibuf, ibuflen, rbuf, rbuflen)
-AFPObj      *obj;
+AFPObj  *obj;
 char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+int	ibuflen _U_, *rbuflen;
 {
     struct vol		*vol;
 #ifndef NO_DDP
@@ -311,11 +311,11 @@ addicon_err:
     return( AFP_OK );
 }
 
-static u_char	utag[] = { 0, 0, 0, 0 };
-static u_char	ucreator[] = { 0, 0, 0, 0 };/* { 'U', 'N', 'I', 'X' };*/
-static u_char	utype[] = { 0, 0, 0, 0 };/* { 'T', 'E', 'X', 'T' };*/
-static short	usize = 256;
-static u_char	uicon[] = {
+static const u_char	utag[] = { 0, 0, 0, 0 };
+static const u_char	ucreator[] = { 0, 0, 0, 0 };/* { 'U', 'N', 'I', 'X' };*/
+static const u_char	utype[] = { 0, 0, 0, 0 };/* { 'T', 'E', 'X', 'T' };*/
+static const short	usize = 256;
+static const u_char	uicon[] = {
     0x1F, 0xFF, 0xFC, 0x00, 0x10, 0x00, 0x06, 0x00,
     0x10, 0x00, 0x05, 0x00, 0x10, 0x00, 0x04, 0x80,
     0x10, 0x00, 0x04, 0x40, 0x10, 0x00, 0x04, 0x20,
@@ -351,9 +351,9 @@ static u_char	uicon[] = {
 };
 
 int afp_geticoninfo(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
+AFPObj  *obj _U_;
 char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+int	ibuflen _U_, *rbuflen;
 {
     struct vol	*vol;
     u_char	fcreator[ 4 ], ih[ 12 ];
@@ -425,9 +425,9 @@ int		ibuflen, *rbuflen;
 
 
 int afp_geticon(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
+AFPObj  *obj;
 char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+int	ibuflen _U_, *rbuflen;
 {
     struct vol	*vol;
     off_t       offset;
@@ -574,7 +574,7 @@ geticon_exit:
 }
 
 /* ---------------------- */
-static char		hexdig[] = "0123456789abcdef";
+static const char		hexdig[] = "0123456789abcdef";
 char *dtfile(const struct vol *vol, u_char creator[], char *ext )
 {
     static char	path[ MAXPATHLEN + 1];
@@ -757,9 +757,9 @@ static int ad_addcomment(struct vol *vol, struct path *path, char *ibuf)
 
 /* ----------------------------- */
 int afp_addcomment(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
-char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+AFPObj      *obj _U_;
+char	*ibuf, *rbuf _U_;
+int		ibuflen _U_, *rbuflen;
 {
     struct vol		*vol;
     struct dir		*dir;
@@ -837,9 +837,9 @@ static int ad_getcomment(struct vol *vol, struct path *path, char *rbuf, int *rb
 
 /* -------------------- */
 int afp_getcomment(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
+AFPObj      *obj _U_;
 char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+int		ibuflen _U_, *rbuflen;
 {
     struct vol		*vol;
     struct dir		*dir;
@@ -912,9 +912,9 @@ static int ad_rmvcomment(struct vol *vol, struct path *path)
 
 /* ----------------------- */
 int afp_rmvcomment(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
-char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+AFPObj      *obj _U_;
+char	*ibuf, *rbuf _U_;
+int		ibuflen _U_, *rbuflen;
 {
     struct vol		*vol;
     struct dir		*dir;

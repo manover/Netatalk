@@ -1,5 +1,5 @@
 /*
- * $Id: afp_asp.c,v 1.18.6.6 2004-05-04 15:38:23 didg Exp $
+ * $Id: afp_asp.c,v 1.18.6.6.2.1 2005-09-27 10:40:40 didg Exp $
  *
  * Copyright (c) 1997 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -196,7 +196,7 @@ static void afp_asp_reload()
 
 /* ---------------------- */
 #ifdef SERVERTEXT
-static void afp_asp_getmesg (int sig)
+static void afp_asp_getmesg (int sig _U_)
 {
     readmessage(child);
     asp_attention(child->handle, AFPATTN_MESG | AFPATTN_TIME(5));

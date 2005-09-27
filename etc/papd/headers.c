@@ -1,5 +1,5 @@
 /*
- * $Id: headers.c,v 1.9.10.1.2.1 2005-02-06 10:16:02 didg Exp $
+ * $Id: headers.c,v 1.9.10.1.2.2 2005-09-27 10:40:41 didg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -25,7 +25,7 @@ int ch_for( struct papfile *, struct papfile * );
 
 
 int ch_for( in, out )
-	struct papfile	*in, *out;
+	struct papfile	*in, *out _U_;
 {
     char                *start, *stop, *p, *q, c;
     int                 linelength, crlflength;
@@ -74,7 +74,7 @@ int ch_for( in, out )
 }
 
 int ch_title( in, out )
-    struct papfile	*in, *out;
+    struct papfile	*in, *out _U_;
 {
     char		*start, *stop, *p, *q, c;
     int			linelength, crlflength;
@@ -138,7 +138,7 @@ static int guess_creator ( char *creator )
 
 
 int ch_creator( in, out )
-    struct papfile	*in, *out;
+    struct papfile	*in, *out _U_;
 {
     char		*start, *stop, *p, *q, c;
     int			linelength, crlflength;
@@ -188,7 +188,7 @@ int ch_creator( in, out )
 }
 
 int ch_endcomm( in, out )
-    struct papfile	*in, *out;
+    struct papfile	*in, *out _U_;
 {
     char                *start;
     int                 linelength, crlflength;
@@ -215,7 +215,7 @@ int ch_endcomm( in, out )
 }
 
 int ch_starttranslate(in,out)
-    struct papfile      *in, *out;
+    struct papfile      *in, *out _U_;
 {
     char                *start;
     int                 linelength, crlflength;
@@ -240,7 +240,7 @@ int ch_starttranslate(in,out)
 }
 
 int ch_endtranslate(in,out)
-    struct papfile      *in, *out;
+    struct papfile      *in, *out _U_;
 {
     char                *start;
     int                 linelength, crlflength;
@@ -265,7 +265,7 @@ int ch_endtranslate(in,out)
 }
 
 int ch_translateone(in,out)
-    struct papfile      *in, *out;
+    struct papfile      *in, *out _U_;
 {
     char                *start;
     int                 linelength, crlflength;

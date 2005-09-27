@@ -1,5 +1,5 @@
 /*
- * $Id: uams_dhx_pam.c,v 1.24.6.5 2004-06-24 01:20:12 bfernhomberg Exp $
+ * $Id: uams_dhx_pam.c,v 1.24.6.5.2.1 2005-09-27 10:40:41 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -83,7 +83,7 @@ static char *PAM_password;
 static int PAM_conv (int num_msg,
                      const struct pam_message **msg,
                      struct pam_response **resp,
-                     void *appdata_ptr) {
+                     void *appdata_ptr _U_) {
   int count = 0;
   struct pam_response *reply;
   
@@ -185,7 +185,7 @@ static struct pam_conv PAM_conversation = {
 };
 
 
-static int dhx_setup(void *obj, char *ibuf, int ibuflen, 
+static int dhx_setup(void *obj, char *ibuf, int ibuflen _U_, 
 		     char *rbuf, int *rbuflen)
 {
     u_int16_t sessid;
@@ -316,7 +316,7 @@ pam_fail:
 }
 
 /* -------------------------------- */
-static int login(void *obj, char *username, int ulen,  struct passwd **uam_pwd,
+static int login(void *obj, char *username, int ulen,  struct passwd **uam_pwd _U_,
 		     char *ibuf, int ibuflen,
 		     char *rbuf, int *rbuflen)
 {
@@ -404,7 +404,7 @@ static int pam_login_ext(void *obj, char *uname, struct passwd **uam_pwd,
 /* -------------------------------- */
 
 static int pam_logincont(void *obj, struct passwd **uam_pwd,
-			 char *ibuf, int ibuflen, 
+			 char *ibuf, int ibuflen _U_, 
 			 char *rbuf, int *rbuflen)
 {
     char *hostname;
@@ -561,7 +561,7 @@ static void pam_logout() {
 /* change pw for dhx needs a couple passes to get everything all
  * right. basically, it's like the login/logincont sequence */
 static int pam_changepw(void *obj, char *username,
-			struct passwd *pwd, char *ibuf, int ibuflen,
+			struct passwd *pwd _U_, char *ibuf, int ibuflen,
 			char *rbuf, int *rbuflen)
 {
     BIGNUM *bn1, *bn2, *bn3;

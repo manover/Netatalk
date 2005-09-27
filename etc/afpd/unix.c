@@ -1,5 +1,5 @@
 /*
- * $Id: unix.c,v 1.43.2.1.2.10.2.2 2005-06-02 12:49:41 didg Exp $
+ * $Id: unix.c,v 1.43.2.1.2.10.2.3 2005-09-27 10:40:41 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -170,11 +170,13 @@ mode_t mode;
  * Note: the previous method, using access(), does not work correctly
  * over NFS.
  * FIXME what about ACL?
+ *
+ * dir parameter is used by AFS
  */
 void accessmode( path, ma, dir, st )
 char		*path;
 struct maccess	*ma;
-struct dir	*dir;
+struct dir	*dir _U_;
 struct stat     *st;
 
 {

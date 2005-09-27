@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.31.2.14 2005-05-26 11:49:55 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.31.2.15 2005-09-27 10:40:41 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -584,9 +584,9 @@ int getfilparams(struct vol *vol,
 
 /* ----------------------------- */
 int afp_createfile(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
-char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+AFPObj  *obj;
+char	*ibuf, *rbuf _U_;
+int	ibuflen _U_, *rbuflen;
 {
     struct adouble	ad, *adp;
     struct vol		*vol;
@@ -710,9 +710,9 @@ createfile_done:
 }
 
 int afp_setfilparams(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
-char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+AFPObj  *obj;
+char	*ibuf, *rbuf _U_;
+int	ibuflen _U_, *rbuflen;
 {
     struct vol	*vol;
     struct dir	*dir;
@@ -1199,9 +1199,9 @@ u_int32_t   hint;
 /* -----------------------------------
 */
 int afp_copyfile(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
-char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+AFPObj  *obj;
+char	*ibuf, *rbuf _U_;
+int	ibuflen _U_, *rbuflen;
 {
     struct vol	*s_vol, *d_vol;
     struct dir	*dir;
@@ -1647,9 +1647,9 @@ int         checkAttrib;
 /* ------------------------------------ */
 /* return a file id */
 int afp_createid(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
+AFPObj  *obj _U_;
 char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+int	ibuflen _U_, *rbuflen;
 {
     struct stat         *st;
     struct vol		*vol;
@@ -1785,9 +1785,9 @@ reenumerate_id(const struct vol *vol, char *name, cnid_t did)
 /* ------------------------------
    resolve a file id */
 int afp_resolveid(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
+AFPObj      *obj _U_;
 char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+int		ibuflen _U_, *rbuflen;
 {
     struct vol		*vol;
     struct dir		*dir;
@@ -1897,9 +1897,9 @@ retry:
 
 /* ------------------------------ */
 int afp_deleteid(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
-char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+AFPObj  *obj _U_;
+char	*ibuf, *rbuf _U_;
+int	ibuflen _U_, *rbuflen;
 {
     struct stat         st;
     struct vol		*vol;
@@ -2033,9 +2033,9 @@ static struct adouble *find_adouble(struct path *path, struct ofork **of, struct
 #define APPLETEMP ".AppleTempXXXXXX"
 
 int afp_exchangefiles(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
-char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+AFPObj  *obj;
+char	*ibuf, *rbuf _U_ ;
+int	ibuflen _U_, *rbuflen;
 {
     struct stat         srcst, destst;
     struct vol		*vol;

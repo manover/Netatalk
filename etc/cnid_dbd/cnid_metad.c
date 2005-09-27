@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_metad.c,v 1.1.4.15 2004-09-06 07:19:21 didg Exp $
+ * $Id: cnid_metad.c,v 1.1.4.15.2.1 2005-09-27 10:40:41 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -114,7 +114,7 @@ struct server {
 
 static struct server srv[MAXSRV +1];
 
-static struct server *test_usockfn(char *dir, char *fn)
+static struct server *test_usockfn(char *dir, char *fn _U_)
 {
 int i;
     for (i = 1; i <= MAXSRV; i++) {

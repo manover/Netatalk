@@ -1,5 +1,5 @@
 /*
- * $Id: dbif.c,v 1.1.4.15.2.2 2005-09-13 16:57:45 didg Exp $
+ * $Id: dbif.c,v 1.1.4.15.2.3 2005-09-27 10:40:41 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -233,7 +233,7 @@ int dbif_env_init(struct db_param *dbp)
 }
 
 /* --------------- */
-int dbif_open(struct db_param *dbp, int do_truncate)
+int dbif_open(struct db_param *dbp _U_, int do_truncate)
 {
     int ret;
     int i;

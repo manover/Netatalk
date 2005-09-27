@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.33.2.8 2005-07-20 21:09:22 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.33.2.9 2005-09-27 10:40:41 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -244,7 +244,7 @@ static char *volxlate(AFPObj *obj, char *dest, size_t destlen,
         return ret;
 
     /* first part of the path. just forward to the next variable. */
-    len = MIN(p - src, destlen);
+    len = MIN((size_t)(p - src), destlen);
     if (len > 0) {
         destlen -= len;
         dest += len;
@@ -340,7 +340,7 @@ static char *volxlate(AFPObj *obj, char *dest, size_t destlen,
         /* stuff up to next $ */
         src = p + 2;
         p = strchr(src, '$');
-        len = p ? MIN(p - src, destlen) : destlen;
+        len = p ? MIN((size_t)(p - src), destlen) : destlen;
         if (len > 0) {
             strncpy(dest, src, len);
             dest += len;
@@ -539,7 +539,7 @@ static int validupath_adouble(const struct vol *vol, const char *name)
 }                                           
 
 /* ----------------- */
-static int validupath_osx(const struct vol *vol, const char *name) 
+static int validupath_osx(const struct vol *vol _U_, const char *name) 
 {
     return strncasecmp(name,".Apple", 6) && strncasecmp(name,"._", 2);
 }             
@@ -1508,8 +1508,8 @@ void load_volumes(AFPObj *obj)
 /* ------------------------------- */
 int afp_getsrvrparms(obj, ibuf, ibuflen, rbuf, rbuflen )
 AFPObj      *obj;
-char	*ibuf, *rbuf;
-int 	ibuflen, *rbuflen;
+char	*ibuf _U_, *rbuf;
+int 	ibuflen _U_, *rbuflen;
 {
     struct timeval	tv;
     struct stat		st;
@@ -1585,7 +1585,7 @@ int 	ibuflen, *rbuflen;
 int afp_openvol(obj, ibuf, ibuflen, rbuf, rbuflen )
 AFPObj      *obj;
 char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+int		ibuflen _U_, *rbuflen;
 {
     struct stat	st;
     char	*volname;
@@ -1856,9 +1856,9 @@ void close_all_vol(void)
 
 /* ------------------------- */
 int afp_closevol(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
-char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+AFPObj      *obj _U_;
+char	*ibuf, *rbuf _U_;
+int		ibuflen _U_, *rbuflen;
 {
     struct vol	*vol, *ovol;
     u_int16_t	vid;
@@ -2011,9 +2011,9 @@ struct vol	*vol;
 
 /* ------------------------- */
 int afp_getvolparams(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
+AFPObj      *obj _U_;
 char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+int		ibuflen _U_, *rbuflen;
 {
     struct vol	*vol;
     u_int16_t	vid, bitmap;
@@ -2034,9 +2034,9 @@ int		ibuflen, *rbuflen;
 
 /* ------------------------- */
 int afp_setvolparams(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
-char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+AFPObj      *obj _U_;
+char	*ibuf, *rbuf _U_;
+int		ibuflen _U_, *rbuflen;
 {
     struct adouble ad;
     struct vol	*vol;

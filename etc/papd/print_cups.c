@@ -1,5 +1,5 @@
 /*
- * $Id: print_cups.c,v 1.1.2.1.2.1 2005-01-11 23:00:40 didg Exp $
+ * $Id: print_cups.c,v 1.1.2.1.2.2 2005-09-27 10:40:41 didg Exp $
  *
  * Copyright 2004 Bjoern Fernhomberg.
  *
@@ -79,7 +79,7 @@ char * cups_get_language ()
  */
 
 static const char *                            /* O - Password or NULL */
-cups_passwd_cb(const char *prompt)      /* I - Prompt */
+cups_passwd_cb(const char *prompt _U_)      /* I - Prompt */
 {
  /*
   * Always return NULL to indicate that no password is available...

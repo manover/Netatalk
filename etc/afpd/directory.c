@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.15.2.7 2005-09-23 19:03:27 didg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.15.2.8 2005-09-27 10:40:41 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1116,7 +1116,7 @@ char	**cpath;
                     static char	temp[ MAXPATHLEN + 1];
 
                     /* not an UTF8 name */
-                    if (mtoUTF8(vol, path, strlen(path), temp, MAXPATHLEN) == -1) {
+                    if (mtoUTF8(vol, path, strlen(path), temp, MAXPATHLEN) == (size_t)-1) {
                         afp_errno = AFPERR_PARAM;
                         return( NULL );
                     }
@@ -1542,9 +1542,9 @@ int path_error(struct path *path, int error)
 
 /* ----------------------------- */
 int afp_setdirparams(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
-char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+AFPObj  *obj;
+char	*ibuf, *rbuf _U_;
+int	ibuflen _U_, *rbuflen;
 {
     struct vol	*vol;
     struct dir	*dir;
@@ -1639,7 +1639,7 @@ int setdirparams(const struct vol *vol,
 
     char                *upath;
     struct dir          *dir;
-    int			bit, aint, isad = 1;
+    int			bit, isad = 1;
     int                 cdate, bdate;
     int                 owner, group;
     u_int16_t		ashort, bshort;
@@ -1959,9 +1959,9 @@ setdirparam_done:
 }
 
 int afp_createdir(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
+AFPObj  *obj;
 char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+int	ibuflen _U_, *rbuflen;
 {
     struct adouble	ad;
     struct vol		*vol;
@@ -2253,9 +2253,9 @@ delete_done:
 }
 
 int afp_mapid(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
+AFPObj  *obj;
 char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+int	ibuflen _U_, *rbuflen;
 {
     struct passwd	*pw;
     struct group	*gr;
@@ -2326,9 +2326,9 @@ int		ibuflen, *rbuflen;
 }
 
 int afp_mapname(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
+AFPObj  *obj _U_;
 char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+int	ibuflen _U_, *rbuflen;
 {
     struct passwd	*pw;
     struct group	*gr;
@@ -2390,9 +2390,9 @@ int		ibuflen, *rbuflen;
   variable DID support 
 */
 int afp_closedir(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
-char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+AFPObj  *obj _U_;
+char	*ibuf _U_, *rbuf _U_;
+int	ibuflen _U_, *rbuflen;
 {
 #if 0
     struct vol   *vol;
@@ -2429,9 +2429,9 @@ int		ibuflen, *rbuflen;
  * there's a pb again with case but move it to cname
 */
 int afp_opendir(obj, ibuf, ibuflen, rbuf, rbuflen )
-AFPObj      *obj;
+AFPObj  *obj _U_;
 char	*ibuf, *rbuf;
-int		ibuflen, *rbuflen;
+int	ibuflen  _U_, *rbuflen;
 {
     struct vol		*vol;
     struct dir		*parentdir;

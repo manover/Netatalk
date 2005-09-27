@@ -242,7 +242,7 @@ static int check_dirent(char** name, cnid_t cur_did)
 	return ret;
 }
 
-static int check_adouble(DIR *curdir, char * path)
+static int check_adouble(DIR *curdir, char * path _U_)
 {
 	DIR *adouble;
 	struct dirent* entry;

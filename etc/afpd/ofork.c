@@ -1,5 +1,5 @@
 /*
- * $Id: ofork.c,v 1.20.6.6.2.3 2005-07-21 17:00:09 didg Exp $
+ * $Id: ofork.c,v 1.20.6.6.2.4 2005-09-27 10:40:41 didg Exp $
  *
  * Copyright (c) 1996 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -106,7 +106,7 @@ int of_rename(vol, s_of, olddir, oldpath, newdir, newpath)
 const struct vol *vol;
 struct ofork *s_of;
 struct dir *olddir, *newdir;
-const char *oldpath, *newpath;
+const char *oldpath _U_, *newpath;
 {
     struct ofork *of, *next, *d_ofork;
 

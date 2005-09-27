@@ -663,7 +663,7 @@ catsearch_end: /* Exiting catsearch: error condition */
 } /* catsearch() */
 
 /* -------------------------- */
-int catsearch_afp(AFPObj *obj, char *ibuf, int ibuflen,
+int catsearch_afp(AFPObj *obj _U_, char *ibuf, int ibuflen,
                   char *rbuf, int *rbuflen, int ext)
 {
     struct vol *vol;

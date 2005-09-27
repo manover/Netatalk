@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_index.c,v 1.1.2.5 2005-09-13 16:57:44 didg Exp $
+ * $Id: cnid_index.c,v 1.1.2.6 2005-09-27 10:40:40 didg Exp $
  *
  * All Rights Reserved.  See COPYING.
  */
@@ -73,8 +73,8 @@ static char *old_dbfiles[] = {"cnid.db", NULL};
 
 /* --------------- */
 int didname(dbp, pkey, pdata, skey)
-DB *dbp;
-const DBT *pkey, *pdata;
+DB *dbp _U_;
+const DBT *pkey _U_, *pdata;
 DBT *skey;
 {
 int len;
@@ -91,8 +91,8 @@ int len;
  
 /* --------------- */
 int devino(dbp, pkey, pdata, skey)
-DB *dbp;
-const DBT *pkey, *pdata;
+DB *dbp _U_;
+const DBT *pkey _U_, *pdata;
 DBT *skey;
 {
     memset(skey, 0, sizeof(DBT));

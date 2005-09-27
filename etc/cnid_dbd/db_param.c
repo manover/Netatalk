@@ -1,5 +1,5 @@
 /*
- * $Id: db_param.c,v 1.1.4.4.2.1 2004-12-21 13:36:12 didg Exp $
+ * $Id: db_param.c,v 1.1.4.4.2.2 2005-09-27 10:40:41 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -43,14 +43,14 @@
 static struct db_param params;
 static int parse_err;
 
-static int usock_maxlen()
+static size_t usock_maxlen()
 {
     struct sockaddr_un addr;
 
     return sizeof(addr.sun_path) - 1;
 }
 
-static int make_pathname(char *path, char *dir, char *fn, int maxlen)
+static int make_pathname(char *path, char *dir, char *fn, size_t maxlen)
 {
     size_t len;
 
