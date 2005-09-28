@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.33.2.9 2005-09-27 10:40:41 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.33.2.10 2005-09-28 09:53:47 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1407,7 +1407,8 @@ int		*buflen;
     if ( nameoff ) {
         ashort = htons( data - buf );
         memcpy(nameoff, &ashort, sizeof( ashort ));
-	aint = ucs2_to_charset( (utf8_encoding()?CH_UTF8_MAC:vol->v_maccharset), vol->v_name, data+1, 255);
+        /* name is always in mac charset, FIXME mangle if length > 27 char */
+	aint = ucs2_to_charset( vol->v_maccharset, vol->v_name, data+1, 255);
 	if ( aint <= 0 ) {
 	    *buflen = 0;
             return AFPERR_MISC;
