@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.18.2.3 2005-09-27 10:40:41 didg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.18.2.4 2006-03-14 06:14:51 didg Exp $
  *
  * See COPYRIGHT.
  *
@@ -815,6 +815,7 @@ static int ad_getcomment(struct vol *vol, struct path *path, char *rbuf, int *rb
     }
 
     if (!ad_getentryoff(adp, ADEID_COMMENT)) {
+        ad_close( adp, ADFLAGS_HF );
         return AFPERR_NOITEM;
     }
     /*
