@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.33.2.10 2005-09-28 09:53:47 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.33.2.11 2006-09-07 00:05:46 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -171,6 +171,7 @@ static const _vol_opt_name vol_opt_names[] = {
                                          * maybe because it will be mounted later in preexec */
     {AFPVOL_UNIX_PRIV,  "UNIXPRIV"},    /* support unix privileges */
     {AFPVOL_NODEV,      "NODEV"},       /* always use 0 for device number in cnid calls */
+    {AFPVOL_CACHE,      "CACHEID"},     /* Use adouble v2 CNID caching, default don't use it */
     {0, NULL}
 };
 
