@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.31.2.15 2005-09-27 10:40:41 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.31.2.16 2006-09-11 05:53:10 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1474,8 +1474,10 @@ struct adouble *adp;
     ad_close( adp, adflags );
 
     if (ad_close( &add, adflags ) <0) {
+        if (!ret_err) {
+            ret_err = errno;
+        }
         deletefile(d_vol, dst, 0);
-        ret_err = errno;
         goto done;
     } 
 
