@@ -1,5 +1,5 @@
 /*
- * $Id: status.c,v 1.13.6.11.2.2 2005-09-27 10:40:41 didg Exp $
+ * $Id: status.c,v 1.13.6.11.2.3 2006-09-18 00:23:58 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -85,7 +85,7 @@ static int status_server(char *data, const char *server, const struct afp_option
     nbp_name(server, &Obj, &Type, &Zone);
     if ((size_t)-1 == (len = convert_string( 
 			options->unixcharset, options->maccharset, 
-			Obj, strlen(Obj), buf, 31)) ) {
+			Obj, strlen(Obj), buf, sizeof(buf))) ) {
 	len = MIN(strlen(Obj), 31);
     	*data++ = len;
     	memcpy( data, Obj, len );

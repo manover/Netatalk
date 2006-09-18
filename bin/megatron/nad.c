@@ -1,5 +1,5 @@
 /*
- * $Id: nad.c,v 1.11.8.2.2.1 2005-02-10 01:23:08 didg Exp $
+ * $Id: nad.c,v 1.11.8.2.2.2 2006-09-18 00:23:58 didg Exp $
  */
 
 #ifdef HAVE_CONFIG_H
@@ -337,7 +337,6 @@ static char *utompathiconv(char *upath)
         goto utompath_error;
     }
 
-    mpath[outlen] = 0;
     if (flags & CONV_REQMANGLE) 
 	goto utompath_error;
 
@@ -382,7 +381,6 @@ char *mtoupathiconv(char *mpath)
         fprintf (stderr, "conversion from %s to %s for %s failed.", vol.v_maccodepage, vol.v_volcodepage, mpath);
         return(mtoupathcap( upath ));
     }
-    upath[outlen] = 0;
 
     return( upath );
 }
