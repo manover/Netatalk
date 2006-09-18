@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.18.2.5 2006-09-15 00:35:03 didg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.18.2.6 2006-09-18 09:16:07 didg Exp $
  *
  * See COPYRIGHT.
  *
@@ -805,7 +805,7 @@ static int ad_getcomment(struct vol *vol, struct path *path, char *rbuf, int *rb
     struct ofork        *of;
     char		*upath;
     int                 isadir;
-
+    int			clen;
 
     upath = path->u_name;
     isadir = path_isadir(path);
@@ -832,10 +832,10 @@ static int ad_getcomment(struct vol *vol, struct path *path, char *rbuf, int *rb
         return( AFPERR_NOITEM );
     }
 
-    *rbuf++ = ad_getentrylen( adp, ADEID_COMMENT );
-    memcpy( rbuf, ad_entry( adp, ADEID_COMMENT ),
-            ad_getentrylen( adp, ADEID_COMMENT ));
-    *rbuflen = ad_getentrylen( adp, ADEID_COMMENT ) + 1;
+    clen = min( ad_getentrylen( adp, ADEID_COMMENT ), 128 ); /* OSX only use 128, greater kill Adobe CS2 */
+    *rbuf++ = clen;
+    memcpy( rbuf, ad_entry( adp, ADEID_COMMENT ), clen);
+    *rbuflen = clen + 1;
     ad_close( adp, ADFLAGS_HF );
 
     return( AFP_OK );
