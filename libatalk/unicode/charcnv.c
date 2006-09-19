@@ -1008,19 +1008,23 @@ escape_slash:
     return destlen -o_len;
 }
 
+/*
+ * FIXME the size is a mess we really need a malloc/free logic
+ *`dest size must be dest_len +2
+*/
 size_t convert_charset ( charset_t from_set, charset_t to_set, charset_t cap_charset, char* src, size_t src_len, char* dest, size_t dest_len, u_int16_t *flags)
 {
 	size_t i_len, o_len;
 	ucs2_t *u;
-	ucs2_t buffer[MAXPATHLEN];
-	ucs2_t buffer2[MAXPATHLEN];
+	ucs2_t buffer[MAXPATHLEN +2];
+	ucs2_t buffer2[MAXPATHLEN +2];
  	int composition = 0;
 	
 	lazy_initialize_conv();
 
 	/* convert from_set to UCS2 */
  	if ((size_t)(-1) == ( o_len = pull_charset_flags( from_set, cap_charset, src, src_len, 
-                                                          (char *) buffer, sizeof(buffer), flags)) ) {
+                                                          (char *) buffer, sizeof(buffer) -2, flags)) ) {
 		LOG(log_error, logtype_default, "Conversion failed ( %s to CH_UCS2 )", charset_name(from_set));
 		return (size_t) -1;
 	}
@@ -1036,7 +1040,7 @@ size_t convert_charset ( charset_t from_set, charset_t to_set, charset_t cap_cha
  	if (CHECK_FLAGS(flags, CONV_DECOMPOSE) || (charsets[to_set] && charsets[to_set]->flags & CHARSET_DECOMPOSED) )
  	    composition = 2;
  
-	i_len = sizeof(buffer2);
+	i_len = sizeof(buffer2) -2;
 	u = buffer2;
 
 	switch (composition) {
@@ -1053,6 +1057,9 @@ size_t convert_charset ( charset_t from_set, charset_t to_set, charset_t cap_cha
  	        return (size_t)(-1);
 	    break;
 	}
+	/* null terminate */
+	u[i_len] = 0;
+	u[i_len +1] = 0;
 		
   	/* Do case conversions */	
  	if (CHECK_FLAGS(flags, CONV_TOUPPER)) {
@@ -1068,6 +1075,9 @@ size_t convert_charset ( charset_t from_set, charset_t to_set, charset_t cap_cha
 		       "Conversion failed (CH_UCS2 to %s):%s", charset_name(to_set), strerror(errno));
 		return (size_t) -1;
 	}
+	/* null terminate */
+	dest[o_len] = 0;
+	dest[o_len +1] = 0;
 
 	return o_len;
 }

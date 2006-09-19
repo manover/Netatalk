@@ -1,5 +1,5 @@
 /* 
- * $Id: mangle.c,v 1.16.2.1.2.12.2.5 2006-09-18 00:23:58 didg Exp $ 
+ * $Id: mangle.c,v 1.16.2.1.2.12.2.6 2006-09-19 00:08:01 didg Exp $ 
  *
  * Copyright (c) 2002. Joe Marcus Clarke (marcus@marcuscom.com)
  * All Rights Reserved.  See COPYRIGHT.
@@ -25,7 +25,7 @@
 static char *demangle_checks ( const struct vol *vol, char* uname, char * mfilename, size_t prefix, char * ext)
 {
     u_int16_t flags;
-    static char buffer[MAXPATHLEN];
+    static char buffer[MAXPATHLEN +2];  /* for convert_charset dest_len parameter +2 */
     size_t len;
     size_t mfilenamelen;
     char *u;

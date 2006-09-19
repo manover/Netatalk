@@ -1,5 +1,5 @@
 /*
- * $Id: desktop.c,v 1.26.2.4.2.18.2.6 2006-09-18 09:16:07 didg Exp $
+ * $Id: desktop.c,v 1.26.2.4.2.18.2.7 2006-09-19 00:08:00 didg Exp $
  *
  * See COPYRIGHT.
  *
@@ -618,8 +618,8 @@ char *dtfile(const struct vol *vol, u_char creator[], char *ext )
  * mpath is only a filename 
  * did filename parent directory ID.
 */
-static char  upath[ MAXPATHLEN + 1];
-static char  mpath[ MAXPATHLEN + 1];
+static char  upath[ MAXPATHLEN + 2]; /* for convert_charset dest_len parameter +2 */
+static char  mpath[ MAXPATHLEN + 2];/* for convert_charset dest_len parameter +2 */
 
 char *mtoupath(const struct vol *vol, char *mpath, cnid_t did, int utf8)
 {
@@ -658,7 +658,6 @@ char *mtoupath(const struct vol *vol, char *mpath, cnid_t did, int utf8)
         LOG(log_error, logtype_afpd, "conversion from %s to %s for %s failed.", (utf8)?"UTF8-MAC":vol->v_maccodepage, vol->v_volcodepage, mpath);
 	    return NULL;
     }
-    upath[outlen] = 0;
 
 #ifdef DEBUG
     LOG(log_debug, logtype_afpd, "mtoupath: '%s':'%s'", mpath, upath);
@@ -691,7 +690,6 @@ char *utompath(const struct vol *vol, char *upath, cnid_t id, int utf8)
 	goto utompath_error;
     }
 
-    mpath[outlen] = 0; 
     if (!(flags & CONV_REQMANGLE)) 
         flags = 0;
     else
