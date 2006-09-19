@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.15.2.8 2005-09-27 10:40:41 didg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.15.2.9 2006-09-19 02:24:04 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1290,6 +1290,12 @@ struct maccess ma;
 
 }
 
+/* --------------------- */
+static int invisible_dots(const struct vol *vol, const char *name)
+{ 
+  return vol_inv_dots(vol) && *name  == '.' && strcmp(name, ".") && strcmp(name, "..");
+}
+
 /* ------------------------------ 
    (".", curdir)
    (name, dir) with curdir:name == dir, from afp_enumerate
@@ -1343,8 +1349,7 @@ int getdirparams(const struct vol *vol,
         case DIRPBIT_ATTR :
             if ( isad ) {
                 ad_getattr(&ad, &ashort);
-            } else if (*dir->d_u_name == '.' && strcmp(dir->d_u_name, ".") 
-                        && strcmp(dir->d_u_name, "..")) {
+            } else if (invisible_dots(vol, dir->d_u_name)) {
                 ashort = htons(ATTRBIT_INVISIBLE);
             } else
                 ashort = 0;
@@ -1387,12 +1392,10 @@ int getdirparams(const struct vol *vol,
                 ashort = htons(FINDERINFO_CLOSEDVIEW);
                 memcpy(data + FINDERINFO_FRVIEWOFF, &ashort, sizeof(ashort));
 
-                /* dot files are by default invisible */
-                if (*dir->d_u_name  == '.' && strcmp(dir->d_u_name , ".") &&
-                        strcmp(dir->d_u_name , "..")) {
+                /* dot files are by default visible */
+                if (invisible_dots(vol, dir->d_u_name)) {
                     ashort = htons(FINDERINFO_INVISIBLE);
-                    memcpy(data + FINDERINFO_FRFLAGOFF,
-                           &ashort, sizeof(ashort));
+                    memcpy(data + FINDERINFO_FRFLAGOFF, &ashort, sizeof(ashort));
                 }
             }
             data += 32;

@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.18.2.5 2005-05-26 11:49:56 didg Exp $
+ * $Id: ad_open.c,v 1.30.6.18.2.6 2006-09-19 02:24:06 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -1194,12 +1194,11 @@ static int new_rfork(const char *path, struct adouble *ad, int adflags)
     }
 
     /* make things invisible */
-    if ((*path == '.') && strcmp(path, ".") && strcmp(path, "..")) {
+    if ((ad->ad_options & ADVOL_INVDOTS) && (*path == '.') && strcmp(path, ".") && strcmp(path, "..")) {
         ashort = htons(ATTRBIT_INVISIBLE);
 	ad_setattr(ad, ashort);
 	ashort = htons(FINDERINFO_INVISIBLE);
-	memcpy(ad_entry(ad, ADEID_FINDERI) + FINDERINFO_FRFLAGOFF,
-		     &ashort, sizeof(ashort));
+	memcpy(ad_entry(ad, ADEID_FINDERI) + FINDERINFO_FRFLAGOFF, &ashort, sizeof(ashort));
     }
 
     if (stat(path, &st) < 0) {

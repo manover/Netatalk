@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.20.2.5 2005-09-28 09:38:57 didg Exp $
+ * $Id: adouble.h,v 1.21.6.20.2.6 2006-09-19 02:24:06 didg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -277,6 +277,8 @@ struct adouble {
 #define ADVOL_CACHE      (1 << 1)
 /* adouble unix priv */
 #define ADVOL_UNIXPRIV   (1 << 2)   
+/* dot files (.DS_Store) are invisible) */
+#define ADVOL_INVDOTS    (1 << 3)   
 
 /* lock flags */
 #define ADLOCK_CLR      (0)
