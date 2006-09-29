@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.31.2.18 2006-09-19 02:24:04 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.31.2.19 2006-09-29 09:27:54 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -657,7 +657,7 @@ int	ibuflen _U_, *rbuflen;
         openf = O_RDWR|O_CREAT|O_EXCL;
     }
 
-    if ( ad_open( upath, vol_noadouble(vol)|ADFLAGS_DF|ADFLAGS_HF|ADFLAGS_NOHF,
+    if ( ad_open( upath, vol_noadouble(vol)|ADFLAGS_DF|ADFLAGS_HF|ADFLAGS_NOHF|ADFLAGS_CREATE,
                   openf, 0666, adp) < 0 ) {
         switch ( errno ) {
         case EROFS:

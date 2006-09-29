@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.20.2.6 2006-09-19 02:24:06 didg Exp $
+ * $Id: adouble.h,v 1.21.6.20.2.7 2006-09-29 09:27:54 didg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -271,6 +271,7 @@ struct adouble {
 #define ADFLAGS_V1COMPAT  (1<<4)
 #define ADFLAGS_NOHF      (1<<5)  /* not an error if no ressource fork */
 #define ADFLAGS_RDONLY    (1<<6)  /* don't try readwrite */
+#define ADFLAGS_CREATE    (1<<7)
 
 /* adouble v2 cnid cache */
 #define ADVOL_NODEV      (1 << 0)   
