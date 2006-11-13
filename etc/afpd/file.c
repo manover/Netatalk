@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.31.2.19 2006-09-29 09:27:54 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.31.2.20 2006-11-13 15:30:51 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -111,7 +111,7 @@ void *get_finderinfo(const struct vol *vol, const char *upath, struct adouble *a
             u_int16_t ashort;
             
             ashort = htons(FINDERINFO_INVISIBLE);
-            memcpy(data + FINDERINFO_FRFLAGOFF, &ashort, sizeof(ashort));
+            memcpy((char *)data + FINDERINFO_FRFLAGOFF, &ashort, sizeof(ashort));
         }
     }
     /** Only enter if no appledouble information and no finder information found. */
