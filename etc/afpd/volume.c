@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.33.2.13 2006-09-19 02:24:05 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.33.2.14 2007-04-11 00:21:23 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -537,7 +537,11 @@ static void showvol(const ucs2_t *name)
 */
 static int validupath_adouble(const struct vol *vol, const char *name) 
 {
-    return (vol->v_flags & AFPVOL_USEDOTS) ? strncasecmp(name,".Apple", 6) && strcasecmp(name, ".Parent")
+    return (vol->v_flags & AFPVOL_USEDOTS) ? 
+        strcasecmp(name,".AppleDB") &&
+        strcasecmp(name,".AppleDouble") &&
+        strcasecmp(name,".AppleDesktop") &&
+        strcasecmp(name,".Parent")
                                            : name[0] != '.';
 }                                           
 
