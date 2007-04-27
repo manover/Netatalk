@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.18.6.2 2004-06-09 01:25:53 bfernhomberg Exp $
+ * $Id: main.c,v 1.18.6.2.2.1 2007-04-27 11:15:11 didg Exp $
  *
  * Copyright (c) 1990,1995 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -435,10 +435,13 @@ int main( ac, av )
 		    if (( atp = atp_open( ATADDR_ANYPORT, 
 					  &pr->p_addr)) == NULL ) {
 			LOG(log_error, logtype_papd, "atp_open: %m" );
-			rbuf[ 2 ] = rbuf[ 3 ] = 0xff;
+			rbuf[ 2 ] = rbuf[ 3 ] = 0xff;  /* printer busy */
+			rbuf[ 4 ] = 0; /* FIXME is it right? */
 			err = 1;
 		    }
-		    rbuf[ 4 ] = atp_sockaddr( atp )->sat_port;
+		    else {
+		       rbuf[ 4 ] = atp_sockaddr( atp )->sat_port;
+                    }
 		    rbuf[ 5 ] = oquantum;
 		    rbuf[ 6 ] = rbuf[ 7 ] = 0;
 
