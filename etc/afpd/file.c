@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.31.2.20 2006-11-13 15:30:51 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.31.2.21 2007-05-14 18:25:27 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1454,7 +1454,7 @@ struct adouble *adp;
       st.st_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
     }
 
-    if (ad_open(dst , adflags | noadouble, O_RDWR|O_CREAT|O_EXCL, st.st_mode, &add) < 0) {
+    if (ad_open(dst , adflags, O_RDWR|O_CREAT|O_EXCL, st.st_mode, &add) < 0) {
         ret_err = errno;
         ad_close( adp, adflags );
         if (EEXIST != ret_err) {
