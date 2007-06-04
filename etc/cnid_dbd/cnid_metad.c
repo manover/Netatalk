@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_metad.c,v 1.1.4.15.2.1 2005-09-27 10:40:41 didg Exp $
+ * $Id: cnid_metad.c,v 1.1.4.15.2.2 2007-06-04 06:57:42 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -92,6 +92,7 @@
 
 static int srvfd;
 static int rqstfd;
+volatile sig_atomic_t alarmed = 0;
 
 #define MAXSRV 128
 
@@ -363,10 +364,15 @@ char    *group;
 }
 
 /* ------------------ */
+void catch_alarm(int sig) {
+	alarmed = 1;
+}
+
+/* ------------------ */
 int main(int argc, char *argv[])
 {
     char  dbdir[MAXPATHLEN + 1];
-    int   len;
+    int   len, actual_len;
     pid_t pid;
     int   status;
     char  *dbdpn = _PATH_CNID_DBD;
@@ -472,6 +478,7 @@ int main(int argc, char *argv[])
     }
 
     signal(SIGPIPE, SIG_IGN);
+    signal(SIGALRM, catch_alarm);
 
     while (1) {
         rqstfd = usockfd_check(srvfd, 10000000);
@@ -500,9 +507,18 @@ int main(int argc, char *argv[])
 	}
         if (rqstfd <= 0)
             continue;
+
         /* TODO: Check out read errors, broken pipe etc. in libatalk. Is
            SIGIPE ignored there? Answer: Ignored for dsi, but not for asp ... */
+        alarm(5); /* to prevent read from getting stuck */
         ret = read(rqstfd, &len, sizeof(int));
+	alarm(0);
+	if (alarmed) {
+	    alarmed = 0;
+	    LOG(log_severe, logtype_cnid, "Read(1) bailed with alarm (timeout)");
+	    goto loop_end;
+	}
+	
         if (!ret) {
             /* already close */
             goto loop_end;
@@ -523,7 +539,16 @@ int main(int argc, char *argv[])
             LOG(log_error, logtype_cnid, "wrong len parameter: %d", len);
             goto loop_end;
         }
-        if (read(rqstfd, dbdir, len) != len) {
+        
+        alarm(5);
+	actual_len = read(rqstfd, dbdir, len);
+	alarm(0);
+	if (alarmed) {
+	    alarmed = 0;
+	    LOG(log_severe, logtype_cnid, "Read(2) bailed with alarm (timeout)");
+	    goto loop_end;
+	}
+        if (actual_len != len) {
             LOG(log_error, logtype_cnid, "error/short read (dir): %s", strerror(errno));
             goto loop_end;
         }
