@@ -1,5 +1,5 @@
 /*
- * $Id: cnid_metad.c,v 1.1.4.15.2.2 2007-06-04 06:57:42 didg Exp $
+ * $Id: cnid_metad.c,v 1.1.4.15.2.3 2008-08-31 09:52:14 didg Exp $
  *
  * Copyright (C) Joerg Lenneis 2003
  * All Rights Reserved.  See COPYING.
@@ -40,7 +40,8 @@
 #include <sys/socket.h>
 #include <stdio.h>
 #include <time.h>
-
+#include <sys/ioctl.h>
+  
 #ifndef WEXITSTATUS 
 #define WEXITSTATUS(stat_val) ((unsigned)(stat_val) >> 8)
 #endif /* ! WEXITSTATUS */
