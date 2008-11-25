@@ -1,5 +1,5 @@
 /*
- * $Id: ofork.c,v 1.20.6.6.2.6 2008-08-16 20:40:55 didg Exp $
+ * $Id: ofork.c,v 1.20.6.6.2.7 2008-11-25 15:16:33 didg Exp $
  *
  * Copyright (c) 1996 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -38,7 +38,7 @@ static u_short		lastrefnum = 0;
 
 
 /* OR some of each character for the hash*/
-static __inline__ unsigned long hashfn(const struct file_key *key)
+static unsigned long hashfn(const struct file_key *key)
 {
 #if 0
     unsigned long i = 0;
@@ -49,7 +49,7 @@ static __inline__ unsigned long hashfn(const struct file_key *key)
     return key->inode & (OFORK_HASHSIZE - 1);
 }
 
-static __inline__ void of_hash(struct ofork *of)
+static void of_hash(struct ofork *of)
 {
     struct ofork **table;
 
@@ -60,7 +60,7 @@ static __inline__ void of_hash(struct ofork *of)
     of->prevp = table;
 }
 
-static __inline__ void of_unhash(struct ofork *of)
+static void of_unhash(struct ofork *of)
 {
     if (of->prevp) {
         if (of->next)

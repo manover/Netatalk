@@ -1,5 +1,5 @@
 /*
- * $Id: unix.c,v 1.43.2.1.2.10.2.3 2005-09-27 10:40:41 didg Exp $
+ * $Id: unix.c,v 1.43.2.1.2.10.2.4 2008-11-25 15:16:33 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -99,7 +99,7 @@ u_int32_t   *bsize;
     return( AFP_OK );
 }
 
-static __inline__ int utombits( bits )
+static int utombits( bits )
 mode_t	bits;
 {
     int		mbits;
@@ -205,7 +205,7 @@ const gid_t	gid;
     return( 0 );
 }
 
-static __inline__ mode_t mtoubits( bits )
+static mode_t mtoubits( bits )
 u_char	bits;
 {
     mode_t	mode;

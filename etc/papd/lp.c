@@ -1,5 +1,5 @@
 /*
- * $Id: lp.c,v 1.14.8.4.2.3 2008-11-14 10:04:52 didg Exp $
+ * $Id: lp.c,v 1.14.8.4.2.4 2008-11-25 15:16:33 didg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -885,7 +885,7 @@ int lp_print()
 }
 
 #ifndef HAVE_CUPS
-int lp_disconn_unix( fd )
+int lp_disconn_unix( int fd )
 {
     return( close( fd ));
 }

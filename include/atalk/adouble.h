@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.21.6.20.2.7 2006-09-29 09:27:54 didg Exp $
+ * $Id: adouble.h,v 1.21.6.20.2.8 2008-11-25 15:16:33 didg Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -246,7 +246,8 @@ struct adouble {
     char		ad_filler[ 16 ];
     struct ad_entry	ad_eid[ ADEID_MAX ];
     struct ad_fd	ad_df, ad_hf;
-    int                 ad_flags, ad_inited;
+    int                 ad_flags;
+    unsigned		ad_inited;
     int                 ad_options;
     int                 ad_refcount; /* used in afpd/ofork.c */
     off_t               ad_rlen;     /* ressource fork len with AFP 3.0
@@ -423,10 +424,7 @@ extern int ad_metadata    __P((const char *, int, struct adouble *));
  * remove X mode and extend header to RW if R or W (W if R for locking),
  */ 
 #ifndef ATACC
-#ifndef __inline__
-#define __inline__
-#endif
-static __inline__ mode_t ad_hf_mode (mode_t mode)
+static inline mode_t ad_hf_mode (mode_t mode)
 {
     mode &= ~(S_IXUSR | S_IXGRP | S_IXOTH);
     /* fnctl lock need write access */

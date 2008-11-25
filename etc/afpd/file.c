@@ -1,5 +1,5 @@
 /*
- * $Id: file.c,v 1.92.2.2.2.31.2.21 2007-05-14 18:25:27 didg Exp $
+ * $Id: file.c,v 1.92.2.2.2.31.2.22 2008-11-25 15:16:33 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1326,7 +1326,7 @@ int	ibuflen _U_, *rbuflen;
 }
 
 /* ----------------------- */
-static __inline__ int copy_all(const int dfd, const void *buf,
+static int copy_all(const int dfd, const void *buf,
                                size_t buflen)
 {
     ssize_t cc;

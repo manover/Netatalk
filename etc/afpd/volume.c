@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.33.2.14 2007-04-11 00:21:23 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.33.2.15 2008-11-25 15:16:33 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -186,7 +186,7 @@ static const _vol_opt_name vol_opt_casefold[] = {
 static void handle_special_folders (const struct vol *);
 static int savevoloptions (const struct vol *);
 
-static __inline__ void volfree(struct vol_option *options,
+static void volfree(struct vol_option *options,
                                const struct vol_option *save)
 {
     int i;

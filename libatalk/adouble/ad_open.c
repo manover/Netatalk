@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.30.6.18.2.7 2006-09-29 09:27:54 didg Exp $
+ * $Id: ad_open.c,v 1.30.6.18.2.8 2008-11-25 15:16:33 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -712,9 +712,7 @@ ad_path( path, adflags )
  * ._name
  */
 char *
-ad_path_osx( path, adflags )
-    const char	*path;
-    int		adflags;
+ad_path_osx( const char	*path, int adflags _U_)
 {
     static char	pathbuf[ MAXPATHLEN + 1];
     char	c, *slash, buf[MAXPATHLEN + 1];
@@ -833,7 +831,7 @@ int ret = 0;
 #ifdef EMULATE_SUIDDIR
 uid_t id;
 
-    if (default_uid != -1) {  
+    if (default_uid != (uid_t)-1) {  
         /* we are root (admin) */
         id = (default_uid)?default_uid:stbuf->st_uid;
 	ret = chown( path, id, stbuf->st_gid );

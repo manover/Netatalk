@@ -1,5 +1,5 @@
 /*
- * $Id: afp_dsi.c,v 1.27.2.3.2.4.2.2 2005-09-27 10:40:40 didg Exp $
+ * $Id: afp_dsi.c,v 1.27.2.3.2.4.2.3 2008-11-25 15:16:32 didg Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@zoology.washington.edu)
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
@@ -56,7 +56,7 @@ static struct {
 } child;
 
 
-static __inline__ void afp_dsi_close(AFPObj *obj)
+static void afp_dsi_close(AFPObj *obj)
 {
     DSI *dsi = obj->handle;
 

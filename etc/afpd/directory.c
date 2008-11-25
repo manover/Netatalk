@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.15.2.9 2006-09-19 02:24:04 didg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.15.2.10 2008-11-25 15:16:32 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -392,9 +392,7 @@ struct dir *dir;
 /* remove the node from the tree. this is just like insertion, but
  * different. actually, it has to worry about a bunch of things that
  * insertion doesn't care about. */
-static void dir_remove( vol, dir )
-struct vol	*vol;
-struct dir	*dir;
+static void dir_remove( const struct vol *vol _U_, struct dir	*dir)
 {
 #ifdef REMOVE_NODES
     struct ofork *of, *last;
@@ -1613,8 +1611,9 @@ struct path Cur_Path = {
     0,
     "",  /* mac name */
     ".", /* unix name */
+    NULL,
     0,  /* stat is not set */
-    0,  /* */
+    0  /* errno */
 };
 
 /* ------------------ */
@@ -2147,10 +2146,9 @@ struct dir	*dir, *newparent;
 
 #define DOT_APPLEDOUBLE_LEN 13
 /* delete an empty directory */
-int deletecurdir( vol, path, pathlen )
+int deletecurdir( vol, path )
 const struct vol	*vol;
 char *path;
-int pathlen;
 {
     struct dirent *de;
     struct stat st;

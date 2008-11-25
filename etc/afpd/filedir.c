@@ -1,5 +1,5 @@
 /*
- * $Id: filedir.c,v 1.45.2.2.2.14.2.4 2005-09-27 10:40:41 didg Exp $
+ * $Id: filedir.c,v 1.45.2.2.2.14.2.5 2008-11-25 15:16:33 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -569,7 +569,7 @@ int	ibuflen _U_, *rbuflen;
     	    rc = AFPERR_ACCESS;
     	}
     	else {
-            rc = deletecurdir( vol, obj->oldtmp, AFPOBJ_TMPSIZ);
+            rc = deletecurdir( vol, obj->oldtmp);
         }
     } else if (of_findname(s_path)) {
         rc = AFPERR_BUSY;
