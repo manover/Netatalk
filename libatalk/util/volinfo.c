@@ -155,7 +155,7 @@ static char * make_path_absolute(char *path, size_t bufsize)
     if (!getcwd(savecwd, sizeof(savecwd)) || chdir(abspath) < 0)	
         return NULL;
 
-    if (!getcwd(abspath, sizeof(abspath)) || chdir (savecwd) < 0)
+    if (!getcwd(abspath, sizeof(abspath)) || chdir (savecwd) < 0)
         return NULL;
         
     
