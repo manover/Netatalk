@@ -1,5 +1,5 @@
 /*
- * $Id: uams_dhx_pam.c,v 1.24.6.5.2.1 2005-09-27 10:40:41 didg Exp $
+ * $Id: uams_dhx_pam.c,v 1.24.6.5.2.2 2008-12-03 19:17:27 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu) 
@@ -193,12 +193,6 @@ static int dhx_setup(void *obj, char *ibuf, int ibuflen _U_,
     BIGNUM *bn, *gbn, *pbn;
     DH *dh;
 
-    /* TODO: seed dhx_setup properly... this is a hack */
-#ifdef sun
-    	/* *SEVERE* hack... fix */
-	RAND_load_file("/var/adm/messages", KEYSIZE);
-#endif /* sun */
-
     /* get the client's public key */
     if (!(bn = BN_bin2bn(ibuf, KEYSIZE, NULL))) {
     /* Log Entry */
@@ -243,12 +237,22 @@ static int dhx_setup(void *obj, char *ibuf, int ibuflen _U_,
     /* generate key and make sure that we have enough space */
     dh->p = pbn;
     dh->g = gbn;
-    if (!DH_generate_key(dh) || (BN_num_bytes(dh->pub_key) > KEYSIZE)) {
-    /* Log Entry */
-           LOG(log_info, logtype_uams, "uams_dhx_pam.c :PAM: Err Generating Key -- Not enough Space? -- %s",
-		  strerror(errno));
-    /* Log Entry */
-    goto pam_fail;
+    if (DH_generate_key(dh) == 0) {
+	unsigned long dherror;
+	char errbuf[256];
+
+	ERR_load_crypto_strings();
+	dherror = ERR_get_error();
+	ERR_error_string_n(dherror, errbuf, 256);
+
+	LOG(log_info, logtype_uams, "uams_dhx_pam.c :PAM: Err Generating Key (OpenSSL error code: %u, %s)", dherror, errbuf);
+
+	ERR_free_strings();
+	goto pam_fail;
+    }
+    if (BN_num_bytes(dh->pub_key) > KEYSIZE) {
+	LOG(log_info, logtype_uams, "uams_dhx_pam.c :PAM: Err Generating Key -- Not enough Space? -- %s", strerror(errno));
+	goto pam_fail;
     }
 
     /* figure out the key. store the key in rbuf for now. */
