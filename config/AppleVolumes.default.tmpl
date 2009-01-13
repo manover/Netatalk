@@ -95,6 +95,8 @@
 #                        volume being mounted.
 # nostat              -> don't stat volume path when enumerating volumes list
 # upriv               -> use unix privilege.  
+# illegalseq          -> encode illegal sequence in filename asis, ex "\217-", which is not 
+#                        a valid SHIFT-JIS char, is encoded  as U\217 -
 #
 #
 # dbpath:path         -> store the database stuff in the following path.
