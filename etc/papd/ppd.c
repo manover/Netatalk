@@ -1,5 +1,5 @@
 /*
- * $Id: ppd.c,v 1.9.8.1.2.3 2008-11-14 10:04:52 didg Exp $
+ * $Id: ppd.c,v 1.9.8.1.2.4 2009-01-19 02:23:16 didg Exp $
  *
  * Copyright (c) 1995 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -75,7 +75,7 @@ static char* my_fgets(buf, bufsize, stream)
     int p;           /* uninitialized, OK 310105 */
     size_t count = 0;
  
-    while (count < bufsize && EOF != (p=fgetc(stream))) {
+    while (count < (bufsize - 1) && EOF != (p=fgetc(stream))) {
         buf[count] = p;
         count++;
         if ( p == '\r' || p == '\n')
