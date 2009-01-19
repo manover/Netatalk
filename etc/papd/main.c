@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.18.6.2.2.4 2008-11-14 10:04:52 didg Exp $
+ * $Id: main.c,v 1.18.6.2.2.5 2009-01-19 02:25:57 didg Exp $
  *
  * Copyright (c) 1990,1995 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -14,11 +14,7 @@
 #include <sys/param.h>
 #include <sys/time.h>
 #include <sys/uio.h>
-#if defined( sun ) && defined( __svr4__ )
-#include </usr/ucbinclude/sys/file.h>
-#else /* sun && __svr4__ */
 #include <sys/file.h>
-#endif /* sun && __svr4__ */
 #include <sys/socket.h>
 #include <atalk/logger.h>
 

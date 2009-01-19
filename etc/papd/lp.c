@@ -1,5 +1,5 @@
 /*
- * $Id: lp.c,v 1.14.8.4.2.4 2008-11-25 15:16:33 didg Exp $
+ * $Id: lp.c,v 1.14.8.4.2.5 2009-01-19 02:25:57 didg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -54,11 +54,7 @@
 #include <unistd.h>
 #endif /* HAVE_UNISTD_H */
 
-#if defined( sun ) && defined( __svr4__ )
-#include </usr/ucbinclude/sys/file.h>
-#else /* sun && __svr4__ */
 #include <sys/file.h>
-#endif /* sun && __svr4__ */
 #include <sys/un.h>
 #include <netinet/in.h>
 #undef s_net
