@@ -1,5 +1,5 @@
 /*
- * $Id: lp.c,v 1.14.8.4.2.5 2009-01-19 02:25:57 didg Exp $
+ * $Id: lp.c,v 1.14.8.4.2.6 2009-01-21 02:33:55 didg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -1003,7 +1003,9 @@ int lp_queue( out )
     char			buf[ 1024 ], *start, *stop, *p, *q;
     int				linelength, crlflength;
     static struct papfile	pf;
-    int				n, len, s;
+    int				s;
+    size_t			len;
+    ssize_t			n;
 	
     if (( s = lp_conn_unix()) < 0 ) {
 	LOG(log_error, logtype_papd, "lp_queue: %s", strerror(errno) );
