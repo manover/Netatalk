@@ -1,5 +1,5 @@
 /*
- * $Id: ppd.c,v 1.9.8.1.2.5 2009-01-21 02:32:16 didg Exp $
+ * $Id: ppd.c,v 1.9.8.1.2.6 2009-01-21 04:07:05 didg Exp $
  *
  * Copyright (c) 1995 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -51,16 +51,17 @@ struct ppdent {
 };
 
 #ifndef SHOWPPD
-int ppd_inited = 0;
+static int ppd_inited;
 
-int ppd_init()
+static void ppd_init()
 {
-    if ( ppd_inited ) {
-	return( -1 );
-    }
+    if (ppd_inited)
+        return;
+
     ppd_inited++;
 
-    return read_ppd( printer->p_ppdfile, 0 );
+    if (printer->p_ppdfile)
+        read_ppd( printer->p_ppdfile, 0 );
 }
 #endif /* SHOWPPD */
 
