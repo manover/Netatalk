@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.33.2.17 2009-01-26 10:34:31 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.33.2.18 2009-01-26 15:06:31 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -728,7 +728,7 @@ FILE	*fp;
     int		c;
 
     p = buf;
-    while ((EOF != ( c = getc( fp )) ) && ( size > 0 )) {
+    while ((EOF != ( c = getc( fp )) ) && ( size > 1 )) {
         if ( c == '\n' || c == '\r' ) {
             *p++ = '\n';
             break;
