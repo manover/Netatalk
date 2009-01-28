@@ -1,5 +1,5 @@
 /*
- * $Id: volume.h,v 1.19.2.5.2.7.2.4 2009-01-13 01:05:53 didg Exp $
+ * $Id: volume.h,v 1.19.2.5.2.7.2.5 2009-01-28 05:37:58 didg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -49,6 +49,8 @@ struct vol {
     char                v_stamp[ADEDLEN_PRIVSYN];
     mode_t		v_umask;
     mode_t		v_perm;             /* default permission value OR with requested perm*/
+    mode_t		v_dperm;             /* default directories permission value OR with requested perm*/
+    mode_t		v_fperm;             /* default files permission value OR with requested perm*/
 
 #ifdef FORCE_UIDGID
     char		*v_forceuid;
