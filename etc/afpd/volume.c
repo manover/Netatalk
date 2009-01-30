@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.33.2.20 2009-01-30 04:55:35 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.33.2.21 2009-01-30 04:58:52 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -118,7 +118,7 @@ m=u -> map both ways
 
 #define VOLOPT_UMASK     21
 #define VOLOPT_DPERM     22  /* dperm default directories perms */
-#define VOLOPT_FPERM     23  /* dperm default files perms */
+#define VOLOPT_FPERM     23  /* fperm default files perms */
 #define VOLOPT_DFLTPERM  24  /* perm */
 
 #define VOLOPT_MAX       (VOLOPT_DFLTPERM +1)
