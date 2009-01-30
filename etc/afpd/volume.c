@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.33.2.19 2009-01-28 05:37:58 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.33.2.20 2009-01-30 04:55:35 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -542,20 +542,24 @@ static void showvol(const ucs2_t *name)
 /* ----------------- 
  * FIXME should be define elsewhere
 */
+static int netatalk_name(const char *name)
+{
+    return strcasecmp(name,".AppleDB") &&
+        strcasecmp(name,".AppleDouble") &&
+        strcasecmp(name,".AppleDesktop");
+}
+
 static int validupath_adouble(const struct vol *vol, const char *name) 
 {
     return (vol->v_flags & AFPVOL_USEDOTS) ? 
-        strcasecmp(name,".AppleDB") &&
-        strcasecmp(name,".AppleDouble") &&
-        strcasecmp(name,".AppleDesktop") &&
-        strcasecmp(name,".Parent")
-                                           : name[0] != '.';
+        netatalk_name(name) && strcasecmp(name,".Parent"): name[0] != '.';
 }                                           
 
 /* ----------------- */
 static int validupath_osx(const struct vol *vol _U_, const char *name) 
 {
-    return strncasecmp(name,".Apple", 6) && strncasecmp(name,"._", 2);
+    return strncmp(name,"._", 2) && (
+      (vol->v_flags & AFPVOL_USEDOTS) ? netatalk_name(name): name[0] != '.');
 }             
 
 /* ---------------- */
