@@ -1,5 +1,5 @@
 /*
- * $Id: volume.c,v 1.51.2.7.2.33.2.21 2009-01-30 04:58:52 didg Exp $
+ * $Id: volume.c,v 1.51.2.7.2.33.2.22 2009-02-01 07:00:12 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -487,12 +487,12 @@ static void volset(struct vol_option *options, struct vol_option *save,
 
     } else if (optionok(tmp, "umask:", val)) {
 	options[VOLOPT_UMASK].i_value = (int)strtol(val +1, NULL, 8);
-    } else if (optionok(tmp, "perm:", val)) {
-        options[VOLOPT_DFLTPERM].i_value = (int)strtol(val+1, NULL, 8);
     } else if (optionok(tmp, "dperm:", val)) {
         options[VOLOPT_DPERM].i_value = (int)strtol(val+1, NULL, 8);
     } else if (optionok(tmp, "fperm:", val)) {
         options[VOLOPT_FPERM].i_value = (int)strtol(val+1, NULL, 8);
+    } else if (optionok(tmp, "perm:", val)) {
+        options[VOLOPT_DFLTPERM].i_value = (int)strtol(val+1, NULL, 8);
     } else if (optionok(tmp, "mapchars:",val)) {
         setoption(options, save, VOLOPT_MAPCHARS, val);
 
@@ -684,6 +684,10 @@ static int creatvol(AFPObj *obj, struct passwd *pwd,
 	    volume->v_umask = (mode_t)options[VOLOPT_UMASK].i_value;
 
 	if (options[VOLOPT_DPERM].i_value)
+	    volume->v_dperm = (mode_t)options[VOLOPT_DPERM].i_value;
+
+	if (options[VOLOPT_FPERM].i_value)
+	    volume->v_fperm = (mode_t)options[VOLOPT_FPERM].i_value;
 
 	if (options[VOLOPT_DFLTPERM].i_value)
 	    volume->v_perm = (mode_t)options[VOLOPT_DFLTPERM].i_value;
