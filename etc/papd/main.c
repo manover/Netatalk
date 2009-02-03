@@ -1,5 +1,5 @@
 /*
- * $Id: main.c,v 1.18.6.2.2.6 2009-01-21 04:07:05 didg Exp $
+ * $Id: main.c,v 1.18.6.2.2.7 2009-02-03 08:25:00 didg Exp $
  *
  * Copyright (c) 1990,1995 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -489,6 +489,11 @@ int main( ac, av )
 			    LOG(log_error, logtype_papd, "sigaction: %s", strerror(errno) );
 			    exit( 1 );
 			}
+			
+			if ( sigaction( SIGCHLD, &sv, 0 ) < 0 ) {
+			    LOG(log_error, logtype_papd, "sigaction: %s", strerror(errno) );
+			    exit( 1 );
+                        }
 
 			for ( pr = printers; pr; pr = pr->p_next ) {
 			    atp_close( pr->p_atp );

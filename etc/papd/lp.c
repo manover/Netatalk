@@ -1,5 +1,5 @@
 /*
- * $Id: lp.c,v 1.14.8.4.2.6 2009-01-21 02:33:55 didg Exp $
+ * $Id: lp.c,v 1.14.8.4.2.7 2009-02-03 08:25:00 didg Exp $
  *
  * Copyright (c) 1990,1994 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -375,7 +375,7 @@ void lp_for ( lpfor )
 }
 
 
-int lp_init( out, sat )
+static int lp_init( out, sat )
     struct papfile	*out;
     struct sockaddr_at	*sat;
 {
@@ -566,25 +566,29 @@ int lp_open( out, sat )
     }
 
     if ( lp.lp_flags & LP_PIPE ) {
+        char *pipe_cmd;
 
 	/* go right to program */
 	if (lp.lp_person != NULL) {
 	    if((pwent = getpwnam(lp.lp_person)) != NULL) {
 		if(setreuid(pwent->pw_uid, pwent->pw_uid) != 0) {
-		    LOG(log_info, logtype_papd, "setreuid error: %s", strerror(errno));
+		    LOG(log_error, logtype_papd, "setreuid error: %s", strerror(errno));
+		    exit(1);
 		}
 	    } else {
-		LOG(log_info, logtype_papd, "Error getting username (%s)", lp.lp_person);
+		LOG(log_error, logtype_papd, "Error getting username (%s)", lp.lp_person);
+                exit(1);
 	    }
 	}
 
 	lp_setup_comments(CH_UNIX);
-	if (( lp.lp_stream = popen( pipexlate(printer->p_printer), "w" )) == NULL ) {
+	pipe_cmd = pipexlate(printer->p_printer);
+	if (( lp.lp_stream = popen(pipe_cmd, "w" )) == NULL ) {
 	    LOG(log_error, logtype_papd, "lp_open popen %s: %s", printer->p_printer, strerror(errno) );
 	    spoolerror( out, NULL );
 	    return( -1 );
 	}
-        LOG(log_debug, logtype_papd, "lp_open: opened %s",  pipexlate(printer->p_printer) );
+        LOG(log_debug, logtype_papd, "lp_open: opened %s",  pipe_cmd );
     } else {
 	sprintf( name, "df%c%03d%s", lp.lp_letter++, lp.lp_seq, hostname );
 
