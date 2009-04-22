@@ -1,6 +1,7 @@
 Changes in 2.0.4
 ================
 
+* REM: remove timeout 
 * NEW: afpd: DHX2 uams using GNU libgcrypt.
 * NEW: afpd: volume options 'illegalseq', 'perm' and 'invisibledots'
        'ilegalseq'  encode illegal sequence in filename asis, ex "\217-", which is not 
@@ -10,6 +11,10 @@ Changes in 2.0.4
        Make dot files visible by default with 'usedots', use 'invisibledots' 
        for keeping the old behavior, ie for OS9 (OSX hide dot files on its
        own).
+* NEW: afpd: volume options allow_hosts/denied hosts
+* NEW: afpd: volume options dperm/fperm default directory and file
+       permissions or with server requests.
+* NEW: afpd: afpd.conf, allow line continuation with \ 
 * NEW: afpd: Mac greek encoding.
 * NEW: afpd: CJK encoding.
 * FIX: afpd: return the right error in createfile and copyfile if the disk
@@ -21,6 +26,7 @@ Changes in 2.0.4
 * UPD: afpd: no more daemon icon.
 * UPD: usedots, return an invalide name only for .Applexxx files used by netatalk not
        all files starting with .apple.
+* UPD: cnid: increase the number of cnid_dbd slots to 512.
 * FIX: cnid: dbd detach the daemon from the control terminal.
 * UPD: cnid: never ending Berkeley API changes...
 * UPD: cnid: dbd add a timeout when reading data from afpd client.
