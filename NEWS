@@ -15,6 +15,7 @@ Changes in 2.0.4
 * NEW: afpd: volume options dperm/fperm default directory and file
        permissions or with server requests.
 * NEW: afpd: afpd.conf, allow line continuation with \ 
+* NEW: afpd: AppleVolumes.default allow line continuation with \
 * NEW: afpd: Mac greek encoding.
 * NEW: afpd: CJK encoding.
 * FIX: afpd: return the right error in createfile and copyfile if the disk
