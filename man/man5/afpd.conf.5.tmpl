@@ -79,7 +79,7 @@ file\&.
 .PP
 \-uamlist \fI[uams list]\fR
 .RS 4
-Comma separated list of UAMs\&. (The default is uams_clrtxt\&.so,uams_dhx\&.so)\&.
+Comma separated list of UAMs\&. (The default is uams_dhx\&.so,uams_dhx2\&.so)\&.
 .sp
 The most commonly used UAMs are:
 .PP
@@ -104,6 +104,11 @@ for details
 uams_dhx\&.so
 .RS 4
 (uams_dhx_pam\&.so or uams_dhx_passwd\&.so) Allow Diffie\-Hellman eXchange (DHX) for authentication\&.
+.RE
+.PP
+uams_dhx2\&.so
+.RS 4
+(uams_dhx2_pam\&.so or uams_dhx2_passwd\&.so) Allow Diffie\-Hellman eXchange 2 (DHX2) for authentication\&.
 .RE
 .PP
 uam_gss\&.so
@@ -439,7 +444,7 @@ Specify the number of tickles to send before timing out a connection\&. The defa
 .RS 4
 .\}
 .nf
-\- \-transall \-uamlist uams_clrtxt\&.so,uams_dhx\&.so
+\- \-transall \-uamlist uams_dhx\&.so,uams_dhx2\&.so
 .fi
 .if n \{\
 .RE
@@ -463,7 +468,7 @@ Specify the number of tickles to send before timing out a connection\&. The defa
 .RS 4
 .\}
 .nf
-\- \-transall \-uamlist uams_clrtxt\&.so,uams_dhx\&.so,uams_guest\&.so,uams_gss\&.so \e 
+\- \-transall \-uamlist uams_clrtxt\&.so,uams_dhx\&.so,uams_dhx2\&.so,uams_guest\&.so,uams_gss\&.so \e 
 \-k5service afpserver \-k5keytab /path/to/afpserver\&.keytab \e 
 \-k5realm YOUR\&.REALM \-fqdn your\&.fqdn\&.namel:548
 .fi
@@ -478,7 +483,7 @@ Specify the number of tickles to send before timing out a connection\&. The defa
 .\}
 .nf
 "Guest Server" \-uamlist uams_guest\&.so \-loginmesg "Welcome guest!"
-"User Server" \-uamlist uams_dhx\&.so \-port 12000
+"User Server" \-uamlist uams_dhx2\&.so \-port 12000
 "special" \-notcp \-defaultvol <path> \-systemvol <path>
 .fi
 .if n \{\
