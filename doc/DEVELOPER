@@ -149,12 +149,11 @@ http://www.kernel.org/pub/linux/libs/pam/
 
 Netatalk also supports other standard PAM implementations such as OpenPAM.
 
-8 Berkeley DB
+8. Berkeley DB
 Berkeley DB is a programmatic toolkit that provides fast, reliable,
 scalable, and mission-critical database support to software
-developers. BDB can downloaded from
-http://www.sleepycat.com/download.html
+developers. BDB documentation is available at:
+http://www.oracle.com/technology/documentation/berkeley-db/db/index.html
+
 Netatalk's CNID database uses the library and header files from BDB.
-Currently, Netatalk supports BDB 4.1.25 and 4.2.52.
-The recommended version is 4.2.52 as that is the version on which most
-testing has been done.
+Netatalk 2.0 requieres BDB >= 4.1.
