@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.15.2.11 2009-01-28 05:37:57 didg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.15.2.12 2009-07-20 18:29:56 didg Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -569,6 +569,13 @@ struct path *path;
         afp_errno = AFPERR_PARAM;
         return NULL;
     }
+
+    if (check_name(vol, path->u_name)) {
+        /* the name is illegal */
+        afp_errno = AFPERR_PARAM;
+        return NULL;
+    }
+
     if (of_stat( path ) != 0 ) {
         return( NULL );
     }
@@ -2004,9 +2011,6 @@ int	ibuflen _U_, *rbuflen;
         return AFPERR_EXIST;
 
     upath = s_path->u_name;
-    if (0 != (err = check_name(vol, upath))) {
-       return err;
-    }
 
     if (AFP_OK != (err = netatalk_mkdir( upath))) {
         return err;
