@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.71.2.4.2.15.2.12 2009-07-20 18:29:56 didg Exp $
+ * $Id: directory.c,v 1.71.2.4.2.15.2.13 2009-09-01 12:34:38 franklahm Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -572,6 +572,8 @@ struct path *path;
 
     if (check_name(vol, path->u_name)) {
         /* the name is illegal */
+        LOG(log_info, logtype_afpd, "extenddir: illegal path: '%s'", path->u_name);
+        path->u_name = NULL;
         afp_errno = AFPERR_PARAM;
         return NULL;
     }
