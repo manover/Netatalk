@@ -1,6 +1,7 @@
 Changes in 2.0.5
 ================
 
+* NEW: afpd: Time Machine support with new volume option "tm".
 * FIX: papd: Remove variable expansion for BSD printers. Fixes CVE-2008-5718.
 * FIX: afpd: .AppleDxxx folders were user accessible if option 'usedots'
        was set 
