@@ -1,5 +1,5 @@
 /*
- * $Id: auth.c,v 1.44.2.3.2.15.2.5 2009-09-11 12:40:14 franklahm Exp $
+ * $Id: auth.c,v 1.44.2.3.2.15.2.6 2009-10-05 08:10:07 franklahm Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -163,6 +163,14 @@ int	ibuflen _U_, *rbuflen;
     return AFPERR_PWDEXPR;
 }
 
+static int afp_null_nolog(obj, ibuf, ibuflen, rbuf, rbuflen )
+AFPObj  *obj _U_;
+char	*ibuf _U_, *rbuf _U_;
+int	ibuflen _U_, *rbuflen;
+{
+    *rbuflen = 0;
+    return( AFPERR_NOOP );
+}
 
 static int set_auth_switch(int expired)
 {
@@ -189,6 +197,7 @@ static int set_auth_switch(int expired)
         case 31:
 	    uam_afpserver_action(AFP_SYNCDIR, UAM_AFPSERVER_POSTAUTH, afp_syncdir, NULL);
 	    uam_afpserver_action(AFP_SYNCFORK, UAM_AFPSERVER_POSTAUTH, afp_syncfork, NULL);
+	    uam_afpserver_action(AFP_SPOTLIGHT_PRIVATE, UAM_AFPSERVER_POSTAUTH, afp_null_nolog, NULL);
 	    uam_afpserver_action(AFP_ENUMERATE_EXT2, UAM_AFPSERVER_POSTAUTH, afp_enumerate_ext2, NULL); 
         case 30:
 	    uam_afpserver_action(AFP_ENUMERATE_EXT, UAM_AFPSERVER_POSTAUTH, afp_enumerate_ext, NULL); 
