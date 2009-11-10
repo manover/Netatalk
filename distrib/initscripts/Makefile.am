@@ -42,7 +42,7 @@ TEMPLATES = \
 	rc.atalk.gentoo.tmpl		\
 	rc.atalk.debian.tmpl
 
-CLEANFILES = $(GENERATED_FILES) $(sysv_SCRIPTS) afpd atalkd papd timelord
+CLEANFILES = $(GENERATED_FILES) atalk afpd atalkd papd timelord
 EXTRA_DIST = $(TEMPLATES) rc.atalk.cobalt
 
 # overwrite automake uninstall
@@ -57,19 +57,19 @@ uninstall: uninstall-startup
 
 if USE_REDHAT
 
-sysvdir	= $(sysconfdir)/rc.d/init.d
+sysvdir	= /etc/rc.d/init.d
 sysv_SCRIPTS = atalk
 
-$(sysv_SCRIPTS): rc.atalk.redhat
-	cp -f rc.atalk.redhat $(sysv_SCRIPTS)
-	chmod a+x $(sysv_SCRIPTS)
+atalk: rc.atalk.redhat
+	cp -f rc.atalk.redhat atalk
+	chmod a+x atalk
 
 install-data-hook:
-	-chkconfig --add $(sysv_SCRIPTS)
+	-chkconfig --add atalk
 
 uninstall-startup:
-	-chkconfig --del $(sysv_SCRIPTS)
-	rm -f $(sysvdir)/$(sysv_SCRIPTS)
+	-chkconfig --del atalk
+	rm -f /etc/rc.d/init.d/atalk
 
 endif
 
@@ -79,19 +79,19 @@ endif
 
 if USE_SUSE
 
-sysvdir	= $(sysconfdir)/init.d
+sysvdir	= /etc/init.d
 sysv_SCRIPTS = atalk
 
-$(sysv_SCRIPTS): rc.atalk.suse
-	cp -f rc.atalk.suse $(sysv_SCRIPTS)
-	chmod a+x $(sysv_SCRIPTS)
+atalk: rc.atalk.suse
+	cp -f rc.atalk.suse atalk
+	chmod a+x atalk
 
 install-data-hook:
-	-insserv $(sysv_SCRIPTS)
+	-insserv atalk
 
 uninstall-startup:
-	-insserv -d $(sysv_SCRIPTS)
-	rm -f $(sysvdir)/$(sysv_SCRIPTS)
+	-insserv -d atalk
+	rm -f /etc/init.d/atalk
 
 endif
 
@@ -101,12 +101,12 @@ endif
 
 if USE_COBALT
 
-sysvdir	= $(sysconfdir)/rc.d/init.d
+sysvdir	= /etc/rc.d/init.d
 sysv_SCRIPTS = atalk
 
-$(sysv_SCRIPTS): rc.atalk.cobalt
-	cp -f rc.atalk.cobalt $(sysv_SCRIPTS)
-	chmod a+x $(sysv_SCRIPTS)
+atalk: rc.atalk.cobalt
+	cp -f rc.atalk.cobalt atalk
+	chmod a+x atalk
 
 install-data-hook:
 
@@ -122,12 +122,12 @@ endif
 
 if USE_TRU64
 
-sysvdir	= $$(sysconfdir)/init.d
+sysvdir	= /sbin/init.d
 sysv_SCRIPTS = atalk
 
-$(sysv_SCRIPTS): rc.atalk.tru64
-	cp -f rc.atalk.tru64 $(sysv_SCRIPTS)
-	chmod a+x $(sysv_SCRIPTS)
+atalk: rc.atalk.tru64
+	cp -f rc.atalk.tru64 atalk
+	chmod a+x atalk
 
 install-data-hook:
 
@@ -143,7 +143,7 @@ endif
 
 if USE_NETBSD
 
-sysvdir = $(sysconfdir)/rc.d
+sysvdir = /etc/rc.d
 sysv_SCRIPTS = afpd atalkd papd timelord
 
 afpd: rc.afpd.netbsd
@@ -175,23 +175,21 @@ endif
 
 if USE_SOLARIS
 
-sysvdir = $(sysconfdir)/init.d
+sysvdir = /etc/init.d
 sysv_SCRIPTS = atalk
 
-$(sysv_SCRIPTS): rc.atalk.sysv
+atalk: rc.atalk.sysv
 	cp -f rc.atalk.sysv $@
 	chmod a+x $@
 
 install-data-hook:
-	rm -f $(sysconfdir)/rc2.d/S90atalk
-	-ln -s ../init.d/$(sysv_SCRIPTS) $(sysconfdir)/rc2.d/S90$(sysv_SCRIPTS)
-	rm -f $(sysconfdir)/rc0.d/K04$(sysv_SCRIPTS)
-	-ln -s ../init.d/atalk $(sysconfdir)/rc0.d/K04$(sysv_SCRIPTS)
+	rm -f /etc/rc2.d/S90atalk
+	-ln -s ../init.d/atalk /etc/rc2.d/S90atalk
+	rm -f /etc/rc0.d/K04atalk
+	-ln -s ../init.d/atalk /etc/rc0.d/K04atalk
 
 uninstall-startup:
-	rm -f $(sysvdir)/$(sysv_SCRIPTS) \
-		$(sysconfdir)/rc2.d/S90$(sysv_SCRIPTS) \
-		$(sysconfdir)/rc0.d/K04$(sysv_SCRIPTS)
+	rm -f /etc/init.d/atalk /etc/rc2.d/S90atalk /etc/rc0.d/K04atalk
 
 endif
 
@@ -201,19 +199,19 @@ endif
 
 if USE_GENTOO
 
-sysvdir = $(sysconfdir)/init.d
+sysvdir = /etc/init.d
 sysv_SCRIPTS = atalk
 
-$(sysv_SCRIPTS): rc.atalk.gentoo
-	cp -f rc.atalk.gentoo $(sysv_SCRIPTS)
-	chmod a+x $(sysv_SCRIPTS)
+atalk: rc.atalk.gentoo
+	cp -f rc.atalk.gentoo atalk
+	chmod a+x atalk
 
 install-data-hook:
-	-rc-update add $(sysv_SCRIPTS) default
+	-rc-update add atalk default
 
 uninstall-startup:
-	-rc-update del $(sysv_SCRIPTS) default
-	rm -f $(sysvdir)/$(sysv_SCRIPTS)
+	-rc-update del atalk default
+	rm -f /etc/init.d/atalk
 
 endif
 
@@ -223,19 +221,19 @@ endif
 
 if USE_DEBIAN
 
-sysvdir = $(sysconfdir)/init.d
-sysv_SCRIPTS = netatalk
+sysvdir = /etc/init.d
+sysv_SCRIPTS = atalk
 
-$(sysv_SCRIPTS): rc.atalk.debian
-	cp -f rc.atalk.debian $(sysv_SCRIPTS)
-	chmod a+x $(sysv_SCRIPTS)
+atalk: rc.atalk.debian
+	cp -f rc.atalk.debian atalk
+	chmod a+x atalk
 
 install-data-hook:
-	update-rc.d $(sysv_SCRIPTS) defaults 90 10
+	update-rc.d atalk defaults 90 10
 
 uninstall-startup:
-	rm -f $(sysvdir)/$(sysv_SCRIPTS)
-	update-rc.d netatalk remove
+	rm -f /etc/init.d/atalk
+	update-rc.d atalk remove
 
 endif
 
