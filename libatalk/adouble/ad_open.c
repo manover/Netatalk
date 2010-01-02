@@ -1,5 +1,5 @@
 /*
- * $Id: ad_open.c,v 1.60 2009-11-27 12:37:25 didg Exp $
+ * $Id: ad_open.c,v 1.60.2.1 2010-01-02 10:22:33 franklahm Exp $
  *
  * Copyright (c) 1999 Adrian Sun (asun@u.washington.edu)
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
@@ -1008,8 +1008,8 @@ int ad_stat(const char *path, struct stat *stbuf)
     if (!p) {
         return -1;
     }
-
-    return stat( p, stbuf );
+//FIXME!
+    return lstat( p, stbuf );
 }
 
 /* ----------------
@@ -1212,6 +1212,7 @@ int ad_open( const char *path, int adflags, int oflags, int mode, struct adouble
 {
     struct stat         st_dir;
     struct stat         st_meta;
+    struct stat         st_link;
     struct stat         *pst = NULL;
     char        *ad_p;
     int         hoflags, admode;
@@ -1225,6 +1226,7 @@ int ad_open( const char *path, int adflags, int oflags, int mode, struct adouble
         ad->ad_adflags = adflags;
         ad->ad_resource_fork.adf_refcount = 0;
         ad->ad_data_fork.adf_refcount = 0;
+        ad->ad_data_fork.adf_syml=0;
     }
     else {
         ad->ad_open_forks = ((ad->ad_data_fork.adf_refcount > 0) ? ATTRBIT_DOPEN : 0);
@@ -1243,11 +1245,27 @@ int ad_open( const char *path, int adflags, int oflags, int mode, struct adouble
                     admode = mode;
                 }
             }
-            ad->ad_data_fork.adf_fd =open( path, hoflags, admode );
+            lstat(path,&st_link);
+            if (S_ISLNK(st_link.st_mode) && (oflags == O_RDONLY)) {
+                int lsz;
+                ad->ad_data_fork.adf_syml=(char *)malloc(PATH_MAX+1);
+                lsz=readlink(path,ad->ad_data_fork.adf_syml,PATH_MAX);
+                if (lsz<=0) {
+                    free(ad->ad_data_fork.adf_syml);
+                    return -1;
+                }                
+                ad->ad_data_fork.adf_syml[lsz]=0;
+                ad->ad_data_fork.adf_syml=(char *)realloc(ad->ad_data_fork.adf_syml,lsz+1);
+                ad->ad_data_fork.adf_fd=0;
+            }else{
+                
+                ad->ad_data_fork.adf_fd =open( path, hoflags | O_NOFOLLOW, admode );
+            
             if (ad->ad_data_fork.adf_fd < 0 ) {
                 if ((errno == EACCES || errno == EROFS) && !(oflags & O_RDWR)) {
                     hoflags = oflags;
-                    ad->ad_data_fork.adf_fd = open( path, hoflags, admode );
+                        ad->ad_data_fork.adf_fd = open( path, hoflags | O_NOFOLLOW, admode );
+                }
                 }
             }
             if ( ad->ad_data_fork.adf_fd < 0)
@@ -1309,11 +1327,11 @@ int ad_open( const char *path, int adflags, int oflags, int mode, struct adouble
     if (!(adflags & ADFLAGS_RDONLY)) {
         hoflags = (hoflags & ~(O_RDONLY | O_WRONLY)) | O_RDWR;
     }
-    ad->ad_md->adf_fd = open( ad_p, hoflags, 0 );
+    ad->ad_md->adf_fd = open( ad_p, hoflags | O_NOFOLLOW, 0 );
     if (ad->ad_md->adf_fd < 0 ) {
         if ((errno == EACCES || errno == EROFS) && !(oflags & O_RDWR)) {
             hoflags = oflags & ~(O_CREAT | O_EXCL);
-            ad->ad_md->adf_fd = open( ad_p, hoflags, 0 );
+            ad->ad_md->adf_fd = open( ad_p, hoflags | O_NOFOLLOW, 0 );
         }
     }
 
@@ -1566,7 +1584,7 @@ static int new_rfork(const char *path, struct adouble *ad, int adflags)
         memcpy(ad_entry(ad, ADEID_FINDERI) + FINDERINFO_FRFLAGOFF, &ashort, sizeof(ashort));
     }
 
-    if (stat(path, &st) < 0) {
+    if (lstat(path, &st) < 0) {
         return -1;
     }
 

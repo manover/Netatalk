@@ -1,5 +1,5 @@
 /*
- * $Id: adouble.h,v 1.50 2009-11-18 11:14:59 didg Exp $
+ * $Id: adouble.h,v 1.50.2.1 2010-01-02 10:22:33 franklahm Exp $
  * Copyright (c) 1990,1991 Regents of The University of Michigan.
  * All Rights Reserved.
  *
@@ -244,6 +244,7 @@ struct ad_fd {
     off_t        adf_off;
 #endif
 
+    char         *adf_syml;
     int          adf_flags;
     int          adf_excl;
     adf_lock_t   *adf_lock;

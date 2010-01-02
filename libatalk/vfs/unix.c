@@ -1,5 +1,5 @@
 /*
- * $Id: unix.c,v 1.6 2009-10-27 10:24:02 franklahm Exp $
+ * $Id: unix.c,v 1.6.2.1 2010-01-02 10:22:33 franklahm Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -83,11 +83,13 @@ int setfilmode(const char * name, mode_t mode, struct stat *st, mode_t v_umask)
     mode_t mask = S_IRWXU | S_IRWXG | S_IRWXO;  /* rwx for owner group and other, by default */
 
     if (!st) {
-        if (stat(name, &sb) != 0)
+        if (lstat(name, &sb) != 0)
             return -1;
         st = &sb;
     }
 
+    if (S_ISLNK(st->st_mode)) return 0; /* we don't want to change link permissions */
+    
     mode |= st->st_mode & ~mask; /* keep other bits from previous mode */
     if ( chmod( name,  mode & ~v_umask ) < 0 && errno != EPERM ) {
         return -1;

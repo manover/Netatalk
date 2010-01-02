@@ -1,5 +1,5 @@
 /*
- * $Id: directory.c,v 1.121 2009-11-27 12:37:24 didg Exp $
+ * $Id: directory.c,v 1.121.2.1 2010-01-02 10:22:32 franklahm Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -776,7 +776,7 @@ static int deletedir(char *dir)
             break;
         }
         strcpy(path + len, de->d_name);
-        if (stat(path, &st)) {
+        if (lstat(path, &st)) {
             continue;
         }
         if (S_ISDIR(st.st_mode)) {
@@ -842,7 +842,7 @@ static int copydir(const struct vol *vol, char *src, char *dst)
         }
         strcpy(spath + slen, de->d_name);
 
-        if (stat(spath, &st) == 0) {
+        if (lstat(spath, &st) == 0) {
             if (strlen(de->d_name) > drem) {
                 err = AFPERR_PARAM;
                 break;
@@ -864,7 +864,7 @@ static int copydir(const struct vol *vol, char *src, char *dst)
     }
 
     /* keep the same time stamp. */
-    if (stat(src, &st) == 0) {
+    if (lstat(src, &st) == 0) {
         ut.actime = ut.modtime = st.st_mtime;
         utime(dst, &ut);
     }

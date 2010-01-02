@@ -1,5 +1,5 @@
 /*
- * $Id: unix.c,v 1.59 2009-10-29 10:04:35 didg Exp $
+ * $Id: unix.c,v 1.59.2.1 2010-01-02 10:22:32 franklahm Exp $
  *
  * Copyright (c) 1990,1993 Regents of The University of Michigan.
  * All Rights Reserved.  See COPYRIGHT.
@@ -178,7 +178,7 @@ struct stat     sb;
 
     ma->ma_user = ma->ma_owner = ma->ma_world = ma->ma_group = 0;
     if (!st) {
-        if (stat(path, &sb) != 0)
+        if (lstat(path, &sb) != 0)
             return;
         st = &sb;
     }
@@ -281,7 +281,7 @@ int setdeskmode(const mode_t mode)
             *m = '\0';
             strcat( modbuf, subp->d_name );
             /* XXX: need to preserve special modes */
-            if (stat(modbuf, &st) < 0) {
+            if (lstat(modbuf, &st) < 0) {
                 LOG(log_error, logtype_afpd, "setdeskmode: stat %s: %s",fullpathname(modbuf), strerror(errno) );
                 continue;
             }
@@ -384,7 +384,7 @@ int setdirmode(const struct vol *vol, const char *name, mode_t mode)
         if ( *dirp->d_name == '.' && (!osx || dirp->d_name[1] != '_')) {
             continue;
         }
-        if ( stat( dirp->d_name, &st ) < 0 ) {
+        if ( lstat( dirp->d_name, &st ) < 0 ) {
             LOG(log_error, logtype_afpd, "setdirmode: stat %s: %s",dirp->d_name, strerror(errno) );
             continue;
         }
@@ -519,7 +519,7 @@ int setdirowner(const struct vol *vol, const char *name, const uid_t uid, const 
         if ( *dirp->d_name == '.' && (!osx || dirp->d_name[1] != '_')) {
             continue;
         }
-        if ( stat( dirp->d_name, &st ) < 0 ) {
+        if ( lstat( dirp->d_name, &st ) < 0 ) {
             LOG(log_error, logtype_afpd, "setdirowner: stat %s: %s",
                 fullpathname(dirp->d_name), strerror(errno) );
             continue;
@@ -538,7 +538,7 @@ int setdirowner(const struct vol *vol, const char *name, const uid_t uid, const 
         return -1;
     }
     
-    if ( stat( ".", &st ) < 0 ) {
+    if ( lstat( ".", &st ) < 0 ) {
         return( -1 );
     }
     if ( gid && gid != st.st_gid && chown( ".", uid, gid ) < 0 && errno != EPERM ) {
@@ -565,7 +565,7 @@ static int recursive_chown(const char *path, uid_t uid, gid_t gid) {
 	return -1;
     }
 
-    if (stat(path, &sbuf) < 0) {
+    if (lstat(path, &sbuf) < 0) {
 	LOG(log_error, logtype_afpd, "cannot chown() file [%s] (uid = %d): %s", path, uid, strerror(errno));
 	return -1;
     }
