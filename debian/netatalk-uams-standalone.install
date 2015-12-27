@@ -1,0 +1,3 @@
+debian/tmp/usr/lib/*/netatalk/uams_dhx2_passwd.so
+debian/tmp/usr/lib/*/netatalk/uams_dhx_passwd.so
+debian/tmp/usr/lib/*/netatalk/uams_guest.so

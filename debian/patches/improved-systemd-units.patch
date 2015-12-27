@@ -1,0 +1,22 @@
+--- a/distrib/initscripts/service.systemd.tmpl
++++ b/distrib/initscripts/service.systemd.tmpl
+@@ -8,12 +8,16 @@
+ 
+ [Service]
+ Type=forking
+-GuessMainPID=no
+-ExecStart=/bin/sh -c :SBINDIR:/netatalk
+-PIDFile=:PATH_NETATALK_LOCK:
++ExecStart=/sbin/netatalk
++PIDFile=/run/netatalk.pid
+ ExecReload=/bin/kill -HUP $MAINPID
+ Restart=always
+ RestartSec=1
+ 
++ProtectHome=yes
++ProtectSystem=full
++PrivateDevices=yes
++PrivateTmp=yes
++
+ [Install]
+ WantedBy=multi-user.target

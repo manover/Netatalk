@@ -1,0 +1,152 @@
+--- a/man/man1/afpldaptest.1.in
++++ b/man/man1/afpldaptest.1.in
+@@ -33,11 +33,12 @@ afpldaptest \- Syntactically check ldap
+ .HP \w'\fBafpldaptest\fR\fB\fR\fBafpldaptest\fR\fB\fR\ 'u
+ \fBafpldaptest\fR\fB\fR {\-u\ \fIUSER\fR | \-g\ \fIGROUP\fR | \-i\ \fIUUID\fR}
+ .br
++.HP \w'\fBafpldaptest\fR\fB\fR\fBafpldaptest\fR\fB\fR\ 'u
+ \fBafpldaptest\fR\fB\fR {\-h | \-? | \-:}
+ .SH "DESCRIPTION"
+ .PP
+ \fBafpldaptest\fR
+-is a simple command to syntactically check ldap parameters in @pkgconfdir@/afp\&.conf\&.
++is a simple command to syntactically check ldap parameters in @PKGCONFDIR@/afp\&.conf\&.
+ .SH "OPTIONS"
+ .PP
+ \fB\-u\fR \fIUSER\fR
+--- a/man/man1/afpstats.1.in
++++ b/man/man1/afpstats.1.in
+@@ -42,7 +42,7 @@ list AFP statistics via D\-Bus IPC\&.
+ must support D\-Bus\&. Check it by "\fBafpd \-V\fR"\&.
+ .PP
+ "\fBafpstats = yes\fR" must be set in
+-@pkgconfdir@/afp\&.conf\&.
++@PKGCONFDIR@/afp\&.conf\&.
+ .SH "SEE ALSO"
+ .PP
+ \fBafpd\fR(8),
+--- a/man/man5/afp.conf.5.in
++++ b/man/man5/afp.conf.5.in
+@@ -307,7 +307,7 @@ uams_clrtxt\&.so
+ .PP
+ uams_randum\&.so
+ .RS 4
+-allows Random Number and Two\-Way Random Number Exchange for authentication (requires a separate file containing the passwords, either @pkgconfdir@/afppasswd file or the one specified via "\fBpasswd file\fR"\&. See
++allows Random Number and Two\-Way Random Number Exchange for authentication (requires a separate file containing the passwords, either @PKGCONFDIR@/afppasswd file or the one specified via "\fBpasswd file\fR"\&. See
+ \fBafppasswd\fR(1)
+ for details\&. (legacy)
+ .RE
+@@ -383,7 +383,7 @@ Specifies the encoding of the volumes fi
+ .PP
+ passwd file = \fIpath\fR \fB(G)\fR
+ .RS 4
+-Sets the path to the Randnum UAM passwd file for this server (default is @pkgconfdir@/afppasswd)\&.
++Sets the path to the Randnum UAM passwd file for this server (default is @PKGCONFDIR@/afppasswd)\&.
+ .RE
+ .PP
+ passwd minlen = \fInumber\fR \fB(G)\fR
+@@ -627,7 +627,7 @@ Default size is 8192, maximum size is 13
+ .PP
+ extmap file = \fIpath\fR \fB(G)\fR
+ .RS 4
+-Sets the path to the file which defines file extension type/creator mappings\&. (default is @pkgconfdir@/extmap\&.conf)\&.
++Sets the path to the file which defines file extension type/creator mappings\&. (default is @PKGCONFDIR@/extmap\&.conf)\&.
+ .RE
+ .PP
+ force xattr with sticky bit = \fIBOOLEAN\fR (default: \fIno\fR) \fB(G/V)\fR
+--- a/man/man5/extmap.conf.5.in
++++ b/man/man5/extmap.conf.5.in
+@@ -30,12 +30,12 @@
+ .SH "NAME"
+ extmap.conf \- Configuration file used by afpd(8) to specify file name extension mappings\&.
+ .SH "SYNOPSIS"
+-.HP \w'\fB@pkgconfdir@/extmap\&.conf\fR\fB\fR\ 'u
+-\fB@pkgconfdir@/extmap\&.conf\fR\fB\fR
++.HP \w'\fB@PKGCONFDIR@/extmap\&.conf\fR\fB\fR\ 'u
++\fB@PKGCONFDIR@/extmap\&.conf\fR\fB\fR
+ .SH "DESCRIPTION"
+ .PP
+ 
+-@pkgconfdir@/extmap\&.conf
++@PKGCONFDIR@/extmap\&.conf
+ is the configuration file used by
+ \fBafpd\fR
+ to specify file name extension mappings\&.
+--- a/man/man8/afpd.8.in
++++ b/man/man8/afpd.8.in
+@@ -40,7 +40,7 @@ afpd \- Apple Filing Protocol daemon
+ provides an Apple Filing Protocol (AFP) interface to the Unix file system\&. It is normally started at boot time by
+ \fBnetatalk\fR(8)\&.
+ .PP
+-@pkgconfdir@/afp\&.conf
++@PKGCONFDIR@/afp\&.conf
+ is the configuration file used by
+ \fBafpd\fR
+ to determine the behavior and configuration of a file server\&.
+@@ -69,7 +69,7 @@ Print help and exit\&.
+ \-F \fIconfigfile\fR
+ .RS 4
+ Specifies the configuration file to use\&. (Defaults to
+-@pkgconfdir@/afp\&.conf\&.)
++@PKGCONFDIR@/afp\&.conf\&).
+ .RE
+ .SH "SIGNALS"
+ .PP
+@@ -136,7 +136,7 @@ process will look in the message directo
+ .RE
+ .SH "FILES"
+ .PP
+-@pkgconfdir@/afp\&.conf
++@PKGCONFDIR@/afp\&.conf
+ .RS 4
+ configuration file used by afpd
+ .RE
+@@ -151,12 +151,12 @@ list of server signature
+ list of UUID for Time Machine volume
+ .RE
+ .PP
+-@pkgconfdir@/extmap\&.conf
++@PKGCONFDIR@/extmap\&.conf
+ .RS 4
+ file name extension mapping
+ .RE
+ .PP
+-@pkgconfdir@/msg/message\&.pid
++@PKGCONFDIR@/msg/message\&.pid
+ .RS 4
+ contains messages to be sent to users\&.
+ .RE
+--- a/man/man8/cnid_metad.8.in
++++ b/man/man8/cnid_metad.8.in
+@@ -51,8 +51,9 @@ is normally started at boot time by
+ .PP
+ \fB\-d\fR
+ .RS 4
+-\fBcnid_metad will remain in the foreground and\fR
+-will also leave the standard input, standard output and standard error file descriptors open\&. Useful for debugging\&.
++\fBcnid_metad\fR
++will remain in the foreground and will also leave the standard input,
++standard output and standard error file descriptors open\&. Useful for debugging\&.
+ .RE
+ .PP
+ \fB\-F\fR \fIconfiguration file\fR
+@@ -60,7 +61,7 @@ will also leave the standard input, stan
+ Use
+ \fIconfiguration file\fR
+ as the configuration file\&. The default is
+-\fI@pkgconfdir@/afp\&.conf\fR\&.
++\fI@PKGCONFDIR@/afp\&.conf\fR\&.
+ .RE
+ .PP
+ \fB\-v, \-V\fR
+--- a/man/man8/netatalk.8.in
++++ b/man/man8/netatalk.8.in
+@@ -56,7 +56,7 @@ will cause the AFP daemon reload its con
+ .RE
+ .SH "FILES"
+ .PP
+-@pkgconfdir@/afp\&.conf
++@PKGCONFDIR@/afp\&.conf
+ .RS 4
+ configuration file used by afpd and cnid_metad
+ .RE

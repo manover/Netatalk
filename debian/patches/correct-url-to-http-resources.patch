@@ -1,0 +1,69 @@
+--- a/doc/gfx_and_css/netatalk.css
++++ b/doc/gfx_and_css/netatalk.css
+@@ -179,7 +179,7 @@ div#header {
+     height: 109px;
+     white-space: nowrap;
+     background-color: #424242;
+-    background-image: url(/gfx/bg.gif);
++    background-image: url(bg.gif);
+     background-repeat: no-repeat;
+     background-position: 380px 0px;
+ }
+@@ -191,7 +191,7 @@ div#logo {
+ 	width: 225px;
+ 	height: 109px;
+ 	padding: 0px;
+-	background-image: url(/gfx/netatalklogo.gif);
++	background-image: url(netatalklogo.gif);
+ 	background-repeat: no-repeat;
+ }
+ 
+--- a/doc/html.xsl.in
++++ b/doc/html.xsl.in
+@@ -4,7 +4,7 @@
+ 	<xsl:param name="use.id.as.filename" select="'1'"/>
+ 	<xsl:param name="chunk.section.depth" select="0"></xsl:param>
+ 	<xsl:param name="chunk.separate.lots" select="1"></xsl:param>
+-	<xsl:param name="html.stylesheet" select="'http://netatalk.sourceforge.net/css/netatalk.css'"/>
++	<xsl:param name="html.stylesheet" select="'gfx_and_css/netatalk.css'"/>
+ 
+ 	<xsl:template name="user.header.navigation">
+ 		<xsl:variable name="codefile" select="document('netatalk.html',/)"/>
+--- a/doc/manual/netatalk.html
++++ b/doc/manual/netatalk.html
+@@ -2,13 +2,11 @@
+     <div id="header">
+         <div id="logo"></div>
+         <div id="menlinks">
+-          <a href="/" title="Return to Netatalk home">[main]</a>
++          <a href="../" title="Return to Netatalk home">[main]</a>
+           <a href="http://netatalk.sourceforge.net/wiki/" title="Netatalk Wiki">[wiki]</a>
+-          <a href="/3.1/htmldocs" title="Netatalk Manual">[documentation]</a>
+           <a href="http://sourceforge.net/project/showfiles.php?group_id=8642" title="Download Netatalk from sourceforge">[downloads]</a>
+-          <a href="/support.php" title="Support">[support]</a>
+-          <a href="/links.php" title="Netatalk related links">[links]</a>
+-          <img src="/gfx/end.gif" alt="" width="125" height="7" />
++          <a href="http://netatalk.sourceforge.net/support.php" title="Support">[support]</a>
++          <img src="gfx_and_css/end.gif" alt="" width="125" height="7" />
+         </div>
+     </div>
+ </html>
+--- a/doc/www/netatalk-relnotes.conf
++++ b/doc/www/netatalk-relnotes.conf
+@@ -135,13 +135,11 @@ ifndef::doctype-manpage[]
+ <div id="header">
+ <div id="logo"></div>
+ <div id="menlinks">
+-        <a href="/" title="Return to Netatalk home">[main]</a>
++        <a href="../" title="Return to Netatalk home">[main]</a>
+         <a href="https://sourceforge.net/apps/mediawiki/netatalk/index.php?title=Main_Page" title="Netatalk Wiki">[wiki]</a>
+-        <a href="/3.0/htmldocs" title="Netatalk Manual">[documentation]</a>
+         <a href="http://sourceforge.net/project/showfiles.php?group_id=8642" title="Download Netatalk from sourceforge">[downloads]</a>
+-        <a href="/support.php" title="Support">[support]</a>
+-        <a href="/links.php" title="Netatalk related links">[links]</a>
+-        <img src="/gfx/end.gif" alt="" width="125" height="7" />
++        <a href="http://netatalk.sourceforge.net/support.php" title="Support">[support]</a>
++        <img src="gfx_and_css/end.gif" alt="" width="125" height="7" />
+ </div>
+ </div>
+ <div id="header-print">
