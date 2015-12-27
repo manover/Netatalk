@@ -1,0 +1,39 @@
+netatalk (3.1.7-8) unstable; urgency=medium
+
+  * Hardened build
+
+ -- Denis Bychkov <manover@gmail.com>  Sun, 27 Dec 2015 03:38:50 -0500
+
+netatalk (3.1.7-7) unstable; urgency=medium
+
+  * Fixed formatting and unsubstituted variables in man files
+  * Moved netatalk-config to libnetatalk-dev and added an arch-dependent
+    <arch>-netatalk-config version
+  * Renamed pid file /run/netatalk -> /run/netatalk.pid
+
+ -- Denis Bychkov <manover@gmail.com>  Wed, 11 Nov 2015 01:19:14 -0500
+
+netatalk (3.1.7-4) unstable; urgency=medium
+
+  * Added symbols for libnetatalk
+
+ -- Denis Bychkov <manover@gmail.com>  Tue, 10 Nov 2015 16:05:35 -0500
+
+netatalk (3.1.7-3) unstable; urgency=medium
+
+  * Better packaging rules
+  * Symlinks to libnetatalk doc dir instead of doc/<package> directories
+
+ -- Denis Bychkov <manover@gmail.com>  Mon, 09 Nov 2015 23:25:58 -0500
+
+netatalk (3.1.7-2) unstable; urgency=medium
+
+  * Spotlight search support (gnome tracker)
+
+ -- Denis Bychkov <manover@gmail.com>  Sun, 08 Nov 2015 02:26:13 -0500
+
+netatalk (3.1.7-1) unstable; urgency=low
+
+  * Initial submission
+
+ -- Denis Bychkov <manover@gmail.com>  Sat, 07 Nov 2015 10:39:33 -0500

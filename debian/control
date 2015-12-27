@@ -1,0 +1,170 @@
+Source: netatalk
+Section: net
+Priority: optional
+Maintainer: Denis Bychkov <manover@gmail.com>
+Build-Depends: debhelper (>= 9), libacl1-dev, libattr1, libavahi-client-dev, libavahi-common-dev, 
+ libc6-dev, libcomerr2, libcrack2-dev, libdb-dev, libdbus-glib-1-dev, libgcrypt20-dev, libglib2.0-dev,
+ libkrb5-dev, libmysqlclient-dev, libpam0g-dev, libssl-dev, libwrap0-dev, zlib1g-dev, libldap2-dev,
+ krb5-multidev, libevent-dev, libtdb-dev, init-system-helpers (>= 1.18~), dh-autoreconf, pkg-config,
+ systemtap-sdt-dev, libtracker-miner-1.0-dev, libtracker-sparql-1.0-dev
+Standards-Version: 3.9.6
+Homepage: http://netatalk.sourceforge.net/
+Vcs-Git: git://git.code.sf.net/p/netatalk/code
+Vcs-Browser: http://sourceforge.net/p/netatalk/code/ci/master/tree/
+
+Package: netatalk
+Architecture: any
+Multi-Arch: foreign
+Depends: libnetatalk (= ${binary:Version}), netatalk-uams (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Recommends: netatalk-uams-pam
+Suggests: netatalk-uams-std, netatalk-uams-extra
+Breaks: netatalk (< 3.1)
+Description: Apple File Protocol (AFP) open source server implementation, version 3
+ Netatalk is a freely-available Open Source AFP fileserver. A Linux system running Netatalk
+ is capable of serving many Macintosh clients simultaneously as an AppleShare file server (AFP).
+ .
+ Netatalk 3.x is a major upgrade over 2.2 versions. The whole suite is completely overhauled,
+ all configuration is now controlled via a single samba-style ini file, deprecated AppleTalk
+ protocol dropped, the new AppleDouble backend now provides Mac metadata storage using the Linux
+ native extended attributes if supported by the file system. A huge number of new features introduced,
+ making Netatalk serve the same role for the Mac infrastructure that Samba suite serves in the
+ Windows world.
+ .
+ This package provides netatalk daemons: netatalk, afpd, cnid and utilities.
+
+Package: libnetatalk
+Architecture: any
+Multi-Arch: same
+Section: libs
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Breaks: netatalk (< 3.1)
+Description: Netatalk 3 core libraries
+ Netatalk is a freely-available Open Source AFP fileserver. A Linux system running Netatalk
+ is capable of serving many Macintosh clients simultaneously as an AppleShare file server (AFP).
+ .
+ Netatalk 3.x is a major upgrade over 2.2 versions. The whole suite is completely overhauled,
+ all configuration is now controlled via a single samba-style ini file, deprecated AppleTalk
+ protocol dropped, the new AppleDouble backend now provides Mac metadata storage using the Linux
+ native extended attributes if supported by the file system. A huge number of new features introduced,
+ making Netatalk serve the same role for the Mac infrastructure that Samba suite serves in the
+ Windows world.
+ .
+ This package contains the core shared library for Netatalk 3.
+
+Package: netatalk-uams-pam
+Architecture: any
+Multi-Arch: same
+Provides: netatalk-uams (= ${binary:Version})
+Section: libs
+Depends: libnetatalk (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Breaks: netatalk (< 3.1)
+Description: Netatalk 3 core libraries
+ Netatalk is a freely-available Open Source AFP fileserver. A Linux system running Netatalk
+ is capable of serving many Macintosh clients simultaneously as an AppleShare file server (AFP).
+ .
+ Netatalk 3.x is a major upgrade over 2.2 versions. The whole suite is completely overhauled,
+ all configuration is now controlled via a single samba-style ini file, deprecated AppleTalk
+ protocol dropped, the new AppleDouble backend now provides Mac metadata storage using the Linux
+ native extended attributes if supported by the file system. A huge number of new features introduced,
+ making Netatalk serve the same role for the Mac infrastructure that Samba suite serves in the
+ Windows world.
+ .
+ This package provides UAMs (User Authentication Modules) for Netatalk 3 server with Linux PAM 
+ integration. These are the recommended modules.
+
+Package: netatalk-uams-standalone
+Architecture: any
+Multi-Arch: same
+Provides: netatalk-uams (= ${binary:Version})
+Section: libs
+Depends: libnetatalk (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Breaks: netatalk (< 3.1)
+Description: Netatalk 3 core libraries
+ Netatalk is a freely-available Open Source AFP fileserver. A Linux system running Netatalk
+ is capable of serving many Macintosh clients simultaneously as an AppleShare file server (AFP).
+ .
+ Netatalk 3.x is a major upgrade over 2.2 versions. The whole suite is completely overhauled,
+ all configuration is now controlled via a single samba-style ini file, deprecated AppleTalk
+ protocol dropped, the new AppleDouble backend now provides Mac metadata storage using the Linux
+ native extended attributes if supported by the file system. A huge number of new features introduced,
+ making Netatalk serve the same role for the Mac infrastructure that Samba suite serves in the
+ Windows world.
+ .
+ This package provides the stand-alone password-based UAMs that should cover all the  standard use
+ cases for small system configurations.
+
+Package: netatalk-uams-extra
+Architecture: any
+Multi-Arch: same
+Provides: netatalk-uams (= ${binary:Version})
+Section: libs
+Depends: libnetatalk (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Breaks: netatalk (< 3.1)
+Description: Netatalk 3 core libraries
+ Netatalk is a freely-available Open Source AFP fileserver. A Linux system running Netatalk
+ is capable of serving many Macintosh clients simultaneously as an AppleShare file server (AFP).
+ .
+ Netatalk 3.x is a major upgrade over 2.2 versions. The whole suite is completely overhauled,
+ all configuration is now controlled via a single samba-style ini file, deprecated AppleTalk
+ protocol dropped, the new AppleDouble backend now provides Mac metadata storage using the Linux
+ native extended attributes if supported by the file system. A huge number of new features introduced,
+ making Netatalk serve the same role for the Mac infrastructure that Samba suite serves in the
+ Windows world.
+ .
+ This package provides few extra UAMs: Clear Text Password, (2-Way) Randnum exchange (weak 56-bit
+ encryption), PGP authentication and Kerberos V authentication.
+
+Package: libnetatalk-dev
+Architecture: any
+Multi-Arch: same
+Section: libs
+Depends: libnetatalk (= ${binary:Version}), netatalk-uams-std (= ${binary:Version}), 
+ netatalk-uams-pam (= ${binary:Version}), netatalk-uams-extra (= ${binary:Version}),
+ ${shlibs:Depends}, ${misc:Depends}
+Breaks: netatalk (< 3.1)
+Description: Netatalk 3 library development files
+ Netatalk is a freely-available Open Source AFP fileserver. A Linux system running Netatalk
+ is capable of serving many Macintosh clients simultaneously as an AppleShare file server (AFP).
+ .
+ Netatalk 3.x is a major upgrade over 2.2 versions. The whole suite is completely overhauled,
+ all configuration is now controlled via a single samba-style ini file, deprecated AppleTalk
+ protocol dropped, the new AppleDouble backend now provides Mac metadata storage using the Linux
+ native extended attributes if supported by the file system. A huge number of new features introduced,
+ making Netatalk serve the same role for the Mac infrastructure that Samba suite serves in the
+ Windows world.
+ .
+ This package contains library headers and static build library version.
+
+Package: netatalk-dbg
+Section: debug
+Depends: libnetatalk (= ${binary:Version})
+Architecture: any
+Multi-Arch: same
+Description: Debug symbols for Netatalk 3
+ Netatalk is a freely-available Open Source AFP fileserver. A Linux system running Netatalk
+ is capable of serving many Macintosh clients simultaneously as an AppleShare file server (AFP).
+ .
+ Netatalk 3.x is a major upgrade over 2.2 versions. The whole suite is completely overhauled,
+ all configuration is now controlled via a single samba-style ini file, deprecated AppleTalk
+ protocol dropped, the new AppleDouble backend now provides Mac metadata storage using the Linux
+ native extended attributes if supported by the file system. A huge number of new features introduced,
+ making Netatalk serve the same role for the Mac infrastructure that Samba suite serves in the
+ Windows world.
+ .
+ This package provides debugging symbols for Netatalk 3.
+
+Package: netatalk-doc
+Architecture: all
+Section: doc
+Description: Documentation for Netatalk 3
+ Netatalk is a freely-available Open Source AFP fileserver. A Linux system running Netatalk
+ is capable of serving many Macintosh clients simultaneously as an AppleShare file server (AFP).
+ .
+ Netatalk 3.x is a major upgrade over 2.2 versions. The whole suite is completely overhauled,
+ all configuration is now controlled via a single samba-style ini file, deprecated AppleTalk
+ protocol dropped, the new AppleDouble backend now provides Mac metadata storage using the Linux
+ native extended attributes if supported by the file system. A huge number of new features introduced,
+ making Netatalk serve the same role for the Mac infrastructure that Samba suite serves in the
+ Windows world.
+ .
+ This package contains Netatalk 3 documentation.

@@ -1,0 +1,10 @@
+#!/bin/sh
+
+CFG="/usr/bin/$(dpkg-architecture -qDEB_HOST_GNU_TYPE)-netatalk-config"
+
+if [ -x "$CFG" ]; then
+	exec $CFG "$@"
+else
+	echo "$CFG not found, try installing the package for $(dpkg-architecture -qDEB_HOST_ARCH) architecture" >&2
+	exit 1
+fi

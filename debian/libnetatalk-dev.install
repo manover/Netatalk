@@ -1,0 +1,6 @@
+debian/netatalk-config usr/bin
+debian/tmp/usr/include/atalk/*.h
+debian/tmp/usr/lib/*/libatalk.a
+debian/tmp/usr/lib/*/libatalk.so
+debian/tmp/usr/lib/*/netatalk/*.a
+debian/tmp/usr/share/aclocal/netatalk.m4

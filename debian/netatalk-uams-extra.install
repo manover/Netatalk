@@ -1,0 +1,4 @@
+debian/tmp/usr/lib/*/netatalk/uams_gss.so
+debian/tmp/usr/lib/*/netatalk/uams_pgp.so
+debian/tmp/usr/lib/*/netatalk/uams_randnum.so
+debian/tmp/usr/lib/*/netatalk/uams_passwd.so

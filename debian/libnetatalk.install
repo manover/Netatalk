@@ -1,0 +1,2 @@
+debian/tmp/usr/lib/*/libatalk.so.*.*.*
+debian/tmp/usr/lib/*/libatalk.so.*

@@ -1,0 +1,4 @@
+doc/manual/*.html		usr/share/doc/netatalk-doc/html
+doc/gfx_and_css/*.css	usr/share/doc/netatalk-doc/html/gfx_and_css
+doc/gfx_and_css/*.png	usr/share/doc/netatalk-doc/html/gfx_and_css
+debian/gfx_and_css/*	usr/share/doc/netatalk-doc/html/gfx_and_css
