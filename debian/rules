@@ -51,7 +51,7 @@ override_dh_auto_configure:
 		--with-cnid-dbd-backend --with-cnid-last-backend --with-cnid-tdb-backend --with-cnid-default-backend=dbd \
 		--enable-tcp-wrappers --enable-quota --enable-admin-group --with-cracklib --with-pam --with-ldap \
 		--with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl --enable-pgp-uam --enable-krb4-uam --enable-krbV-uam \
-		--with-tracker-pkgconfig-version=1.0 --enable-sendfile --with-shadow 
+		--with-tracker-pkgconfig-version=1.0 --enable-sendfile --with-shadow
 
 override_dh_autoreconf:
 	dh_autoreconf --as-needed $(CURDIR)/bootstrap

@@ -1,7 +1,7 @@
 --- a/distrib/initscripts/service.systemd.tmpl
 +++ b/distrib/initscripts/service.systemd.tmpl
-@@ -8,12 +8,16 @@
- 
+@@ -8,12 +8,16 @@ After=syslog.target network.target avahi
+
  [Service]
  Type=forking
 -GuessMainPID=no
@@ -12,7 +12,7 @@
  ExecReload=/bin/kill -HUP $MAINPID
  Restart=always
  RestartSec=1
- 
+
 +ProtectHome=yes
 +ProtectSystem=full
 +PrivateDevices=yes

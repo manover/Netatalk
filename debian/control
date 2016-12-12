@@ -2,7 +2,7 @@ Source: netatalk
 Section: net
 Priority: optional
 Maintainer: Denis Bychkov <manover@gmail.com>
-Build-Depends: debhelper (>= 9), libacl1-dev, libattr1, libavahi-client-dev, libavahi-common-dev, 
+Build-Depends: debhelper (>= 9), libacl1-dev, libattr1, libavahi-client-dev, libavahi-common-dev,
  libc6-dev, libcomerr2, libcrack2-dev, libdb-dev, libdbus-glib-1-dev, libgcrypt20-dev, libglib2.0-dev,
  libkrb5-dev, libmysqlclient-dev, libpam0g-dev, libssl-dev, libwrap0-dev, zlib1g-dev, libldap2-dev,
  krb5-multidev, libevent-dev, libtdb-dev, init-system-helpers (>= 1.18~), dh-autoreconf, pkg-config,
@@ -69,7 +69,7 @@ Description: Netatalk 3 core libraries
  making Netatalk serve the same role for the Mac infrastructure that Samba suite serves in the
  Windows world.
  .
- This package provides UAMs (User Authentication Modules) for Netatalk 3 server with Linux PAM 
+ This package provides UAMs (User Authentication Modules) for Netatalk 3 server with Linux PAM
  integration. These are the recommended modules.
 
 Package: netatalk-uams-standalone
@@ -118,7 +118,7 @@ Package: libnetatalk-dev
 Architecture: any
 Multi-Arch: same
 Section: libs
-Depends: libnetatalk (= ${binary:Version}), netatalk-uams-std (= ${binary:Version}), 
+Depends: libnetatalk (= ${binary:Version}), netatalk-uams-std (= ${binary:Version}),
  netatalk-uams-pam (= ${binary:Version}), netatalk-uams-extra (= ${binary:Version}),
  ${shlibs:Depends}, ${misc:Depends}
 Breaks: netatalk (< 3.1)

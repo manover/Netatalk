@@ -309,7 +309,7 @@ Copyright: 2004, Didier Gautheron
   2009, Frank Lahm
 License: GPL-2+
 
-Files: 
+Files:
  libatalk/util/strcasestr.c
 Copyright: 1994,1996-1997, Free Software Foundation, Inc
 License: LGPL-2+~C
