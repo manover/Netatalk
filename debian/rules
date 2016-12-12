@@ -3,15 +3,13 @@
 maintainer ?= 1
 
 ifeq ($(maintainer),1)
-export DH_VERBOSE=1
-export DH_OPTIONS=-v
-make_flags=V=1
+export DH_VERBOSE = 1
+export DH_OPTIONS = -v
+make_flags = V=1
 export V=1
 endif
 
-DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
-DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
-DEB_HOST_MULTIARCH  ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+include /usr/share/dpkg/architecture.mk
 
 N := netatalk
 
@@ -34,7 +32,7 @@ endif
 MIGRATE_DIR = lib$(N)-dev $(N) $(N)-dbg $(N)-uams-std $(N)-uams-pam $(N)-uams-extra
 
 %:
-	dh $@ --with autoreconf,systemd --parallel
+	dh $@ --with autoreconf,systemd
 
 override_dh_auto_configure:
 	./configure $(confflags) CFLAGS="$(CFLAGS) $(CPPLAGS)" LDFLAGS="$(LDFLAGS)" \
@@ -76,15 +74,7 @@ override_dh_strip:
 	dh_strip -a --dbg-package=$(N)-dbg
 
 override_dh_clean:
-	for p in $(MIGRATE_DIR); do \
-		rm -f debian/$$p.preinst; \
-	done
-	find doc/manpages -name '*.[158].xml' -print0 \
-		| xargs -0 -I{} mv {}.in {} 2>/dev/null \
-		| true
-	rm -f man/man[158]/*.[158]
-	find ./ -name Makefile -delete
-	rm -rf autom4te.cache
+	[ -f Makefile ] && $(MAKE) distclean
 	dh_clean \
 		libtool config.status config.h stamp-h1 \
 		config.log \
@@ -94,3 +84,12 @@ override_dh_clean:
 		contrib/shell_utils/asip-status.pl \
 		distrib/config/netatalk-config \
 		doc/html.xsl doc/man.xsl doc/manual/manual.xml
+	for p in $(MIGRATE_DIR); do \
+		rm -f debian/$$p.preinst; \
+	done
+	find doc/manpages -name '*.[158].xml' -print0 \
+		| xargs -0 -I{} mv {}.in {} 2>/dev/null \
+		| true
+	rm -f man/man[158]/*.[158]
+	find ./ -name Makefile -or -name Makefile.in -delete
+	rm -rf autom4te.cache

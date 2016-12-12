@@ -2,12 +2,12 @@ Source: netatalk
 Section: net
 Priority: optional
 Maintainer: Denis Bychkov <manover@gmail.com>
-Build-Depends: debhelper (>= 9), libacl1-dev, libattr1, libavahi-client-dev, libavahi-common-dev,
+Build-Depends: debhelper (>= 10), libacl1-dev, libattr1, libavahi-client-dev, libavahi-common-dev,
  libc6-dev, libcomerr2, libcrack2-dev, libdb-dev, libdbus-glib-1-dev, libgcrypt20-dev, libglib2.0-dev,
  libkrb5-dev, libmysqlclient-dev, libpam0g-dev, libssl-dev, libwrap0-dev, zlib1g-dev, libldap2-dev,
  krb5-multidev, libevent-dev, libtdb-dev, init-system-helpers (>= 1.18~), dh-autoreconf, pkg-config,
  systemtap-sdt-dev, libtracker-miner-1.0-dev, libtracker-sparql-1.0-dev
-Standards-Version: 3.9.6
+Standards-Version: 3.9.8
 Homepage: http://netatalk.sourceforge.net/
 Vcs-Git: git://git.code.sf.net/p/netatalk/code
 Vcs-Browser: http://sourceforge.net/p/netatalk/code/ci/master/tree/
