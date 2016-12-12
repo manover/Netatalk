@@ -6,7 +6,7 @@ Build-Depends: debhelper (>= 10), libacl1-dev, libattr1, libavahi-client-dev, li
  libc6-dev, libcomerr2, libcrack2-dev, libdb-dev, libdbus-glib-1-dev, libgcrypt20-dev, libglib2.0-dev,
  libkrb5-dev, libmysqlclient-dev, libpam0g-dev, libssl-dev, libwrap0-dev, zlib1g-dev, libldap2-dev,
  krb5-multidev, libevent-dev, libtdb-dev, init-system-helpers (>= 1.18~), dh-autoreconf, pkg-config,
- systemtap-sdt-dev, libtracker-miner-1.0-dev, libtracker-sparql-1.0-dev
+ systemtap-sdt-dev, libtracker-miner-1.0-dev, libtracker-sparql-1.0-dev, libtool-bin
 Standards-Version: 3.9.8
 Homepage: http://netatalk.sourceforge.net/
 Vcs-Git: git://git.code.sf.net/p/netatalk/code

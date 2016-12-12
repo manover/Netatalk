@@ -1,11 +1,6 @@
 --- a/man/man1/afpldaptest.1.in
 +++ b/man/man1/afpldaptest.1.in
-@@ -33,11 +33,12 @@ afpldaptest \- Syntactically check ldap
- .HP \w'\fBafpldaptest\fR\fB\fR\fBafpldaptest\fR\fB\fR\ 'u
- \fBafpldaptest\fR\fB\fR {\-u\ \fIUSER\fR | \-g\ \fIGROUP\fR | \-i\ \fIUUID\fR}
- .br
-+.HP \w'\fBafpldaptest\fR\fB\fR\fBafpldaptest\fR\fB\fR\ 'u
- \fBafpldaptest\fR\fB\fR {\-h | \-? | \-:}
+@@ -37,7 +37,7 @@ afpldaptest \- Syntactically check ldap
  .SH "DESCRIPTION"
  .PP
  \fBafpldaptest\fR
@@ -31,8 +26,8 @@
  .PP
  uams_randum\&.so
  .RS 4
--allows Random Number and Two\-Way Random Number Exchange for authentication (requires a separate file containing the passwords, either @pkgconfdir@/afppasswd file or the one specified via "\fBpasswd file\fR"\&. See
-+allows Random Number and Two\-Way Random Number Exchange for authentication (requires a separate file containing the passwords, either @PKGCONFDIR@/afppasswd file or the one specified via "\fBpasswd file\fR"\&. See
+-allows Random Number and Two\-Way Random Number Exchange for authentication (requires a separate file containing the passwords, either @pkgconfdir@/afppasswd file or the one specified via "\fBpasswd file\fR")\&. See
++allows Random Number and Two\-Way Random Number Exchange for authentication (requires a separate file containing the passwords, either @PKGCONFDIR@/afppasswd file or the one specified via "\fBpasswd file\fR")\&. See
  \fBafppasswd\fR(1)
  for details\&. (legacy)
  .RE
@@ -56,14 +51,12 @@
  force xattr with sticky bit = \fIBOOLEAN\fR (default: \fIno\fR) \fB(G/V)\fR
 --- a/man/man5/extmap.conf.5.in
 +++ b/man/man5/extmap.conf.5.in
-@@ -30,12 +30,12 @@
- .SH "NAME"
+@@ -31,11 +31,11 @@
  extmap.conf \- Configuration file used by afpd(8) to specify file name extension mappings\&.
  .SH "SYNOPSIS"
--.HP \w'\fB@pkgconfdir@/extmap\&.conf\fR\fB\fR\ 'u
--\fB@pkgconfdir@/extmap\&.conf\fR\fB\fR
-+.HP \w'\fB@PKGCONFDIR@/extmap\&.conf\fR\fB\fR\ 'u
-+\fB@PKGCONFDIR@/extmap\&.conf\fR\fB\fR
+ .HP \w'\fB@pkgconfdir@/extmap\&.conf\fR\ 'u
+-\fB@pkgconfdir@/extmap\&.conf\fR
++\fB@PKGCONFDIR@/extmap\&.conf\fR
  .SH "DESCRIPTION"
  .PP
 
@@ -141,12 +134,12 @@
  \fB\-v, \-V\fR
 --- a/man/man8/netatalk.8.in
 +++ b/man/man8/netatalk.8.in
-@@ -56,7 +56,7 @@ will cause the AFP daemon reload its con
+@@ -54,7 +54,7 @@ will cause the AFP daemon reload its con
  .RE
  .SH "FILES"
  .PP
 -@pkgconfdir@/afp\&.conf
 +@PKGCONFDIR@/afp\&.conf
  .RS 4
- configuration file used by afpd and cnid_metad
- .RE
+ configuration file used by
+ \fBnetatalk\fR(8),

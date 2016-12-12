@@ -1,3 +1,28 @@
+netatalk (3.1.10-1) unstable; urgency=medium
+
+  * Upstream version 3.1.10
+
+ -- Denis Bychkov <manover@gmail.com>  Mon, 12 Dec 2016 09:44:10 -0500
+
+netatalk (3.1.8-3) unstable; urgency=medium
+
+  * New build dependency: libtool-bin
+
+ -- Denis Bychkov <manover@gmail.com>  Tue, 05 Apr 2016 16:47:23 -0400
+
+netatalk (3.1.8-2) unstable; urgency=medium
+
+  * sysconfdir: /etc/netatalk -> /etc
+  * remove certain stale/invalid build parameters
+
+ -- Denis Bychkov <manover@gmail.com>  Wed, 03 Feb 2016 08:54:30 -0500
+
+netatalk (3.1.8-1) unstable; urgency=medium
+
+  * Upstream release 3.1.8
+
+ -- Denis Bychkov <manover@gmail.com>  Tue, 02 Feb 2016 14:34:16 -0500
+
 netatalk (3.1.7-8) unstable; urgency=medium
 
   * Hardened build

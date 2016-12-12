@@ -1,7 +1,7 @@
 debian/tmp/usr/sbin/*
 debian/tmp/usr/share/man/man*/*
 debian/tmp/usr/bin/*
-debian/tmp/etc/netatalk/*.conf
-debian/tmp/etc/netatalk/dbus-1/system.d/netatalk-dbus.conf
+debian/tmp/etc/*.conf
+debian/tmp/etc/dbus-1/system.d/netatalk-dbus.conf
 debian/tmp/lib/systemd/system/netatalk.service
 debian/tmp/var/lib/netatalk/*

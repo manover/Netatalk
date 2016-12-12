@@ -36,19 +36,19 @@ MIGRATE_DIR = lib$(N)-dev $(N) $(N)-dbg $(N)-uams-std $(N)-uams-pam $(N)-uams-ex
 
 override_dh_auto_configure:
 	./configure $(confflags) CFLAGS="$(CFLAGS) $(CPPLAGS)" LDFLAGS="$(LDFLAGS)" \
-		--prefix=/usr --sysconfdir=/etc/netatalk --bindir=\$${prefix}/bin \
-		--sbindir=\$${prefix}/sbin --libexecdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH) \
-		--libdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH) --localstatedir=/var/lib --with-lockfile=/run/netatalk.pid \
-		--includedir=\$${prefix}/include --datarootdir=\$${prefix}/share --datadir=\$${prefix}/share \
-		--infodir=\$${prefix}/share/info --localedir=\$${datarootdir}/locale --mandir=\$${datarootdir}/man \
-		--docdir=\$${datarootdir}/doc/netatalk --htmldir=\$${docdir} --dvidir=\$${docdir} --pdfdir=\$${docdir} \
-		--psdir=\$${docdir} --with-uams-path=\$${libdir}/netatalk --with-pam-confdir=\$${sysconfdir}/pam.d \
+		--prefix=/usr --sysconfdir=/etc --bindir=\$${prefix}/bin --sbindir=\$${prefix}/sbin \
+		--libexecdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH) --libdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH) \
+		--localstatedir=/var/lib --with-lockfile=/run/netatalk.pid --includedir=\$${prefix}/include \
+		--datarootdir=\$${prefix}/share --datadir=\$${prefix}/share --infodir=\$${prefix}/share/info \
+		--localedir=\$${datarootdir}/locale --mandir=\$${datarootdir}/man --docdir=\$${datarootdir}/doc/netatalk \
+		--htmldir=\$${docdir} --dvidir=\$${docdir} --pdfdir=\$${docdir}	--psdir=\$${docdir} \
+		--with-uams-path=\$${libdir}/netatalk --with-pam-confdir=\$${sysconfdir}/pam.d \
 		--with-dbus-sysconf-dir=\$${sysconfdir}/dbus-1/system.d --with-bdb=/usr/include/$(DEB_HOST_MULTIARCH)/db5 \
 		--enable-dependency-tracking --enable-largefile --enable-zeroconf --with-sysroot=/ --with-afpstats \
 		--with-kerberos --with-gssapi --with-acls --without-libevent --without-tdb --with-init-style=debian-systemd \
 		--with-cnid-dbd-backend --with-cnid-last-backend --with-cnid-tdb-backend --with-cnid-default-backend=dbd \
 		--enable-tcp-wrappers --enable-quota --enable-admin-group --with-cracklib --with-pam --with-ldap \
-		--with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl --enable-pgp-uam --enable-krb4-uam --enable-krbV-uam \
+		--with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl --enable-pgp-uam --enable-krbV-uam \
 		--with-tracker-pkgconfig-version=1.0 --enable-sendfile --with-shadow
 
 override_dh_autoreconf:
