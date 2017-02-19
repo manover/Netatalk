@@ -2,3 +2,5 @@ autoreconf.patch
 improved-systemd-units.patch
 correct-url-to-http-resources.patch
 minor-documentation-fixes.patch
+fix-manual-bdb-path-bug.patch
+openssl-1.1.0.patch

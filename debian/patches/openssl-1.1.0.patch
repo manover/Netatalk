@@ -1,0 +1,95 @@
+--- a/etc/uams/uams_dhx_pam.c
++++ b/etc/uams/uams_dhx_pam.c
+@@ -193,6 +193,7 @@ static int dhx_setup(void *obj, char *ib
+     uint16_t sessid;
+     size_t i;
+     BIGNUM *bn, *gbn, *pbn;
++    const BIGNUM *pub_key, *unused;
+     DH *dh;
+ 
+     /* get the client's public key */
+@@ -236,9 +237,16 @@ static int dhx_setup(void *obj, char *ib
+       return AFPERR_PARAM;
+     }
+ 
++    if (!DH_set0_pqg(dh, pbn, NULL, gbn)) {
++      BN_free(pbn);
++      BN_free(gbn);
++    /* Log Entry */
++        LOG(log_info, logtype_uams, "uams_dhx_pam.c :PAM DH_set0_pqg() mysteriously failed  -- %s", strerror(errno));
++    /* Log Entry */
++      goto pam_fail;
++    }
++
+     /* generate key and make sure that we have enough space */
+-    dh->p = pbn;
+-    dh->g = gbn;
+     if (DH_generate_key(dh) == 0) {
+ 	unsigned long dherror;
+ 	char errbuf[256];
+@@ -252,9 +260,11 @@ static int dhx_setup(void *obj, char *ib
+ 	ERR_free_strings();
+ 	goto pam_fail;
+     }
+-    if (BN_num_bytes(dh->pub_key) > KEYSIZE) {
+-	LOG(log_info, logtype_uams, "uams_dhx_pam.c :PAM: Err Generating Key -- Not enough Space? -- %s", strerror(errno));
+-	goto pam_fail;
++	DH_get0_key(dh, &pub_key, &unused);
++	unused = NULL;
++    if (BN_num_bytes(pub_key) > KEYSIZE) {
++      LOG(log_info, logtype_uams, "uams_dhx_pam.c :PAM: Err Generating Key -- Not enough Space? -- %s", strerror(errno));
++      goto pam_fail;
+     }
+ 
+     /* figure out the key. store the key in rbuf for now. */
+@@ -270,7 +280,7 @@ static int dhx_setup(void *obj, char *ib
+     *rbuflen += sizeof(sessid);
+     
+     /* public key */
+-    BN_bn2bin(dh->pub_key, (unsigned char *)rbuf); 
++    BN_bn2bin(pub_key, (unsigned char *)rbuf); 
+     rbuf += KEYSIZE;
+     *rbuflen += KEYSIZE;
+ 
+--- a/etc/uams/uams_dhx_passwd.c
++++ b/etc/uams/uams_dhx_passwd.c
+@@ -76,6 +76,7 @@ static int pwd_login(void *obj, char *us
+     struct spwd *sp;
+ #endif /* SHADOWPW */
+     BIGNUM *bn, *gbn, *pbn;
++    const BIGNUM *pub_key, *unused;
+     uint16_t sessid;
+     size_t i;
+     DH *dh;
+@@ -139,10 +140,19 @@ static int pwd_login(void *obj, char *us
+       return AFPERR_PARAM;
+     }
+ 
++    if (!DH_set0_pqg(dh, pbn, NULL, gbn)) {
++      BN_free(pbn);
++      BN_free(gbn);
++      goto passwd_fail;
++    }
++
+     /* generate key and make sure we have enough space */
+-    dh->p = pbn;
+-    dh->g = gbn;
+-    if (!DH_generate_key(dh) || (BN_num_bytes(dh->pub_key) > KEYSIZE)) {
++    if (!DH_generate_key(dh)) {
++      goto passwd_fail;
++    }
++    DH_get0_key(dh, &pub_key, &unused);
++    unused = NULL;
++    if (BN_num_bytes(pub_key) > KEYSIZE) {
+       goto passwd_fail;
+     }
+ 
+@@ -159,7 +169,7 @@ static int pwd_login(void *obj, char *us
+     *rbuflen += sizeof(sessid);
+     
+     /* send our public key */
+-    BN_bn2bin(dh->pub_key, (unsigned char *)rbuf); 
++    BN_bn2bin(pub_key, (unsigned char *)rbuf); 
+     rbuf += KEYSIZE;
+     *rbuflen += KEYSIZE;
+ 
