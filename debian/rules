@@ -16,7 +16,7 @@ N := netatalk
 export DEB_BUILD_MAINT_OPTIONS=hardening=+all
 CFLAGS  := $(shell dpkg-buildflags --get CFLAGS)
 CPPLAGS := $(shell dpkg-buildflags --get CPPFLAGS)
-LDFLAGS := $(shell dpkg-buildflags --get LDFLAGS) -Wl,--as-needed
+LDFLAGS := -Wl,--as-needed $(shell dpkg-buildflags --get LDFLAGS)
 
 ifneq ($(maintainer),1)
 	CFLAGS := -w $(CFLAGS)
@@ -29,7 +29,7 @@ else
         export DEB_BUILD_OPTIONS += nocheck
 endif
 
-MIGRATE_DIR = lib$(N)-dev $(N) $(N)-dbg $(N)-uams-std $(N)-uams-pam $(N)-uams-extra
+MIGRATE_DIR = lib$(N)-dev $(N) $(N)-dbg $(N)-uams-standalone $(N)-uams-pam $(N)-uams-extra
 
 %:
 	dh $@
@@ -45,54 +45,47 @@ override_dh_auto_configure:
 		--with-uams-path=\$${libdir}/netatalk --with-pam-confdir=\$${sysconfdir}/pam.d \
 		--with-dbus-sysconf-dir=\$${sysconfdir}/dbus-1/system.d --with-bdb="/usr/include /usr/include/$(DEB_HOST_MULTIARCH)" \
 		--enable-dependency-tracking --enable-largefile --enable-zeroconf --with-sysroot=/ --with-afpstats \
-		--with-kerberos --with-gssapi --with-acls --without-libevent --without-tdb --with-init-style=debian-systemd \
+		--with-kerberos --with-gssapi --with-acls --with-libevent=no --without-tdb --with-init-style=debian-systemd \
 		--with-cnid-dbd-backend --with-cnid-last-backend --with-cnid-tdb-backend --with-cnid-default-backend=dbd \
 		--enable-tcp-wrappers --enable-quota --enable-admin-group --with-cracklib --with-pam --with-ldap \
 		--with-docbook=/usr/share/xml/docbook/stylesheet/docbook-xsl --enable-pgp-uam --enable-krbV-uam \
 		--with-tracker-pkgconfig-version=1.0 --enable-sendfile --with-shadow
 
 override_dh_autoreconf:
-	dh_autoreconf --as-needed $(CURDIR)/bootstrap
+	dh_autoreconf --as-needed autoreconf -- -ivf --no-recursive
 
-override_dh_auto_build:
-	dh_auto_build --parallel
-	make html -C doc/manual 2>/dev/null
+override_dh_auto_build-arch:
+	dh_auto_build
 	# generate maintainer preinst script to migrate doc dirs to symlinks
 	# (for all packages except libnetatalk and netatalk-doc)
 	for p in $(MIGRATE_DIR); do \
 		sed -e "s/@PKG@/$$p/g" debian/migrate-doc-dir.preinst.in >debian/$$p.preinst; \
 	done
 
-override_dh_install:
+override_dh_auto_build-indep:
+	$(MAKE) html -C doc/manual
+
+override_dh_auto_install-indep:
+	$(MAKE) install -C doc/manual
+
+override_dh_install-arch:
 	mkdir -p debian/libnetatalk-dev/usr/bin
 	mv debian/tmp/usr/bin/netatalk-config \
 		debian/libnetatalk-dev/usr/bin/$(DEB_HOST_GNU_TYPE)-netatalk-config
 	dh_installdocs -A -N$(N)-doc --link-doc=lib$(N)
 	dh_install --list-missing
 
-override_dh_strip:
+override_dh_strip-arch:
 	dh_strip -a --dbg-package=$(N)-dbg
 
 override_dh_auto_clean:
+	[ ! -f Makefile ] || $(MAKE) distclean || true
+
+override_dh_auto_test-indep:
 	#pass
 
 override_dh_clean:
-	[ ! -f Makefile ] || $(MAKE) distclean || true
-	dh_clean \
-		libtool config.status config.h stamp-h1 \
-		config.log \
-		bin/cnid/cnid2_create \
-		contrib/macusers/macusers \
-		contrib/shell_utils/apple_dump \
-		contrib/shell_utils/asip-status.pl \
-		distrib/config/netatalk-config \
-		doc/html.xsl doc/man.xsl doc/manual/manual.xml
+	dh_clean
 	for p in $(MIGRATE_DIR); do \
 		rm -f debian/$$p.preinst; \
 	done
-	find doc/manpages -name '*.[158].xml' -print0 \
-		| xargs -0 -I{} mv {}.in {} 2>/dev/null \
-		| true
-	rm -f man/man[158]/*.[158]
-	find ./ -name Makefile -or -name Makefile.in | xargs rm -f
-	rm -rf autom4te.cache

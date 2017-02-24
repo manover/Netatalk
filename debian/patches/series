@@ -1,6 +1,8 @@
-autoreconf.patch
 improved-systemd-units.patch
 correct-url-to-http-resources.patch
 minor-documentation-fixes.patch
 fix-manual-bdb-path-bug.patch
+remove-trailing-slash-UAMS-path.patch
+remove-libevent-from-dist-subdirs.patch
+#remove-autotools-warnings.patch
 openssl-1.1.0.patch

@@ -1,14 +1,61 @@
+--- /dev/null
++++ b/etc/uams/openssl_compat.h
+@@ -0,0 +1,36 @@
++#ifndef OPENSSL_COMPAT_H
++#define OPENSSL_COMPAT_H 1
++
++#if OPENSSL_VERSION_NUMBER < 0x10100000L
++inline static int DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g)
++{
++   /* If the fields p and g in d are NULL, the corresponding input
++    * parameters MUST be non-NULL.  q may remain NULL.
++    */
++   if ((dh->p == NULL && p == NULL)
++       || (dh->g == NULL && g == NULL))
++       return 0;
++
++   if (p != NULL)
++       dh->p = p;
++   if (q != NULL)
++       dh->q = q;
++   if (g != NULL)
++       dh->g = g;
++
++   if (q != NULL)
++       dh->length = BN_num_bits(q);
++
++   return 1;
++}
++
++inline static void DH_get0_key(const DH *dh, const BIGNUM **pub_key, const BIGNUM **priv_key)
++{
++   if (pub_key != NULL)
++       *pub_key = dh->pub_key;
++   if (priv_key != NULL)
++       *priv_key = dh->priv_key;
++}
++#endif /* OPENSSL_VERSION_NUMBER */
++
++#endif /* OPENSSL_COMPAT_H */
 --- a/etc/uams/uams_dhx_pam.c
 +++ b/etc/uams/uams_dhx_pam.c
-@@ -193,6 +193,7 @@ static int dhx_setup(void *obj, char *ib
+@@ -34,6 +34,7 @@
+ #include <openssl/dh.h>
+ #include <openssl/cast.h>
+ #include <openssl/err.h>
++#include "openssl_compat.h"
+ #else /* OPENSSL_DHX */
+ #include <bn.h>
+ #include <dh.h>
+@@ -193,6 +194,7 @@ static int dhx_setup(void *obj, char *ib
      uint16_t sessid;
      size_t i;
      BIGNUM *bn, *gbn, *pbn;
-+    const BIGNUM *pub_key, *unused;
++    const BIGNUM *pub_key;
      DH *dh;
  
      /* get the client's public key */
-@@ -236,9 +237,16 @@ static int dhx_setup(void *obj, char *ib
+@@ -236,9 +238,16 @@ static int dhx_setup(void *obj, char *ib
        return AFPERR_PARAM;
      }
  
@@ -27,15 +74,14 @@
      if (DH_generate_key(dh) == 0) {
  	unsigned long dherror;
  	char errbuf[256];
-@@ -252,9 +260,11 @@ static int dhx_setup(void *obj, char *ib
+@@ -252,9 +261,10 @@ static int dhx_setup(void *obj, char *ib
  	ERR_free_strings();
  	goto pam_fail;
      }
 -    if (BN_num_bytes(dh->pub_key) > KEYSIZE) {
 -	LOG(log_info, logtype_uams, "uams_dhx_pam.c :PAM: Err Generating Key -- Not enough Space? -- %s", strerror(errno));
 -	goto pam_fail;
-+	DH_get0_key(dh, &pub_key, &unused);
-+	unused = NULL;
++	DH_get0_key(dh, &pub_key, NULL);
 +    if (BN_num_bytes(pub_key) > KEYSIZE) {
 +      LOG(log_info, logtype_uams, "uams_dhx_pam.c :PAM: Err Generating Key -- Not enough Space? -- %s", strerror(errno));
 +      goto pam_fail;
@@ -47,21 +93,29 @@
      
      /* public key */
 -    BN_bn2bin(dh->pub_key, (unsigned char *)rbuf); 
-+    BN_bn2bin(pub_key, (unsigned char *)rbuf); 
++    BN_bn2bin(pub_key, (unsigned char *)rbuf);
      rbuf += KEYSIZE;
      *rbuflen += KEYSIZE;
  
 --- a/etc/uams/uams_dhx_passwd.c
 +++ b/etc/uams/uams_dhx_passwd.c
-@@ -76,6 +76,7 @@ static int pwd_login(void *obj, char *us
+@@ -32,6 +32,7 @@
+ #include <openssl/bn.h>
+ #include <openssl/dh.h>
+ #include <openssl/cast.h>
++#include "openssl_compat.h"
+ #else /* OPENSSL_DHX */
+ #include <bn.h>
+ #include <dh.h>
+@@ -76,6 +77,7 @@ static int pwd_login(void *obj, char *us
      struct spwd *sp;
  #endif /* SHADOWPW */
      BIGNUM *bn, *gbn, *pbn;
-+    const BIGNUM *pub_key, *unused;
++    const BIGNUM *pub_key;
      uint16_t sessid;
      size_t i;
      DH *dh;
-@@ -139,10 +140,19 @@ static int pwd_login(void *obj, char *us
+@@ -139,10 +141,18 @@ static int pwd_login(void *obj, char *us
        return AFPERR_PARAM;
      }
  
@@ -78,8 +132,7 @@
 +    if (!DH_generate_key(dh)) {
 +      goto passwd_fail;
 +    }
-+    DH_get0_key(dh, &pub_key, &unused);
-+    unused = NULL;
++    DH_get0_key(dh, &pub_key, NULL);
 +    if (BN_num_bytes(pub_key) > KEYSIZE) {
        goto passwd_fail;
      }
@@ -89,7 +142,7 @@
      
      /* send our public key */
 -    BN_bn2bin(dh->pub_key, (unsigned char *)rbuf); 
-+    BN_bn2bin(pub_key, (unsigned char *)rbuf); 
++    BN_bn2bin(pub_key, (unsigned char *)rbuf);
      rbuf += KEYSIZE;
      *rbuflen += KEYSIZE;
  

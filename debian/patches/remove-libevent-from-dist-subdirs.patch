@@ -1,0 +1,11 @@
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -6,6 +6,8 @@ else
+ SUBDIRS = include libatalk bin config etc contrib distrib doc man macros test
+ endif
+ 
++DIST_SUBDIRS = $(SUBDIRS)
++
+ EXTRA_DIST = CONTRIBUTORS COPYRIGHT COPYING NEWS VERSION abigen.sh
+ 
+ ACLOCAL_AMFLAGS = -I macros

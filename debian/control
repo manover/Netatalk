@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Denis Bychkov <manover@gmail.com>
 Build-Depends: debhelper (>= 10), libacl1-dev, libattr1, libavahi-client-dev, libavahi-common-dev,
  libc6-dev, libcomerr2, libcrack2-dev, libdb-dev, libdbus-glib-1-dev, libgcrypt20-dev, libglib2.0-dev,
- libkrb5-dev, libmysqlclient-dev, libpam0g-dev, libssl-dev (>= 1.1.0), libwrap0-dev, zlib1g-dev, libldap2-dev,
+ libkrb5-dev, libmysqlclient-dev, libpam0g-dev, libssl-dev | libssl1.0-dev, libwrap0-dev, zlib1g-dev, libldap2-dev,
  krb5-multidev, libevent-dev, libtdb-dev, init-system-helpers (>= 1.18~), dh-autoreconf, pkg-config,
  systemtap-sdt-dev, libtracker-miner-1.0-dev, libtracker-sparql-1.0-dev, tracker, libtool-bin
 Standards-Version: 3.9.8
@@ -15,7 +15,11 @@ Vcs-Browser: http://sourceforge.net/p/netatalk/code/ci/master/tree/
 Package: netatalk
 Architecture: any
 Multi-Arch: foreign
-Depends: libnetatalk (= ${binary:Version}), netatalk-uams (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Depends: libnetatalk (= ${binary:Version}),
+         netatalk-uams (= ${binary:Version}),
+         ${shlibs:Depends},
+         ${misc:Depends},
+         python-dbus
 Recommends: netatalk-uams-pam
 Suggests: netatalk-uams-standalone, netatalk-uams-extra
 Breaks: netatalk (< 3.1)
@@ -121,6 +125,7 @@ Section: libs
 Depends: libnetatalk (= ${binary:Version}), netatalk-uams-standalone (= ${binary:Version}),
  netatalk-uams-pam (= ${binary:Version}), netatalk-uams-extra (= ${binary:Version}),
  ${shlibs:Depends}, ${misc:Depends}
+Recommends: python-dbus-dev
 Breaks: netatalk (< 3.1)
 Description: Netatalk 3 library development files
  Netatalk is a freely-available Open Source AFP fileserver. A Linux system running Netatalk
